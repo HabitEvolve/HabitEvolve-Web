@@ -6,6 +6,7 @@ import { adminGoalApi } from "../api/adminGoalApi";
 import { useTableFilters } from "../hooks/useTableFilters";
 import { TableFilterBar } from "../components/common/TableFilterBar";
 import { DynamicIcon } from "../components/ui/DynamicIcon";
+import { useNavigate } from "react-router";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
   GoalCategoryDto,
@@ -249,11 +250,26 @@ const TargetIcon = () => (
     <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
   </svg>
 );
+const TaskLibIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="3" width="6" height="4" rx="1" />
+    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+    <line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="16" x2="13" y2="16" />
+  </svg>
+);
+const EvalIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+  </svg>
+);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AdminGoalManagement() {
+  const navigate = useNavigate();
 
   // ── SHARED ────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<"categories" | "goals">("categories");
@@ -625,7 +641,7 @@ export default function AdminGoalManagement() {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b-2 border-gray-200 bg-gray-50/50">
-                    {["#", "Code", "Goal Name", "Category", "Status", "Created", "Actions"].map(h => (
+                    {["#", "Code", "Goal Name", "Category", "Status", "Created", "Configure"].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
                     ))}
                   </tr>
@@ -668,12 +684,28 @@ export default function AdminGoalManagement() {
                         <td className="px-4 py-4"><ActivePill isActive={goal.isActive} /></td>
                         <td className="px-4 py-4 text-xs text-gray-400 font-medium whitespace-nowrap">{formatDate(goal.createdAt)}</td>
                         <td className="px-4 py-4">
-                          <button
-                            title="Edit goal" onClick={() => openEditGoal(goal)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800"
-                          >
-                            <PencilIcon />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              title="Edit goal" onClick={() => openEditGoal(goal)}
+                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800"
+                            >
+                              <PencilIcon />
+                            </button>
+                            <button
+                              title="Configure Task Library for this Goal"
+                              onClick={() => navigate(`/practical-tasks?goalId=${goal.goalId}&goalName=${encodeURIComponent(goal.goalName)}`)}
+                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-amber-100 hover:bg-amber-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-amber-800"
+                            >
+                              <TaskLibIcon />
+                            </button>
+                            <button
+                              title="Bind Questionnaire Template to this Goal"
+                              onClick={() => navigate(`/questionnaires?goalId=${goal.goalId}&goalName=${encodeURIComponent(goal.goalName)}`)}
+                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-purple-100 hover:bg-purple-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-purple-800"
+                            >
+                              <EvalIcon />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

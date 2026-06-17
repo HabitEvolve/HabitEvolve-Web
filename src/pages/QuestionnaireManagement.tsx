@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router";
 import { createPortal } from "react-dom";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -10,6 +11,7 @@ import type {
   QuestionnaireTemplateDto,
   QuestionDto,
   QuestionType,
+  GoalDto,
 } from "../types/adminGoal.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -160,6 +162,12 @@ const ChevronRight = () => (
     <polyline points="9 18 15 12 9 6" />
   </svg>
 );
+const LinkIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
 const QuestionTypeBadge = ({ type }: { type: string }) => {
@@ -212,6 +220,117 @@ const GameModal = ({
     </div>,
     document.body
   );
+
+// ── BIND TO GOAL MODAL ────────────────────────────────────────────────────────
+interface BindToGoalModalProps {
+  template: QuestionnaireTemplateDto;
+  preselectedGoalId: number | null;
+  onClose: () => void;
+  onAlert: (a: { type: "success" | "error"; message: string }) => void;
+}
+
+const BindToGoalModal = ({ template, preselectedGoalId, onClose, onAlert }: BindToGoalModalProps) => {
+  const [allGoals, setAllGoals] = useState<GoalDto[]>([]);
+  const [goalsLoading, setGoalsLoading] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<number | null>(preselectedGoalId);
+  const [submitting, setSubmitting] = useState(false);
+  const [bindError, setBindError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setGoalsLoading(true);
+    adminGoalApi.getGoals({ pageSize: 1000 })
+      .then(res => { if (res.success && res.data) setAllGoals(res.data.filter(g => g.isActive)); })
+      .catch(() => {/* silent */})
+      .finally(() => setGoalsLoading(false));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGoalId) return;
+    setSubmitting(true);
+    setBindError(null);
+    try {
+      await adminGoalApi.bindTemplateToGoal(selectedGoalId, template.templateId);
+      onAlert({ type: "success", message: `"${template.templateName}" successfully bound to goal!` });
+      onClose();
+    } catch (err) {
+      setBindError(errMsg(err) ?? "Failed to bind template. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <GameModal title="🔗 Bind Template to Goal" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 border-2 border-purple-300 rounded-2xl">
+          <span className="text-xl">📋</span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black text-purple-600 uppercase tracking-wide">Template</p>
+            <p className="text-sm font-black text-gray-900 truncate">{template.templateName}</p>
+          </div>
+          <span className="ml-auto text-xs font-black text-purple-500 border border-purple-300 rounded-full px-2 py-0.5 whitespace-nowrap">
+            v{template.version}
+          </span>
+        </div>
+
+        <div>
+          <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
+            Select Goal to Bind *
+          </label>
+          {goalsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-gray-400 py-2.5">
+              <Spinner size={14} /> Loading active goals…
+            </div>
+          ) : allGoals.length === 0 ? (
+            <p className="text-sm font-bold text-amber-700 bg-amber-50 border-2 border-amber-300 rounded-2xl px-4 py-3">
+              No active goals found. Create goals in Hub 1 first.
+            </p>
+          ) : (
+            <select
+              required
+              value={selectedGoalId ?? ""}
+              onChange={e => setSelectedGoalId(e.target.value ? Number(e.target.value) : null)}
+              className={inputCls}
+            >
+              <option value="">— Select an active Goal —</option>
+              {allGoals.map(g => (
+                <option key={g.goalId} value={g.goalId}>
+                  [{g.goalCode}] {g.goalName}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="flex items-start gap-2.5 px-3.5 py-3 bg-sky-50 border-2 border-sky-200 rounded-2xl">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-xs font-semibold text-sky-800">
+            This will associate the questionnaire template with the selected goal.
+            Players enrolled in that goal will be evaluated using this template.
+          </p>
+        </div>
+
+        {bindError && (
+          <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{bindError}</p>
+        )}
+
+        <div className="flex gap-3 pt-1">
+          <button type="button" onClick={onClose} disabled={submitting}
+            className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>
+            Cancel
+          </button>
+          <button type="submit" disabled={submitting || !selectedGoalId}
+            className={`${btnBase} flex-1 justify-center bg-purple-200 text-purple-900`}>
+            {submitting ? <><Spinner />Binding…</> : <><LinkIcon />Bind Template</>}
+          </button>
+        </div>
+      </form>
+    </GameModal>
+  );
+};
 
 // ── FORM FIELD ────────────────────────────────────────────────────────────────
 const FormField = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
@@ -287,10 +406,19 @@ const TableCard = ({ title, icon, count, loading, children }: {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function QuestionnaireManagement() {
 
+  // ── URL CONTEXT (pre-selection from Hub 1) ────────────────────────────────
+  const [searchParams] = useSearchParams();
+  const preselectedGoalId = useMemo(() => {
+    const id = searchParams.get("goalId");
+    return id ? Number(id) : null;
+  }, [searchParams]);
+  const preselectedGoalName = searchParams.get("goalName");
+
   // ── VIEW STATE ────────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<"templates" | "questions">("templates");
   const [selectedTemplate, setSelectedTemplate] = useState<QuestionnaireTemplateDto | null>(null);
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [bindingTemplate, setBindingTemplate] = useState<QuestionnaireTemplateDto | null>(null);
 
   useEffect(() => {
     if (!alert) return;
@@ -522,6 +650,19 @@ export default function QuestionnaireManagement() {
       {/* ════════════ TEMPLATES VIEW ═══════════════════════════════════ */}
       {viewMode === "templates" && (
         <div className="space-y-5">
+          {/* Goal context banner — shown when navigated from Hub 1 */}
+          {preselectedGoalId && preselectedGoalName && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 border-2 border-orange-400 rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
+              <span className="text-xl">🎯</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">Context from Goals Hub</p>
+                <p className="text-sm font-bold text-gray-800">Goal: <span className="font-black">{decodeURIComponent(preselectedGoalName)}</span></p>
+              </div>
+              <p className="text-xs font-medium text-orange-700 text-right hidden sm:block">
+                Click "Bind" on any template below →
+              </p>
+            </div>
+          )}
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -599,6 +740,10 @@ export default function QuestionnaireManagement() {
                             <button title="Manage questions" onClick={() => openManageQuestions(t)}
                               className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-purple-100 hover:bg-purple-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-purple-800">
                               <ListIcon />
+                            </button>
+                            <button title="Bind to a Goal" onClick={() => setBindingTemplate(t)}
+                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-orange-800">
+                              <LinkIcon />
                             </button>
                           </div>
                         </td>
@@ -878,6 +1023,16 @@ export default function QuestionnaireManagement() {
             </div>
           </form>
         </GameModal>
+      )}
+
+      {/* ════════════ MODAL: BIND TO GOAL ══════════════════════════════ */}
+      {bindingTemplate && (
+        <BindToGoalModal
+          template={bindingTemplate}
+          preselectedGoalId={preselectedGoalId}
+          onClose={() => setBindingTemplate(null)}
+          onAlert={a => setAlert(a)}
+        />
       )}
     </>
   );

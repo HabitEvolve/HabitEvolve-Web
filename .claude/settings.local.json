@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dir \"d:\\\\HabitEvolve-Mobile\\\\src\" /B)",
       "Bash(Get-ChildItem -Path \"d:\\\\HabitEvolve-Mobile\\\\src\" -Recurse -Directory)",
-      "Bash(Select-Object -First 20)"
+      "Bash(Select-Object -First 20)",
+      "Bash(git merge *)"
     ]
   }
 }

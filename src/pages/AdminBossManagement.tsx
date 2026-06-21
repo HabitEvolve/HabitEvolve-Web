@@ -1,0 +1,909 @@
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import PageMeta from "../components/common/PageMeta";
+import { adminBossApi } from "../api/adminBossApi";
+import type {
+  BossTemplateDto,
+  BossTemplatePayload,
+  BossModePayload,
+  BossTemplateStatus,
+  BossModeType,
+  PackageTier,
+  RewardTierType,
+} from "../types/adminBoss.types";
+
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
+const PROOF_TYPES = ["PHOTO", "VIDEO", "GPS", "SCREENSHOT", "TEXT"] as const;
+
+const EMPTY_TEMPLATE: BossTemplatePayload = {
+  themeName: "", description: "",
+  activeWeekStart: "", activeWeekEnd: "",
+  startTime: "MON 00:00", endTime: "SUN 23:59",
+  registrationWindow: "",
+  proofPolicy: "BY_SUBSCRIPTION",
+  rewardPolicy: "BY_MODE",
+};
+
+const EMPTY_MODE: BossModePayload = {
+  mode: "EASY", minTier: "FREE",
+  partyMin: 2, partyMax: 6,
+  bossHp: 10000,
+  maxQuestPerMemberPerDay: 3, maxPartyQuestPerWeek: 20,
+  maxDamagePerQuest: 500, mGoldRewardCapPerQuest: 100,
+  allowedProofTypes: ["PHOTO"],
+  rewardTier: "BASIC",
+};
+
+// ── STYLES ────────────────────────────────────────────────────────────────────
+const btnBase =
+  "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
+  "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
+  "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
+  "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
+
+const inputCls =
+  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium bg-white " +
+  "focus:outline-none focus:ring-2 focus:ring-purple-300 placeholder:text-gray-400";
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const errMsg = (e: unknown) =>
+  (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
+
+const fmtDate = (d: string) =>
+  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+// ── ICONS ─────────────────────────────────────────────────────────────────────
+const SwordsIcon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" />
+    <line x1="13" y1="19" x2="19" y2="13" />
+    <polyline points="16 16 20 20 20 20" />
+    <line x1="9.5" y1="6.5" x2="4" y2="11" />
+    <path d="M9 21 21 9" /><line x1="14.5" y1="6.5" x2="6.5" y2="14.5" />
+  </svg>
+);
+const PlusIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+const PencilIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+const SettingsIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+const XIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+const SaveIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+    <polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
+  </svg>
+);
+const ChevLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+const ChevRight = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+const Spinner = ({ size = 18 }: { size?: number }) => (
+  <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+// ── BADGES ────────────────────────────────────────────────────────────────────
+const STATUS_CFG: Record<BossTemplateStatus, { bg: string; border: string; text: string; emoji: string }> = {
+  Draft:     { bg: "bg-amber-100",  border: "border-amber-400",  text: "text-amber-800",  emoji: "📝" },
+  Published: { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  emoji: "🟢" },
+  Archived:  { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-600",   emoji: "📦" },
+};
+const StatusBadge = ({ status }: { status: BossTemplateStatus }) => {
+  const c = STATUS_CFG[status] ?? STATUS_CFG.Draft;
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {status}</span>;
+};
+
+const MODE_CFG: Record<BossModeType, { bg: string; border: string; text: string; cardBg: string; cardBorder: string; emoji: string }> = {
+  EASY:   { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  cardBg: "bg-green-50",  cardBorder: "border-green-400",  emoji: "🌿" },
+  NORMAL: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-800",   cardBg: "bg-blue-50",   cardBorder: "border-blue-400",   emoji: "⚔️" },
+  HARD:   { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    cardBg: "bg-red-50",    cardBorder: "border-red-400",    emoji: "🔥" },
+};
+const ModeBadge = ({ mode }: { mode: BossModeType }) => {
+  const c = MODE_CFG[mode] ?? MODE_CFG.EASY;
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {mode}</span>;
+};
+
+const TIER_CFG: Record<PackageTier, { bg: string; border: string; text: string; emoji: string }> = {
+  FREE:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   emoji: "🆓" },
+  BASIC:   { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   emoji: "⭐" },
+  PREMIUM: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800", emoji: "💎" },
+};
+const TierBadge = ({ tier }: { tier: PackageTier }) => {
+  const c = TIER_CFG[tier] ?? TIER_CFG.FREE;
+  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {tier}</span>;
+};
+
+const REWARD_CFG: Record<RewardTierType, { bg: string; border: string; text: string; emoji: string }> = {
+  BASIC:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   emoji: "📦" },
+  STANDARD: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   emoji: "⭐" },
+  PREMIUM:  { bg: "bg-yellow-100", border: "border-yellow-500", text: "text-yellow-800", emoji: "🏆" },
+};
+const RewardBadge = ({ tier }: { tier: RewardTierType }) => {
+  const c = REWARD_CFG[tier] ?? REWARD_CFG.BASIC;
+  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {tier}</span>;
+};
+
+// ── LABEL ─────────────────────────────────────────────────────────────────────
+const Label = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">{children}</p>
+);
+
+// ── TEMPLATE FORM MODAL ───────────────────────────────────────────────────────
+interface TemplateFormModalProps {
+  template: BossTemplateDto | null;
+  onClose: () => void;
+  onAlert: (a: { type: "success" | "error"; message: string }) => void;
+  onSuccess: () => void;
+}
+
+const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFormModalProps) => {
+  const isEdit = template !== null;
+  const [form, setForm] = useState<BossTemplatePayload>(() =>
+    isEdit ? {
+      themeName: template.themeName,
+      description: template.description,
+      activeWeekStart: template.activeWeekStart,
+      activeWeekEnd: template.activeWeekEnd,
+      startTime: template.startTime,
+      endTime: template.endTime,
+      registrationWindow: template.registrationWindow,
+      proofPolicy: template.proofPolicy,
+      rewardPolicy: template.rewardPolicy,
+    } : { ...EMPTY_TEMPLATE }
+  );
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const set = (k: keyof BossTemplatePayload, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (isEdit) {
+        await adminBossApi.updateTemplate(template.bossTemplateId, form);
+        onAlert({ type: "success", message: `"${form.themeName}" updated!` });
+      } else {
+        await adminBossApi.createTemplate(form);
+        onAlert({ type: "success", message: `"${form.themeName}" created!` });
+      }
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setFormError(errMsg(err) ?? "Failed to save template.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-purple-50 shrink-0 rounded-t-3xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-purple-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
+              <SwordsIcon size={17} />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-gray-900">{isEdit ? "Edit Template" : "New Boss Template"}</h2>
+              <p className="text-xs font-medium text-gray-500">{isEdit ? template.themeName : "Set up the weekly boss event"}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-red-50 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+            <XIcon />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label>Theme Name *</Label>
+              <input required type="text" value={form.themeName} onChange={e => set("themeName", e.target.value)}
+                placeholder="e.g. Shadow Dragon Awakening" className={inputCls} />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <textarea value={form.description} onChange={e => set("description", e.target.value)}
+                rows={2} placeholder="Boss lore or event description…" className={`${inputCls} resize-none`} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Active Week Start *</Label>
+                <input required type="date" value={form.activeWeekStart} onChange={e => set("activeWeekStart", e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <Label>Active Week End *</Label>
+                <input required type="date" value={form.activeWeekEnd} onChange={e => set("activeWeekEnd", e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Start Time</Label>
+                <input type="text" value={form.startTime} onChange={e => set("startTime", e.target.value)}
+                  placeholder="MON 00:00" className={inputCls} />
+              </div>
+              <div>
+                <Label>End Time</Label>
+                <input type="text" value={form.endTime} onChange={e => set("endTime", e.target.value)}
+                  placeholder="SUN 23:59" className={inputCls} />
+              </div>
+            </div>
+            <div>
+              <Label>Registration Window</Label>
+              <input type="text" value={form.registrationWindow} onChange={e => set("registrationWindow", e.target.value)}
+                placeholder="e.g. MON 00:00 or 24h" className={inputCls} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Proof Policy</Label>
+                <select value={form.proofPolicy} onChange={e => set("proofPolicy", e.target.value)} className={inputCls}>
+                  <option value="BY_SUBSCRIPTION">BY_SUBSCRIPTION</option>
+                </select>
+              </div>
+              <div>
+                <Label>Reward Policy</Label>
+                <select value={form.rewardPolicy} onChange={e => set("rewardPolicy", e.target.value)} className={inputCls}>
+                  <option value="BY_MODE">BY_MODE</option>
+                </select>
+              </div>
+            </div>
+
+            {formError && (
+              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{formError}</p>
+            )}
+
+            <div className="flex gap-3 pt-2 border-t-2 border-gray-100">
+              <button type="button" onClick={onClose} disabled={saving}
+                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
+              <button type="submit" disabled={saving}
+                className={`${btnBase} flex-1 justify-center bg-purple-200 text-purple-900`}>
+                {saving ? <><Spinner size={13} /> Saving…</> : <><SaveIcon /> {isEdit ? "Update" : "Create"}</>}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ── BOSS MODES MODAL ──────────────────────────────────────────────────────────
+interface BossModesModalProps {
+  templateId: number;
+  templateName: string;
+  onClose: () => void;
+  onAlert: (a: { type: "success" | "error"; message: string }) => void;
+}
+
+const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossModesModalProps) => {
+  const [tpl, setTpl] = useState<BossTemplateDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<BossModePayload>({ ...EMPTY_MODE });
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const fetchTpl = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminBossApi.getTemplateById(templateId);
+      if (res.success && res.data) setTpl(res.data);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  }, [templateId]);
+
+  useEffect(() => { fetchTpl(); }, [fetchTpl]);
+
+  const setN = (k: keyof BossModePayload, v: number) => setForm(f => ({ ...f, [k]: v }));
+  const setS = (k: keyof BossModePayload, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const toggleProof = (type: string) => setForm(f => ({
+    ...f,
+    allowedProofTypes: f.allowedProofTypes.includes(type)
+      ? f.allowedProofTypes.filter(t => t !== type)
+      : [...f.allowedProofTypes, type],
+  }));
+
+  const handleAddMode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.allowedProofTypes.length === 0) { setFormError("Select at least one proof type."); return; }
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      await adminBossApi.addBossMode(templateId, form);
+      onAlert({ type: "success", message: `${form.mode} mode added to "${templateName}"!` });
+      await fetchTpl();
+      setForm({ ...EMPTY_MODE });
+    } catch (err) {
+      setFormError(errMsg(err) ?? "Failed to add boss mode.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-gray-50 shrink-0 rounded-t-3xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-orange-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
+              <SettingsIcon />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-gray-900">Configure Boss Modes</h2>
+              <p className="text-xs font-medium text-gray-500">{templateName}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-red-50 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+            <XIcon />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+
+          {/* ── LEFT: CURRENT MODES ───────────────────────────────────── */}
+          <div className="lg:w-[52%] border-b-2 lg:border-b-0 lg:border-r-2 border-black/10 overflow-y-auto p-5 space-y-3">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-white pb-2">
+              Current Modes ({tpl?.modes.length ?? 0} / 3)
+            </p>
+
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-gray-400">
+                <Spinner size={24} /><span className="text-sm font-bold">Loading…</span>
+              </div>
+            ) : !tpl || tpl.modes.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12 text-gray-400">
+                <span className="text-4xl">🐉</span>
+                <p className="font-black text-gray-500">No modes configured yet</p>
+                <p className="text-xs font-medium">Add modes using the form →</p>
+              </div>
+            ) : (
+              tpl.modes.map(m => {
+                const mc = MODE_CFG[m.mode] ?? MODE_CFG.EASY;
+                return (
+                  <div key={m.mode}
+                    className={`border-2 ${mc.cardBorder} ${mc.cardBg} rounded-2xl p-4 shadow-[3px_3px_0_0_#1A1D20]`}>
+                    {/* Mode header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{mc.emoji}</span>
+                        <div>
+                          <ModeBadge mode={m.mode} />
+                          <p className="text-[10px] font-bold text-gray-500 mt-0.5">Min: <TierBadge tier={m.minPackage as PackageTier} /></p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Boss HP</p>
+                        <p className="text-xl font-black text-gray-900">{m.bossHp.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">👥 Party</span>
+                        <span className="font-black text-gray-800">{m.partyMin} – {m.partyMax}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">⚡ Max Dmg/Q</span>
+                        <span className="font-black text-gray-800">{m.maxDamagePerQuest.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">📊 Quests/Day</span>
+                        <span className="font-black text-gray-800">{m.maxQuestPerMemberPerDay}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">💰 Gold/Q</span>
+                        <span className="font-black text-gray-800">{m.mGoldRewardCapPerQuest} mG</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">📅 Quests/Wk</span>
+                        <span className="font-black text-gray-800">{m.maxPartyQuestPerWeek}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">⏰ Deadline</span>
+                        <span className="font-black text-gray-800 text-[10px]">{m.deadlineMax}</span>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-black/10">
+                      <RewardBadge tier={m.rewardTier} />
+                      <div className="flex items-center gap-1 flex-wrap justify-end">
+                        {m.allowedProofTypes.map(p => (
+                          <span key={p} className="text-[10px] font-bold px-1.5 py-0.5 bg-white border border-gray-300 rounded-full text-gray-600">{p}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* ── RIGHT: ADD MODE FORM ──────────────────────────────────── */}
+          <div className="lg:w-[48%] overflow-y-auto p-5">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+              {tpl && tpl.modes.length >= 3 ? "All 3 Modes Configured ✅" : "Add New Mode"}
+            </p>
+
+            {tpl && tpl.modes.length >= 3 ? (
+              <div className="flex flex-col items-center gap-3 py-12 text-gray-400">
+                <span className="text-4xl">✅</span>
+                <p className="font-black text-gray-600">EASY, NORMAL & HARD configured!</p>
+                <p className="text-xs font-medium text-center">All difficulty modes are set up for this boss template.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleAddMode} className="space-y-3">
+                {/* mode + minTier */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Mode *</Label>
+                    <select value={form.mode}
+                      onChange={e => setS("mode", e.target.value)}
+                      className={inputCls}>
+                      {(["EASY", "NORMAL", "HARD"] as BossModeType[]).map(m => (
+                        <option key={m} value={m}
+                          disabled={tpl?.modes.some(ex => ex.mode === m)}>
+                          {m}{tpl?.modes.some(ex => ex.mode === m) ? " ✓" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label>Min Tier *</Label>
+                    <select value={form.minTier}
+                      onChange={e => setS("minTier", e.target.value)}
+                      className={inputCls}>
+                      {(["FREE", "BASIC", "PREMIUM"] as PackageTier[]).map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* partyMin + partyMax */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Party Min *</Label>
+                    <input type="number" min={1} value={form.partyMin}
+                      onChange={e => setN("partyMin", Number(e.target.value))} className={inputCls} />
+                  </div>
+                  <div>
+                    <Label>Party Max *</Label>
+                    <input type="number" min={1} value={form.partyMax}
+                      onChange={e => setN("partyMax", Number(e.target.value))} className={inputCls} />
+                  </div>
+                </div>
+
+                {/* bossHp */}
+                <div>
+                  <Label>Boss HP *</Label>
+                  <input type="number" min={1} value={form.bossHp}
+                    onChange={e => setN("bossHp", Number(e.target.value))} className={inputCls} />
+                </div>
+
+                {/* quest limits */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Max Quests/Member/Day</Label>
+                    <input type="number" min={1} value={form.maxQuestPerMemberPerDay}
+                      onChange={e => setN("maxQuestPerMemberPerDay", Number(e.target.value))} className={inputCls} />
+                  </div>
+                  <div>
+                    <Label>Max Party Quests/Week</Label>
+                    <input type="number" min={1} value={form.maxPartyQuestPerWeek}
+                      onChange={e => setN("maxPartyQuestPerWeek", Number(e.target.value))} className={inputCls} />
+                  </div>
+                </div>
+
+                {/* damage + gold */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Max Damage/Quest</Label>
+                    <input type="number" min={1} value={form.maxDamagePerQuest}
+                      onChange={e => setN("maxDamagePerQuest", Number(e.target.value))} className={inputCls} />
+                  </div>
+                  <div>
+                    <Label>Gold Reward Cap/Quest (mG)</Label>
+                    <input type="number" min={0} value={form.mGoldRewardCapPerQuest}
+                      onChange={e => setN("mGoldRewardCapPerQuest", Number(e.target.value))} className={inputCls} />
+                  </div>
+                </div>
+
+                {/* allowedProofTypes */}
+                <div>
+                  <Label>Allowed Proof Types *</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {PROOF_TYPES.map(pt => {
+                      const checked = form.allowedProofTypes.includes(pt);
+                      return (
+                        <button key={pt} type="button" onClick={() => toggleProof(pt)}
+                          className={`px-3 py-1.5 text-xs font-black border-2 rounded-full transition-all ${
+                            checked
+                              ? "bg-purple-200 border-purple-500 text-purple-900 shadow-[2px_2px_0_0_#1A1D20]"
+                              : "bg-white border-gray-300 text-gray-500 hover:border-gray-500"
+                          }`}>
+                          {checked ? "✓ " : ""}{pt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* rewardTier */}
+                <div>
+                  <Label>Reward Tier *</Label>
+                  <select value={form.rewardTier}
+                    onChange={e => setS("rewardTier", e.target.value)}
+                    className={inputCls}>
+                    {(["BASIC", "STANDARD", "PREMIUM"] as RewardTierType[]).map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {formError && (
+                  <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{formError}</p>
+                )}
+
+                <div className="flex gap-3 pt-1">
+                  <button type="button" onClick={onClose} disabled={submitting}
+                    className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Close</button>
+                  <button type="submit" disabled={submitting}
+                    className={`${btnBase} flex-1 justify-center bg-orange-200 text-orange-900`}>
+                    {submitting ? <><Spinner size={13} /> Adding…</> : <><PlusIcon /> Add Mode</>}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ── STATUS CONFIRM MODAL ──────────────────────────────────────────────────────
+interface StatusConfirmModalProps {
+  templateId: number;
+  templateName: string;
+  action: "publish" | "archive";
+  onClose: () => void;
+  onAlert: (a: { type: "success" | "error"; message: string }) => void;
+  onSuccess: () => void;
+}
+
+const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert, onSuccess }: StatusConfirmModalProps) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await adminBossApi.changeStatus(templateId, action);
+      onAlert({ type: "success", message: `"${templateName}" ${action === "publish" ? "published" : "archived"}!` });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      onAlert({ type: "error", message: errMsg(err) ?? `Failed to ${action} template.` });
+      onClose();
+    }
+  };
+
+  const isPublish = action === "publish";
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">{isPublish ? "🚀" : "📦"}</span>
+          <div>
+            <h3 className="font-black text-gray-900">{isPublish ? "Publish Template?" : "Archive Template?"}</h3>
+            <p className="text-xs font-medium text-gray-500 mt-0.5">"{templateName}"</p>
+          </div>
+        </div>
+        <p className="text-sm font-medium text-gray-700">
+          {isPublish
+            ? "This will make the boss event visible and active for players."
+            : "This will hide the template from players. It can no longer be activated."}
+        </p>
+        {!isPublish && (
+          <div className="flex items-start gap-2 px-3 py-2.5 bg-orange-50 border-2 border-orange-300 rounded-2xl">
+            <span className="text-sm shrink-0">⚠️</span>
+            <p className="text-xs font-semibold text-orange-800">Archiving is permanent. You cannot restore an archived template.</p>
+          </div>
+        )}
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} disabled={loading}
+            className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
+          <button onClick={handleConfirm} disabled={loading}
+            className={`${btnBase} flex-1 justify-center ${isPublish ? "bg-green-300 text-green-900" : "bg-orange-300 text-orange-900"}`}>
+            {loading ? <><Spinner size={13} /> {isPublish ? "Publishing…" : "Archiving…"}</> : isPublish ? "🚀 Publish" : "📦 Archive"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
+interface StatusConfirmState {
+  templateId: number;
+  templateName: string;
+  action: "publish" | "archive";
+}
+
+export default function AdminBossManagement() {
+  // ── ALERT ─────────────────────────────────────────────────────────────────
+  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  useEffect(() => {
+    if (!alert) return;
+    const t = setTimeout(() => setAlert(null), 4000);
+    return () => clearTimeout(t);
+  }, [alert]);
+
+  // ── DATA ──────────────────────────────────────────────────────────────────
+  const [templates, setTemplates] = useState<BossTemplateDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+
+  const fetchTemplates = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await adminBossApi.getTemplates({
+        status: statusFilter || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      if (res.success && res.data) setTemplates(res.data);
+      else setError("Failed to load templates.");
+    } catch (err) {
+      setError(errMsg(err) ?? "Network error fetching templates.");
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, page]);
+
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  const handleStatusFilterChange = (s: string) => { setStatusFilter(s); setPage(1); };
+
+  const hasMore = templates.length >= PAGE_SIZE;
+
+  // ── MODALS ────────────────────────────────────────────────────────────────
+  const [editingTemplate, setEditingTemplate] = useState<BossTemplateDto | null | "new">(null);
+  const [modesTemplate, setModesTemplate] = useState<{ id: number; name: string } | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<StatusConfirmState | null>(null);
+
+  return (
+    <>
+      <PageMeta title="Weekly Boss Management" description="Manage weekly boss templates and difficulty modes" />
+      <PageBreadcrumb pageTitle="Weekly Boss" />
+
+      {/* Alert Toast */}
+      {alert && (
+        <div className={`fixed top-4 right-4 z-99998 flex items-center gap-3 px-5 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[4px_4px_0_0_#1A1D20] ${
+          alert.type === "success" ? "bg-green-300 text-green-900" : "bg-red-300 text-red-900"
+        }`}>
+          {alert.type === "success" ? "✅" : "❌"} {alert.message}
+        </div>
+      )}
+
+      <div className="space-y-6 p-1">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-purple-300 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
+              <SwordsIcon size={22} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-gray-900">Weekly Boss Templates</h1>
+              <p className="text-sm text-gray-500 font-medium mt-0.5">Configure boss events, difficulty modes, and reward tiers.</p>
+            </div>
+          </div>
+          <button onClick={() => setEditingTemplate("new")}
+            className={`${btnBase} bg-purple-200 text-purple-900 shrink-0`}>
+            <PlusIcon /> New Boss Template
+          </button>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
+          <span className="text-sm font-black text-gray-700">🔍 Status:</span>
+          <select value={statusFilter} onChange={e => handleStatusFilterChange(e.target.value)}
+            className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer">
+            <option value="">All Statuses</option>
+            <option value="Draft">📝 Draft</option>
+            <option value="Published">🟢 Published</option>
+            <option value="Archived">📦 Archived</option>
+          </select>
+          {statusFilter && (
+            <button onClick={() => handleStatusFilterChange("")}
+              className="px-3 py-1.5 text-xs font-black border-2 border-black rounded-full bg-gray-100 hover:bg-gray-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+              ✕ Clear
+            </button>
+          )}
+          <button onClick={fetchTemplates} disabled={loading}
+            className={`${btnBase} ml-auto bg-purple-100 text-purple-900 py-1.5`}>
+            {loading ? <><Spinner size={13} /> Loading…</> : "↺ Refresh"}
+          </button>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
+          {error ? (
+            <div className="flex flex-col items-center gap-3 py-16">
+              <span className="text-4xl">⚠️</span>
+              <p className="font-black text-gray-700">Failed to load templates</p>
+              <p className="text-sm text-gray-400">{error}</p>
+              <button onClick={fetchTemplates} className={`${btnBase} bg-red-100 text-red-800`}>↺ Retry</button>
+            </div>
+          ) : loading && templates.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
+              <Spinner size={32} /><p className="font-bold text-sm">Loading boss templates…</p>
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
+              <span className="text-5xl">🐉</span>
+              <p className="font-black text-lg text-gray-500">No boss templates yet</p>
+              <p className="text-sm font-medium">Create your first weekly boss event!</p>
+              <button onClick={() => setEditingTemplate("new")} className={`${btnBase} bg-purple-200 text-purple-900`}>
+                <PlusIcon /> New Template
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-gray-200 bg-gray-50/60">
+                    {["#", "Theme Name", "Active Period", "Modes", "Status", "Actions"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {templates.map((t, idx) => (
+                    <tr key={t.bossTemplateId} className="hover:bg-purple-50/30 transition-colors">
+                      <td className="px-4 py-3 text-xs font-black text-gray-400">
+                        {(page - 1) * PAGE_SIZE + idx + 1}
+                      </td>
+                      <td className="px-4 py-4 max-w-55">
+                        <p className="font-black text-gray-900 truncate">{t.themeName}</p>
+                        <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">{t.description || "No description"}</p>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <p className="text-xs font-bold text-gray-700">{fmtDate(t.activeWeekStart)}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">→ {fmtDate(t.activeWeekEnd)}</p>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {t.modes.length === 0 ? (
+                            <span className="text-xs text-gray-400 font-medium">None</span>
+                          ) : (
+                            t.modes.map(m => <ModeBadge key={m.mode} mode={m.mode} />)
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge status={t.status} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Edit */}
+                          <button title="Edit template info"
+                            onClick={() => setEditingTemplate(t)}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-blue-800">
+                            <PencilIcon />
+                          </button>
+                          {/* Configure Modes */}
+                          <button title="Configure boss modes"
+                            onClick={() => setModesTemplate({ id: t.bossTemplateId, name: t.themeName })}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-orange-800">
+                            <SettingsIcon />
+                          </button>
+                          {/* Publish */}
+                          {t.status === "Draft" && (
+                            <button title="Publish template"
+                              onClick={() => setConfirmStatus({ templateId: t.bossTemplateId, templateName: t.themeName, action: "publish" })}
+                              className="px-2.5 py-1 flex items-center gap-1 text-[10px] font-black rounded-full border-2 border-black bg-green-100 hover:bg-green-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-green-800 whitespace-nowrap">
+                              🚀 Publish
+                            </button>
+                          )}
+                          {/* Archive */}
+                          {t.status === "Published" && (
+                            <button title="Archive template"
+                              onClick={() => setConfirmStatus({ templateId: t.bossTemplateId, templateName: t.themeName, action: "archive" })}
+                              className="px-2.5 py-1 flex items-center gap-1 text-[10px] font-black rounded-full border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-orange-800 whitespace-nowrap">
+                              📦 Archive
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {!error && (templates.length > 0 || page > 1) && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-500">Page {page} · {templates.length} template{templates.length !== 1 ? "s" : ""}</p>
+            <div className="flex gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1 || loading}
+                className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}><ChevLeft /> Prev</button>
+              <button onClick={() => setPage(p => p + 1)} disabled={!hasMore || loading}
+                className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}>Next <ChevRight /></button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── PORTALS ─────────────────────────────────────────────────────────── */}
+      {editingTemplate !== null && (
+        <TemplateFormModal
+          template={editingTemplate === "new" ? null : editingTemplate}
+          onClose={() => setEditingTemplate(null)}
+          onAlert={setAlert}
+          onSuccess={fetchTemplates}
+        />
+      )}
+      {modesTemplate && (
+        <BossModesModal
+          templateId={modesTemplate.id}
+          templateName={modesTemplate.name}
+          onClose={() => setModesTemplate(null)}
+          onAlert={setAlert}
+        />
+      )}
+      {confirmStatus && (
+        <StatusConfirmModal
+          {...confirmStatus}
+          onClose={() => setConfirmStatus(null)}
+          onAlert={setAlert}
+          onSuccess={fetchTemplates}
+        />
+      )}
+    </>
+  );
+}

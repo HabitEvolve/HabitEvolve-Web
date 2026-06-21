@@ -12,7 +12,7 @@ export interface LoginPayload {
 }
 
 
-// BASE RESPONSES (Cập nhật thêm errors & statusCode)
+// BASE RESPONSES
 
 export interface ApiResponse<T> {
     success: boolean;
@@ -37,8 +37,9 @@ export interface PaginatedApiResponse<T> {
 }
 
 // USER MANAGEMENT TYPES
+// Matches BE UserStatus enum: Active, Inactive, Banned, Deleted
 export type UserRole = "ADMIN" | "MENTOR" | "PLAYER" | string;
-export type UserStatus = "Active" | "Banned" | "Deleted" | string;
+export type UserStatus = "Active" | "Inactive" | "Banned" | "Deleted" | string;
 
 export interface UserItem {
     userId: number;
@@ -52,44 +53,29 @@ export interface UserItem {
     roles: UserRole[];
 }
 
-// Các Params dùng để Lọc/Tìm kiếm (Query Parameters) cho GET /admin/users
+// Query params for GET /admin/users
+// BE param: roleCode (not role)
 export interface GetUsersQueryParams {
     pageNumber?: number;
     pageSize?: number;
     search?: string;
     status?: UserStatus;
-    role?: UserRole;
+    roleCode?: UserRole;
 }
 
-// --- Các Payload (Request Body) cho Create/Update ---
-
-// Payload cho PUT /admin/users/{userId}
-export interface UpdateUserPayload {
-    username?: string;
-    email?: string;
-}
-
-// Payload cho PATCH /admin/users/{userId}/status (Đã khớp với dữ liệu bạn cung cấp)
+// Payload for PATCH /admin/users/{userId}/status
+// BE ChangeStatusRequest: Status (required), Reason (nullable)
 export interface UpdateUserStatusPayload {
     status: string;
-    reason: string;
+    reason?: string;
 }
 
-// Payload cho POST /admin/users (Tùy thuộc backend yêu cầu, có thể là vầy)
-export interface CreateAdminUserPayload {
-    username: string;
-    email: string;
-    role: string;
-    password?: string;
-}
-
-// Payload cho POST /admin/users/{userId}/roles
+// Payload for POST /admin/users/{userId}/roles
 export interface AssignRolePayload {
     roleCode: string;
 }
 
 // PLAYER PROFILE TYPES
-// Mô hình dữ liệu trả về từ GET /profile/me
 export interface PlayerProfile {
     userId: number;
     username: string;
@@ -108,7 +94,6 @@ export interface PlayerProfile {
     updatedAt: string | null;
 }
 
-// Payload (dữ liệu gửi lên) cho PUT /api/profile/update
 export interface UpdatePlayerProfilePayload {
     userId: number;
     avatarUrl?: string;
@@ -118,10 +103,9 @@ export interface UpdatePlayerProfilePayload {
 
 // PARTY MANAGEMENT TYPES (MENTOR)
 export type JoinPolicy = "PUBLIC" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string;
-export type PartyStatus = "Active" | "Inactive" | "Deleted" | string;
+export type PartyStatus = "Active" | "Disbanded" | "Archived" | string;
 export type JoinRequestStatus = "Pending" | "Approved" | "Rejected" | string;
 
-// Payload cập nhật Party
 export interface UpdatePartyPayload {
     name?: string;
     description?: string;
@@ -129,7 +113,6 @@ export interface UpdatePartyPayload {
     mentorUserId?: number;
 }
 
-// Payload tạo Party mới
 export interface CreatePartyPayload {
     mentorUserId: number;
     name: string;
@@ -137,7 +120,6 @@ export interface CreatePartyPayload {
     joinPolicy: JoinPolicy;
 }
 
-// Model Party hiển thị cho Mentor
 export interface PartyItem {
     partyId: number;
     mentorUserId: number;
@@ -148,11 +130,11 @@ export interface PartyItem {
     inviteCode: string;
     status: PartyStatus;
     memberCount: number;
+    maxMembers: number;
     createdAt: string;
     updatedAt: string | null;
 }
 
-// Model Yêu cầu tham gia (Join Request)
 export interface JoinRequestItem {
     requestId: number;
     partyId: number;
@@ -165,10 +147,11 @@ export interface JoinRequestItem {
     processedAt: string | null;
 }
 
-// Model Thành viên trong Party (Dự đoán cấu trúc cơ bản)
 export interface PartyMember {
+    partyMemberId: number;
     userId: number;
     username: string;
     role?: string;
+    status?: string;
     joinedAt?: string;
 }

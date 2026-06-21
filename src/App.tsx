@@ -26,6 +26,8 @@ import AdminGoalManagement from "./pages/AdminGoalManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
 import AdminPracticalTaskManagement from "./pages/AdminPracticalTaskManagement";
 import AdminCourtManagement from "./pages/AdminCourtManagement";
+import AdminBossManagement from "./pages/AdminBossManagement";
+import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 
 export default function App() {
   return (
@@ -46,10 +48,12 @@ export default function App() {
             <Route path="/user-management" element={<UserManagement />} />
             <Route path="/party-management" element={<PartyManagement />} />
             <Route path="/target-rules" element={<TargetRuleManagement />} />
+            <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
             <Route path="/goal-management" element={<AdminGoalManagement />} />
             <Route path="/questionnaires" element={<QuestionnaireManagement />} />
             <Route path="/practical-tasks" element={<AdminPracticalTaskManagement />} />
             <Route path="/court-management" element={<AdminCourtManagement />} />
+            <Route path="/boss-management" element={<AdminBossManagement />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 

@@ -1,39 +1,55 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/api.types';
-import { PracticalTaskDto, PracticalTaskPayload } from '../types/adminPracticalTask.types';
+import {
+    PracticalTaskTemplateDto,
+    TaskTemplateDto,
+    TaskTemplatePayload
+} from '../types/adminPracticalTask.types';
 
-// TODO: Đổi URL này nếu tài liệu Backend (Swagger) của bạn ghi khác
-const TASK_URL = '/admin/practical-task-templates';
-
+// ==========================================
+// READ-ONLY: Practical Task Templates per Goal
+// GET /admin/practical-task-templates?goalId=X
+// ==========================================
 export const adminPracticalTaskApi = {
-    // 1. Lấy danh sách nhiệm vụ (có hỗ trợ phân trang và tìm kiếm)
-    // Bắt buộc params phải có goalId
-    getTasks: async (params: { goalId: number; page?: number; pageSize?: number; search?: string; isActive?: boolean }): Promise<ApiResponse<PracticalTaskDto[]>> => {
-        const res = await axiosClient.get<ApiResponse<PracticalTaskDto[]>>(TASK_URL, { params });
+    // Returns practical task templates assigned to a specific goal (read-only)
+    getTasks: async (goalId: number): Promise<ApiResponse<PracticalTaskTemplateDto[]>> => {
+        const res = await axiosClient.get<ApiResponse<PracticalTaskTemplateDto[]>>(
+            '/admin/practical-task-templates',
+            { params: { goalId } }
+        );
+        return res.data;
+    },
+};
+
+// ==========================================
+// CRUD: Generic Task Templates
+// /admin/task-templates
+// ==========================================
+export const adminTaskTemplateApi = {
+    // GET /admin/task-templates?activeOnly=bool
+    getAll: async (params?: { activeOnly?: boolean }): Promise<ApiResponse<TaskTemplateDto[]>> => {
+        const res = await axiosClient.get<ApiResponse<TaskTemplateDto[]>>('/admin/task-templates', { params });
         return res.data;
     },
 
-    // 2. Lấy chi tiết 1 nhiệm vụ (nếu cần)
-    getTaskById: async (id: number): Promise<ApiResponse<PracticalTaskDto>> => {
-        const res = await axiosClient.get<ApiResponse<PracticalTaskDto>>(`${TASK_URL}/${id}`);
+    // POST /admin/task-templates
+    create: async (payload: TaskTemplatePayload): Promise<ApiResponse<TaskTemplateDto>> => {
+        const res = await axiosClient.post<ApiResponse<TaskTemplateDto>>('/admin/task-templates', payload);
         return res.data;
     },
 
-    // 3. Tạo mới
-    createTask: async (payload: PracticalTaskPayload): Promise<ApiResponse<PracticalTaskDto>> => {
-        const res = await axiosClient.post<ApiResponse<PracticalTaskDto>>(TASK_URL, payload);
+    // PUT /admin/task-templates/{id}
+    update: async (id: number, payload: TaskTemplatePayload): Promise<ApiResponse<TaskTemplateDto>> => {
+        const res = await axiosClient.put<ApiResponse<TaskTemplateDto>>(`/admin/task-templates/${id}`, payload);
         return res.data;
     },
 
-    // 4. Cập nhật
-    updateTask: async (id: number, payload: PracticalTaskPayload): Promise<ApiResponse<any>> => {
-        const res = await axiosClient.put<ApiResponse<any>>(`${TASK_URL}/${id}`, payload);
-        return res.data;
-    },
-
-    // 5. Xóa (hoặc vô hiệu hóa)
-    deleteTask: async (id: number): Promise<ApiResponse<any>> => {
-        const res = await axiosClient.delete<ApiResponse<any>>(`${TASK_URL}/${id}`);
+    // PATCH /admin/task-templates/{id}/status
+    toggleStatus: async (id: number, isActive: boolean): Promise<ApiResponse<TaskTemplateDto>> => {
+        const res = await axiosClient.patch<ApiResponse<TaskTemplateDto>>(
+            `/admin/task-templates/${id}/status`,
+            isActive
+        );
         return res.data;
     }
 };

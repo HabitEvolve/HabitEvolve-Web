@@ -2,9 +2,11 @@
 // MODULE 4: GOAL & QUESTIONNAIRE (ADMIN)
 // ==========================================
 
-export type QuestionType = "SingleChoice" | "MultipleChoice" | "NumberInput" | "TextInput" | "RatingScale" | "YesNo";
+// Matches BE QuestionType enum (PascalCase)
+export type QuestionType = "SingleChoice" | "MultipleChoice" | "NumberInput" | "TextInput" | "RatingScale" | "YesNo" | "Time";
 
 // 1. Goal Category
+// Matches BE CategoryDto
 export interface GoalCategoryDto {
     categoryId: number;
     categoryCode: string;
@@ -14,6 +16,7 @@ export interface GoalCategoryDto {
     displayOrder: number;
     isActive: boolean;
     createdAt: string;
+    updatedAt: string | null;
 }
 
 export interface GoalCategoryPayload {
@@ -26,34 +29,43 @@ export interface GoalCategoryPayload {
 }
 
 // 2. Goal
+// Matches BE GoalDto — NOTE: no categoryId, only categoryCode
+export type MeasurementType = "CHECK_IN" | "COUNTABLE" | "FREQUENCY_BASED" | "QUALITY_BASED" | "SCHEDULE_BASED" | "TIME_BASED" | string;
+
 export interface GoalDto {
     goalId: number;
+    categoryCode: string;
     goalCode: string;
     goalName: string;
+    measurementType: MeasurementType;
     description: string | null;
-    categoryId: number;
-    categoryCode: string; // Trả về kèm từ BE để hiển thị
+    displayOrder: number;
     isActive: boolean;
     createdAt: string;
+    updatedAt: string | null;
 }
 
+// Payload for POST /admin/goals & PUT /admin/goals/{id}
+// Uses categoryCode (string), not categoryId (number)
 export interface GoalPayload {
     goalCode: string;
     goalName: string;
     description?: string;
-    categoryId: number;
+    categoryCode: string;
+    measurementType: MeasurementType;
+    displayOrder: number;
     isActive: boolean;
 }
 
 // 3. Questionnaire Template
+// Matches BE QuestionnaireTemplateDto — no version, no questionCount
 export interface QuestionnaireTemplateDto {
     templateId: number;
     templateName: string;
     description: string | null;
-    version: number;
     isActive: boolean;
-    questionCount: number;
     createdAt: string;
+    updatedAt: string | null;
 }
 
 export interface QuestionnaireTemplatePayload {
@@ -62,6 +74,7 @@ export interface QuestionnaireTemplatePayload {
 }
 
 // 4. Question & Options
+// Matches BE QuestionDto and QuestionOptionDto
 export interface QuestionOptionDto {
     optionId: number;
     questionId: number;
@@ -82,22 +95,29 @@ export interface QuestionDto {
     options: QuestionOptionDto[];
 }
 
-// 5. Liên kết Goal <-> Template
+// 5. Goal <-> Template Binding
+// Matches BE GoalQuestionnaireDto — no version field
 export interface GoalQuestionnaireDto {
     goalQuestionnaireId: number;
     goalId: number;
     templateId: number;
-    templateName: string;
-    version: number;
+    templateName: string | null;
     isActive: boolean;
     effectiveFrom: string;
+    createdAt: string;
 }
-// TARGET CALCULATION RULES TYPES (MODULE 4B)
 
-export type MeasurementType = "CHECK_IN" | "COUNTABLE" | "FREQUENCY_BASED" | "QUALITY_BASED" | "SCHEDULE_BASED" | "TIME_BASED" | string;
+// ==========================================
+// TARGET CALCULATION RULES (MODULE 4B)
+// ==========================================
+
+// Matches BE TargetCalculationMethod enum (PascalCase)
+export type CalculationMethod = "None" | "PercentageReduce" | "PercentageIncrease" | "FixedSubtract" | "FixedAdd" | string;
+
+// Matches BE RuleDifficulty — used in DTO responses only
 export type RuleDifficulty = "Any" | "Easy" | "Normal" | "Hard" | string;
-export type CalculationMethod = "None" | "PercentageReduce" | "FixedAdd" | "FixedSubtract" | string;
 
+// Matches BE TargetCalculationRuleDto
 export interface TargetCalculationRuleDto {
     ruleId: number;
     measurementType: MeasurementType;
@@ -111,15 +131,13 @@ export interface TargetCalculationRuleDto {
     isActive: boolean;
 }
 
-// Payload dùng cho thao tác Tạo mới (POST) hoặc Cập nhật (PUT)
-export interface TargetCalculationRulePayload {
-    measurementType: MeasurementType;
-    difficulty: RuleDifficulty;
+// Payload for PUT /admin/target-calculation-rules/{id}
+// Matches BE UpdateRuleRequest exactly — measurementType and difficulty are NOT updatable
+export interface UpdateRulePayload {
     calculationMethod: CalculationMethod;
     changeValue: number;
     minValue: number | null;
     maxValue: number | null;
-    description?: string;
+    description: string;
     example?: string;
-    isActive: boolean;
 }

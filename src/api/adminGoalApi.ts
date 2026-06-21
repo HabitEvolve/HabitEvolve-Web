@@ -4,7 +4,7 @@ import {
     GoalCategoryDto, GoalCategoryPayload,
     GoalDto, GoalPayload,
     QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
-    QuestionDto, QuestionOptionDto, GoalQuestionnaireDto
+    QuestionDto, GoalQuestionnaireDto
 } from '../types/adminGoal.types';
 
 const ADMIN_URL = '/admin';
@@ -12,8 +12,10 @@ const ADMIN_URL = '/admin';
 export const adminGoalApi = {
     // ==========================================
     // 1. GOAL CATEGORIES
+    // Controller: GoalCategoryController [Route("api/goal-categories")]
+    // Admin CRUD: [Route("api/admin/goal-categories")]
     // ==========================================
-    getCategories: async (params?: { activeOnly?: boolean; page?: number; pageSize?: number; search?: string }): Promise<ApiResponse<GoalCategoryDto[]>> => {
+    getCategories: async (params?: { activeOnly?: boolean }): Promise<ApiResponse<GoalCategoryDto[]>> => {
         const res = await axiosClient.get(`/goal-categories`, { params });
         return res.data;
     },
@@ -21,31 +23,52 @@ export const adminGoalApi = {
         const res = await axiosClient.post(`${ADMIN_URL}/goal-categories`, payload);
         return res.data;
     },
+    // BE UpdateCategoryCommand requires CategoryId in body to match route — injected here
     updateCategory: async (id: number, payload: GoalCategoryPayload): Promise<ApiResponse<GoalCategoryDto>> => {
-        const res = await axiosClient.put(`${ADMIN_URL}/goal-categories/${id}`, payload);
+        const res = await axiosClient.put(`${ADMIN_URL}/goal-categories/${id}`, { ...payload, categoryId: id });
+        return res.data;
+    },
+    toggleCategoryStatus: async (id: number, isActive: boolean): Promise<ApiResponse<GoalCategoryDto>> => {
+        const res = await axiosClient.patch(`${ADMIN_URL}/goal-categories/${id}/status`, isActive);
         return res.data;
     },
 
     // ==========================================
     // 2. GOALS
+    // Controller: GoalController [Route("api/goals")]  — NO admin prefix!
+    // CreateGoalCommand: CategoryCode, GoalCode, GoalName, MeasurementType, Description?, DisplayOrder, IsActive
+    // UpdateGoalCommand: GoalId, GoalName, MeasurementType, Description?, DisplayOrder, IsActive
+    //   (GoalCode and CategoryCode are NOT updatable)
     // ==========================================
-    getGoals: async (params?: { categoryCode?: string; page?: number; pageSize?: number; search?: string }): Promise<ApiResponse<GoalDto[]>> => {
+    getGoals: async (params?: { categoryCode?: string }): Promise<ApiResponse<GoalDto[]>> => {
         const res = await axiosClient.get(`/goals`, { params });
         return res.data;
     },
-    createGoal: async (payload: GoalPayload): Promise<ApiResponse<GoalDto>> => {
-        const res = await axiosClient.post(`${ADMIN_URL}/goals`, payload);
+    getGoalById: async (id: number): Promise<ApiResponse<GoalDto>> => {
+        const res = await axiosClient.get(`/goals/${id}`);
         return res.data;
     },
+    createGoal: async (payload: GoalPayload): Promise<ApiResponse<GoalDto>> => {
+        const res = await axiosClient.post(`/goals`, payload);
+        return res.data;
+    },
+    // BE UpdateGoalCommand requires GoalId in body to match route — injected here
+    // categoryCode and goalCode are excluded as they're not in UpdateGoalCommand
     updateGoal: async (id: number, payload: GoalPayload): Promise<ApiResponse<GoalDto>> => {
-        const res = await axiosClient.put(`${ADMIN_URL}/goals/${id}`, payload);
+        const { goalCode: _gc, categoryCode: _cc, ...updateFields } = payload;
+        const res = await axiosClient.put(`/goals/${id}`, { ...updateFields, goalId: id });
+        return res.data;
+    },
+    deleteGoal: async (id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`/goals/${id}`);
         return res.data;
     },
 
     // ==========================================
     // 3. QUESTIONNAIRE TEMPLATES
+    // Controller: QuestionnaireTemplateController [Route("api/admin/questionnaire-templates")]
     // ==========================================
-    getTemplates: async (params?: { activeOnly?: boolean; page?: number; pageSize?: number }): Promise<ApiResponse<QuestionnaireTemplateDto[]>> => {
+    getTemplates: async (params?: { activeOnly?: boolean }): Promise<ApiResponse<QuestionnaireTemplateDto[]>> => {
         const res = await axiosClient.get(`${ADMIN_URL}/questionnaire-templates`, { params });
         return res.data;
     },
@@ -53,16 +76,20 @@ export const adminGoalApi = {
         const res = await axiosClient.post(`${ADMIN_URL}/questionnaire-templates`, payload);
         return res.data;
     },
-    updateTemplate: async (id: number, payload: QuestionnaireTemplatePayload): Promise<ApiResponse<any>> => {
-        const res = await axiosClient.put(`${ADMIN_URL}/questionnaire-templates/${id}`, payload);
+    updateTemplate: async (id: number, payload: QuestionnaireTemplatePayload): Promise<ApiResponse<QuestionnaireTemplateDto>> => {
+        const res = await axiosClient.put(`${ADMIN_URL}/questionnaire-templates/${id}`, { ...payload, templateId: id });
+        return res.data;
+    },
+    toggleTemplateStatus: async (id: number, isActive: boolean): Promise<ApiResponse<QuestionnaireTemplateDto>> => {
+        const res = await axiosClient.patch(`${ADMIN_URL}/questionnaire-templates/${id}/status`, isActive);
         return res.data;
     },
 
     // ==========================================
     // 4. QUESTIONS & OPTIONS
     // ==========================================
-    getQuestionsByTemplate: async (templateId: number): Promise<ApiResponse<QuestionDto[]>> => {
-        const res = await axiosClient.get(`${ADMIN_URL}/questionnaire-templates/${templateId}/questions`);
+    getQuestionsByTemplate: async (templateId: number, params?: { activeOnly?: boolean }): Promise<ApiResponse<QuestionDto[]>> => {
+        const res = await axiosClient.get(`${ADMIN_URL}/questionnaire-templates/${templateId}/questions`, { params });
         return res.data;
     },
     createQuestion: async (templateId: number, payload: any): Promise<ApiResponse<QuestionDto>> => {
@@ -73,9 +100,25 @@ export const adminGoalApi = {
         const res = await axiosClient.put(`${ADMIN_URL}/questions/${questionId}`, payload);
         return res.data;
     },
+    deleteQuestion: async (questionId: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/questions/${questionId}`);
+        return res.data;
+    },
+    createQuestionOption: async (questionId: number, payload: any): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.post(`${ADMIN_URL}/questions/${questionId}/options`, payload);
+        return res.data;
+    },
+    updateQuestionOption: async (optionId: number, payload: any): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.put(`${ADMIN_URL}/question-options/${optionId}`, payload);
+        return res.data;
+    },
+    deleteQuestionOption: async (optionId: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/question-options/${optionId}`);
+        return res.data;
+    },
 
     // ==========================================
-    // 5. GOAL QUESTIONNAIRE (BINDING)
+    // 5. GOAL <-> TEMPLATE BINDING
     // ==========================================
     getGoalQuestionnaires: async (goalId: number): Promise<ApiResponse<GoalQuestionnaireDto[]>> => {
         const res = await axiosClient.get(`${ADMIN_URL}/goals/${goalId}/questionnaires`);
@@ -83,6 +126,10 @@ export const adminGoalApi = {
     },
     bindTemplateToGoal: async (goalId: number, templateId: number): Promise<ApiResponse<any>> => {
         const res = await axiosClient.post(`${ADMIN_URL}/goals/${goalId}/questionnaires`, { templateId });
+        return res.data;
+    },
+    activateGoalQuestionnaire: async (goalId: number, id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.patch(`${ADMIN_URL}/goals/${goalId}/questionnaires/${id}/activate`);
         return res.data;
     }
 };

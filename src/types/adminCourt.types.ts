@@ -1,7 +1,11 @@
+// ==========================================
+// MODULE 11: COMMUNITY COURT (ADMIN)
+// ==========================================
 
-// MODULE 23: COMMUNITY COURT (ADMIN)
-export type CourtCaseStatus = "Pending" | "ValidApprove" | "FraudReject" | "AdminOverride" | "Expired" | "Approved" | "Rejected";
+// Matches BE CourtCaseStatus enum exactly: Pending, Approved, Rejected, AdminResolved
+export type CourtCaseStatus = "Pending" | "Approved" | "Rejected" | "AdminResolved";
 
+// Matches BE CourtVoteDto
 export interface VoteDto {
     voteId: number;
     reviewerUserId: number;
@@ -12,16 +16,17 @@ export interface VoteDto {
     karmaEarned: number;
 }
 
+// Matches BE CourtCaseDto
 export interface CourtCaseDto {
     caseId: number;
     proofId: number;
-    questId: number;
+    questId: number | null;
     dailyTaskId: number | null;
     partyId: number | null;
     proofOwnerUserId: number;
     questTitleMasked: string;
     proofType: "PHOTO" | "VIDEO" | "GPS" | "SCREENSHOT" | string;
-    mediaUrls: string[]; // Mảng chứa ảnh/video
+    mediaUrls: string[];
     textNote: string | null;
     status: CourtCaseStatus;
     validVotes: number;
@@ -34,11 +39,14 @@ export interface CourtCaseDto {
     votes: VoteDto[];
 }
 
+// POST /admin/court/{caseId}/resolve
+// Matches BE AdminResolveRequest: Verdict (string), AdminNote (string?)
 export interface ResolveVerdictPayload {
     verdict: "Approved" | "Rejected";
-    adminNote: string;
+    adminNote?: string;
 }
 
+// Matches BE KarmaLeaderboardEntryDto
 export interface KarmaLeaderboardDto {
     userId: number;
     totalKarma: number;

@@ -16,7 +16,7 @@ import {
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import { House, User, Scale, Handshake, Goal, BadgeQuestionMark, CalendarCheck, Gavel } from "lucide-react";
+import { House, User, Scale, Handshake, Goal, BadgeQuestionMark, CalendarCheck, Gavel, Swords, Layers } from "lucide-react";
 
 type NavItem = {
   name: string;
@@ -48,15 +48,16 @@ const navItems: NavItem[] = [
     path: "/court-management",
   },
   {
-    icon: <Goal className="w-5 h-5" />,
-    name: "Goals & Categories",
-    path: "/goal-management",
-    sectionLabel: "PERSONALIZATION",
+    icon: <Swords className="w-5 h-5" />,
+    name: "Boss",
+    path: "/boss-management",
+    sectionLabel: "GAMEPLAY",
   },
   {
-    icon: <CalendarCheck className="w-5 h-5" />,
-    name: "Task Library",
-    path: "/practical-tasks",
+    icon: <Layers className="w-5 h-5" />,
+    name: "Goal Engine",
+    path: "/goal-engine",
+    sectionLabel: "PERSONALIZATION",
   },
   {
     icon: <BadgeQuestionMark className="w-5 h-5" />,

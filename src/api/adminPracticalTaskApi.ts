@@ -1,55 +1,40 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/api.types';
-import {
-    PracticalTaskTemplateDto,
-    TaskTemplateDto,
-    TaskTemplatePayload
-} from '../types/adminPracticalTask.types';
+import { AdminTaskTemplateDto, PracticalTaskPayload } from '../types/adminGoal.types';
+
+const BASE = '/admin/practical-task-templates';
 
 // ==========================================
-// READ-ONLY: Practical Task Templates per Goal
-// GET /admin/practical-task-templates?goalId=X
+// PRACTICAL TASK TEMPLATE CRUD
+// Controller: PracticalTaskTemplateController  [Route("api/admin/practical-task-templates")]
+//
+// BE returns AdminTaskTemplateDto (simplified) — NOT the full PracticalTaskTemplateDto
+// Create: POST body = CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?)
+// Update: PUT  body = UpdateTaskRequest(Title, Description?, VerificationType, IsActive)
 // ==========================================
 export const adminPracticalTaskApi = {
-    // Returns practical task templates assigned to a specific goal (read-only)
-    getTasks: async (goalId: number): Promise<ApiResponse<PracticalTaskTemplateDto[]>> => {
-        const res = await axiosClient.get<ApiResponse<PracticalTaskTemplateDto[]>>(
-            '/admin/practical-task-templates',
-            { params: { goalId } }
-        );
-        return res.data;
-    },
-};
-
-// ==========================================
-// CRUD: Generic Task Templates
-// /admin/task-templates
-// ==========================================
-export const adminTaskTemplateApi = {
-    // GET /admin/task-templates?activeOnly=bool
-    getAll: async (params?: { activeOnly?: boolean }): Promise<ApiResponse<TaskTemplateDto[]>> => {
-        const res = await axiosClient.get<ApiResponse<TaskTemplateDto[]>>('/admin/task-templates', { params });
+    // GET /admin/practical-task-templates?goalId={goalId}
+    getTasks: async (goalId: number): Promise<ApiResponse<AdminTaskTemplateDto[]>> => {
+        const res = await axiosClient.get<ApiResponse<AdminTaskTemplateDto[]>>(BASE, { params: { goalId } });
         return res.data;
     },
 
-    // POST /admin/task-templates
-    create: async (payload: TaskTemplatePayload): Promise<ApiResponse<TaskTemplateDto>> => {
-        const res = await axiosClient.post<ApiResponse<TaskTemplateDto>>('/admin/task-templates', payload);
+    // POST /admin/practical-task-templates
+    createTask: async (payload: PracticalTaskPayload & { goalId: number }): Promise<ApiResponse<AdminTaskTemplateDto>> => {
+        const res = await axiosClient.post<ApiResponse<AdminTaskTemplateDto>>(BASE, payload);
         return res.data;
     },
 
-    // PUT /admin/task-templates/{id}
-    update: async (id: number, payload: TaskTemplatePayload): Promise<ApiResponse<TaskTemplateDto>> => {
-        const res = await axiosClient.put<ApiResponse<TaskTemplateDto>>(`/admin/task-templates/${id}`, payload);
+    // PUT /admin/practical-task-templates/{id}
+    // BE UpdateTaskRequest: Title, Description?, VerificationType, IsActive (no GoalId in body)
+    updateTask: async (id: number, payload: Omit<PracticalTaskPayload, 'goalId'>): Promise<ApiResponse<AdminTaskTemplateDto>> => {
+        const res = await axiosClient.put<ApiResponse<AdminTaskTemplateDto>>(`${BASE}/${id}`, payload);
         return res.data;
     },
 
-    // PATCH /admin/task-templates/{id}/status
-    toggleStatus: async (id: number, isActive: boolean): Promise<ApiResponse<TaskTemplateDto>> => {
-        const res = await axiosClient.patch<ApiResponse<TaskTemplateDto>>(
-            `/admin/task-templates/${id}/status`,
-            isActive
-        );
+    // DELETE /admin/practical-task-templates/{id}
+    deleteTask: async (id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete<ApiResponse<any>>(`${BASE}/${id}`);
         return res.data;
-    }
+    },
 };

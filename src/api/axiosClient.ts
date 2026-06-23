@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import { triggerLogout } from './authBridge';
 
 const axiosClient = axios.create({
     // Tùy thuộc vào Vite (import.meta.env) hay CRA (process.env)
@@ -29,8 +30,7 @@ axiosClient.interceptors.response.use(
     },
     (error: AxiosError) => {
         if (error.response?.status === 401) {
-            console.error("Token hết hạn hoặc không hợp lệ!");
-            // Logic logout hoặc điều hướng về trang đăng nhập
+            triggerLogout();
         }
         return Promise.reject(error);
     }

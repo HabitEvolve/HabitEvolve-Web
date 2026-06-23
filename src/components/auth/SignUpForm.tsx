@@ -1,9 +1,8 @@
 import { useState } from "react";
-// Lưu ý: Tùy phiên bản react-router bạn dùng, useNavigate có thể import từ "react-router-dom"
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
-import authApi from "../../api/authApi"; // Đảm bảo đường dẫn này đúng với thư mục của bạn
-import { supabase } from "../../api/supabaseClient";
+import authApi from "../../api/authApi";
+import GoogleAuthButton from "./GoogleAuthButton";
 
 interface SignUpFormState {
   userName: string;
@@ -84,7 +83,7 @@ export default function SignUpForm() {
 
       // Nếu API thành công (không throw error), chuyển hướng người dùng sang trang Sign In
       console.log("Đăng ký thành công!");
-      navigate("/signin");
+      navigate("/");
 
     } catch (error: any) {
       console.error("Lỗi đăng ký:", error);
@@ -97,24 +96,6 @@ export default function SignUpForm() {
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `http://localhost:5173/` // Đảm bảo URL này đã được đăng ký trong Supabase Auth settings
-        }
-      });
-      if (error) {
-        console.error("Lỗi khi đăng ký với Google:", error);
-      } else {
-        console.log("Đăng ký với Google thành công:", data);
-        // Supabase sẽ tự động xử lý redirect sau khi đăng nhập thành công
-      }
-    } catch (error) {
-      console.error("Lỗi khi đăng ký với Google:", error);
-    }
-  };
 
   return (
     <>
@@ -323,33 +304,8 @@ export default function SignUpForm() {
           </div>
 
           {/* Social Buttons */}
-          <div className="w-full grid gap-4">
-            {/* Google Sign Up */}
-            <button
-              type="button"
-              onClick={handleGoogleSignUp}
-              aria-label="Sign up with Google"
-              className="flex items-center justify-center"
-              style={{
-                border: "2px solid #a2e8c1",
-                borderRadius: "9999px",
-                height: "3.5rem",
-                width: "100%",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f0fdf4";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-            >
-              <img
-                alt="Google Logo"
-                className="h-8 w-8"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_YQFT3lO0f9MnOqEwNv-JHhnrECcJ_rSuwvJAL3bNe-FKnV2ZT0lB0dOtFq9VSTBDB83vwDk-uR468Aw50ggXb2O5zmBKOSFvqmSt1Z6nc1DysadV5LXJeGF3HgRfNwg1cSqX6RK-9k3crR90iR4U2mOlkoSDm5AuMGkPBqHLdBWSecAAHIBhlfY2tNkChuN6i9Uy8qmtcU-inHBT8dvBKWB4R53yeNAYeYK3IHRexwILsFMVV2ptMnvUVSs08B6D47g8fQ4vUO8"
-              />
-            </button>
+          <div className="w-full">
+            <GoogleAuthButton mode="register" />
           </div>
 
           {/* Sign In Link */}

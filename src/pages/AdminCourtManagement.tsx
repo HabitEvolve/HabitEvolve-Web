@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { Gavel, Trophy, X, ChevronLeft, ChevronRight, Loader2, ImageOff } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminCourtApi } from "../api/adminCourtApi";
@@ -31,8 +32,10 @@ const btnBase =
   "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
 
 const inputCls =
-  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium bg-white " +
-  "focus:outline-none focus:ring-2 focus:ring-amber-300 placeholder:text-gray-400";
+  "w-full px-4 py-2.5 border-2 border-black dark:border-gray-600 rounded-2xl text-sm font-medium " +
+  "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 " +
+  "focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600 " +
+  "placeholder:text-gray-400 dark:placeholder:text-gray-500";
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const errMsg = (err: unknown) =>
@@ -47,52 +50,14 @@ const fmtDateTime = (d: string) =>
     hour: "2-digit", minute: "2-digit",
   });
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const GavelIcon = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m14.5 12.5-8 8a2.119 2.119 0 0 1-3-3l8-8" />
-    <path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" />
-  </svg>
-);
-const TrophyIcon = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-    <path d="M4 22h16" />
-    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-  </svg>
-);
-const XIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-const ChevronLeft = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
-);
-const ChevronRight = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
-const Spinner = ({ size = 20 }: { size?: number }) => (
-  <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-  </svg>
-);
-const ImgOffIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-    <line x1="2" y1="2" x2="22" y2="22" />
-    <path d="M10.41 10.41a2 2 0 1 1-2.83-2.83" />
-    <path d="M3 7h2l16 16" /><rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-  </svg>
-);
+// ── ICONS (lucide-react wrappers) ─────────────────────────────────────────────
+const GavelIcon = ({ size = 16 }: { size?: number }) => <Gavel width={size} height={size} />;
+const TrophyIcon = ({ size = 16 }: { size?: number }) => <Trophy width={size} height={size} />;
+const XIcon = () => <X className="w-4 h-4" />;
+const ChevronLeftIcon = () => <ChevronLeft className="w-3.5 h-3.5" />;
+const ChevronRightIcon = () => <ChevronRight className="w-3.5 h-3.5" />;
+const Spinner = ({ size = 20 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
+const ImgOffIcon = () => <ImageOff className="w-7 h-7 text-gray-400" />;
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
 const STATUS_CFG: Record<string, { bg: string; border: string; text: string; emoji: string }> = {
@@ -184,10 +149,10 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
 
   const overlay = (
     <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-      <div className="relative bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="modal-content relative bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-amber-50 shrink-0 rounded-t-3xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-amber-50 dark:bg-amber-900/20 shrink-0 rounded-t-3xl">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-2xl bg-amber-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
               <GavelIcon size={17} />
@@ -202,7 +167,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-red-50 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
           >
             <XIcon />
           </button>
@@ -277,7 +242,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                 )}
 
                 {/* Vote summary bar */}
-                <div className="flex items-center gap-4 px-4 py-3 bg-white border-2 border-black/10 rounded-2xl">
+                <div className="flex items-center gap-4 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-black/10 dark:border-white/10 rounded-2xl">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">👍</span>
                     <div>
@@ -285,7 +250,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                       <p className="text-[10px] font-bold text-gray-400 uppercase">Valid</p>
                     </div>
                   </div>
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+                  <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600">
                     {(data.validVotes + data.fraudVotes) > 0 && (
                       <div
                         className="h-full bg-green-400 rounded-full"
@@ -314,7 +279,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                         return (
                           <div
                             key={v.voteId}
-                            className="flex items-center gap-3 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           >
                             <span className="text-base shrink-0">{isValid ? "👍" : "👎"}</span>
                             <div className="flex-1 min-w-0">
@@ -327,14 +292,14 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                               {v.wasCorrect !== null && (
                                 <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${
                                   v.wasCorrect
-                                    ? "bg-green-50 border-green-300 text-green-700"
-                                    : "bg-red-50 border-red-300 text-red-700"
+                                    ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                                    : "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
                                 }`}>
                                   {v.wasCorrect ? "✓ Correct" : "✗ Wrong"}
                                 </span>
                               )}
                               {v.karmaEarned > 0 && (
-                                <span className="text-[10px] font-black text-yellow-700 bg-yellow-50 border border-yellow-300 px-1.5 py-0.5 rounded-full">
+                                <span className="text-[10px] font-black text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 px-1.5 py-0.5 rounded-full">
                                   +{v.karmaEarned}✨
                                 </span>
                               )}
@@ -348,7 +313,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
               </div>
 
               {/* ── RIGHT: ADMIN FORM ─────────────────────────────────── */}
-              <div className="lg:w-[42%] p-6 bg-gray-50/40">
+              <div className="lg:w-[42%] p-6 bg-gray-50/40 dark:bg-gray-800/30">
                 <div className="flex items-center gap-2 mb-5">
                   <div className="w-7 h-7 rounded-xl bg-amber-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
                     <GavelIcon size={13} />
@@ -358,16 +323,16 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
 
                 {/* Existing admin note if case was previously resolved */}
                 {data.adminNote && (
-                  <div className="mb-4 px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-2xl">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-wide mb-1">Previous Admin Note</p>
-                    <p className="text-xs font-medium text-blue-800">{data.adminNote}</p>
+                  <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Previous Admin Note</p>
+                    <p className="text-xs font-medium text-blue-800 dark:text-blue-300">{data.adminNote}</p>
                   </div>
                 )}
 
                 {alreadyResolved && (
-                  <div className="mb-4 flex items-start gap-2.5 px-3.5 py-3 bg-amber-50 border-2 border-amber-300 rounded-2xl">
+                  <div className="mb-4 flex items-start gap-2.5 px-3.5 py-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-2xl">
                     <span className="text-sm shrink-0">⚠️</span>
-                    <p className="text-xs font-semibold text-amber-800">
+                    <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                       Status is already <strong>{data.status}</strong>. Your verdict will override the existing resolution.
                     </p>
                   </div>
@@ -392,8 +357,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     {verdict && (
                       <div className={`mt-2 px-3 py-2 rounded-xl text-xs font-bold border-2 ${
                         verdict === "Approved"
-                          ? "bg-green-50 border-green-300 text-green-700"
-                          : "bg-red-50 border-red-300 text-red-700"
+                          ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                          : "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
                       }`}>
                         {verdict === "Approved"
                           ? "✅ Submission APPROVED — karma will be awarded to the submitter."
@@ -428,7 +393,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                       type="button"
                       onClick={onClose}
                       disabled={submitting}
-                      className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}
+                      className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}
                     >
                       Cancel
                     </button>
@@ -584,7 +549,7 @@ export default function CourtManagement() {
               className={`px-5 py-2.5 font-black text-sm rounded-t-2xl border-2 transition-all ${
                 activeTab === tab.id
                   ? "bg-amber-300 border-black text-gray-900 shadow-[3px_0_0_0_#1A1D20,0_3px_0_0_#1A1D20] -mb-0.5 relative z-10"
-                  : "bg-white border-black/20 text-gray-500 hover:bg-gray-50 hover:border-black/40"
+                  : "bg-white dark:bg-gray-800 border-black/20 dark:border-white/20 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-black/40"
               }`}
             >
               {tab.icon} {tab.label}
@@ -646,7 +611,7 @@ export default function CourtManagement() {
             )}
 
             {/* Cases Table */}
-            <div className="bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
+            <div className="bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
               {casesError ? (
                 <div className="flex flex-col items-center gap-3 py-16">
                   <span className="text-4xl">⚠️</span>
@@ -671,7 +636,7 @@ export default function CourtManagement() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b-2 border-gray-200 bg-gray-50/60">
+                      <tr className="border-b-2 border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-gray-800/60">
                         {["#", "Quest / Task", "Proof Type", "Status", "Votes", "Submitted", "Action"].map(h => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">
                             {h}
@@ -679,15 +644,15 @@ export default function CourtManagement() {
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                       {cases.map((c, idx) => (
-                        <tr key={c.caseId} className="hover:bg-amber-50/40 transition-colors">
+                        <tr key={c.caseId} className="hover:bg-amber-50/40 dark:hover:bg-amber-900/10 transition-colors">
                           <td className="px-4 py-3 text-xs font-black text-gray-400">
                             {(page - 1) * PAGE_SIZE + idx + 1}
                           </td>
                           <td className="px-4 py-3 max-w-55">
-                            <p className="font-bold text-gray-800 truncate">{c.questTitleMasked}</p>
-                            <p className="text-xs text-gray-400 font-medium mt-0.5">ID #{c.caseId}</p>
+                            <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{c.questTitleMasked}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5">ID #{c.caseId}</p>
                           </td>
                           <td className="px-4 py-3">
                             <ProofTypeBadge type={c.proofType} />
@@ -733,14 +698,14 @@ export default function CourtManagement() {
                     disabled={page === 1 || casesLoading}
                     className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}
                   >
-                    <ChevronLeft /> Prev
+                    <ChevronLeftIcon /> Prev
                   </button>
                   <button
                     onClick={() => setPage(p => p + 1)}
                     disabled={!hasMore || casesLoading}
                     className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}
                   >
-                    Next <ChevronRight />
+                    Next <ChevronRightIcon />
                   </button>
                 </div>
               </div>
@@ -770,19 +735,19 @@ export default function CourtManagement() {
             </div>
 
             {karmaError ? (
-              <div className="flex flex-col items-center gap-3 py-16 bg-white border-2 border-black rounded-2xl">
+              <div className="flex flex-col items-center gap-3 py-16 bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl">
                 <span className="text-4xl">⚠️</span>
                 <p className="font-black text-gray-700">Failed to load leaderboard</p>
                 <p className="text-sm text-gray-400">{karmaError}</p>
                 <button onClick={fetchLeaderboard} className={`${btnBase} bg-red-100 text-red-800`}>↺ Retry</button>
               </div>
             ) : karmaLoading ? (
-              <div className="flex flex-col items-center gap-3 py-16 bg-white border-2 border-black rounded-2xl">
+              <div className="flex flex-col items-center gap-3 py-16 bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl">
                 <Spinner size={32} />
                 <p className="font-bold text-sm text-gray-400">Loading karma leaderboard…</p>
               </div>
             ) : leaderboard.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-16 bg-white border-2 border-black rounded-2xl text-gray-400">
+              <div className="flex flex-col items-center gap-3 py-16 bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl text-gray-400">
                 <span className="text-5xl">🏆</span>
                 <p className="font-black text-lg text-gray-500">No karma data yet</p>
                 <p className="text-sm font-medium text-center max-w-xs">
@@ -798,9 +763,9 @@ export default function CourtManagement() {
                     {([top3[1], top3[0], top3[2]] as const).map((entry, podIdx) => {
                       if (!entry) return <div key={podIdx} />;
                       const podCfg = [
-                        { bg: "bg-slate-100",  border: "border-slate-400",  pt: "pt-8",  karma: "text-slate-700"  },
-                        { bg: "bg-yellow-50",  border: "border-yellow-500", pt: "pt-3",  karma: "text-yellow-700" },
-                        { bg: "bg-orange-50",  border: "border-orange-400", pt: "pt-12", karma: "text-orange-700" },
+                        { bg: "bg-slate-100 dark:bg-slate-800/60",  border: "border-slate-400 dark:border-slate-600",  pt: "pt-8",  karma: "text-slate-700 dark:text-slate-300"  },
+                        { bg: "bg-yellow-50 dark:bg-yellow-900/20",  border: "border-yellow-500 dark:border-yellow-700", pt: "pt-3",  karma: "text-yellow-700 dark:text-yellow-300" },
+                        { bg: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-400 dark:border-orange-700", pt: "pt-12", karma: "text-orange-700 dark:text-orange-300" },
                       ][podIdx];
                       return (
                         <div
@@ -808,11 +773,11 @@ export default function CourtManagement() {
                           className={`flex flex-col items-center pb-4 ${podCfg.pt} border-2 ${podCfg.border} ${podCfg.bg} rounded-2xl shadow-[3px_3px_0_0_#1A1D20]`}
                         >
                           <MedalRank rank={entry.rank} />
-                          <p className="text-xs font-black text-gray-600 mt-2">User #{entry.userId}</p>
+                          <p className="text-xs font-black text-gray-600 dark:text-gray-300 mt-2">User #{entry.userId}</p>
                           <p className={`text-xl font-black mt-0.5 ${podCfg.karma}`}>
                             {entry.totalKarma.toLocaleString()}
                           </p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">karma pts</p>
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">karma pts</p>
                         </div>
                       );
                     })}
@@ -820,32 +785,32 @@ export default function CourtManagement() {
                 )}
 
                 {/* Full leaderboard table */}
-                <div className="bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
+                <div className="bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b-2 border-gray-200 bg-gray-50/60">
+                        <tr className="border-b-2 border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-gray-800/60">
                           {["Rank", "User ID", "Karma Points", "Badge"].map(h => (
                             <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                         {leaderboard.map(entry => {
                           const rowBg =
-                            entry.rank === 1 ? "bg-yellow-50/70 hover:bg-yellow-100/50" :
-                            entry.rank === 2 ? "bg-slate-50/70 hover:bg-slate-100/50" :
-                            entry.rank === 3 ? "bg-orange-50/70 hover:bg-orange-100/50" :
-                            "hover:bg-gray-50/50";
+                            entry.rank === 1 ? "bg-yellow-50/70 dark:bg-yellow-900/10 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20" :
+                            entry.rank === 2 ? "bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-700/30" :
+                            entry.rank === 3 ? "bg-orange-50/70 dark:bg-orange-900/10 hover:bg-orange-100/50 dark:hover:bg-orange-900/20" :
+                            "hover:bg-gray-50/50 dark:hover:bg-gray-700/30";
                           const karmaColor =
-                            entry.rank === 1 ? "text-yellow-700" :
-                            entry.rank === 2 ? "text-slate-600" :
-                            entry.rank === 3 ? "text-orange-700" :
-                            "text-gray-700";
+                            entry.rank === 1 ? "text-yellow-700 dark:text-yellow-300" :
+                            entry.rank === 2 ? "text-slate-600 dark:text-slate-300" :
+                            entry.rank === 3 ? "text-orange-700 dark:text-orange-300" :
+                            "text-gray-700 dark:text-gray-300";
                           return (
                             <tr key={entry.userId} className={`transition-colors ${rowBg}`}>
                               <td className="px-4 py-3"><MedalRank rank={entry.rank} /></td>
-                              <td className="px-4 py-3 font-black text-gray-800">User #{entry.userId}</td>
+                              <td className="px-4 py-3 font-black text-gray-800 dark:text-gray-100">User #{entry.userId}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                   <span>✨</span>
@@ -857,17 +822,17 @@ export default function CourtManagement() {
                               </td>
                               <td className="px-4 py-3">
                                 {entry.rank === 1 && (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-yellow-100 border-yellow-400 text-yellow-800">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300">
                                     🥇 Champion
                                   </span>
                                 )}
                                 {entry.rank === 2 && (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-slate-100 border-slate-400 text-slate-700">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-slate-100 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600 text-slate-700 dark:text-slate-300">
                                     🥈 Runner-up
                                   </span>
                                 )}
                                 {entry.rank === 3 && (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-orange-100 border-orange-400 text-orange-800">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-orange-100 dark:bg-orange-900/30 border-orange-400 dark:border-orange-600 text-orange-800 dark:text-orange-300">
                                     🥉 Third
                                   </span>
                                 )}

@@ -280,6 +280,49 @@ layer(base);
   background-color: #344054;
 }
 
+/* ── DOT GRID BACKGROUND — Neo-Brutalism retro graph-paper texture ─────────── */
+@utility dot-grid-bg {
+  background-color: #F9F8F6;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.09) 1px, transparent 1px);
+  background-size: 24px 24px;
+
+  .dark & {
+    background-color: #1a2231;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  }
+}
+
+/* ── NEO-BRUTALISM BUTTON — lift on hover, press on active ─────────────────── */
+/*
+ * Usage: add btn-neo to any button alongside color classes.
+ * Default → hard offset shadow at rest.
+ * Hover   → lifts up-left (−4px each) + shadow grows.
+ * Active  → presses down (+4px each) + shadow collapses.
+ */
+@utility btn-neo {
+  border-width: 4px;
+  border-style: solid;
+  border-color: #1A1D20;
+  box-shadow: 4px 4px 0 0 #1A1D20;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+
+  &:hover:not(:disabled) {
+    transform: translate(-0.25rem, -0.25rem);
+    box-shadow: 6px 6px 0 0 #1A1D20;
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(0.25rem, 0.25rem);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
 @layer utilities {
   /* For Remove Date Icon */
   input[type="date"]::-webkit-inner-spin-button,
@@ -289,6 +332,106 @@ layer(base);
     display: none;
     -webkit-appearance: none;
   }
+
+  /* Dot Grid backgrounds — apply as bg-dot-grid-light dark:bg-dot-grid-dark */
+  .bg-dot-grid-light {
+    background-color: #F9F8F6;
+    background-image: radial-gradient(#1A1D20 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .bg-dot-grid-dark {
+    background-color: #1A1D20;
+    background-image: radial-gradient(#F9F8F6 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
+
+/* ── DARK MODE CONTENT AREA OVERRIDES ───────────────────────────────────────
+   Written outside @layer so they override Tailwind utility classes.
+   Scoped to .admin-content to avoid affecting sidebar / header.
+   Scoped to .modal-content for createPortal modals (rendered to document.body,
+   outside .admin-content). Elements with explicit dark: variants keep their own
+   styles — use .dark-preserve-bg on elements that must stay white. */
+
+/* ── Dot Grid background dark mode ────────────────────────────────────────
+   bg-dot-grid-light/dark are defined as raw classes in @layer, so Tailwind v4
+   cannot generate dark: variants for them. Override directly here instead. */
+.dark .bg-dot-grid-light {
+  background-color: #1A1D20;
+  background-image: radial-gradient(#F9F8F6 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Backgrounds ─────────────────────────────────────────────────────────── */
+.dark .admin-content .bg-white        { background-color: #1e2a3a; }
+.dark .admin-content .bg-gray-50      { background-color: #162232; }
+.dark .admin-content .bg-gray-100     { background-color: #1a2843; }
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.dark .admin-content .text-gray-900   { color: #f1f5f9; }
+.dark .admin-content .text-gray-800   { color: #e2e8f0; }
+.dark .admin-content .text-gray-700   { color: #cbd5e1; }
+.dark .admin-content .text-gray-600   { color: #94a3b8; }
+.dark .admin-content .text-gray-500   { color: #64748b; }
+.dark .admin-content .text-gray-400   { color: #475569; }
+
+/* ── Borders ─────────────────────────────────────────────────────────────── */
+.dark .admin-content .border-gray-300 { border-color: rgba(255, 255, 255, 0.18); }
+.dark .admin-content .border-gray-200 { border-color: rgba(255, 255, 255, 0.12); }
+.dark .admin-content .border-gray-100 { border-color: rgba(255, 255, 255, 0.07); }
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.dark .admin-content input:not([type="checkbox"]):not([type="radio"]),
+.dark .admin-content textarea,
+.dark .admin-content select {
+  background-color: #162232;
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.dark .admin-content input::placeholder,
+.dark .admin-content textarea::placeholder {
+  color: #475569;
+}
+
+/* ── Shadow ──────────────────────────────────────────────────────────────── */
+.dark .admin-content .shadow-sm       { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+
+/* ── Portal Modal dark mode overrides ───────────────────────────────────────
+   Same set as admin-content but scoped to .modal-content so it applies inside
+   createPortal modals which render directly into document.body. */
+
+/* ── Backgrounds ─────────────────────────────────────────────────────────── */
+.dark .modal-content .bg-white        { background-color: #1e2a3a; }
+.dark .modal-content .bg-gray-50      { background-color: #162232; }
+.dark .modal-content .bg-gray-100     { background-color: #1a2843; }
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.dark .modal-content .text-gray-900   { color: #f1f5f9; }
+.dark .modal-content .text-gray-800   { color: #e2e8f0; }
+.dark .modal-content .text-gray-700   { color: #cbd5e1; }
+.dark .modal-content .text-gray-600   { color: #94a3b8; }
+.dark .modal-content .text-gray-500   { color: #64748b; }
+.dark .modal-content .text-gray-400   { color: #475569; }
+
+/* ── Borders ─────────────────────────────────────────────────────────────── */
+.dark .modal-content .border-gray-300 { border-color: rgba(255, 255, 255, 0.18); }
+.dark .modal-content .border-gray-200 { border-color: rgba(255, 255, 255, 0.12); }
+.dark .modal-content .border-gray-100 { border-color: rgba(255, 255, 255, 0.07); }
+
+/* ── Divide ──────────────────────────────────────────────────────────────── */
+.dark .modal-content .divide-gray-100 > * + * { border-color: rgba(255, 255, 255, 0.07); }
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.dark .modal-content input:not([type="checkbox"]):not([type="radio"]),
+.dark .modal-content textarea,
+.dark .modal-content select {
+  background-color: #162232;
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.dark .modal-content input::placeholder,
+.dark .modal-content textarea::placeholder {
+  color: #475569;
 }
 
 .tableCheckbox:checked ~ span span {

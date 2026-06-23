@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import {
+  Swords, Plus, Pencil, Settings2, X, Save,
+  ChevronLeft, ChevronRight, Loader2,
+} from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminBossApi } from "../api/adminBossApi";
@@ -44,8 +48,10 @@ const btnBase =
   "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
 
 const inputCls =
-  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium bg-white " +
-  "focus:outline-none focus:ring-2 focus:ring-purple-300 placeholder:text-gray-400";
+  "w-full px-4 py-2.5 border-2 border-black dark:border-gray-600 rounded-2xl text-sm font-medium " +
+  "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 " +
+  "focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 " +
+  "placeholder:text-gray-400 dark:placeholder:text-gray-500";
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const errMsg = (e: unknown) =>
@@ -54,60 +60,16 @@ const errMsg = (e: unknown) =>
 const fmtDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const SwordsIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" />
-    <line x1="13" y1="19" x2="19" y2="13" />
-    <polyline points="16 16 20 20 20 20" />
-    <line x1="9.5" y1="6.5" x2="4" y2="11" />
-    <path d="M9 21 21 9" /><line x1="14.5" y1="6.5" x2="6.5" y2="14.5" />
-  </svg>
-);
-const PlusIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-const PencilIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-const SettingsIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-  </svg>
-);
-const XIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-const SaveIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
-  </svg>
-);
-const ChevLeft = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
-);
-const ChevRight = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
-const Spinner = ({ size = 18 }: { size?: number }) => (
-  <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-  </svg>
-);
+// ── ICONS (lucide-react wrappers) ─────────────────────────────────────────────
+const SwordsIcon = ({ size = 20 }: { size?: number }) => <Swords width={size} height={size} />;
+const PlusIcon = () => <Plus className="w-3.5 h-3.5" />;
+const PencilIcon = () => <Pencil className="w-3 h-3" />;
+const SettingsIcon = () => <Settings2 className="w-3 h-3" />;
+const XIcon = () => <X className="w-4 h-4" />;
+const SaveIcon = () => <Save className="w-3.5 h-3.5" />;
+const ChevLeft = () => <ChevronLeft className="w-3.5 h-3.5" />;
+const ChevRight = () => <ChevronRight className="w-3.5 h-3.5" />;
+const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
 const STATUS_CFG: Record<BossTemplateStatus, { bg: string; border: string; text: string; emoji: string }> = {
@@ -121,9 +83,9 @@ const StatusBadge = ({ status }: { status: BossTemplateStatus }) => {
 };
 
 const MODE_CFG: Record<BossModeType, { bg: string; border: string; text: string; cardBg: string; cardBorder: string; emoji: string }> = {
-  EASY:   { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  cardBg: "bg-green-50",  cardBorder: "border-green-400",  emoji: "🌿" },
-  NORMAL: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-800",   cardBg: "bg-blue-50",   cardBorder: "border-blue-400",   emoji: "⚔️" },
-  HARD:   { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    cardBg: "bg-red-50",    cardBorder: "border-red-400",    emoji: "🔥" },
+  EASY:   { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  cardBg: "bg-green-50 dark:bg-green-900/20",  cardBorder: "border-green-400 dark:border-green-700",  emoji: "🌿" },
+  NORMAL: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-800",   cardBg: "bg-blue-50 dark:bg-blue-900/20",   cardBorder: "border-blue-400 dark:border-blue-700",   emoji: "⚔️" },
+  HARD:   { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    cardBg: "bg-red-50 dark:bg-red-900/20",    cardBorder: "border-red-400 dark:border-red-700",    emoji: "🔥" },
 };
 const ModeBadge = ({ mode }: { mode: BossModeType }) => {
   const c = MODE_CFG[mode] ?? MODE_CFG.EASY;
@@ -206,11 +168,11 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-purple-50 shrink-0 rounded-t-3xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-purple-50 dark:bg-purple-900/30 shrink-0 rounded-t-3xl">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-purple-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
+            <div className="w-9 h-9 rounded-2xl bg-purple-300 dark:bg-purple-700 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
               <SwordsIcon size={17} />
             </div>
             <div>
@@ -218,7 +180,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
               <p className="text-xs font-medium text-gray-500">{isEdit ? template.themeName : "Set up the weekly boss event"}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-red-50 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
             <XIcon />
           </button>
         </div>
@@ -282,11 +244,11 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
               <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{formError}</p>
             )}
 
-            <div className="flex gap-3 pt-2 border-t-2 border-gray-100">
+            <div className="flex gap-3 pt-2 border-t-2 border-gray-100 dark:border-gray-700">
               <button type="button" onClick={onClose} disabled={saving}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
+                className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
               <button type="submit" disabled={saving}
-                className={`${btnBase} flex-1 justify-center bg-purple-200 text-purple-900`}>
+                className={`${btnBase} flex-1 justify-center bg-purple-200 dark:bg-purple-700 text-purple-900 dark:text-white`}>
                 {saving ? <><Spinner size={13} /> Saving…</> : <><SaveIcon /> {isEdit ? "Update" : "Create"}</>}
               </button>
             </div>
@@ -353,12 +315,12 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-gray-50 shrink-0 rounded-t-3xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-gray-50 dark:bg-gray-800 shrink-0 rounded-t-3xl">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-orange-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
+            <div className="w-9 h-9 rounded-2xl bg-orange-300 dark:bg-orange-700 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
               <SettingsIcon />
             </div>
             <div>
@@ -366,7 +328,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
               <p className="text-xs font-medium text-gray-500">{templateName}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-red-50 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
             <XIcon />
           </button>
         </div>
@@ -376,7 +338,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
           {/* ── LEFT: CURRENT MODES ───────────────────────────────────── */}
           <div className="lg:w-[52%] border-b-2 lg:border-b-0 lg:border-r-2 border-black/10 overflow-y-auto p-5 space-y-3">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-white pb-2">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-white dark:bg-[#1e2a3a] pb-2">
               Current Modes ({tpl?.modes.length ?? 0} / 3)
             </p>
 
@@ -426,7 +388,9 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                         <span className="font-black text-gray-800">{m.maxQuestPerMemberPerDay}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500 font-medium">💰 Gold/Q</span>
+                        <span className="flex items-center gap-1 text-gray-500 font-medium">
+                          <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="gold" className="w-4 h-4 object-contain" /> Gold/Q
+                        </span>
                         <span className="font-black text-gray-800">{m.mGoldRewardCapPerQuest} mG</span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -538,7 +502,10 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                       onChange={e => setN("maxDamagePerQuest", Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <Label>Gold Reward Cap/Quest (mG)</Label>
+                    <Label>
+                      <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="inline w-4 h-4 mr-1 align-text-bottom" />
+                      Gold Cap/Quest (mG)
+                    </Label>
                     <input type="number" min={0} value={form.mGoldRewardCapPerQuest}
                       onChange={e => setN("mGoldRewardCapPerQuest", Number(e.target.value))} className={inputCls} />
                   </div>
@@ -582,9 +549,9 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
                 <div className="flex gap-3 pt-1">
                   <button type="button" onClick={onClose} disabled={submitting}
-                    className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Close</button>
+                    className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Close</button>
                   <button type="submit" disabled={submitting}
-                    className={`${btnBase} flex-1 justify-center bg-orange-200 text-orange-900`}>
+                    className={`${btnBase} flex-1 justify-center bg-orange-200 dark:bg-orange-700 text-orange-900 dark:text-white`}>
                     {submitting ? <><Spinner size={13} /> Adding…</> : <><PlusIcon /> Add Mode</>}
                   </button>
                 </div>
@@ -628,7 +595,7 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-sm p-6 space-y-4">
+      <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{isPublish ? "🚀" : "📦"}</span>
           <div>
@@ -642,14 +609,14 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
             : "This will hide the template from players. It can no longer be activated."}
         </p>
         {!isPublish && (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-orange-50 border-2 border-orange-300 rounded-2xl">
+          <div className="flex items-start gap-2 px-3 py-2.5 bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700 rounded-2xl">
             <span className="text-sm shrink-0">⚠️</span>
-            <p className="text-xs font-semibold text-orange-800">Archiving is permanent. You cannot restore an archived template.</p>
+            <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">Archiving is permanent. You cannot restore an archived template.</p>
           </div>
         )}
         <div className="flex gap-3 pt-1">
           <button onClick={onClose} disabled={loading}
-            className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
+            className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
           <button onClick={handleConfirm} disabled={loading}
             className={`${btnBase} flex-1 justify-center ${isPublish ? "bg-green-300 text-green-900" : "bg-orange-300 text-orange-900"}`}>
             {loading ? <><Spinner size={13} /> {isPublish ? "Publishing…" : "Archiving…"}</> : isPublish ? "🚀 Publish" : "📦 Archive"}

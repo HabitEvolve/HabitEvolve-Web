@@ -1,9 +1,9 @@
 import { useState } from "react";
-// Import useNavigate để chuyển trang sau khi đăng nhập thành công
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
-import authApi from "../../api/authApi"; // Import authApi
-import { supabase } from "../../api/supabaseClient";
+import authApi from "../../api/authApi";
+import { useAuth } from "../../context/AuthContext";
+import GoogleAuthButton from "./GoogleAuthButton";
 
 interface FormState {
   email: string;
@@ -17,7 +17,7 @@ interface FormErrors {
 }
 
 export default function SignInForm() {
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false); // State loading cho nút Login
 
@@ -68,46 +68,29 @@ export default function SignInForm() {
         password: formData.password,
       });
 
-      console.log("Đăng nhập thành công!", response);
-
-      // --- PHẦN ĐÃ ĐƯỢC SỬA: LƯU TOKEN VÀO LOCAL STORAGE ---
-      if (response && response.success && response.data) {
-        // Lưu Access Token (để gọi API profile)
-        localStorage.setItem('access_token', response.data.accessToken);
-        localStorage.setItem('user_id', response.data.userId.toString());
-        // Lưu Refresh Token (dùng để gia hạn đăng nhập sau này nếu cần)
-        if (response.data.refreshToken) {
-          localStorage.setItem('refresh_token', response.data.refreshToken);
-        }
+      if (response?.success && response.data) {
+        // response.data is AuthUser; roles is string[] from BE
+        const userData = response.data;
+        login(userData);
+        // Navigation is handled by SignIn.tsx: after setUser() commits, isAuthenticated
+        // becomes true there and it renders <Navigate> to the role-appropriate route.
+        return;
       }
-      // ----------------------------------------------------
 
-      // Chuyển hướng người dùng vào Dashboard sau khi login thành công
-      navigate("/home"); // Hoặc "/dashboard" tùy cấu hình router của bạn
+      // success: false — show the BE's own message (wrong password, account locked, etc.)
+      setErrors({
+        apiError: response?.message || "Invalid email or password. Please try again.",
+      });
 
     } catch (error: any) {
-      console.error("Lỗi đăng nhập:", error);
-      // Hiển thị thông báo lỗi từ Backend
+      // Log the actual error so it is never hidden — useful to distinguish
+      // a real API 4xx/5xx from a JS TypeError thrown inside this block.
+      console.error("[SignIn] Unexpected error during login:", error);
       setErrors({
-        apiError: error.response?.data?.message || "Invalid email or password. Please try again.",
+        apiError: error?.response?.data?.message || "Invalid email or password. Please try again.",
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-  const handleGoogleSignIn = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `http://localhost:5173/` // Đảm bảo URL này đã được đăng ký trong Supabase
-        }
-      });
-      if (error) {
-        console.error("Lỗi khi đăng nhập với Google:", error);
-      }
-    } catch (error) {
-      console.error("Lỗi khi đăng nhập với Google:", error);
     }
   };
 
@@ -281,36 +264,8 @@ export default function SignInForm() {
           </div>
 
           {/* Social Buttons */}
-          <div className="w-full grid gap-4">
-            {/* Google Login */}
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              aria-label="Log in with Google"
-              className="social-btn"
-              style={{
-                border: "2px solid #a2e8c1",
-                borderRadius: "9999px",
-                height: "3.5rem",
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f0fdf4";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "white";
-              }}
-            >
-              <img
-                alt="Google Logo"
-                className="h-8 w-8"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_YQFT3lO0f9MnOqEwNv-JHhnrECcJ_rSuwvJAL3bNe-FKnV2ZT0lB0dOtFq9VSTBDB83vwDk-uR468Aw50ggXb2O5zmBKOSFvqmSt1Z6nc1DysadV5LXJeGF3HgRfNwg1cSqX6RK-9k3crR90iR4U2mOlkoSDm5AuMGkPBqHLdBWSecAAHIBhlfY2tNkChuN6i9Uy8qmtcU-inHBT8dvBKWB4R53yeNAYeYK3IHRexwILsFMVV2ptMnvUVSs08B6D47g8fQ4vUO8"
-              />
-            </button>
+          <div className="w-full">
+            <GoogleAuthButton mode="login" />
           </div>
 
           {/* Sign Up Link */}

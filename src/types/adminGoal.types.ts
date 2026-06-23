@@ -108,6 +108,97 @@ export interface GoalQuestionnaireDto {
 }
 
 // ==========================================
+// ADMIN PRACTICAL TASK TEMPLATE (MODULE 4)
+// BE: AdminTaskTemplateDto — simplified CRUD view returned by /api/admin/practical-task-templates
+// ==========================================
+
+export interface AdminTaskTemplateDto {
+    taskId: number;
+    goalId: number;
+    title: string;
+    description: string | null;
+    verificationType: string;
+    isActive: boolean;
+    createdAt: string;
+}
+
+// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?)
+// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive)
+export interface PracticalTaskPayload {
+    goalId?: number;     // required only on create
+    title: string;
+    description?: string;
+    verificationType: string;
+    isActive: boolean;
+}
+
+// ==========================================
+// RECOMMENDATION RULES (MODULE 4)
+// BE: RecommendationRuleDto / RecommendationRuleConditionDto
+// ==========================================
+
+export type ConditionOperator = "Equals" | "NotEquals" | "GreaterThan" | "LessThan" | "Contains" | "In" | "NotIn";
+export type RuleMatchMode = "AllConditions" | "AnyCondition";
+
+export interface RecommendationRuleConditionDto {
+    conditionId: number;
+    ruleId: number;
+    questionId: number;
+    optionId: number | null;
+    operator: string;
+    conditionValue: string | null;
+}
+
+export interface RecommendationRuleDto {
+    ruleId: number;
+    goalId: number;
+    ruleName: string;
+    description: string | null;
+    priority: number;
+    matchMode: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string | null;
+    conditions: RecommendationRuleConditionDto[];
+}
+
+// POST body — CreateRecommendationRuleCommand(GoalId, RuleName, Description?, Priority, MatchMode, IsActive)
+export interface CreateRulePayload {
+    goalId: number;
+    ruleName: string;
+    description?: string;
+    priority?: number;
+    matchMode?: RuleMatchMode;
+    isActive?: boolean;
+}
+
+// PUT body — UpdateRecommendationRuleCommand(RuleId, RuleName, Description?, Priority, MatchMode)
+export interface UpdateRulePayload_Rec {
+    ruleId: number;
+    ruleName: string;
+    description?: string;
+    priority: number;
+    matchMode: RuleMatchMode;
+}
+
+// POST /{ruleId}/conditions body — AddRuleConditionCommand(RuleId, QuestionId, OptionId?, Operator?, ConditionValue?)
+export interface AddConditionPayload {
+    ruleId: number;
+    questionId: number;
+    optionId?: number | null;
+    operator?: string | null;
+    conditionValue?: string | null;
+}
+
+// PUT /conditions/{conditionId} body — UpdateRuleConditionCommand(ConditionId, OptionId?, Operator?, ConditionValue?)
+export interface UpdateConditionPayload {
+    conditionId: number;
+    optionId?: number | null;
+    operator?: string | null;
+    conditionValue?: string | null;
+}
+
+// ==========================================
 // TARGET CALCULATION RULES (MODULE 4B)
 // ==========================================
 

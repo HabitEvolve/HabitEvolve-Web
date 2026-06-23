@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
+import { useTheme } from "../context/ThemeContext";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
+
+const HamburgerIcon = () => (
+  <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 1H18M0 7H18M0 13H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { theme, toggleTheme } = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
-
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -21,16 +28,36 @@ const AppHeader: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  const toggleBtnClass =
+    "flex items-center justify-center w-10 h-10 bg-white dark:bg-gray-800 border-4 border-black dark:border-gray-600 rounded-xl shadow-[3px_3px_0_0_#1A1D20] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#1A1D20] transition-all text-gray-800 dark:text-gray-200";
+
   return (
-    <header className="sticky top-0 flex w-full bg-white border-b-4 border-black shadow-[0px_4px_0px_0px_#1A1D20] z-40">
+    <header className="sticky top-0 flex w-full bg-white dark:bg-gray-900 border-b-4 border-black dark:border-gray-700 shadow-[0px_4px_0px_0px_#1A1D20] z-40">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
 
-        {/* ── PRIMARY ROW ─────────────────────────────────────────────── */}
+        {/* ── PRIMARY ROW ────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between w-full gap-2 px-4 py-3 lg:px-0 lg:py-4">
 
-          {/* LEFT: sidebar toggle + mobile logo + desktop search */}
+          {/* LEFT: hamburger toggles + mobile logo + desktop search */}
           <div className="flex items-center gap-3">
 
+            {/* Desktop: collapses/expands sidebar in-place */}
+            <button
+              onClick={toggleSidebar}
+              aria-label="Toggle sidebar"
+              className={`hidden lg:flex ${toggleBtnClass}`}
+            >
+              <HamburgerIcon />
+            </button>
+
+            {/* Mobile: opens sidebar as overlay */}
+            <button
+              onClick={toggleMobileSidebar}
+              aria-label="Open sidebar"
+              className={`lg:hidden flex ${toggleBtnClass}`}
+            >
+              <HamburgerIcon />
+            </button>
 
             {/* Mobile-only logo */}
             <Link to="/" className="lg:hidden">
@@ -50,22 +77,43 @@ const AppHeader: React.FC = () => {
                   ref={inputRef}
                   type="text"
                   placeholder="Search or type command..."
-                  className="h-11 w-[340px] xl:w-[430px] rounded-full border-4 border-black bg-white pl-12 pr-16 text-sm font-medium text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all"
+                  className="h-11 w-85 xl:w-107.5 rounded-full border-4 border-black bg-white dark:bg-gray-800 dark:text-white pl-12 pr-16 text-sm font-medium text-gray-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all"
                 />
-                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-lg border-2 border-black bg-gray-50 px-2 py-1 text-xs font-black text-gray-700 shadow-[2px_2px_0_0_#1A1D20] select-none">
+                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-lg border-2 border-black dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-2 py-1 text-xs font-black text-gray-700 dark:text-gray-300 shadow-[2px_2px_0_0_#1A1D20] select-none">
                   ⌘K
                 </kbd>
               </div>
             </div>
           </div>
 
-          {/* RIGHT: mobile three-dots + desktop notification+user */}
+          {/* RIGHT: dark mode toggle + mobile three-dots + desktop notifications/user */}
           <div className="flex items-center gap-2">
-            {/* Mobile menu toggle */}
+
+            {/* Dark / Light mode toggle — always visible */}
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className={toggleBtnClass}
+            >
+              {theme === "dark" ? (
+                /* Sun */
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                /* Moon */
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+
+            {/* Mobile: three-dots expands header notification area */}
             <button
               onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
               aria-label="Open menu"
-              className="lg:hidden flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-xl shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+              className={`lg:hidden flex ${toggleBtnClass} border-2`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="5" cy="12" r="2.2" />
@@ -74,7 +122,7 @@ const AppHeader: React.FC = () => {
               </svg>
             </button>
 
-            {/* Desktop: always-visible notification + user */}
+            {/* Desktop: notifications + user dropdown */}
             <div className="hidden lg:flex items-center gap-3">
               <NotificationDropdown />
               <UserDropdown />
@@ -82,10 +130,10 @@ const AppHeader: React.FC = () => {
           </div>
         </div>
 
-        {/* ── MOBILE EXPANDED SECTION ──────────────────────────────── */}
+        {/* ── MOBILE EXPANDED SECTION ──────────────────────────────────────── */}
         <div
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
-            } lg:hidden items-center gap-3 w-full px-4 pb-3 border-t-2 border-dashed border-gray-200 pt-3`}
+            } lg:hidden items-center gap-3 w-full px-4 pb-3 border-t-2 border-dashed border-gray-200 dark:border-gray-700 pt-3`}
         >
           <NotificationDropdown />
           <UserDropdown />

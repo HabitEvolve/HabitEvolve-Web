@@ -1,7 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import OAuthCallback from "./pages/AuthPages/OAuthCallback";
 import NotFound from "./pages/OtherPage/NotFound";
+import Unauthorized from "./pages/OtherPage/Unauthorized";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
 import Images from "./pages/UiElements/Images";
@@ -16,18 +19,23 @@ import BasicTables from "./pages/Tables/BasicTables";
 import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
+import MentorLayout from "./layout/MentorLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import UserManagement from "./pages/UserManagement";
 import EditProfile from "./pages/EditProfile";
 import PartyManagement from "./pages/PartyManagement";
 import TargetRuleManagement from "./pages/TargetRuleManagement";
-import AdminGoalManagement from "./pages/AdminGoalManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
-import AdminPracticalTaskManagement from "./pages/AdminPracticalTaskManagement";
 import AdminCourtManagement from "./pages/AdminCourtManagement";
 import AdminBossManagement from "./pages/AdminBossManagement";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
+import MentorDashboard from "./pages/Mentor/MentorDashboard";
+import SubscriptionWallet from "./pages/Mentor/SubscriptionWallet";
+import QuestCommand from "./pages/Mentor/QuestCommand";
+import ProofQueue from "./pages/Mentor/ProofQueue";
+import BossRaid from "./pages/Mentor/BossRaid";
+import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 
 export default function App() {
   return (
@@ -37,10 +45,13 @@ export default function App() {
         <Routes>
           <Route path="/" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          {/* Dashboard Layout */}
+          <Route path="/auth/callback" element={<OAuthCallback />} />
+          {/* Dashboard Layout — protected: ADMIN role required */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route element={<AppLayout />}>
 
             <Route index path="/home" element={<Home />} />
+            <Route path="/admin/dashboard" element={<Navigate to="/home" replace />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
@@ -49,9 +60,7 @@ export default function App() {
             <Route path="/party-management" element={<PartyManagement />} />
             <Route path="/target-rules" element={<TargetRuleManagement />} />
             <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
-            <Route path="/goal-management" element={<AdminGoalManagement />} />
             <Route path="/questionnaires" element={<QuestionnaireManagement />} />
-            <Route path="/practical-tasks" element={<AdminPracticalTaskManagement />} />
             <Route path="/court-management" element={<AdminCourtManagement />} />
             <Route path="/boss-management" element={<AdminBossManagement />} />
             <Route path="/calendar" element={<Calendar />} />
@@ -75,9 +84,29 @@ export default function App() {
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />
           </Route>
+          </Route>
 
-          {/* Auth Layout */}
+          {/* ── MENTOR PORTAL — protected: MENTOR role required ── */}
+          <Route element={<ProtectedRoute allowedRoles={['MENTOR']} />}>
+          <Route element={<MentorLayout />}>
+            <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+            <Route path="/mentor/parties" element={<PartyManagement />} />
+            <Route path="/mentor/subscription" element={<SubscriptionWallet />} />
+            <Route path="/mentor/quests" element={<QuestCommand />} />
+            <Route path="/mentor/proofs" element={<ProofQueue />} />
+            <Route path="/mentor/boss-raid" element={<BossRaid />} />
+          </Route>
+          </Route>
 
+          <Route path="/unauthorized" element={<Unauthorized />} />
+
+          {/* SePay payment callback routes — public (no auth): SePay redirects here after payment.
+              Paths match SuccessUrl / ErrorUrl / CancelUrl in BE appsettings.json.
+              /mentor/payment/callback is an alias for manual testing. */}
+          <Route path="/checkout/success"         element={<PaymentResultPage />} />
+          <Route path="/checkout/fail"            element={<PaymentResultPage />} />
+          <Route path="/checkout"                 element={<PaymentResultPage />} />
+          <Route path="/mentor/payment/callback"  element={<PaymentResultPage />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

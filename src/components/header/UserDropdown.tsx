@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import playerProfileApi from "../../api/userProfileApi";
+import { useAuth } from "../../context/AuthContext";
 import type { PlayerProfile } from "../../types/api.types";
 
 const MENU_ITEMS = [
@@ -49,7 +50,7 @@ function getInitials(name: string): string {
 }
 
 export default function UserDropdown() {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<PlayerProfile | null>(null);
 
@@ -65,10 +66,8 @@ export default function UserDropdown() {
   const closeDropdown = () => setIsOpen(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_id");
-    navigate("/signin");
+    logout(); // clears React state + all localStorage keys + Supabase session
+    // Navigation is handled by SignIn.tsx: isAuthenticated becomes false → shows login form
   };
 
   const displayName = user?.username ?? "Loading...";

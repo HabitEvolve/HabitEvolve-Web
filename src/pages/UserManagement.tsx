@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import adminUserApi from "../api/adminUserApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
-type ModalType = "create" | "view" | "update" | "delete" | null;
+type ModalType = "create" | "view" | "update" | "delete" | "roles" | null;
 const PAGE_SIZE = 10;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -104,6 +105,11 @@ const UserGroupIcon = () => (
     <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
+const ShieldIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
 const ChevronLeftIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="15 18 9 12 15 6" />
@@ -117,9 +123,9 @@ const ChevronRightIcon = () => (
 
 // ── ROLE BADGE ────────────────────────────────────────────────────────────────
 const ROLE_STYLES: Record<string, string> = {
-  ADMIN:  "bg-blue-100 border-blue-400 text-blue-800",
+  ADMIN:  "bg-red-100 border-red-400 text-red-800",
   MENTOR: "bg-purple-100 border-purple-400 text-purple-800",
-  PLAYER: "bg-emerald-100 border-emerald-400 text-emerald-800",
+  PLAYER: "bg-blue-100 border-blue-400 text-blue-800",
 };
 const RoleBadge = ({ role }: { role: string }) => (
   <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 ${ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>
@@ -184,7 +190,7 @@ const GameModal = ({
           <h2 className="text-base font-black text-gray-900">{title}</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-black bg-gray-100 hover:bg-red-200 active:translate-x-[2px] active:translate-y-[2px] transition-all font-bold text-gray-700 text-sm leading-none"
+            className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-black bg-gray-100 hover:bg-red-200 active:translate-x-0.5 active:translate-y-0.5 transition-all font-bold text-gray-700 text-sm leading-none"
           >
             ✕
           </button>
@@ -328,14 +334,14 @@ const CreateUserForm = ({
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-orange-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-orange-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
         >
           {submitting ? "Creating…" : "Create User"}
         </button>
@@ -455,14 +461,14 @@ const UpdateUserForm = ({
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-amber-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-amber-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
         >
           {submitting ? "Saving…" : "Save Changes"}
         </button>
@@ -521,19 +527,205 @@ const DeleteConfirm = ({
         <button
           onClick={onClose}
           disabled={deleting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
         >
           Keep User
         </button>
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-red-400 text-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-red-400 text-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
         >
           {deleting ? "Deleting…" : "Delete Forever"}
         </button>
       </div>
     </div>
+  );
+};
+
+// ── MANAGE ROLES MODAL ───────────────────────────────────────────────────────
+const ALL_ROLES = ["PLAYER", "MENTOR", "ADMIN"] as const;
+
+const ManageUserRolesModal = ({
+  user,
+  onClose,
+  onRefresh,
+}: {
+  user: UserItem;
+  onClose: () => void;
+  onRefresh: () => void;
+}) => {
+  const [localRoles, setLocalRoles] = useState<string[]>(user.roles);
+  const [removingRole, setRemovingRole] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [selectedNewRole, setSelectedNewRole] = useState<string>("");
+
+  // Roles not yet assigned to this user
+  const availableRoles = ALL_ROLES.filter((r) => !localRoles.includes(r));
+  // Keep the dropdown pointing at a valid option after each change
+  const dropdownValue = availableRoles.includes(selectedNewRole)
+    ? selectedNewRole
+    : availableRoles[0] ?? "";
+
+  const handleRemove = async (roleCode: string) => {
+    setRemovingRole(roleCode);
+    setRemoveError(null);
+    try {
+      const res = await adminUserApi.removeRole(user.userId, roleCode);
+      if (res.success && res.data) {
+        setLocalRoles(res.data.roles);
+        onRefresh();
+      } else {
+        setRemoveError(res.message ?? `Failed to remove ${roleCode}.`);
+      }
+    } catch (err: any) {
+      setRemoveError(
+        err?.response?.data?.message ?? `Cannot remove ${roleCode}: ${err?.message ?? "unknown error"}.`
+      );
+    } finally {
+      setRemovingRole(null);
+    }
+  };
+
+  const handleAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dropdownValue) return;
+    setAssigning(true);
+    setAssignError(null);
+    try {
+      const res = await adminUserApi.assignRole(user.userId, { roleCode: dropdownValue });
+      if (res.success && res.data) {
+        setLocalRoles(res.data.roles);
+        setSelectedNewRole("");
+        onRefresh();
+      } else {
+        setAssignError(res.message ?? `Failed to assign ${dropdownValue}.`);
+      }
+    } catch (err: any) {
+      setAssignError(
+        err?.response?.data?.message ?? `Failed to assign ${dropdownValue}.`
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md bg-white border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b-2 border-gray-200">
+          <div>
+            <h2 className="text-base font-black text-gray-900">Manage Roles</h2>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              {user.username} · #{user.userId}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-black bg-gray-100 hover:bg-red-200 active:translate-x-0.5 active:translate-y-0.5 transition-all font-bold text-gray-700 text-sm leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-6 pb-6 pt-5 space-y-6">
+          {/* ── Current Roles ─────────────────────────────────────────── */}
+          <div>
+            <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-3">
+              Current Roles
+            </p>
+
+            {localRoles.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">No roles assigned.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {localRoles.map((role) => {
+                  const style = ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700";
+                  const isRemoving = removingRole === role;
+                  return (
+                    <span
+                      key={role}
+                      className={`inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-xl border-2 font-black text-xs ${style}`}
+                    >
+                      {isRemoving && (
+                        <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                      )}
+                      {role}
+                      <button
+                        onClick={() => handleRemove(role)}
+                        disabled={!!removingRole}
+                        title={`Remove ${role}`}
+                        className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/15 disabled:cursor-not-allowed transition-colors leading-none font-black text-sm shrink-0"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {removeError && (
+              <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl p-2.5 text-xs text-red-700 font-semibold">
+                ⚠ {removeError}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t-2 border-dashed border-gray-200" />
+
+          {/* ── Add Role ──────────────────────────────────────────────── */}
+          <div>
+            <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-3">
+              Add Role
+            </p>
+
+            {availableRoles.length === 0 ? (
+              <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3 text-xs text-green-700 font-semibold text-center">
+                ✓ User already has all available roles.
+              </div>
+            ) : (
+              <form onSubmit={handleAssign} className="flex gap-2">
+                <select
+                  value={dropdownValue}
+                  onChange={(e) => setSelectedNewRole(e.target.value)}
+                  className="flex-1 px-3 py-2.5 border-2 border-black rounded-xl text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+                >
+                  {availableRoles.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={assigning || !dropdownValue}
+                  className="px-5 py-2.5 bg-violet-300 border-2 border-black rounded-xl font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all whitespace-nowrap"
+                >
+                  {assigning ? "Adding…" : "Assign"}
+                </button>
+              </form>
+            )}
+
+            {assignError && (
+              <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl p-2.5 text-xs text-red-700 font-semibold">
+                ⚠ {assignError}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -715,14 +907,14 @@ export default function UserManagement() {
               placeholder="Search by name, email or role…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-2xl bg-white dark:bg-white/[0.03] dark:border-white/20 dark:text-white dark:placeholder:text-gray-500 text-sm font-medium shadow-[3px_3px_0_0_#1A1D20] dark:shadow-none focus:outline-none focus:shadow-none focus:translate-x-[3px] focus:translate-y-[3px] transition-all placeholder:text-gray-400"
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-2xl bg-white dark:bg-white/3 dark:border-white/20 dark:text-white dark:placeholder:text-gray-500 text-sm font-medium shadow-[3px_3px_0_0_#1A1D20] dark:shadow-none focus:outline-none focus:shadow-none focus:translate-x-0.75 focus:translate-y-0.75 transition-all placeholder:text-gray-400"
             />
           </div>
 
           {/* Create button */}
           <button
             onClick={() => openModal("create")}
-            className="flex items-center gap-2 px-5 py-2.5 bg-orange-300 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all whitespace-nowrap"
+            className="flex items-center gap-2 px-5 py-2.5 bg-orange-300 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all whitespace-nowrap"
           >
             <PlusIcon />
             Create New User
@@ -730,9 +922,9 @@ export default function UserManagement() {
         </div>
 
         {/* ── TABLE CARD ──────────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-white/[0.03] border-4 border-black dark:border-white/20 rounded-3xl shadow-[6px_6px_0_0_#1A1D20] dark:shadow-none overflow-hidden">
+        <div className="bg-white dark:bg-white/3 border-4 border-black dark:border-white/20 rounded-3xl shadow-[6px_6px_0_0_#1A1D20] dark:shadow-none overflow-hidden">
           {/* Card header */}
-          <div className="px-6 py-4 border-b-4 border-black dark:border-white/20 flex items-center gap-2 bg-gray-50 dark:bg-white/[0.02]">
+          <div className="px-6 py-4 border-b-4 border-black dark:border-white/20 flex items-center gap-2 bg-gray-50 dark:bg-white/2">
             <span className="text-gray-600 dark:text-gray-300">
               <UserGroupIcon />
             </span>
@@ -763,7 +955,7 @@ export default function UserManagement() {
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
-                <tr className="border-b-2 border-gray-200 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.01]">
+                <tr className="border-b-2 border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-white/1">
                   {TABLE_HEADERS.map((h) => (
                     <th
                       key={h}
@@ -782,7 +974,7 @@ export default function UserManagement() {
                 ) : users.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-20 text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-black dark:border-white/20 bg-gray-100 dark:bg-white/[0.05] flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-black dark:border-white/20 bg-gray-100 dark:bg-white/5 flex items-center justify-center">
                         <SearchIcon />
                       </div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-bold">
@@ -797,9 +989,9 @@ export default function UserManagement() {
                   users.map((user, idx) => (
                     <tr
                       key={user.userId}
-                      className={`transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03] ${
+                      className={`transition-colors hover:bg-orange-50/60 dark:hover:bg-white/3 ${
                         idx < users.length - 1
-                          ? "border-b-2 border-gray-100 dark:border-white/[0.05]"
+                          ? "border-b-2 border-gray-100 dark:border-white/5"
                           : ""
                       }`}
                     >
@@ -855,6 +1047,13 @@ export default function UserManagement() {
                             icon={<PencilIcon />}
                           />
                           <ActionButton
+                            title="Manage Roles"
+                            bgColor="bg-violet-200"
+                            hoverColor="hover:bg-violet-300"
+                            onClick={() => openModal("roles", user)}
+                            icon={<ShieldIcon />}
+                          />
+                          <ActionButton
                             title="Delete User"
                             bgColor="bg-red-200"
                             hoverColor="hover:bg-red-300"
@@ -879,7 +1078,7 @@ export default function UserManagement() {
             onPageChange={setCurrentPage}
           />
 
-          <div className="px-6 py-3 border-t-2 border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.01]">
+          <div className="px-6 py-3 border-t-2 border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/1">
             <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
               {loading
                 ? "Loading…"
@@ -922,6 +1121,15 @@ export default function UserManagement() {
           />
         )}
       </GameModal>
+
+      {/* Manage Roles — portal-rendered so it escapes any stacking-context */}
+      {activeModal === "roles" && selectedUser && (
+        <ManageUserRolesModal
+          user={selectedUser}
+          onClose={closeModal}
+          onRefresh={handleMutationSuccess}
+        />
+      )}
     </>
   );
 }

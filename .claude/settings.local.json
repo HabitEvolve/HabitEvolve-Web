@@ -4,7 +4,11 @@
       "Bash(dir \"d:\\\\HabitEvolve-Mobile\\\\src\" /B)",
       "Bash(Get-ChildItem -Path \"d:\\\\HabitEvolve-Mobile\\\\src\" -Recurse -Directory)",
       "Bash(Select-Object -First 20)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(cd /d/HabitEvolve-BE && find . -type f -name \"*.cs\" | head -20)",
+      "Read(//d/d/**)",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('badge'\\)\\).join\\(', '\\)\\)\")",
+      "Bash(npx tsc *)"
     ]
   }
 }

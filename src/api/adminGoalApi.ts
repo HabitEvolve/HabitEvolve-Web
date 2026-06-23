@@ -4,7 +4,7 @@ import {
     GoalCategoryDto, GoalCategoryPayload,
     GoalDto, GoalPayload,
     QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
-    QuestionDto, GoalQuestionnaireDto
+    QuestionDto, QuestionOptionDto, GoalQuestionnaireDto
 } from '../types/adminGoal.types';
 
 const ADMIN_URL = '/admin';
@@ -30,6 +30,10 @@ export const adminGoalApi = {
     },
     toggleCategoryStatus: async (id: number, isActive: boolean): Promise<ApiResponse<GoalCategoryDto>> => {
         const res = await axiosClient.patch(`${ADMIN_URL}/goal-categories/${id}/status`, isActive);
+        return res.data;
+    },
+    deleteCategory: async (id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/goal-categories/${id}`);
         return res.data;
     },
 
@@ -72,6 +76,10 @@ export const adminGoalApi = {
         const res = await axiosClient.get(`${ADMIN_URL}/questionnaire-templates`, { params });
         return res.data;
     },
+    getTemplateById: async (templateId: number): Promise<ApiResponse<QuestionnaireTemplateDto>> => {
+        const res = await axiosClient.get(`${ADMIN_URL}/questionnaire-templates/${templateId}`);
+        return res.data;
+    },
     createTemplate: async (payload: QuestionnaireTemplatePayload): Promise<ApiResponse<QuestionnaireTemplateDto>> => {
         const res = await axiosClient.post(`${ADMIN_URL}/questionnaire-templates`, payload);
         return res.data;
@@ -82,6 +90,10 @@ export const adminGoalApi = {
     },
     toggleTemplateStatus: async (id: number, isActive: boolean): Promise<ApiResponse<QuestionnaireTemplateDto>> => {
         const res = await axiosClient.patch(`${ADMIN_URL}/questionnaire-templates/${id}/status`, isActive);
+        return res.data;
+    },
+    deleteTemplate: async (id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/questionnaire-templates/${id}`);
         return res.data;
     },
 

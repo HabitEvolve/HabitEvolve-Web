@@ -1,1039 +1,557 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams } from "react-router";
-import { createPortal } from "react-dom";
-import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import PageMeta from "../components/common/PageMeta";
-import { adminGoalApi } from "../api/adminGoalApi";
-import { useTableFilters } from "../hooks/useTableFilters";
-import { TableFilterBar } from "../components/common/TableFilterBar";
-import type { FilterField } from "../hooks/useTableFilters";
-import type {
-  QuestionnaireTemplateDto,
-  QuestionDto,
-  QuestionType,
-  GoalDto,
-} from "../types/adminGoal.types";
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  ClipboardList, Plus, Pencil, Trash2, ChevronRight, X,
+  Loader2, ToggleLeft, ToggleRight, HelpCircle, List, CheckSquare,
+  Hash, AlignLeft, Star, ChevronDown, ChevronUp
+} from 'lucide-react';
+import { adminGoalApi } from '../api/adminGoalApi';
+import {
+  QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
+  QuestionDto, QuestionOptionDto, QuestionType,
+} from '../types/adminGoal.types';
 
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 10;
+// ─── Style helpers ────────────────────────────────────────────────────────────
+const inputCls = [
+  'w-full px-3 py-2 rounded-xl border-2 border-black bg-white dark:bg-gray-800',
+  'text-gray-900 dark:text-gray-100 text-sm font-medium',
+  'focus:outline-none focus:ring-2 focus:ring-amber-400',
+  'dark:border-gray-600 dark:placeholder:text-gray-500',
+].join(' ');
 
-const QUESTION_TYPES: QuestionType[] = [
-  "SingleChoice", "MultipleChoice", "NumberInput", "TextInput", "RatingScale", "YesNo",
+const btnBase = [
+  'inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black',
+  'font-black text-sm transition-all shadow-[2px_2px_0_0_#1A1D20]',
+  'hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5',
+  'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
+].join(' ');
+
+const QUESTION_TYPES: { value: QuestionType; label: string; icon: React.ReactNode }[] = [
+  { value: 'SingleChoice',   label: 'Single Choice',   icon: <CheckSquare className="w-4 h-4" /> },
+  { value: 'MultipleChoice', label: 'Multiple Choice', icon: <List        className="w-4 h-4" /> },
+  { value: 'NumberInput',    label: 'Number Input',    icon: <Hash        className="w-4 h-4" /> },
+  { value: 'TextInput',      label: 'Text Input',      icon: <AlignLeft   className="w-4 h-4" /> },
+  { value: 'RatingScale',    label: 'Rating Scale',    icon: <Star        className="w-4 h-4" /> },
+  { value: 'YesNo',          label: 'Yes / No',        icon: <HelpCircle  className="w-4 h-4" /> },
 ];
+const CHOICE_TYPES: QuestionType[] = ['SingleChoice', 'MultipleChoice'];
+const isChoiceType = (t: QuestionType) => CHOICE_TYPES.includes(t);
 
-const QUESTION_TYPE_LABELS: Record<string, string> = {
-  SingleChoice: "Single Choice",
-  MultipleChoice: "Multiple Choice",
-  NumberInput: "Number Input",
-  TextInput: "Text Input",
-  RatingScale: "Rating Scale",
-  YesNo: "Yes / No",
-};
+// ─── Portal wrapper ───────────────────────────────────────────────────────────
+const Portal = ({ children }: { children: React.ReactNode }) =>
+  createPortal(children, document.body);
 
-const QUESTION_TYPE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  SingleChoice: { bg: "bg-blue-100", border: "border-blue-400", text: "text-blue-800" },
-  MultipleChoice: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800" },
-  NumberInput: { bg: "bg-orange-100", border: "border-orange-400", text: "text-orange-800" },
-  TextInput: { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-700" },
-  RatingScale: { bg: "bg-yellow-100", border: "border-yellow-500", text: "text-yellow-800" },
-  YesNo: { bg: "bg-green-100", border: "border-green-400", text: "text-green-800" },
-};
-
-const HAS_OPTIONS = (t: QuestionType) => t === "SingleChoice" || t === "MultipleChoice";
-
-// ── FILTER CONFIG ─────────────────────────────────────────────────────────────
-// getTemplates() has no search param → activeOnly is server-side, name search is client-side (useMemo)
-type TemplateFilters = { search: string; activeOnly: string };
-const TEMPLATE_INITIAL_FILTERS: TemplateFilters = { search: "", activeOnly: "" };
-const TEMPLATE_FILTER_FIELDS: FilterField[] = [
-  { key: "search", label: "Search", type: "text", placeholder: "Search by template name…" },
-  {
-    key: "activeOnly", label: "Status", type: "select", options: [
-      { label: "Active Only", value: "active" },
-    ]
-  },
-];
-
-// ── LOCAL TYPES ───────────────────────────────────────────────────────────────
-interface QuestionFormValues {
-  questionText: string;
-  questionType: QuestionType;
-  isRequired: boolean;
-  displayOrder: number;
-  isActive: boolean;
-}
-
-interface OptionRow {
-  id: string;
-  optionId?: number;   // present for existing server-side options
-  optionText: string;
-  optionValue: string;
-  displayOrder: number;
-}
-
-type TemplateForm = { templateName: string; description: string; isActive: boolean };
-
-const EMPTY_TEMPLATE_FORM: TemplateForm = { templateName: "", description: "", isActive: true };
-const EMPTY_QUESTION_FORM: QuestionFormValues = {
-  questionText: "", questionType: "SingleChoice", isRequired: true, displayOrder: 1, isActive: true,
-};
-
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-
-const errMsg = (e: unknown) =>
-  (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
-
-const toValue = (s: string) =>
-  s.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-
-let _seq = 0;
-const newOptId = () => `o_${++_seq}`;
-const newOptionRow = (order: number): OptionRow => ({
-  id: newOptId(), optionText: "", optionValue: "", displayOrder: order,
-});
-
-// ── SHARED STYLES ─────────────────────────────────────────────────────────────
-const btnBase =
-  "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
-  "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
-  "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
-
-const inputCls =
-  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium bg-white " +
-  "focus:outline-none focus:ring-2 focus:ring-orange-300 placeholder:text-gray-400";
-
-const miniInputCls =
-  "px-3 py-1.5 border-2 border-black rounded-xl text-sm font-medium bg-white " +
-  "focus:outline-none focus:ring-1 focus:ring-orange-300 placeholder:text-gray-400";
-
-// ── SPINNER ───────────────────────────────────────────────────────────────────
-const Spinner = ({ size = 18 }: { size?: number }) => (
-  <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-  </svg>
-);
-
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const PlusIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-const PencilIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-const XIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-const ArrowLeftIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const ListIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-    <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-  </svg>
-);
-const SaveIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
-  </svg>
-);
-const ChevronLeft = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
-);
-const ChevronRight = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
-const LinkIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-  </svg>
-);
-
-// ── BADGES ────────────────────────────────────────────────────────────────────
-const QuestionTypeBadge = ({ type }: { type: string }) => {
-  const c = QUESTION_TYPE_COLORS[type] ?? { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-600" };
+// ─── Generic confirm delete modal ────────────────────────────────────────────
+function ConfirmDeleteModal({
+  title, body, onConfirm, onCancel, loading,
+}: {
+  title: string; body: string;
+  onConfirm: () => void; onCancel: () => void; loading?: boolean;
+}) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black border-2 ${c.bg} ${c.border} ${c.text} shadow-[1px_1px_0_0_#1A1D20]`}>
-      {QUESTION_TYPE_LABELS[type] ?? type}
-    </span>
-  );
-};
-
-const ActivePill = ({ isActive }: { isActive: boolean }) => (
-  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${isActive ? "bg-green-100 border-green-400 text-green-800" : "bg-gray-100 border-gray-400 text-gray-500"
-    }`}>
-    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
-    {isActive ? "Active" : "Inactive"}
-  </span>
-);
-
-// ── ALERT ─────────────────────────────────────────────────────────────────────
-const AlertBanner = ({ alert }: { alert: { type: "success" | "error"; message: string } }) =>
-  alert.type === "success" ? (
-    <div className="mb-5 flex items-center gap-3 bg-emerald-50 border-4 border-emerald-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-      <span className="font-black text-emerald-800 text-sm">{alert.message}</span>
-    </div>
-  ) : (
-    <div className="mb-5 flex items-center gap-3 bg-red-50 border-4 border-red-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-      <span className="font-black text-red-800 text-sm">{alert.message}</span>
-    </div>
-  );
-
-// ── GAME MODAL (portal) ───────────────────────────────────────────────────────
-const GameModal = ({
-  title, onClose, children, maxWidth = "max-w-lg",
-}: { title: string; onClose: () => void; children: React.ReactNode; maxWidth?: string }) =>
-  createPortal(
-    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className={`relative w-full ${maxWidth} mx-4 bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] max-h-[90vh] overflow-y-auto`}>
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b-2 border-black bg-white">
-          <h2 className="text-lg font-black text-gray-900">{title}</h2>
-          <button type="button" onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-            <XIcon />
-          </button>
+    <Portal>
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm p-6">
+          <h3 className="text-lg font-black text-red-700 dark:text-red-400 mb-2">{title}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{body}</p>
+          <div className="flex gap-3">
+            <button onClick={onCancel} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>
+              Cancel
+            </button>
+            <button onClick={onConfirm} disabled={loading} className={`${btnBase} flex-1 justify-center bg-red-400 text-white`}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete
+            </button>
+          </div>
         </div>
-        <div className="px-6 py-6">{children}</div>
       </div>
-    </div>,
-    document.body
+    </Portal>
   );
-
-// ── BIND TO GOAL MODAL ────────────────────────────────────────────────────────
-interface BindToGoalModalProps {
-  template: QuestionnaireTemplateDto;
-  preselectedGoalId: number | null;
-  onClose: () => void;
-  onAlert: (a: { type: "success" | "error"; message: string }) => void;
 }
 
-const BindToGoalModal = ({ template, preselectedGoalId, onClose, onAlert }: BindToGoalModalProps) => {
-  const [allGoals, setAllGoals] = useState<GoalDto[]>([]);
-  const [goalsLoading, setGoalsLoading] = useState(false);
-  const [selectedGoalId, setSelectedGoalId] = useState<number | null>(preselectedGoalId);
-  const [submitting, setSubmitting] = useState(false);
-  const [bindError, setBindError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setGoalsLoading(true);
-    adminGoalApi.getGoals({ pageSize: 1000 })
-      .then(res => { if (res.success && res.data) setAllGoals(res.data.filter(g => g.isActive)); })
-      .catch(() => {/* silent */})
-      .finally(() => setGoalsLoading(false));
-  }, []);
+// ─── Template Form Modal ──────────────────────────────────────────────────────
+function TemplateFormModal({
+  editing, onSave, onClose,
+}: {
+  editing: QuestionnaireTemplateDto | null;
+  onSave: (payload: QuestionnaireTemplatePayload) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(editing?.templateName ?? '');
+  const [desc, setDesc] = useState(editing?.description ?? '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGoalId) return;
-    setSubmitting(true);
-    setBindError(null);
-    try {
-      await adminGoalApi.bindTemplateToGoal(selectedGoalId, template.templateId);
-      onAlert({ type: "success", message: `"${template.templateName}" successfully bound to goal!` });
-      onClose();
-    } catch (err) {
-      setBindError(errMsg(err) ?? "Failed to bind template. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    if (!name.trim()) { setErr('Template name is required.'); return; }
+    setSaving(true); setErr('');
+    try { await onSave({ templateName: name.trim(), description: desc.trim() || undefined }); }
+    catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
+    finally { setSaving(false); }
   };
 
   return (
-    <GameModal title="🔗 Bind Template to Goal" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 border-2 border-purple-300 rounded-2xl">
-          <span className="text-xl">📋</span>
-          <div className="min-w-0">
-            <p className="text-[10px] font-black text-purple-600 uppercase tracking-wide">Template</p>
-            <p className="text-sm font-black text-gray-900 truncate">{template.templateName}</p>
+    <Portal>
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-amber-100 dark:bg-amber-900/30 rounded-t-3xl">
+            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">
+              {editing ? 'Edit Template' : 'New Template'}
+            </h2>
+            <button onClick={onClose} className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded-lg">
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <span className="ml-auto text-xs font-black text-purple-500 border border-purple-300 rounded-full px-2 py-0.5 whitespace-nowrap">
-            v{template.version}
-          </span>
-        </div>
-
-        <div>
-          <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
-            Select Goal to Bind *
-          </label>
-          {goalsLoading ? (
-            <div className="flex items-center gap-2 text-sm text-gray-400 py-2.5">
-              <Spinner size={14} /> Loading active goals…
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Template Name *</label>
+              <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="e.g. Sleep Habit Assessment" required />
             </div>
-          ) : allGoals.length === 0 ? (
-            <p className="text-sm font-bold text-amber-700 bg-amber-50 border-2 border-amber-300 rounded-2xl px-4 py-3">
-              No active goals found. Create goals in Hub 1 first.
-            </p>
-          ) : (
-            <select
-              required
-              value={selectedGoalId ?? ""}
-              onChange={e => setSelectedGoalId(e.target.value ? Number(e.target.value) : null)}
-              className={inputCls}
-            >
-              <option value="">— Select an active Goal —</option>
-              {allGoals.map(g => (
-                <option key={g.goalId} value={g.goalId}>
-                  [{g.goalCode}] {g.goalName}
-                </option>
-              ))}
-            </select>
-          )}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} className={inputCls} placeholder="What does this questionnaire assess?" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white`}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {editing ? 'Save' : 'Create'}
+              </button>
+            </div>
+          </form>
         </div>
-
-        <div className="flex items-start gap-2.5 px-3.5 py-3 bg-sky-50 border-2 border-sky-200 rounded-2xl">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <p className="text-xs font-semibold text-sky-800">
-            This will associate the questionnaire template with the selected goal.
-            Players enrolled in that goal will be evaluated using this template.
-          </p>
-        </div>
-
-        {bindError && (
-          <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{bindError}</p>
-        )}
-
-        <div className="flex gap-3 pt-1">
-          <button type="button" onClick={onClose} disabled={submitting}
-            className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>
-            Cancel
-          </button>
-          <button type="submit" disabled={submitting || !selectedGoalId}
-            className={`${btnBase} flex-1 justify-center bg-purple-200 text-purple-900`}>
-            {submitting ? <><Spinner />Binding…</> : <><LinkIcon />Bind Template</>}
-          </button>
-        </div>
-      </form>
-    </GameModal>
+      </div>
+    </Portal>
   );
-};
+}
 
-// ── FORM FIELD ────────────────────────────────────────────────────────────────
-const FormField = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
-  <div>
-    <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">{label}</label>
-    {children}
-    {hint && <p className="text-xs text-gray-400 mt-1 font-medium">{hint}</p>}
-  </div>
-);
+// ─── Question Form Modal ──────────────────────────────────────────────────────
+function QuestionFormModal({
+  templateId, editing, onSave, onClose,
+}: {
+  templateId: number;
+  editing: QuestionDto | null;
+  onSave: (payload: any) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState(editing?.questionText ?? '');
+  const [type, setType] = useState<QuestionType>(editing?.questionType ?? 'SingleChoice');
+  const [required, setRequired] = useState(editing?.isRequired ?? true);
+  const [order, setOrder] = useState(editing?.displayOrder ?? 1);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
 
-// ── TOGGLE ────────────────────────────────────────────────────────────────────
-const Toggle = ({ checked, onChange, label, sub }: {
-  checked: boolean; onChange: (v: boolean) => void; label: string; sub?: string;
-}) => (
-  <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl">
-    <div>
-      <p className="text-sm font-black text-gray-800">{label}</p>
-      {sub && <p className="text-xs text-gray-400 font-medium">{sub}</p>}
-    </div>
-    <button type="button" onClick={() => onChange(!checked)} aria-pressed={checked}
-      className={`relative flex-shrink-0 w-12 h-6 rounded-full border-2 border-black transition-colors shadow-[2px_2px_0_0_#1A1D20] ${checked ? "bg-emerald-400" : "bg-gray-300"}`}>
-      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full border-2 border-black bg-white transition-transform ${checked ? "translate-x-6" : "translate-x-0"}`} />
-    </button>
-  </div>
-);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) { setErr('Question text is required.'); return; }
+    setSaving(true); setErr('');
+    const payload = editing
+      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order }
+      : { templateId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order };
+    try { await onSave(payload); }
+    catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
+    finally { setSaving(false); }
+  };
 
-// ── SKELETON ROW ──────────────────────────────────────────────────────────────
-const SkeletonRow = ({ cells }: { cells: number }) => (
-  <tr className="border-b-2 border-gray-100 animate-pulse">
-    {Array.from({ length: cells }).map((_, i) => (
-      <td key={i} className="px-4 py-4">
-        <div className="h-4 bg-gray-200 rounded-full" style={{ width: `${48 + (i % 4) * 28}px` }} />
-      </td>
-    ))}
-  </tr>
-);
+  return (
+    <Portal>
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-lg">
+          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-violet-100 dark:bg-violet-900/30 rounded-t-3xl">
+            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? 'Edit Question' : 'Add Question'}</h2>
+            <button onClick={onClose} className="p-1 hover:bg-violet-200 dark:hover:bg-violet-800 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Question Text *</label>
+              <textarea value={text} onChange={e => setText(e.target.value)} rows={2} className={inputCls} placeholder="e.g. How many hours do you sleep each night?" required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <select value={type} onChange={e => setType(e.target.value as QuestionType)} className={inputCls}>
+                  {QUESTION_TYPES.map(qt => <option key={qt.value} value={qt.value}>{qt.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+                <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
+              </div>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="w-4 h-4 rounded border-gray-400 accent-violet-500" />
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Required answer</span>
+            </label>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-violet-300 dark:bg-violet-700 text-gray-900 dark:text-white`}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {editing ? 'Save' : 'Add'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Portal>
+  );
+}
 
-// ── PAGINATION ────────────────────────────────────────────────────────────────
-const PaginationBar = ({ page, hasMore, loading, onPrev, onNext }: {
-  page: number; hasMore: boolean; loading: boolean; onPrev: () => void; onNext: () => void;
-}) => (
-  <div className="flex items-center justify-between px-6 py-4 border-t-2 border-gray-100 bg-gray-50/50">
-    <button onClick={onPrev} disabled={page === 1 || loading} className={`${btnBase} bg-white text-gray-700`}>
-      <ChevronLeft /> Previous
-    </button>
-    <span className="text-sm font-black text-gray-600 border-2 border-black rounded-full px-4 py-1.5 bg-white shadow-[2px_2px_0_0_#1A1D20]">
-      Page {page}
-    </span>
-    <button onClick={onNext} disabled={!hasMore || loading} className={`${btnBase} bg-white text-gray-700`}>
-      Next <ChevronRight />
-    </button>
-  </div>
-);
+// ─── Option Form Modal ────────────────────────────────────────────────────────
+function OptionFormModal({
+  questionId, editing, onSave, onClose,
+}: {
+  questionId: number;
+  editing: QuestionOptionDto | null;
+  onSave: (payload: any) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState(editing?.optionText ?? '');
+  const [value, setValue] = useState(editing?.optionValue ?? '');
+  const [order, setOrder] = useState(editing?.displayOrder ?? 1);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
 
-// ── TABLE CARD ────────────────────────────────────────────────────────────────
-const TableCard = ({ title, icon, count, loading, children }: {
-  title: string; icon: React.ReactNode; count?: number; loading: boolean; children: React.ReactNode;
-}) => (
-  <div className="bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] overflow-hidden">
-    <div className="flex items-center gap-3 px-6 py-4 border-b-4 border-black bg-gray-50">
-      <span className="text-gray-600">{icon}</span>
-      <span className="font-black text-gray-900 text-sm">{title}</span>
-      {!loading && count !== undefined && (
-        <span className="ml-auto bg-orange-200 border-2 border-black text-gray-800 text-xs font-black px-2.5 py-0.5 rounded-full">{count}</span>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim() || !value.trim()) { setErr('Both text and value are required.'); return; }
+    setSaving(true); setErr('');
+    const payload = editing
+      ? { optionId: editing.optionId, optionText: text.trim(), optionValue: value.trim(), displayOrder: order }
+      : { questionId, optionText: text.trim(), optionValue: value.trim(), displayOrder: order };
+    try { await onSave(payload); }
+    catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Portal>
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm">
+          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-emerald-100 dark:bg-emerald-900/30 rounded-t-3xl">
+            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? 'Edit Option' : 'Add Option'}</h2>
+            <button onClick={onClose} className="p-1 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Display Text *</label>
+              <input value={text} onChange={e => setText(e.target.value)} className={inputCls} placeholder="e.g. Less than 6 hours" required />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Machine Value *</label>
+              <input value={value} onChange={e => setValue(e.target.value)} className={inputCls} placeholder="e.g. LOW  or  1" required />
+              <p className="text-[10px] text-gray-400 mt-1">Used by Recommendation Engine to match rule conditions.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+              <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-emerald-300 dark:bg-emerald-700 text-gray-900 dark:text-white`}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {editing ? 'Save' : 'Add'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
+// ─── Options sub-panel ────────────────────────────────────────────────────────
+function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefresh: () => void }) {
+  const [optModal, setOptModal] = useState<{ editing: QuestionOptionDto | null } | null>(null);
+  const [delOpt, setDelOpt] = useState<QuestionOptionDto | null>(null);
+  const [delLoading, setDelLoading] = useState(false);
+
+  const sorted = [...question.options].sort((a, b) => a.displayOrder - b.displayOrder);
+
+  const handleSave = async (payload: any) => {
+    if (optModal?.editing) await adminGoalApi.updateQuestionOption(optModal.editing.optionId, payload);
+    else await adminGoalApi.createQuestionOption(question.questionId, payload);
+    setOptModal(null);
+    onRefresh();
+  };
+
+  const handleDelete = async () => {
+    if (!delOpt) return;
+    setDelLoading(true);
+    try { await adminGoalApi.deleteQuestionOption(delOpt.optionId); setDelOpt(null); onRefresh(); }
+    finally { setDelLoading(false); }
+  };
+
+  return (
+    <div className="pt-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] font-black uppercase tracking-wide text-gray-400">Options ({sorted.length})</p>
+        <button onClick={() => setOptModal({ editing: null })} className={`${btnBase} bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 py-1 px-3 text-xs`}>
+          <Plus className="w-3 h-3" /> Add
+        </button>
+      </div>
+      {sorted.length === 0 ? (
+        <p className="text-xs text-gray-400 italic py-3 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">No options — add at least 2.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {sorted.map(opt => (
+            <div key={opt.optionId} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl">
+              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 w-5">#{opt.displayOrder}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{opt.optionText}</p>
+                <p className="text-[10px] text-gray-400 font-mono truncate">{opt.optionValue}</p>
+              </div>
+              <button onClick={() => setOptModal({ editing: opt })} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded text-gray-400"><Pencil className="w-3 h-3" /></button>
+              <button onClick={() => setDelOpt(opt)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-400"><Trash2 className="w-3 h-3" /></button>
+            </div>
+          ))}
+        </div>
       )}
+      {optModal !== null && <OptionFormModal questionId={question.questionId} editing={optModal.editing} onSave={handleSave} onClose={() => setOptModal(null)} />}
+      {delOpt && <ConfirmDeleteModal title="Delete Option?" body={`Remove "${delOpt.optionText}"?`} loading={delLoading} onConfirm={handleDelete} onCancel={() => setDelOpt(null)} />}
     </div>
-    {children}
-  </div>
-);
+  );
+}
 
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ══════════════════════════════════════════════════════════════════════════════
-export default function QuestionnaireManagement() {
-
-  // ── URL CONTEXT (pre-selection from Hub 1) ────────────────────────────────
-  const [searchParams] = useSearchParams();
-  const preselectedGoalId = useMemo(() => {
-    const id = searchParams.get("goalId");
-    return id ? Number(id) : null;
-  }, [searchParams]);
-  const preselectedGoalName = searchParams.get("goalName");
-
-  // ── VIEW STATE ────────────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<"templates" | "questions">("templates");
-  const [selectedTemplate, setSelectedTemplate] = useState<QuestionnaireTemplateDto | null>(null);
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [bindingTemplate, setBindingTemplate] = useState<QuestionnaireTemplateDto | null>(null);
-
-  useEffect(() => {
-    if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 4000);
-    return () => clearTimeout(t);
-  }, [alert]);
-
-  // ── TEMPLATE STATE ────────────────────────────────────────────────────────
-  const [templates, setTemplates] = useState<QuestionnaireTemplateDto[]>([]);
-  const [tplLoading, setTplLoading] = useState(false);
-  const [tplError, setTplError] = useState<string | null>(null);
-
-  const {
-    filters: tplFilters,
-    debouncedFilters: debouncedTplFilters,
-    setFilter: setTplFilter,
-    clearFilters: clearTplFilters,
-    hasActiveFilters: tplHasActiveFilters,
-    page: tplPage,
-    setPage: setTplPage,
-  } = useTableFilters<TemplateFilters>(TEMPLATE_INITIAL_FILTERS);
-
-  // Client-side name search since getTemplates() has no search param
-  const visibleTemplates = useMemo(() => {
-    if (!debouncedTplFilters.search) return templates;
-    const q = debouncedTplFilters.search.toLowerCase();
-    return templates.filter(t => t.templateName.toLowerCase().includes(q));
-  }, [templates, debouncedTplFilters.search]);
-
-  // ── TEMPLATE FORM ─────────────────────────────────────────────────────────
-  const [showTplForm, setShowTplForm] = useState(false);
-  const [editingTpl, setEditingTpl] = useState<QuestionnaireTemplateDto | null>(null);
-  const [tplForm, setTplForm] = useState<TemplateForm>(EMPTY_TEMPLATE_FORM);
-  const [tplSubmitting, setTplSubmitting] = useState(false);
-  const [tplFormError, setTplFormError] = useState<string | null>(null);
-
-  // ── QUESTIONS STATE ───────────────────────────────────────────────────────
+// ─── Questions right-panel ────────────────────────────────────────────────────
+function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateDto; onBack: () => void }) {
   const [questions, setQuestions] = useState<QuestionDto[]>([]);
-  const [qLoading, setQLoading] = useState(false);
-  const [qError, setQError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedQ, setExpandedQ] = useState<number | null>(null);
+  const [qModal, setQModal] = useState<{ editing: QuestionDto | null } | null>(null);
+  const [delQ, setDelQ] = useState<QuestionDto | null>(null);
+  const [delLoading, setDelLoading] = useState(false);
 
-  // ── QUESTION FORM ─────────────────────────────────────────────────────────
-  const [showQForm, setShowQForm] = useState(false);
-  const [editingQ, setEditingQ] = useState<QuestionDto | null>(null);
-  const [qForm, setQForm] = useState<QuestionFormValues>(EMPTY_QUESTION_FORM);
-  const [optionRows, setOptionRows] = useState<OptionRow[]>([]);
-  const [qSubmitting, setQSubmitting] = useState(false);
-  const [qFormError, setQFormError] = useState<string | null>(null);
-
-  // ── FETCH: TEMPLATES ──────────────────────────────────────────────────────
-  const fetchTemplates = useCallback(async () => {
-    setTplLoading(true);
-    setTplError(null);
+  const fetch = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await adminGoalApi.getTemplates({
-        page: tplPage,
-        pageSize: PAGE_SIZE,
-        activeOnly: debouncedTplFilters.activeOnly === "active" ? true : undefined,
-      });
-      if (res.success && res.data) {
-        setTemplates(res.data);
-      } else {
-        setTplError(res.message ?? "Failed to load templates.");
-      }
-    } catch (err) {
-      setTplError(errMsg(err) ?? "Failed to load templates.");
-    } finally {
-      setTplLoading(false);
-    }
-  }, [tplPage, debouncedTplFilters]);
+      const res = await adminGoalApi.getQuestionsByTemplate(template.templateId, { activeOnly: false });
+      if (res.success) setQuestions(res.data ?? []);
+    } finally { setLoading(false); }
+  }, [template.templateId]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const handleSaveQ = async (payload: any) => {
+    if (qModal?.editing) await adminGoalApi.updateQuestion(qModal.editing.questionId, payload);
+    else await adminGoalApi.createQuestion(template.templateId, payload);
+    setQModal(null);
+    fetch();
+  };
+
+  const handleDelQ = async () => {
+    if (!delQ) return;
+    setDelLoading(true);
+    try { await adminGoalApi.deleteQuestion(delQ.questionId); setDelQ(null); fetch(); }
+    finally { setDelLoading(false); }
+  };
+
+  const sorted = [...questions].sort((a, b) => a.displayOrder - b.displayOrder);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <button onClick={onBack} className={`${btnBase} bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-1 px-3 text-xs`}>
+          <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Templates
+        </button>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+        <span className="font-black text-gray-800 dark:text-gray-100 text-sm truncate max-w-xs">{template.templateName}</span>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-black border ${template.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+          {template.isActive ? 'Active' : 'Inactive'}
+        </span>
+        <button onClick={() => setQModal({ editing: null })} className={`${btnBase} ml-auto bg-violet-200 dark:bg-violet-800 text-violet-900 dark:text-violet-100 py-1.5`}>
+          <Plus className="w-4 h-4" /> Add Question
+        </button>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto space-y-3">
+        {loading ? (
+          <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+        ) : sorted.length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+            <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" />
+            <p className="font-bold">No questions yet</p>
+          </div>
+        ) : sorted.map(q => (
+          <div key={q.questionId} className="border-2 border-black dark:border-gray-600 rounded-2xl bg-white dark:bg-gray-800/80 shadow-[3px_3px_0_0_#1A1D20] overflow-hidden">
+            <div className="flex items-start gap-3 p-4">
+              <span className="text-xs font-black text-gray-400 w-5 shrink-0 mt-0.5">#{q.displayOrder}</span>
+              <span className="text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+                {QUESTION_TYPES.find(qt => qt.value === q.questionType)?.icon ?? <HelpCircle className="w-4 h-4" />}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-gray-800 dark:text-gray-100">{q.questionText}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="text-[10px] font-black bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full border border-violet-200 dark:border-violet-700">{q.questionType}</span>
+                  {q.isRequired && <span className="text-[10px] font-black bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">Required</span>}
+                  {isChoiceType(q.questionType) && <span className="text-[10px] text-gray-400">{q.options.length} option{q.options.length !== 1 ? 's' : ''}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {isChoiceType(q.questionType) && (
+                  <button onClick={() => setExpandedQ(expandedQ === q.questionId ? null : q.questionId)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400">
+                    {expandedQ === q.questionId ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                )}
+                <button onClick={() => setQModal({ editing: q })} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => setDelQ(q)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </div>
+            {isChoiceType(q.questionType) && expandedQ === q.questionId && (
+              <div className="px-4 pb-4 border-t-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
+                <OptionsPanel question={q} onRefresh={fetch} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {qModal !== null && <QuestionFormModal templateId={template.templateId} editing={qModal.editing} onSave={handleSaveQ} onClose={() => setQModal(null)} />}
+      {delQ && <ConfirmDeleteModal title="Delete Question?" body={`Remove "${delQ.questionText}" and all its options?`} loading={delLoading} onConfirm={handleDelQ} onCancel={() => setDelQ(null)} />}
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function QuestionnaireManagement() {
+  const [templates, setTemplates] = useState<QuestionnaireTemplateDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTpl, setSelectedTpl] = useState<QuestionnaireTemplateDto | null>(null);
+  const [tplModal, setTplModal] = useState<{ editing: QuestionnaireTemplateDto | null } | null>(null);
+  const [delTpl, setDelTpl] = useState<QuestionnaireTemplateDto | null>(null);
+  const [delLoading, setDelLoading] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const fetchTemplates = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminGoalApi.getTemplates({ activeOnly: false });
+      if (res.success) setTemplates(res.data ?? []);
+    } finally { setLoading(false); }
+  }, []);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  // ── FETCH: QUESTIONS ──────────────────────────────────────────────────────
-  const fetchQuestions = useCallback(async () => {
-    if (!selectedTemplate) return;
-    setQLoading(true);
-    setQError(null);
+  const flash = (type: 'success' | 'error', msg: string) => {
+    setAlert({ type, msg });
+    setTimeout(() => setAlert(null), 4000);
+  };
+
+  const handleSaveTpl = async (payload: QuestionnaireTemplatePayload) => {
+    if (tplModal?.editing) {
+      await adminGoalApi.updateTemplate(tplModal.editing.templateId, payload);
+      flash('success', 'Template updated.');
+    } else {
+      await adminGoalApi.createTemplate(payload);
+      flash('success', 'Template created.');
+    }
+    setTplModal(null);
+    fetchTemplates();
+  };
+
+  const handleToggle = async (tpl: QuestionnaireTemplateDto) => {
+    try { await adminGoalApi.toggleTemplateStatus(tpl.templateId, !tpl.isActive); fetchTemplates(); }
+    catch { flash('error', 'Status update failed.'); }
+  };
+
+  const handleDelete = async () => {
+    if (!delTpl) return;
+    setDelLoading(true);
     try {
-      const res = await adminGoalApi.getQuestionsByTemplate(selectedTemplate.templateId);
-      if (res.success && res.data) {
-        setQuestions(res.data);
-      } else {
-        setQError(res.message ?? "Failed to load questions.");
-      }
-    } catch (err) {
-      setQError(errMsg(err) ?? "Failed to load questions.");
-    } finally {
-      setQLoading(false);
-    }
-  }, [selectedTemplate]);
-
-  useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
-
-  // ── TEMPLATE HANDLERS ─────────────────────────────────────────────────────
-  const openCreateTpl = () => {
-    setEditingTpl(null); setTplForm(EMPTY_TEMPLATE_FORM); setTplFormError(null); setShowTplForm(true);
-  };
-  const openEditTpl = (t: QuestionnaireTemplateDto) => {
-    setEditingTpl(t);
-    setTplForm({ templateName: t.templateName, description: t.description ?? "", isActive: t.isActive });
-    setTplFormError(null); setShowTplForm(true);
-  };
-  const closeTplForm = () => { setShowTplForm(false); setEditingTpl(null); setTplFormError(null); };
-
-  const handleTplSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTplSubmitting(true); setTplFormError(null);
-    try {
-      // isActive is included via cast — QuestionnaireTemplatePayload doesn't define it
-      const payload = { templateName: tplForm.templateName, description: tplForm.description, isActive: tplForm.isActive };
-      if (editingTpl) {
-        await adminGoalApi.updateTemplate(editingTpl.templateId, payload as any);
-        setAlert({ type: "success", message: "Template updated successfully!" });
-      } else {
-        await adminGoalApi.createTemplate(payload as any);
-        setAlert({ type: "success", message: "Template created successfully!" });
-      }
-      closeTplForm(); fetchTemplates();
-    } catch (err) {
-      setTplFormError(errMsg(err) ?? (editingTpl ? "Failed to update template." : "Failed to create template."));
-    } finally { setTplSubmitting(false); }
+      await adminGoalApi.deleteTemplate(delTpl.templateId);
+      flash('success', 'Template deleted.');
+      if (selectedTpl?.templateId === delTpl.templateId) setSelectedTpl(null);
+      setDelTpl(null);
+      fetchTemplates();
+    } catch (ex: any) {
+      flash('error', ex?.response?.data?.message ?? 'Delete failed.');
+    } finally { setDelLoading(false); }
   };
 
-  // ── QUESTION MANAGER ──────────────────────────────────────────────────────
-  const openManageQuestions = (t: QuestionnaireTemplateDto) => {
-    setSelectedTemplate(t);
-    setQuestions([]);
-    setViewMode("questions");
-  };
-  const backToTemplates = () => {
-    setViewMode("templates");
-    setSelectedTemplate(null);
-    setQuestions([]);
-  };
-
-  // ── QUESTION HANDLERS ─────────────────────────────────────────────────────
-  const setQField = <K extends keyof QuestionFormValues>(k: K, v: QuestionFormValues[K]) =>
-    setQForm(p => ({ ...p, [k]: v }));
-
-  const handleQTypeChange = (newType: QuestionType) => {
-    setQField("questionType", newType);
-    if (HAS_OPTIONS(newType) && optionRows.length === 0) {
-      setOptionRows([newOptionRow(1), newOptionRow(2)]);
-    }
-  };
-
-  const openCreateQ = () => {
-    setEditingQ(null);
-    const form = { ...EMPTY_QUESTION_FORM, displayOrder: questions.length + 1 };
-    setQForm(form);
-    setOptionRows(HAS_OPTIONS(form.questionType) ? [newOptionRow(1), newOptionRow(2)] : []);
-    setQFormError(null); setShowQForm(true);
-  };
-
-  const openEditQ = (q: QuestionDto) => {
-    setEditingQ(q);
-    setQForm({
-      questionText: q.questionText, questionType: q.questionType,
-      isRequired: q.isRequired, displayOrder: q.displayOrder, isActive: q.isActive
-    });
-    setOptionRows(
-      q.options?.length
-        ? q.options.map(o => ({
-          id: `o_${o.optionId}`, optionId: o.optionId,
-          optionText: o.optionText, optionValue: o.optionValue, displayOrder: o.displayOrder
-        }))
-        : HAS_OPTIONS(q.questionType) ? [newOptionRow(1), newOptionRow(2)] : []
-    );
-    setQFormError(null); setShowQForm(true);
-  };
-
-  const closeQForm = () => { setShowQForm(false); setEditingQ(null); setQFormError(null); };
-
-  // Option builder helpers
-  const addOptionRow = () => setOptionRows(p => [...p, newOptionRow(p.length + 1)]);
-  const removeOptionRow = (id: string) =>
-    setOptionRows(p => p.filter(r => r.id !== id).map((r, i) => ({ ...r, displayOrder: i + 1 })));
-  const updateOptionRow = (id: string, field: "optionText" | "optionValue", value: string) =>
-    setOptionRows(p => p.map(r => r.id === id ? { ...r, [field]: value } : r));
-
-  const handleQSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (HAS_OPTIONS(qForm.questionType) && optionRows.length === 0) {
-      setQFormError("Please add at least one answer option for this question type."); return;
-    }
-    if (HAS_OPTIONS(qForm.questionType) && optionRows.some(r => !r.optionText.trim())) {
-      setQFormError("All option rows must have non-empty option text."); return;
-    }
-    setQSubmitting(true); setQFormError(null);
-    try {
-      const options = HAS_OPTIONS(qForm.questionType)
-        ? optionRows.map((r, i) => ({
-          ...(r.optionId !== undefined && { optionId: r.optionId }),
-          optionText: r.optionText.trim(),
-          optionValue: r.optionValue.trim() || toValue(r.optionText),
-          displayOrder: i + 1,
-        }))
-        : undefined;
-
-      const payload = { ...qForm, ...(options !== undefined && { options }) };
-
-      if (editingQ) {
-        await adminGoalApi.updateQuestion(editingQ.questionId, payload);
-        setAlert({ type: "success", message: "Question updated!" });
-      } else {
-        await adminGoalApi.createQuestion(selectedTemplate!.templateId, payload);
-        setAlert({ type: "success", message: "Question created!" });
-      }
-      closeQForm(); fetchQuestions();
-    } catch (err) {
-      setQFormError(errMsg(err) ?? (editingQ ? "Failed to update question." : "Failed to create question."));
-    } finally { setQSubmitting(false); }
-  };
-
-  // ── DERIVED ───────────────────────────────────────────────────────────────
-  const tplHasMore = templates.length >= PAGE_SIZE;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <>
-      <PageMeta title="Questionnaire Templates | HabitEvolve Admin" description="Manage questionnaire templates and questions" />
-      <PageBreadcrumb pageTitle="Questionnaire Management" />
+    <div className="h-full flex flex-col gap-4">
+      {/* Flash alert */}
+      {alert && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[3px_3px_0_0_#1A1D20] ${alert.type === 'success' ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'}`}>
+          {alert.msg}
+        </div>
+      )}
 
-      {alert && <AlertBanner alert={alert} />}
+      {/* Header */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="w-12 h-12 rounded-2xl bg-amber-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
+          <ClipboardList className="w-6 h-6 text-gray-900" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Questionnaire Builder</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Templates → Questions → Options</p>
+        </div>
+        <button onClick={() => setTplModal({ editing: null })} className={`${btnBase} ml-auto bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white py-2`}>
+          <Plus className="w-4 h-4" /> New Template
+        </button>
+      </div>
 
-      {/* ════════════ TEMPLATES VIEW ═══════════════════════════════════ */}
-      {viewMode === "templates" && (
-        <div className="space-y-5">
-          {/* Goal context banner — shown when navigated from Hub 1 */}
-          {preselectedGoalId && preselectedGoalName && (
-            <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 border-2 border-orange-400 rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
-              <span className="text-xl">🎯</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">Context from Goals Hub</p>
-                <p className="text-sm font-bold text-gray-800">Goal: <span className="font-black">{decodeURIComponent(preselectedGoalName)}</span></p>
+      {/* Body: split pane */}
+      <div className="flex-1 flex gap-4 min-h-0">
+        {/* Left pane — Template list */}
+        <div className="w-72 shrink-0 overflow-y-auto flex flex-col gap-3 pr-1">
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading…</div>
+          ) : templates.length === 0 ? (
+            <div className="text-center py-12 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+              <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" /><p className="font-bold">No templates</p>
+            </div>
+          ) : templates.map(tpl => (
+            <div
+              key={tpl.templateId}
+              onClick={() => setSelectedTpl(tpl)}
+              className={`cursor-pointer border-4 rounded-2xl p-4 transition-all ${
+                selectedTpl?.templateId === tpl.templateId
+                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 shadow-[4px_4px_0_0_#1A1D20]'
+                  : 'border-black bg-white dark:bg-gray-800 hover:bg-amber-50/60 dark:hover:bg-amber-900/10 shadow-[3px_3px_0_0_#1A1D20]'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-black text-sm text-gray-900 dark:text-gray-100 leading-tight">{tpl.templateName}</p>
+                <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-black border ${tpl.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600'}`}>
+                  {tpl.isActive ? 'Active' : 'Off'}
+                </span>
               </div>
-              <p className="text-xs font-medium text-orange-700 text-right hidden sm:block">
-                Click "Bind" on any template below →
-              </p>
+              {tpl.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{tpl.description}</p>}
+              <div className="flex items-center gap-1 mt-3" onClick={e => e.stopPropagation()}>
+                <button onClick={() => handleToggle(tpl)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" title={tpl.isActive ? 'Deactivate' : 'Activate'}>
+                  {tpl.isActive ? <ToggleRight className="w-4 h-4 text-green-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                </button>
+                <button onClick={() => setTplModal({ editing: tpl })} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => setDelTpl(tpl)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
+                <ChevronRight className="w-4 h-4 ml-auto text-gray-300 dark:text-gray-600" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Right pane — Questions panel */}
+        <div className="flex-1 border-4 border-black dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-800 shadow-[4px_4px_0_0_#1A1D20] p-6 min-h-0 overflow-hidden flex flex-col">
+          {selectedTpl ? (
+            <QuestionsPanel template={selectedTpl} onBack={() => setSelectedTpl(null)} />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400 gap-3">
+              <ClipboardList className="w-16 h-16 opacity-20" />
+              <p className="font-black text-lg text-gray-500 dark:text-gray-400">Select a Template</p>
+              <p className="text-sm">Click a template on the left to manage its questions and answer options.</p>
             </div>
           )}
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-gray-900">Questionnaire Templates</h1>
-              <p className="text-sm text-gray-500 font-medium mt-0.5">Create and manage onboarding questionnaire templates.</p>
-            </div>
-            <button onClick={openCreateTpl} className={`${btnBase} bg-emerald-300 text-gray-900 whitespace-nowrap`}>
-              <PlusIcon /> Create Template
-            </button>
-          </div>
-
-          {/* Table */}
-          <TableCard
-            loading={tplLoading}
-            count={visibleTemplates.length}
-            title="All Templates"
-            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>}
-          >
-            <TableFilterBar<TemplateFilters>
-              fields={TEMPLATE_FILTER_FIELDS}
-              filters={tplFilters}
-              onFilterChange={setTplFilter}
-              onClear={clearTplFilters}
-              hasActiveFilters={tplHasActiveFilters}
-            />
-
-            {tplError && (
-              <div className="mx-6 mt-5 bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold flex items-center justify-between gap-3">
-                <span>{tplError}</span>
-                <button onClick={fetchTemplates} className="underline font-black hover:no-underline whitespace-nowrap">Retry</button>
-              </div>
-            )}
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200 bg-gray-50/50">
-                    {["#", "Template Name", "Status", "Created", "Actions"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {tplLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cells={7} />)
-                  ) : visibleTemplates.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-20 text-center">
-                        <div className="text-4xl mb-3">📋</div>
-                        <p className="text-gray-600 text-sm font-black">
-                          {tplHasActiveFilters ? "No templates match your filters." : "No templates yet."}
-                        </p>
-                        {tplHasActiveFilters && (
-                          <button onClick={clearTplFilters} className="mt-2 text-xs font-black text-blue-600 underline hover:no-underline">Clear filters</button>
-                        )}
-                      </td>
-                    </tr>
-                  ) : (
-                    visibleTemplates.map((t, idx) => (
-                      <tr key={t.templateId}
-                        className={`transition-colors hover:bg-yellow-50/60 ${idx < visibleTemplates.length - 1 ? "border-b-2 border-gray-100" : ""}`}>
-                        <td className="px-4 py-4 text-xs font-black text-gray-400">{(tplPage - 1) * PAGE_SIZE + idx + 1}</td>
-                        <td className="px-4 py-4">
-                          <p className="text-sm font-black text-gray-900">{t.templateName}</p>
-                          {t.description && <p className="text-xs text-gray-400 font-medium mt-0.5 max-w-[220px] truncate">{t.description}</p>}
-                        </td>
-                        <td className="px-4 py-4"><ActivePill isActive={t.isActive} /></td>
-                        <td className="px-4 py-4 text-xs text-gray-400 font-medium whitespace-nowrap">{fmtDate(t.createdAt)}</td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            <button title="Edit template" onClick={() => openEditTpl(t)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800">
-                              <PencilIcon />
-                            </button>
-                            <button title="Manage questions" onClick={() => openManageQuestions(t)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-purple-100 hover:bg-purple-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-purple-800">
-                              <ListIcon />
-                            </button>
-                            <button title="Bind to a Goal" onClick={() => setBindingTemplate(t)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-orange-800">
-                              <LinkIcon />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <PaginationBar
-              page={tplPage} hasMore={tplHasMore} loading={tplLoading}
-              onPrev={() => setTplPage(Math.max(1, tplPage - 1))}
-              onNext={() => setTplPage(tplPage + 1)}
-            />
-          </TableCard>
         </div>
-      )}
+      </div>
 
-      {/* ════════════ QUESTIONS VIEW ════════════════════════════════════ */}
-      {viewMode === "questions" && selectedTemplate && (
-        <div className="space-y-5">
-          {/* Back + template info */}
-          <div className="flex flex-col gap-4">
-            <button onClick={backToTemplates}
-              className={`${btnBase} bg-white text-gray-700 self-start`}>
-              <ArrowLeftIcon /> Back to Templates
-            </button>
-
-            {/* Template info card */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-purple-50 border-2 border-black rounded-2xl px-5 py-4 shadow-[4px_4px_0_0_#1A1D20]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl border-2 border-black bg-purple-300 flex items-center justify-center text-lg shadow-[2px_2px_0_0_#1A1D20]">📋</div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-black text-gray-900 text-lg">{selectedTemplate.templateName}</h2>
-
-                    <ActivePill isActive={selectedTemplate.isActive} />
-                  </div>
-                </div>
-              </div>
-              <button onClick={openCreateQ} className={`${btnBase} bg-emerald-300 text-gray-900 whitespace-nowrap`}>
-                <PlusIcon /> Add New Question
-              </button>
-            </div>
-          </div>
-
-          {/* Questions table */}
-          <TableCard loading={qLoading} count={questions.length} title="Questions"
-            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>}
-          >
-            {qError && (
-              <div className="mx-6 mt-5 bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold flex items-center justify-between gap-3">
-                <span>{qError}</span>
-                <button onClick={fetchQuestions} className="underline font-black hover:no-underline whitespace-nowrap">Retry</button>
-              </div>
-            )}
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200 bg-gray-50/50">
-                    {["Order", "Question Text", "Type", "Required", "Options", "Status", "Actions"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {qLoading ? (
-                    Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cells={7} />)
-                  ) : questions.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-20 text-center">
-                        <div className="text-4xl mb-3">❓</div>
-                        <p className="text-gray-600 text-sm font-black">No questions yet.</p>
-                        <button onClick={openCreateQ}
-                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-purple-700 underline hover:no-underline">
-                          <PlusIcon /> Add the first question
-                        </button>
-                      </td>
-                    </tr>
-                  ) : (
-                    questions
-                      .slice()
-                      .sort((a, b) => a.displayOrder - b.displayOrder)
-                      .map((q, idx, arr) => (
-                        <tr key={q.questionId}
-                          className={`transition-colors hover:bg-purple-50/50 ${idx < arr.length - 1 ? "border-b-2 border-gray-100" : ""}`}>
-                          <td className="px-4 py-4">
-                            <span className="w-7 h-7 flex items-center justify-center rounded-xl border-2 border-black bg-gray-100 text-xs font-black text-gray-600 shadow-[1px_1px_0_0_#1A1D20]">
-                              {q.displayOrder}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 max-w-[260px]">
-                            <p className="text-sm font-bold text-gray-800 line-clamp-2">{q.questionText}</p>
-                          </td>
-                          <td className="px-4 py-4"><QuestionTypeBadge type={q.questionType} /></td>
-                          <td className="px-4 py-4">
-                            {q.isRequired ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-black border-2 border-red-300 bg-red-50 text-red-700">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                Required
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-400 font-medium">Optional</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-sm font-black text-gray-600 text-center">
-                            {HAS_OPTIONS(q.questionType) ? q.options?.length ?? 0 : <span className="text-gray-300">—</span>}
-                          </td>
-                          <td className="px-4 py-4"><ActivePill isActive={q.isActive} /></td>
-                          <td className="px-4 py-4">
-                            <button title="Edit question" onClick={() => openEditQ(q)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800">
-                              <PencilIcon />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </TableCard>
-        </div>
-      )}
-
-      {/* ════════════ MODAL: TEMPLATE CREATE / EDIT ════════════════════ */}
-      {showTplForm && (
-        <GameModal title={editingTpl ? "Edit Template" : "Create Template"} onClose={closeTplForm}>
-          <form onSubmit={handleTplSubmit} className="space-y-4">
-            <FormField label="Template Name *">
-              <input required type="text" value={tplForm.templateName}
-                onChange={e => setTplForm(p => ({ ...p, templateName: e.target.value }))}
-                placeholder="e.g. Fitness Onboarding Survey" className={inputCls} />
-            </FormField>
-            <FormField label="Description">
-              <textarea rows={3} value={tplForm.description}
-                onChange={e => setTplForm(p => ({ ...p, description: e.target.value }))}
-                placeholder="Purpose and context of this questionnaire…" className={`${inputCls} resize-none`} />
-            </FormField>
-            <Toggle checked={tplForm.isActive}
-              onChange={v => setTplForm(p => ({ ...p, isActive: v }))}
-              label="Active" sub="Published and visible for assignment to goals" />
-            {tplFormError && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{tplFormError}</p>
-            )}
-            <div className="flex gap-3 pt-1">
-              <button type="button" onClick={closeTplForm} disabled={tplSubmitting}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
-              <button type="submit" disabled={tplSubmitting}
-                className={`${btnBase} flex-1 justify-center ${editingTpl ? "bg-blue-200 text-blue-900" : "bg-emerald-300 text-gray-900"}`}>
-                {tplSubmitting
-                  ? <><Spinner />{editingTpl ? "Saving…" : "Creating…"}</>
-                  : editingTpl ? <><SaveIcon />Save Changes</> : <><PlusIcon />Create Template</>}
-              </button>
-            </div>
-          </form>
-        </GameModal>
-      )}
-
-      {/* ════════════ MODAL: QUESTION CREATE / EDIT ════════════════════ */}
-      {showQForm && (
-        <GameModal
-          title={editingQ ? "Edit Question" : "Add New Question"}
-          onClose={closeQForm}
-          maxWidth="max-w-xl"
-        >
-          <form onSubmit={handleQSubmit} className="space-y-4">
-
-            {/* Question Text */}
-            <FormField label="Question Text *">
-              <textarea required rows={3} value={qForm.questionText}
-                onChange={e => setQField("questionText", e.target.value)}
-                placeholder="e.g. What is your current fitness level?" className={`${inputCls} resize-none`} />
-            </FormField>
-
-            {/* Question Type */}
-            <FormField label="Question Type *">
-              <select required value={qForm.questionType}
-                onChange={e => handleQTypeChange(e.target.value as QuestionType)}
-                className={inputCls}>
-                {QUESTION_TYPES.map(t => (
-                  <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
-                ))}
-              </select>
-              {/* Preview of selected type */}
-              <div className="mt-2 flex items-center gap-2">
-                <QuestionTypeBadge type={qForm.questionType} />
-                {HAS_OPTIONS(qForm.questionType) && (
-                  <span className="text-xs text-gray-400 font-medium">→ Answer options required below</span>
-                )}
-              </div>
-            </FormField>
-
-            {/* Display Order + Required + Active in a row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <FormField label="Display Order *" hint="Lower = shown first">
-                <input required type="number" min={1} value={qForm.displayOrder}
-                  onChange={e => setQField("displayOrder", Number(e.target.value))}
-                  className={inputCls} />
-              </FormField>
-              <div className="sm:col-span-2 space-y-2">
-                <Toggle checked={qForm.isRequired} onChange={v => setQField("isRequired", v)}
-                  label="Required" sub="Player must answer this question" />
-                <Toggle checked={qForm.isActive} onChange={v => setQField("isActive", v)}
-                  label="Active" sub="Visible in the questionnaire" />
-              </div>
-            </div>
-
-            {/* ── OPTIONS BUILDER (SingleChoice / MultipleChoice) ─── */}
-            {HAS_OPTIONS(qForm.questionType) && (
-              <div className="border-2 border-dashed border-black rounded-2xl bg-gray-50/60 overflow-hidden">
-                {/* Sub-card header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b-2 border-dashed border-black bg-purple-50">
-                  <div>
-                    <p className="text-sm font-black text-gray-900">Answer Options</p>
-                    <p className="text-xs text-gray-500 font-medium">
-                      {qForm.questionType === "MultipleChoice" ? "Players can select multiple." : "Players select one."}
-                    </p>
-                  </div>
-                  <button type="button" onClick={addOptionRow}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black border-2 border-black rounded-xl bg-emerald-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                    <PlusIcon /> Add Option
-                  </button>
-                </div>
-
-                <div className="p-4 space-y-2">
-                  {optionRows.length === 0 ? (
-                    <div className="text-center py-5 border-2 border-dashed border-gray-300 rounded-xl bg-white">
-                      <p className="text-sm text-gray-400 font-semibold">No options yet — click "Add Option" above.</p>
-                    </div>
-                  ) : (
-                    optionRows.map((row, i) => (
-                      <div key={row.id}
-                        className="flex items-center gap-2 bg-white border-2 border-black rounded-xl px-3 py-2 shadow-[2px_2px_0_0_#1A1D20]">
-                        <span className="text-xs font-black text-gray-400 w-5 flex-shrink-0 select-none">{i + 1}.</span>
-                        <input
-                          type="text"
-                          value={row.optionText}
-                          onChange={e => updateOptionRow(row.id, "optionText", e.target.value)}
-                          placeholder="Option label…"
-                          className={`${miniInputCls} flex-1 min-w-0`}
-                        />
-                        <input
-                          type="text"
-                          value={row.optionValue}
-                          onChange={e => updateOptionRow(row.id, "optionValue", e.target.value)}
-                          placeholder="value (auto)"
-                          className={`${miniInputCls} w-28 flex-shrink-0`}
-                        />
-                        <button type="button" onClick={() => removeOptionRow(row.id)}
-                          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg border-2 border-black bg-red-100 text-red-600 hover:bg-red-200 shadow-[1px_1px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
-                          <XIcon />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                  <p className="text-xs text-gray-400 font-medium pt-1">
-                    "Value" field is auto-generated from the label if left blank. Use it for API mappings.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {qFormError && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{qFormError}</p>
-            )}
-
-            <div className="flex gap-3 pt-1">
-              <button type="button" onClick={closeQForm} disabled={qSubmitting}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
-              <button type="submit" disabled={qSubmitting}
-                className={`${btnBase} flex-1 justify-center ${editingQ ? "bg-blue-200 text-blue-900" : "bg-emerald-300 text-gray-900"}`}>
-                {qSubmitting
-                  ? <><Spinner />{editingQ ? "Saving…" : "Creating…"}</>
-                  : editingQ ? <><SaveIcon />Save Question</> : <><PlusIcon />Add Question</>}
-              </button>
-            </div>
-          </form>
-        </GameModal>
-      )}
-
-      {/* ════════════ MODAL: BIND TO GOAL ══════════════════════════════ */}
-      {bindingTemplate && (
-        <BindToGoalModal
-          template={bindingTemplate}
-          preselectedGoalId={preselectedGoalId}
-          onClose={() => setBindingTemplate(null)}
-          onAlert={a => setAlert(a)}
-        />
-      )}
-    </>
+      {/* Modals */}
+      {tplModal !== null && <TemplateFormModal editing={tplModal.editing} onSave={handleSaveTpl} onClose={() => setTplModal(null)} />}
+      {delTpl && <ConfirmDeleteModal title="Delete Template?" body={`Permanently delete "${delTpl.templateName}"? All questions and options will be removed.`} loading={delLoading} onConfirm={handleDelete} onCancel={() => setDelTpl(null)} />}
+    </div>
   );
 }

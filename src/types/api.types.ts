@@ -1,3 +1,23 @@
+// Shape of the `data` field in login / google-login API responses
+export interface AuthUser {
+    userId: number;
+    username: string;
+    email: string;
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    role?: string;    // raw BE field (singular string) — normalized to roles[] in authApi.ts
+    roles: string[];  // normalized FE field — always populated after authApi normalization
+}
+
+// Payload for POST /api/auth/google-login
+export interface GoogleLoginPayload {
+    email: string;
+    fullName: string;
+    avatarUrl: string | null;
+    emailVerified: boolean;
+}
+
 // Dành cho form Đăng ký
 export interface RegisterPayload {
     username: string;
@@ -50,7 +70,8 @@ export interface UserItem {
     status: UserStatus;
     createdAt: string;
     updatedAt: string | null;
-    roles: UserRole[];
+    role?: UserRole;    // raw BE field (singular) — normalized to roles[] in adminUserApi.ts
+    roles: UserRole[];  // normalized FE field
 }
 
 // Query params for GET /admin/users

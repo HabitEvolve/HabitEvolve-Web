@@ -82,11 +82,11 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 
     return createPortal(
         <div
-            className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <div
-                className="relative w-full max-w-md bg-[#FEF9C3] border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
+                className="relative w-full max-w-md bg-[#FEF9C3] dark:bg-amber-900/40 border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 className="text-2xl font-black mb-1">{pkg.name}</h2>
@@ -144,10 +144,10 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 
 // ── GEM STORE MODAL ───────────────────────────────────────────────────────────
 const GEM_PACKAGES = [
-    { gems: 100,  label: "Starter",  color: "bg-emerald-100", badge: null },
-    { gems: 500,  label: "Explorer", color: "bg-amber-100",   badge: "POPULAR" },
-    { gems: 1000, label: "Champion", color: "bg-violet-100",  badge: null },
-    { gems: 3000, label: "Legend",   color: "bg-[#FEE2E2]",   badge: "BEST VALUE" },
+    { gems: 100,  label: "Starter",  color: "bg-emerald-100 dark:bg-emerald-900/50", badge: null },
+    { gems: 500,  label: "Explorer", color: "bg-amber-100 dark:bg-amber-900/50",   badge: "POPULAR" },
+    { gems: 1000, label: "Champion", color: "bg-violet-100 dark:bg-violet-900/50",  badge: null },
+    { gems: 3000, label: "Legend",   color: "bg-[#FEE2E2] dark:bg-red-900/50",   badge: "BEST VALUE" },
 ] as const;
 
 type GemPackage = typeof GEM_PACKAGES[number];
@@ -199,7 +199,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
     return createPortal(
         <div
-            className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <div
@@ -208,7 +208,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
             >
                 {/* Redirecting overlay — shown while SePay form is submitting */}
                 {redirecting && (
-                    <div className="absolute inset-0 bg-white/95 rounded-xl flex flex-col items-center justify-center gap-4 z-10">
+                    <div className="absolute inset-0 bg-white/95 dark:bg-gray-900/95 rounded-xl flex flex-col items-center justify-center gap-4 z-10">
                         <Spinner size={40} />
                         <p className="font-black text-xl">Connecting to SePay...</p>
                         <p className="text-sm text-gray-500 text-center max-w-xs font-medium">
@@ -270,7 +270,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                             onClick={() => setMethod(m)}
                             className={`flex-1 py-2 rounded-full border-2 font-black text-xs transition-all ${method === m
                                 ? "border-black bg-black text-white shadow-none"
-                                : "border-gray-300 bg-white text-gray-500 hover:border-gray-500"
+                                : "border-gray-300 bg-white dark:bg-gray-700 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-500"
                             }`}
                         >
                             {m === 'SEPAY' ? '💳 SePay (Real)' : '🧪 DEMO (Dev)'}
@@ -340,7 +340,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
 
     return createPortal(
         <div
-            className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <div
@@ -361,7 +361,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                 </div>
 
                 {/* Downgrade warning */}
-                <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 mb-5 space-y-3">
+                <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-xl p-4 mb-5 space-y-3">
                     <p className="text-sm font-bold text-gray-800">
                         Are you sure you want to cancel your premium tier? Your account will
                         instantly fall back to the{" "}
@@ -505,7 +505,7 @@ export default function SubscriptionWallet() {
             {/* Top Row: Wallet | Plan + Usage (merged) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Wallet Card */}
-                <div className="bg-[#FEF9C3] border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 flex flex-col gap-4">
+                <div className="bg-[#FEF9C3] dark:bg-amber-900/30 border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg font-black">Gem Wallet 💎</h2>
                         <button
@@ -527,7 +527,7 @@ export default function SubscriptionWallet() {
                 </div>
 
                 {/* Current Plan + Usage — merged into one card spanning the remaining 2 columns */}
-                <div className="md:col-span-2 bg-[#EDE9FE] border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 flex flex-col gap-4">
+                <div className="md:col-span-2 bg-[#EDE9FE] dark:bg-violet-900/30 border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 flex flex-col gap-4">
                     {/* Plan header: info on the left, Cancel pinned to the top-right */}
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-1.5 min-w-0">
@@ -537,7 +537,7 @@ export default function SubscriptionWallet() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-2xl font-black">{plan.name}</span>
                                         {activeSub?.isDefaultFree && (
-                                            <span className="px-2 py-0.5 text-xs font-black bg-gray-200 border-2 border-black rounded-full">
+                                            <span className="px-2 py-0.5 text-xs font-black bg-gray-200 dark:bg-gray-700 dark:text-gray-200 border-2 border-black rounded-full">
                                                 FREE
                                             </span>
                                         )}
@@ -601,7 +601,7 @@ export default function SubscriptionWallet() {
                         return (
                             <div
                                 key={pkg.packageId}
-                                className={`relative flex flex-col gap-4 p-5 border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] ${isCurrent ? "bg-[#D1FAE5]" : "bg-white"
+                                className={`relative flex flex-col gap-4 p-5 border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] ${isCurrent ? "bg-[#D1FAE5] dark:bg-emerald-900/30" : "bg-white"
                                     }`}
                             >
                                 {isCurrent && (

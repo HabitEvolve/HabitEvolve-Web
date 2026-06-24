@@ -4,7 +4,7 @@ import {
   ChevronDownIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import { House, User, Handshake, Gavel, Swords, Layers, BadgeQuestionMark, Scale } from "lucide-react";
+import { House, User, Handshake, Gavel, Swords, Layers, BadgeQuestionMark, Scale, CreditCard, Settings } from "lucide-react";
 
 type NavItem = {
   name: string;
@@ -57,6 +57,17 @@ const navItems: NavItem[] = [
     name: "Calc Rules",
     path: "/target-rules",
     sectionLabel: "CONFIGURATION",
+  },
+  {
+    icon: <Settings className="w-5 h-5 shrink-0" />,
+    name: "System Config",
+    path: "/system-config",
+  },
+  {
+    icon: <CreditCard className="w-5 h-5 shrink-0" />,
+    name: "Subscriptions",
+    path: "/subscription-packages",
+    sectionLabel: "MONETIZATION",
   },
 ];
 
@@ -131,7 +142,7 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* ── Logo ────────────────────────────────────────────────────── */}
-      <div className={`overflow-hidden transition-all duration-300 ${showFull ? "mb-8" : "mb-4"}`}>
+      <div className={`shrink-0 overflow-hidden transition-all duration-300 ${showFull ? "mb-2" : "mb-4"}`}>
         <Link to="/" className={`block ${!showFull ? "text-center" : ""}`}>
           {showFull ? (
             <h1 className="text-3xl font-black text-[#1a3a3a] dark:text-emerald-300 tracking-tight whitespace-nowrap">
@@ -141,22 +152,27 @@ const AppSidebar: React.FC = () => {
             <span className="text-2xl font-black text-[#1a3a3a] dark:text-emerald-300">H</span>
           )}
         </Link>
+        {showFull && (
+          <span className="text-balance inline-block mt-1 px-2 py-0.5 text-xs font-black bg-[#e18308] text-white rounded-full border-2 border-[#3b1f6e]">
+            ADMIN
+          </span>
+        )}
       </div>
 
       {/* ── Mascot — hidden when collapsed ──────────────────────────── */}
       <div
-        className={`flex justify-center transition-all duration-300 overflow-hidden ${showFull ? "mb-10 max-h-40 opacity-100" : "max-h-0 opacity-0 mb-0"
+        className={`shrink-0 flex justify-center transition-all duration-300 overflow-hidden ${showFull ? "mb-10 max-h-40 opacity-100" : "max-h-0 opacity-0 mb-0"
           }`}
       >
         <img
           alt="HabitEvolve Mascot"
-          className="w-32 h-32 object-contain"
+          className="w-50 h-50 object-contain"
           src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
         />
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
-      <nav className="grow space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1a3a3a]/20 dark:[&::-webkit-scrollbar-thumb]:bg-white/20">
         {navItems.map((nav, index) => (
           <div key={nav.name}>
             {/* Section label — hidden when collapsed */}

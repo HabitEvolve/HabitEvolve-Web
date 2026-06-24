@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Swords, Plus, Pencil, Settings2, X, Save,
-  ChevronLeft, ChevronRight, Loader2,
+  ChevronLeft, ChevronRight, Loader2, Filter, Users,
 } from "lucide-react";
+import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminBossApi } from "../api/adminBossApi";
@@ -60,6 +61,10 @@ const errMsg = (e: unknown) =>
 const fmtDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
+const SI = (src: string) => (
+  <img src={src} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+);
+
 // ── ICONS (lucide-react wrappers) ─────────────────────────────────────────────
 const SwordsIcon = ({ size = 20 }: { size?: number }) => <Swords width={size} height={size} />;
 const PlusIcon = () => <Plus className="w-3.5 h-3.5" />;
@@ -72,44 +77,47 @@ const ChevRight = () => <ChevronRight className="w-3.5 h-3.5" />;
 const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
-const STATUS_CFG: Record<BossTemplateStatus, { bg: string; border: string; text: string; emoji: string }> = {
-  Draft:     { bg: "bg-amber-100",  border: "border-amber-400",  text: "text-amber-800",  emoji: "📝" },
-  Published: { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  emoji: "🟢" },
-  Archived:  { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-600",   emoji: "📦" },
+const STATUS_CFG: Record<string, { bg: string; border: string; text: string; icon: ReactNode }> = {
+  "":        { bg: "bg-gray-100",   border: "border-gray-300",   text: "text-gray-600",   icon: <Filter className="w-3.5 h-3.5 shrink-0" /> },
+  Draft:     { bg: "bg-amber-100",  border: "border-amber-400",  text: "text-amber-800",  icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
+  Published: { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  icon: SI("/icon/UI/Checkmark/64px/Checkmark 1st 64px.png") },
+  Archived:  { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-600",   icon: SI("/icon/Item/Chest/64px/Chest 1st 64px.png") },
 };
+const STATUS_KEYS = ["", "Draft", "Published", "Archived"] as const;
+
 const StatusBadge = ({ status }: { status: BossTemplateStatus }) => {
   const c = STATUS_CFG[status] ?? STATUS_CFG.Draft;
-  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {status}</span>;
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {status}</span>;
 };
 
-const MODE_CFG: Record<BossModeType, { bg: string; border: string; text: string; cardBg: string; cardBorder: string; emoji: string }> = {
-  EASY:   { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  cardBg: "bg-green-50 dark:bg-green-900/20",  cardBorder: "border-green-400 dark:border-green-700",  emoji: "🌿" },
-  NORMAL: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-800",   cardBg: "bg-blue-50 dark:bg-blue-900/20",   cardBorder: "border-blue-400 dark:border-blue-700",   emoji: "⚔️" },
-  HARD:   { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    cardBg: "bg-red-50 dark:bg-red-900/20",    cardBorder: "border-red-400 dark:border-red-700",    emoji: "🔥" },
+const MODE_CFG: Record<BossModeType, { bg: string; border: string; text: string; cardBg: string; cardBorder: string; icon: ReactNode; iconSrc: string }> = {
+  Easy:   { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  cardBg: "bg-green-50 dark:bg-green-900/20",  cardBorder: "border-green-400 dark:border-green-700",  icon: SI("/icon/Nature/Leaf/64px/Leaf 1st 64px.png"),     iconSrc: "/icon/Nature/Leaf/64px/Leaf 1st 64px.png" },
+  Normal: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-800",   cardBg: "bg-blue-50 dark:bg-blue-900/20",   cardBorder: "border-blue-400 dark:border-blue-700",   icon: SI("/icon/Item/Sword/64px/Sword 1st 64px.png"),     iconSrc: "/icon/Item/Sword/64px/Sword 1st 64px.png" },
+  Hard:   { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    cardBg: "bg-red-50 dark:bg-red-900/20",    cardBorder: "border-red-400 dark:border-red-700",    icon: SI("/icon/Main/Fire 2/64w/Fire 64px.png"),          iconSrc: "/icon/Main/Fire 2/64w/Fire 64px.png" },
 };
 const ModeBadge = ({ mode }: { mode: BossModeType }) => {
-  const c = MODE_CFG[mode] ?? MODE_CFG.EASY;
-  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {mode}</span>;
+  const c = MODE_CFG[mode] ?? MODE_CFG.Easy;
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {mode}</span>;
 };
 
-const TIER_CFG: Record<PackageTier, { bg: string; border: string; text: string; emoji: string }> = {
-  FREE:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   emoji: "🆓" },
-  BASIC:   { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   emoji: "⭐" },
-  PREMIUM: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800", emoji: "💎" },
+const TIER_CFG: Record<PackageTier, { bg: string; border: string; text: string; icon: ReactNode }> = {
+  FREE:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   icon: SI("/icon/Item/Shield/64px/Shield 1st 64px.png") },
+  BASIC:   { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   icon: SI("/icon/Item/Medal/64px/Bronze Medal 1st 64px.png") },
+  PREMIUM: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800", icon: SI("/icon/Item/Crown/64px/Crown 1st 64px.png") },
 };
 const TierBadge = ({ tier }: { tier: PackageTier }) => {
   const c = TIER_CFG[tier] ?? TIER_CFG.FREE;
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {tier}</span>;
+  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {tier}</span>;
 };
 
-const REWARD_CFG: Record<RewardTierType, { bg: string; border: string; text: string; emoji: string }> = {
-  BASIC:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   emoji: "📦" },
-  STANDARD: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   emoji: "⭐" },
-  PREMIUM:  { bg: "bg-yellow-100", border: "border-yellow-500", text: "text-yellow-800", emoji: "🏆" },
+const REWARD_CFG: Record<RewardTierType, { bg: string; border: string; text: string; icon: ReactNode }> = {
+  BASIC:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   icon: SI("/icon/Item/Chest/64px/Chest 1st 64px.png") },
+  STANDARD: { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   icon: SI("/icon/Main/Star/64px/Golden Star 1st 64px.png") },
+  PREMIUM:  { bg: "bg-yellow-100", border: "border-yellow-500", text: "text-yellow-800", icon: SI("/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png") },
 };
 const RewardBadge = ({ tier }: { tier: RewardTierType }) => {
   const c = REWARD_CFG[tier] ?? REWARD_CFG.BASIC;
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.emoji} {tier}</span>;
+  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {tier}</span>;
 };
 
 // ── LABEL ─────────────────────────────────────────────────────────────────────
@@ -167,7 +175,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-purple-50 dark:bg-purple-900/30 shrink-0 rounded-t-3xl">
@@ -314,7 +322,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
 
         {/* Header */}
@@ -348,20 +356,20 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
               </div>
             ) : !tpl || tpl.modes.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-12 text-gray-400">
-                <span className="text-4xl">🐉</span>
+                <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
                 <p className="font-black text-gray-500">No modes configured yet</p>
                 <p className="text-xs font-medium">Add modes using the form →</p>
               </div>
             ) : (
               tpl.modes.map(m => {
-                const mc = MODE_CFG[m.mode] ?? MODE_CFG.EASY;
+                const mc = MODE_CFG[m.mode] ?? MODE_CFG.Easy;
                 return (
                   <div key={m.mode}
                     className={`border-2 ${mc.cardBorder} ${mc.cardBg} rounded-2xl p-4 shadow-[3px_3px_0_0_#1A1D20]`}>
                     {/* Mode header */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">{mc.emoji}</span>
+                        <img src={mc.iconSrc} alt="" className="w-8 h-8 object-contain shrink-0" />
                         <div>
                           <ModeBadge mode={m.mode} />
                           <p className="text-[10px] font-bold text-gray-500 mt-0.5">Min: <TierBadge tier={m.minPackage as PackageTier} /></p>
@@ -376,29 +384,29 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                     {/* Stats grid */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500 font-medium">👥 Party</span>
+                        <span className="flex items-center gap-1 text-gray-500 font-medium"><Users className="w-3.5 h-3.5 shrink-0" /> Party</span>
                         <span className="font-black text-gray-800">{m.partyMin} – {m.partyMax}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500 font-medium">⚡ Max Dmg/Q</span>
+                        <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Main/Lighting/64px/Lighting 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Max Dmg/Q</span>
                         <span className="font-black text-gray-800">{m.maxDamagePerQuest.toLocaleString()}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500 font-medium">📊 Quests/Day</span>
+                        <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Quests/Day</span>
                         <span className="font-black text-gray-800">{m.maxQuestPerMemberPerDay}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-1 text-gray-500 font-medium">
-                          <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="gold" className="w-4 h-4 object-contain" /> Gold/Q
+                          <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Gold/Q
                         </span>
                         <span className="font-black text-gray-800">{m.mGoldRewardCapPerQuest} mG</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500 font-medium">📅 Quests/Wk</span>
+                        <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Item/Calendar/64px/Calendar 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Quests/Wk</span>
                         <span className="font-black text-gray-800">{m.maxPartyQuestPerWeek}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500 font-medium">⏰ Deadline</span>
+                        <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Item/Clock/64px/Clock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Deadline</span>
                         <span className="font-black text-gray-800 text-[10px]">{m.deadlineMax}</span>
                       </div>
                     </div>
@@ -421,13 +429,18 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
           {/* ── RIGHT: ADD MODE FORM ──────────────────────────────────── */}
           <div className="lg:w-[48%] overflow-y-auto p-5">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-              {tpl && tpl.modes.length >= 3 ? "All 3 Modes Configured ✅" : "Add New Mode"}
+              {tpl && tpl.modes.length >= 3 ? (
+              <span className="inline-flex items-center gap-1.5">
+                All 3 Modes Configured
+                <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-3 h-3 object-contain" />
+              </span>
+            ) : "Add New Mode"}
             </p>
 
             {tpl && tpl.modes.length >= 3 ? (
               <div className="flex flex-col items-center gap-3 py-12 text-gray-400">
-                <span className="text-4xl">✅</span>
-                <p className="font-black text-gray-600">EASY, NORMAL & HARD configured!</p>
+                <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
+                <p className="font-black text-gray-600">Easy, Normal & Hard configured!</p>
                 <p className="text-xs font-medium text-center">All difficulty modes are set up for this boss template.</p>
               </div>
             ) : (
@@ -439,7 +452,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                     <select value={form.mode}
                       onChange={e => setS("mode", e.target.value)}
                       className={inputCls}>
-                      {(["EASY", "NORMAL", "HARD"] as BossModeType[]).map(m => (
+                      {(["Easy", "Normal", "Hard"] as BossModeType[]).map(m => (
                         <option key={m} value={m}
                           disabled={tpl?.modes.some(ex => ex.mode === m)}>
                           {m}{tpl?.modes.some(ex => ex.mode === m) ? " ✓" : ""}
@@ -594,10 +607,13 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
   const isPublish = action === "publish";
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{isPublish ? "🚀" : "📦"}</span>
+          <img
+            src={isPublish ? "/icon/Main/Upgrade/64px/Green Upgrade 1st 64px.png" : "/icon/Item/Chest/64px/Chest 1st 64px.png"}
+            alt="" className="w-9 h-9 object-contain shrink-0"
+          />
           <div>
             <h3 className="font-black text-gray-900">{isPublish ? "Publish Template?" : "Archive Template?"}</h3>
             <p className="text-xs font-medium text-gray-500 mt-0.5">"{templateName}"</p>
@@ -610,7 +626,7 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
         </p>
         {!isPublish && (
           <div className="flex items-start gap-2 px-3 py-2.5 bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700 rounded-2xl">
-            <span className="text-sm shrink-0">⚠️</span>
+            <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
             <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">Archiving is permanent. You cannot restore an archived template.</p>
           </div>
         )}
@@ -619,7 +635,9 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
             className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
           <button onClick={handleConfirm} disabled={loading}
             className={`${btnBase} flex-1 justify-center ${isPublish ? "bg-green-300 text-green-900" : "bg-orange-300 text-orange-900"}`}>
-            {loading ? <><Spinner size={13} /> {isPublish ? "Publishing…" : "Archiving…"}</> : isPublish ? "🚀 Publish" : "📦 Archive"}
+            {loading ? <><Spinner size={13} /> {isPublish ? "Publishing…" : "Archiving…"}</> : (
+              <><img src={isPublish ? "/icon/Main/Upgrade/64px/Green Upgrade 1st 64px.png" : "/icon/Item/Chest/64px/Chest 1st 64px.png"} alt="" className="w-3.5 h-3.5 object-contain" /> {isPublish ? "Publish" : "Archive"}</>
+            )}
           </button>
         </div>
       </div>
@@ -637,12 +655,12 @@ interface StatusConfirmState {
 
 export default function AdminBossManagement() {
   // ── ALERT ─────────────────────────────────────────────────────────────────
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  useEffect(() => {
-    if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 4000);
-    return () => clearTimeout(t);
-  }, [alert]);
+  const globalAlert = useAlert();
+  const setAlert = useCallback(
+    (a: { type: "success" | "error"; message: string }) =>
+      a.type === "success" ? globalAlert.success(a.message) : globalAlert.error(a.message),
+    [globalAlert]
+  );
 
   // ── DATA ──────────────────────────────────────────────────────────────────
   const [templates, setTemplates] = useState<BossTemplateDto[]>([]);
@@ -685,14 +703,6 @@ export default function AdminBossManagement() {
       <PageMeta title="Weekly Boss Management" description="Manage weekly boss templates and difficulty modes" />
       <PageBreadcrumb pageTitle="Weekly Boss" />
 
-      {/* Alert Toast */}
-      {alert && (
-        <div className={`fixed top-4 right-4 z-99998 flex items-center gap-3 px-5 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[4px_4px_0_0_#1A1D20] ${
-          alert.type === "success" ? "bg-green-300 text-green-900" : "bg-red-300 text-red-900"
-        }`}>
-          {alert.type === "success" ? "✅" : "❌"} {alert.message}
-        </div>
-      )}
 
       <div className="space-y-6 p-1">
         {/* Page Header */}
@@ -713,21 +723,25 @@ export default function AdminBossManagement() {
         </div>
 
         {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
-          <span className="text-sm font-black text-gray-700">🔍 Status:</span>
-          <select value={statusFilter} onChange={e => handleStatusFilterChange(e.target.value)}
-            className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer">
-            <option value="">All Statuses</option>
-            <option value="Draft">📝 Draft</option>
-            <option value="Published">🟢 Published</option>
-            <option value="Archived">📦 Archived</option>
-          </select>
-          {statusFilter && (
-            <button onClick={() => handleStatusFilterChange("")}
-              className="px-3 py-1.5 text-xs font-black border-2 border-black rounded-full bg-gray-100 hover:bg-gray-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
-              ✕ Clear
-            </button>
-          )}
+        <div className="flex flex-wrap items-center gap-2 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
+          <span className="text-sm font-black text-gray-700 flex items-center gap-1.5 mr-1 shrink-0">
+            <Filter className="w-4 h-4" /> Status:
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_KEYS.map(key => {
+              const cfg = STATUS_CFG[key];
+              const label = key === "" ? "All" : key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleStatusFilterChange(key)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 transition-all shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 ${cfg.bg} ${cfg.border} ${cfg.text} ${statusFilter === key ? "ring-2 ring-black ring-offset-1" : ""}`}
+                >
+                  {cfg.icon} {label}
+                </button>
+              );
+            })}
+          </div>
           <button onClick={fetchTemplates} disabled={loading}
             className={`${btnBase} ml-auto bg-purple-100 text-purple-900 py-1.5`}>
             {loading ? <><Spinner size={13} /> Loading…</> : "↺ Refresh"}
@@ -738,7 +752,7 @@ export default function AdminBossManagement() {
         <div className="bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
           {error ? (
             <div className="flex flex-col items-center gap-3 py-16">
-              <span className="text-4xl">⚠️</span>
+              <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
               <p className="font-black text-gray-700">Failed to load templates</p>
               <p className="text-sm text-gray-400">{error}</p>
               <button onClick={fetchTemplates} className={`${btnBase} bg-red-100 text-red-800`}>↺ Retry</button>
@@ -749,7 +763,7 @@ export default function AdminBossManagement() {
             </div>
           ) : templates.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
-              <span className="text-5xl">🐉</span>
+              <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-14 h-14 object-contain" />
               <p className="font-black text-lg text-gray-500">No boss templates yet</p>
               <p className="text-sm font-medium">Create your first weekly boss event!</p>
               <button onClick={() => setEditingTemplate("new")} className={`${btnBase} bg-purple-200 text-purple-900`}>

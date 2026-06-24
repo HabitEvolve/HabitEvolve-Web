@@ -99,14 +99,14 @@ export default function SignInForm() {
       {/* Left Hero Section - Hidden on mobile, visible on md+ */}
       <section
         className="hidden md:flex w-1/2 items-center justify-center relative p-12"
-        style={{ backgroundColor: "#ABEDDF" }}
+        style={{ backgroundColor: "#1D2939" }}
       >
         <div className="relative w-full h-full ">
           {/* Main Mascot */}
           <img
             alt="Hero Fox Mascot"
             className="w-full h-full object-cover relative z-10 "
-            src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/sign/image/logo.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84NWVhZmI4Yi1iNjNiLTQ3N2ItOTAxOC05YmVmMWNhYTAzM2EiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZS9sb2dvLmpwZyIsImlhdCI6MTc4MDkwNDY1NSwiZXhwIjoxODEyNDQwNjU1fQ.5L1-wFihH00__Fdwd2q91zDgXum2SQtO4eMW6TUyTvg"
+            src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
           />
 
           {/* Pixel Art Decorations */}
@@ -129,7 +129,7 @@ export default function SignInForm() {
           </div>
 
           {/* Heart middle right */}
-          <div className="absolute bottom-[35%] right-[5%] w-10 h-10">
+          <div className="absolute bottom-[35%] right-[5%] w-10 h-10" style={{ backgroundColor: "#1D2939" }}>
             <img
               alt="Pixel Heart"
               className="w-full h-full opacity-80 mix-blend-multiply"

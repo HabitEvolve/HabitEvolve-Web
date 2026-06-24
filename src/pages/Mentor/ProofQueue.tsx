@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
 import type { ProofDto } from "../../types/mentor.types";
+import { useAlert } from "../../context/AlertContext";
 
 const Spinner = ({ size = 18 }: { size?: number }) => (
     <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -43,11 +44,11 @@ const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
 
     return createPortal(
         <div
-            className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <div
-                className="w-full max-w-md bg-[#FEE2E2] border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
+                className="w-full max-w-md bg-[#FEE2E2] dark:bg-red-900/40 border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 className="text-xl font-black mb-1">Reject Proof</h2>
@@ -185,12 +186,12 @@ const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function ProofQueue() {
+    const alert = useAlert();
     const [proofs, setProofs] = useState<ProofDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
     const [rejectTarget, setRejectTarget] = useState<ProofDto | null>(null);
-    const [notification, setNotification] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
     const fetchQueue = useCallback(async () => {
         setLoading(true);
@@ -217,23 +218,21 @@ export default function ProofQueue() {
             const res = await mentorApi.approveProof(proofId);
             if (res.success) {
                 setProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-                setNotification({ type: "success", msg: "Proof approved! Player rewarded." });
+                alert.success("Proof approved! Player rewarded.");
             } else {
-                setNotification({ type: "error", msg: res.message || "Approval failed." });
+                alert.error(res.message || "Approval failed.");
             }
         } catch (e: any) {
-            setNotification({ type: "error", msg: e?.response?.data?.message || "An error occurred." });
+            alert.error(e?.response?.data?.message || "An error occurred.");
         } finally {
             setActionLoading(null);
-            setTimeout(() => setNotification(null), 4000);
         }
     };
 
     const handleRejected = (proofId: number) => {
         setRejectTarget(null);
         setProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-        setNotification({ type: "success", msg: "Proof rejected. Player has been notified." });
-        setTimeout(() => setNotification(null), 4000);
+        alert.success("Proof rejected. Player has been notified.");
     };
 
     return (
@@ -241,16 +240,6 @@ export default function ProofQueue() {
             <PageMeta title="Proof Queue — HabitEvolve" description="Review and judge submitted proof" />
             <PageBreadcrumb pageTitle="The Judgement Hall" />
 
-            {/* Notification toast */}
-            {notification && (
-                <div className={`mb-6 p-4 border-4 border-black rounded-2xl font-bold flex items-center justify-between ${notification.type === "success"
-                    ? "bg-emerald-100 text-emerald-800 border-emerald-400"
-                    : "bg-red-100 text-red-800 border-red-400"
-                    }`}>
-                    <span>{notification.msg}</span>
-                    <button onClick={() => setNotification(null)} className="font-black text-lg">✕</button>
-                </div>
-            )}
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

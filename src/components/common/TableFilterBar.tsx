@@ -3,12 +3,12 @@ import type { FilterField } from "../../hooks/useTableFilters";
 // ── STYLES ────────────────────────────────────────────────────────────────────
 const textInputCls =
   "w-full pl-7 pr-3 py-[7px] text-sm font-medium border-2 border-black rounded-lg bg-white " +
-  "shadow-[2px_2px_0_0_#1A1D20] focus:outline-none focus:bg-amber-50 " +
+  "shadow-[2px_2px_0_0_#1A1D20] focus:outline-none focus:bg-amber-50 dark:focus:bg-amber-900/20 " +
   "focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all placeholder:text-gray-400";
 
 const selectCls =
   "w-full px-3 py-[7px] text-sm font-medium border-2 border-black rounded-lg bg-white " +
-  "shadow-[2px_2px_0_0_#1A1D20] focus:outline-none focus:bg-amber-50 " +
+  "shadow-[2px_2px_0_0_#1A1D20] focus:outline-none focus:bg-amber-50 dark:focus:bg-amber-900/20 " +
   "focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all cursor-pointer";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ export function TableFilterBar<T extends Record<string, string>>({
   hasActiveFilters,
 }: TableFilterBarProps<T>) {
   return (
-    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b-2 border-gray-100 bg-[#FAFAFA]">
+    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b-2 border-gray-100 bg-[#FAFAFA] dark:bg-gray-800/60">
       {fields.map(field => (
         <div key={field.key} className="flex flex-col gap-1.5 min-w-[150px]">
           <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 select-none">

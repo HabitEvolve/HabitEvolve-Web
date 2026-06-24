@@ -174,7 +174,7 @@ const GameModal = ({
   children: React.ReactNode;
   maxWidth?: string;
 }) => createPortal(
-  <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div className="modal-content fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm">
     <div className={`relative w-full ${maxWidth} mx-4 bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] max-h-[90vh] overflow-y-auto`}>
       <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b-2 border-black bg-white">
         <h2 className="text-lg font-black text-gray-900">{title}</h2>
@@ -461,7 +461,7 @@ export default function TargetRuleManagement() {
 
         {/* Fetch error */}
         {fetchError && (
-          <div className="mx-6 mt-5 bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold flex items-center justify-between gap-3">
+          <div className="mx-6 mt-5 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-2xl p-3 text-sm text-red-700 dark:text-red-400 font-semibold flex items-center justify-between gap-3">
             <span>{fetchError}</span>
             <button onClick={fetchRules} className="underline font-black hover:no-underline whitespace-nowrap">
               Retry
@@ -473,7 +473,7 @@ export default function TargetRuleManagement() {
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b-2 border-gray-200 bg-gray-50/50">
+              <tr className="border-b-2 border-gray-200 bg-gray-50">
                 {["Measurement Type", "Difficulty", "Method", "Change Value", "Example", "Status", "Actions"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">
                     {h}
@@ -512,7 +512,7 @@ export default function TargetRuleManagement() {
                   >
                     {/* Measurement Type */}
                     <td className="px-4 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black border-2 border-black bg-sky-100 text-sky-800 shadow-[2px_2px_0_0_#1A1D20]">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black border-2 border-black bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300 shadow-[2px_2px_0_0_#1A1D20]">
                         {MEASUREMENT_LABELS[rule.measurementType] ?? rule.measurementType}
                       </span>
                     </td>
@@ -553,14 +553,14 @@ export default function TargetRuleManagement() {
                         <button
                           title="Edit rule"
                           onClick={() => openEdit(rule)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800"
+                          className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800 dark:text-blue-300"
                         >
                           <PencilIcon />
                         </button>
                         <button
                           title="Delete rule"
                           onClick={() => openDelete(rule)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-red-100 hover:bg-red-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-red-700"
+                          className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-900/70 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-red-700 dark:text-red-300"
                         >
                           <TrashIcon />
                         </button>
@@ -574,7 +574,7 @@ export default function TargetRuleManagement() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t-2 border-gray-100 bg-gray-50/50">
+        <div className="px-6 py-3 border-t-2 border-gray-100 bg-gray-50">
           <span className="text-xs text-gray-400 font-medium">
             {loading
               ? "Loading…"
@@ -626,13 +626,13 @@ export default function TargetRuleManagement() {
 
             {/* Constraint notice — only visible when editing */}
             {editingRule && (
-              <div className="flex items-start gap-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl px-3.5 py-3 shadow-[2px_2px_0_0_#1A1D20]">
+              <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-xl px-3.5 py-3 shadow-[2px_2px_0_0_#1A1D20]">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                <p className="text-xs font-semibold text-amber-800">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                   <span className="font-black">Measurement Type</span> and <span className="font-black">Difficulty</span> cannot
                   be changed on an existing rule due to a database unique constraint.
                 </p>
@@ -663,13 +663,13 @@ export default function TargetRuleManagement() {
                   className={inputCls}
                 />
                 {CHANGE_VALUE_HINTS[`${form.measurementType}+${form.difficulty}`] && (
-                  <div className="mt-2 flex items-start gap-2 bg-sky-50 border-2 border-sky-200 rounded-xl px-3 py-2.5 shadow-[2px_2px_0_0_#1A1D20]">
+                  <div className="mt-2 flex items-start gap-2 bg-sky-50 dark:bg-sky-900/20 border-2 border-sky-200 dark:border-sky-700 rounded-xl px-3 py-2.5 shadow-[2px_2px_0_0_#1A1D20]">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="12" y1="8" x2="12" y2="12" />
                       <line x1="12" y1="16" x2="12.01" y2="16" />
                     </svg>
-                    <p className="text-xs font-semibold text-sky-800 leading-relaxed">
+                    <p className="text-xs font-semibold text-sky-800 dark:text-sky-300 leading-relaxed">
                       {CHANGE_VALUE_HINTS[`${form.measurementType}+${form.difficulty}`]}
                     </p>
                   </div>
@@ -791,7 +791,7 @@ export default function TargetRuleManagement() {
         <GameModal title="Delete Rule?" onClose={closeDelete} maxWidth="max-w-md">
           <div className="text-center space-y-5">
             <div className="flex items-center justify-center">
-              <span className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-black bg-red-100 shadow-[4px_4px_0_0_#1A1D20] text-3xl">
+              <span className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-black bg-red-100 dark:bg-red-900/50 shadow-[4px_4px_0_0_#1A1D20] text-3xl">
                 ⚠️
               </span>
             </div>
@@ -805,7 +805,7 @@ export default function TargetRuleManagement() {
                 <span className="text-red-600">{deletingRule.difficulty}</span>
                 {" "}rule?
               </p>
-              <p className="text-sm text-gray-600 font-medium mt-2 leading-relaxed bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mt-2 leading-relaxed bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl px-4 py-3">
                 Are you sure you want to delete this rule? This action cannot be undone.
               </p>
             </div>

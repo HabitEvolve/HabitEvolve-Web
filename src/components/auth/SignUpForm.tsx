@@ -102,22 +102,23 @@ export default function SignUpForm() {
       {/* Left Hero Section - Hidden on mobile, visible on md+ */}
       <section
         className="hidden md:flex w-1/2 items-center justify-center relative p-12"
-        style={{ backgroundColor: "#ABEDDF" }}
+        style={{ backgroundColor: "#1D2939" }}
       >
         <div className="relative w-full h-full ">
           {/* Main Mascot */}
           <img
             alt="Hero Fox Mascot"
             className="w-full h-full object-cover relative z-10 "
-            src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/sign/image/logo.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84NWVhZmI4Yi1iNjNiLTQ3N2ItOTAxOC05YmVmMWNhYTAzM2EiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZS9sb2dvLmpwZyIsImlhdCI6MTc4MDkwNDY1NSwiZXhwIjoxODEyNDQwNjU1fQ.5L1-wFihH00__Fdwd2q91zDgXum2SQtO4eMW6TUyTvg"
+            src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
           />
 
           {/* Pixel Art Decorations */}
           {/* Heart top left */}
-          <div className="absolute top-[20%] left-[10%] w-12 h-12">
+          <div className="absolute top-[20%] left-[10%] w-12 h-12 " style={{ backgroundColor: "#1D2939" }}>
             <img
+              color="red"
               alt="Pixel Heart"
-              className="w-full h-full opacity-80"
+              className="w-full h-full opacity-80 mix-blend-multiply"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfd-gVHI9N8zzAoGGkMizsu9ZQFOyFHFfiHBzjXGVFN5m_qOSBPHlPmd4_2-Vhxofc7p3u8VqgEmM_mfOxh_ddxuiw2W5HFFpbsUAnu7RWHoq0KMpePvvVd2CG-uM7-TfemLq8XeG-JqWDLUIDvdLGZGz3PbWlFOVyEIe8AZdB02MN-2wEzws1ohwcN1dJpbuoRS1vVxtoyW77bLd408EvN0XB_unhAoVHyJKfGrsTdt7SyDkDReFEJ-dly3AxiUmYoeSk81zP30E"
             />
           </div>
@@ -132,8 +133,9 @@ export default function SignUpForm() {
           </div>
 
           {/* Heart middle right */}
-          <div className="absolute bottom-[35%] right-[5%] w-10 h-10">
+          <div className="absolute bottom-[35%] right-[5%] w-10 h-10" style={{ backgroundColor: "#1D2939" }}>
             <img
+              color="red"
               alt="Pixel Heart"
               className="w-full h-full opacity-80 mix-blend-multiply"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfd-gVHI9N8zzAoGGkMizsu9ZQFOyFHFfiHBzjXGVFN5m_qOSBPHlPmd4_2-Vhxofc7p3u8VqgEmM_mfOxh_ddxuiw2W5HFFpbsUAnu7RWHoq0KMpePvvVd2CG-uM7-TfemLq8XeG-JqWDLUIDvdLGZGz3PbWlFOVyEIe8AZdB02MN-2wEzws1ohwcN1dJpbuoRS1vVxtoyW77bLd408EvN0XB_unhAoVHyJKfGrsTdt7SyDkDReFEJ-dly3AxiUmYoeSk81zP30E"
@@ -313,7 +315,7 @@ export default function SignUpForm() {
             <p className="text-gray-600 text-sm">
               Already have an account?{" "}
               <Link
-                to="/signin"
+                to="/"
                 className="font-semibold hover:underline"
                 style={{ color: "#f27b3d" }}
               >

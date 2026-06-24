@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import partyMentorApi from "../api/mentorPartyApi";
+import PartyChatDrawer from "../components/chat/PartyChatDrawer";
 import type {
   PartyItem,
   JoinRequestItem,
@@ -137,6 +138,7 @@ export default function PartyManagement() {
 
   // ── VIEW STATE ─────────────────────────────────────────────────────────────
   const [selectedParty, setSelectedParty] = useState<PartyItem | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // ── ALERT ──────────────────────────────────────────────────────────────────
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -350,6 +352,7 @@ export default function PartyManagement() {
     setMembers([]);
     setJoinRequests([]);
     setInviteCode("");
+    setChatOpen(false);
   };
 
   // ── UPDATE PARTY ────────────────────────────────────────────────────────────
@@ -571,6 +574,15 @@ export default function PartyManagement() {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
               Edit Party
+            </button>
+            <button
+              onClick={() => setChatOpen(true)}
+              className={`${btnBase} bg-emerald-300 text-gray-900 flex-shrink-0`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Open Chat
             </button>
           </div>
 
@@ -1146,6 +1158,16 @@ export default function PartyManagement() {
             </div>
           </div>
         </GameModal>
+      )}
+
+      {/* ══════════════════ PARTY CHAT DRAWER ════════════════════════ */}
+      {selectedParty && (
+        <PartyChatDrawer
+          partyId={selectedParty.partyId}
+          partyName={selectedParty.name}
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
       )}
     </>
   );

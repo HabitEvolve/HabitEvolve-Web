@@ -8,7 +8,9 @@
       "Bash(cd /d/HabitEvolve-BE && find . -type f -name \"*.cs\" | head -20)",
       "Read(//d/d/**)",
       "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('badge'\\)\\).join\\(', '\\)\\)\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(xargs wc -l)"
     ]
   }
 }

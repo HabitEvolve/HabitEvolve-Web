@@ -61,11 +61,11 @@ const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) 
 
     return createPortal(
         <div
-            className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <div
-                className="w-full max-w-sm bg-[#FEE2E2] border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
+                className="w-full max-w-sm bg-[#FEE2E2] dark:bg-red-900/40 border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 className="text-xl font-black mb-2">Delete Quest?</h2>

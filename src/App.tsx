@@ -29,6 +29,8 @@ import TargetRuleManagement from "./pages/TargetRuleManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
 import AdminCourtManagement from "./pages/AdminCourtManagement";
 import AdminBossManagement from "./pages/AdminBossManagement";
+import AdminSubscriptionPage from "./pages/AdminSubscriptionPage";
+import AdminConfigPage from "./pages/AdminConfigPage";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 import MentorDashboard from "./pages/Mentor/MentorDashboard";
 import SubscriptionWallet from "./pages/Mentor/SubscriptionWallet";
@@ -63,6 +65,8 @@ export default function App() {
             <Route path="/questionnaires" element={<QuestionnaireManagement />} />
             <Route path="/court-management" element={<AdminCourtManagement />} />
             <Route path="/boss-management" element={<AdminBossManagement />} />
+            <Route path="/subscription-packages" element={<AdminSubscriptionPage />} />
+            <Route path="/system-config" element={<AdminConfigPage />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 

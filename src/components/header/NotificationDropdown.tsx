@@ -76,7 +76,7 @@ export default function NotificationDropdown() {
       <button
         onClick={handleClick}
         aria-label="Notifications"
-        className="relative flex items-center justify-center w-11 h-11 bg-white border-2 border-black rounded-full shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all text-gray-800"
+        className="relative flex items-center justify-center w-11 h-11 bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-full shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all text-gray-800 dark:text-gray-200"
       >
         {/* Ping badge */}
         {notifying && (
@@ -94,19 +94,19 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute -right-[240px] lg:right-0 mt-3 w-[350px] sm:w-[370px] bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] flex flex-col overflow-hidden"
+        className="absolute -right-[240px] lg:right-0 mt-3 w-[350px] sm:w-[370px] bg-white dark:bg-gray-800 border-4 border-black dark:border-gray-600 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] flex flex-col overflow-hidden"
       >
         {/* Panel header */}
-        <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-orange-50 to-yellow-50 border-b-2 border-black flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-700 dark:to-gray-700 border-b-2 border-black dark:border-gray-600 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <h5 className="text-base font-black text-gray-900">Notifications</h5>
+            <h5 className="text-base font-black text-gray-900 dark:text-white">Notifications</h5>
             <span className="flex items-center justify-center h-5 min-w-[22px] px-1.5 bg-orange-400 border-2 border-black rounded-full text-[10px] font-black text-white shadow-[1px_1px_0_0_#1A1D20]">
               {NOTIFICATIONS.length}
             </span>
           </div>
           <button
             onClick={closeDropdown}
-            className="flex items-center justify-center w-7 h-7 bg-white border-2 border-black rounded-lg shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            className="flex items-center justify-center w-7 h-7 bg-white dark:bg-gray-700 border-2 border-black dark:border-gray-500 rounded-lg shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-gray-800 dark:text-gray-300"
             aria-label="Close notifications"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -117,12 +117,12 @@ export default function NotificationDropdown() {
         </div>
 
         {/* Notification list */}
-        <ul className="flex flex-col overflow-y-auto max-h-[380px] divide-y-2 divide-gray-100">
+        <ul className="flex flex-col overflow-y-auto max-h-[380px] divide-y-2 divide-gray-100 dark:divide-gray-700">
           {NOTIFICATIONS.map((n) => (
             <li key={n.id}>
               <button
                 onClick={closeDropdown}
-                className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-orange-50 transition-colors"
+                className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-orange-50 dark:hover:bg-gray-700 transition-colors"
               >
                 {/* Avatar with online dot */}
                 <span className="relative flex-shrink-0 mt-0.5">
@@ -142,10 +142,10 @@ export default function NotificationDropdown() {
 
                 {/* Text */}
                 <span className="block flex-1 min-w-0">
-                  <span className="block text-sm text-gray-600 font-medium leading-snug">
-                    <span className="font-black text-gray-900">{n.name}</span>
+                  <span className="block text-sm text-gray-600 dark:text-gray-400 font-medium leading-snug">
+                    <span className="font-black text-gray-900 dark:text-white">{n.name}</span>
                     {" "}{n.action}{" "}
-                    <span className="font-black text-gray-900">{n.target}</span>
+                    <span className="font-black text-gray-900 dark:text-white">{n.target}</span>
                   </span>
                   <span className="flex items-center gap-1.5 mt-1 text-xs text-gray-400 font-semibold">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -160,11 +160,11 @@ export default function NotificationDropdown() {
         </ul>
 
         {/* Footer CTA */}
-        <div className="p-3 border-t-2 border-black bg-gray-50 flex-shrink-0">
+        <div className="p-3 border-t-2 border-black dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
           <Link
             to="/"
             onClick={closeDropdown}
-            className="flex items-center justify-center w-full py-2.5 border-2 border-black rounded-full bg-white font-black text-sm text-gray-800 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+            className="flex items-center justify-center w-full py-2.5 border-2 border-black dark:border-gray-500 rounded-full bg-white dark:bg-gray-800 font-black text-sm text-gray-800 dark:text-gray-200 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
           >
             View All Notifications
           </Link>

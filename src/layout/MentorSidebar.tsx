@@ -122,7 +122,7 @@ const MentorSidebar: React.FC = () => {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* ── Logo ────────────────────────────────────────────────── */}
-            <div className={`overflow-hidden transition-all duration-300 ${showFull ? "mb-2" : "mb-4"}`}>
+            <div className={`shrink-0 overflow-hidden transition-all duration-300 ${showFull ? "mb-2" : "mb-4"}`}>
                 <Link to="/mentor/dashboard" className={`block ${!showFull ? "text-center" : ""}`}>
                     {showFull ? (
                         <h1 className="text-3xl font-black text-[#3b1f6e] dark:text-violet-300 tracking-tight whitespace-nowrap">
@@ -133,7 +133,7 @@ const MentorSidebar: React.FC = () => {
                     )}
                 </Link>
                 {showFull && (
-                    <span className="inline-block mt-1 px-2 py-0.5 text-xs font-black bg-[#7C3AED] text-white rounded-full border-2 border-[#3b1f6e]">
+                    <span className="text-balance inline-block mt-1 px-2 py-0.5 text-xs font-black bg-[#7C3AED] text-white rounded-full border-2 border-[#3b1f6e]">
                         MENTOR
                     </span>
                 )}
@@ -141,19 +141,18 @@ const MentorSidebar: React.FC = () => {
 
             {/* ── Mascot — hidden when collapsed ──────────────────────── */}
             <div
-                className={`flex justify-center transition-all duration-300 overflow-hidden ${
-                    showFull ? "my-6 max-h-40 opacity-100" : "max-h-0 opacity-0 my-0"
-                }`}
+                className={`shrink-0 flex justify-center transition-all duration-300 overflow-hidden ${showFull ? "my-6 max-h-40 opacity-100" : "max-h-0 opacity-0 my-0"
+                    }`}
             >
                 <img
                     alt="HabitEvolve Mascot"
-                    className="w-28 h-28 object-contain"
-                    src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/sign/image/logo%20new.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84NWVhZmI4Yi1iNjNiLTQ3N2ItOTAxOC05YmVmMWNhYTAzM2EiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZS9sb2dvIG5ldy5wbmciLCJpYXQiOjE3ODA5MDY1NzgsImV4cCI6MTgxMjQ0MjU3OH0.4zzwBNfttWLGR2QUArfCXsiPdvFOcLXV6Rjs1YZjjD8"
+                    className="w-50 h-50 object-contain"
+                    src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
                 />
             </div>
 
             {/* ── Navigation ──────────────────────────────────────────── */}
-            <nav className="grow space-y-1.5">
+            <nav className="flex-1 min-h-0 overflow-y-auto space-y-1.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#3b1f6e]/20 dark:[&::-webkit-scrollbar-thumb]:bg-white/20">
                 {navItems.map((nav, index) => (
                     <div key={nav.name}>
                         {/* Section label — hidden when collapsed */}
@@ -185,9 +184,8 @@ const MentorSidebar: React.FC = () => {
                                 {showFull && <span className="font-medium truncate">{nav.name}</span>}
                                 {showFull && (
                                     <ChevronDownIcon
-                                        className={`ml-auto w-5 h-5 shrink-0 transition-transform duration-200 ${
-                                            openSubmenu === index ? "rotate-180" : ""
-                                        }`}
+                                        className={`ml-auto w-5 h-5 shrink-0 transition-transform duration-200 ${openSubmenu === index ? "rotate-180" : ""
+                                            }`}
                                     />
                                 )}
                             </button>
@@ -224,11 +222,10 @@ const MentorSidebar: React.FC = () => {
                                         <li key={sub.name}>
                                             <Link
                                                 to={sub.path}
-                                                className={`font-medium text-sm flex items-center px-3 py-2 rounded transition-all ${
-                                                    isActive(sub.path)
-                                                        ? "bg-[#7C3AED] text-white"
-                                                        : "text-gray-700 dark:text-gray-300 hover:bg-white/30 dark:hover:bg-white/10"
-                                                }`}
+                                                className={`font-medium text-sm flex items-center px-3 py-2 rounded transition-all ${isActive(sub.path)
+                                                    ? "bg-[#7C3AED] text-white"
+                                                    : "text-gray-700 dark:text-gray-300 hover:bg-white/30 dark:hover:bg-white/10"
+                                                    }`}
                                             >
                                                 {sub.name}
                                             </Link>

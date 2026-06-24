@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Gavel, Trophy, X, ChevronLeft, ChevronRight, Loader2, ImageOff } from "lucide-react";
+import { Gavel, Trophy, X, ChevronLeft, ChevronRight, Loader2, ImageOff, Filter, Camera, Video, Monitor } from "lucide-react";
+import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminCourtApi } from "../api/adminCourtApi";
@@ -13,16 +14,24 @@ import type {
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
 
-const STATUS_OPTIONS = [
-  { label: "All Statuses", value: "" },
-  { label: "⏳ Pending", value: "Pending" },
-  { label: "✅ Approved", value: "Approved" },
-  { label: "❌ Rejected", value: "Rejected" },
-  { label: "🏆 Valid Approve", value: "ValidApprove" },
-  { label: "🚫 Fraud Reject", value: "FraudReject" },
-  { label: "⚖️ Admin Override", value: "AdminOverride" },
-  { label: "⌛ Expired", value: "Expired" },
-];
+const SI = (src: string) => (
+  <img src={src} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+);
+
+const STATUS_CONFIG: Record<string, {
+  label: string; bg: string; border: string; text: string; icon: ReactNode;
+}> = {
+  "":            { label: "All",            bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-700",    icon: <Filter className="w-3.5 h-3.5 shrink-0" /> },
+  Pending:       { label: "Pending",        bg: "bg-amber-100",   border: "border-amber-400",   text: "text-amber-800",   icon: SI("/icon/UI/Exclamation Mark/64px/Exclamation Mark 1st 64px.png") },
+  Approved:      { label: "Approved",       bg: "bg-green-100",   border: "border-green-400",   text: "text-green-800",   icon: SI("/icon/UI/Checkmark/64px/Checkmark 1st 64px.png") },
+  Rejected:      { label: "Rejected",       bg: "bg-red-100",     border: "border-red-400",     text: "text-red-800",     icon: SI("/icon/UI/X/64px/X 1st 64px.png") },
+  ValidApprove:  { label: "Valid Approve",  bg: "bg-emerald-100", border: "border-emerald-400", text: "text-emerald-800", icon: SI("/icon/Main/Verify/64px/Verify 1st 64px.png") },
+  FraudReject:   { label: "Fraud Reject",   bg: "bg-orange-100",  border: "border-orange-400",  text: "text-orange-800",  icon: SI("/icon/UI/Warning/64px/Warning 1st 64px.png") },
+  AdminOverride: { label: "Admin Override", bg: "bg-blue-100",    border: "border-blue-400",    text: "text-blue-800",    icon: <Gavel className="w-3.5 h-3.5 shrink-0" /> },
+  Expired:       { label: "Expired",        bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-600",    icon: SI("/icon/UI/Skip/64w/Skip 1st 64px.png") },
+};
+
+const STATUS_KEYS = ["", "Pending", "Approved", "Rejected", "ValidApprove", "FraudReject", "AdminOverride", "Expired"] as const;
 
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
 const btnBase =
@@ -60,39 +69,29 @@ const Spinner = ({ size = 20 }: { size?: number }) => <Loader2 className="animat
 const ImgOffIcon = () => <ImageOff className="w-7 h-7 text-gray-400" />;
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
-const STATUS_CFG: Record<string, { bg: string; border: string; text: string; emoji: string }> = {
-  Pending:       { bg: "bg-amber-100",   border: "border-amber-400",   text: "text-amber-800",   emoji: "⏳" },
-  Approved:      { bg: "bg-green-100",   border: "border-green-400",   text: "text-green-800",   emoji: "✅" },
-  Rejected:      { bg: "bg-red-100",     border: "border-red-400",     text: "text-red-800",     emoji: "❌" },
-  ValidApprove:  { bg: "bg-emerald-100", border: "border-emerald-400", text: "text-emerald-800", emoji: "🏆" },
-  FraudReject:   { bg: "bg-orange-100",  border: "border-orange-400",  text: "text-orange-800",  emoji: "🚫" },
-  AdminOverride: { bg: "bg-blue-100",    border: "border-blue-400",    text: "text-blue-800",    emoji: "⚖️" },
-  Expired:       { bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-600",    emoji: "⌛" },
-};
-
 const StatusBadge = ({ status }: { status: string }) => {
-  const cfg = STATUS_CFG[status] ?? { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-600", emoji: "?" };
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG["Rejected"];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black border ${cfg.bg} ${cfg.border} ${cfg.text}`}>
-      {cfg.emoji} {status}
+      {cfg.icon} {status}
     </span>
   );
 };
 
 // ── PROOF TYPE BADGE ──────────────────────────────────────────────────────────
-const PROOF_CFG: Record<string, { bg: string; border: string; text: string; emoji: string }> = {
-  PHOTO:      { bg: "bg-violet-100", border: "border-violet-400", text: "text-violet-800", emoji: "📷" },
-  VIDEO:      { bg: "bg-pink-100",   border: "border-pink-400",   text: "text-pink-800",   emoji: "🎬" },
-  SCREENSHOT: { bg: "bg-cyan-100",   border: "border-cyan-400",   text: "text-cyan-800",   emoji: "🖼️" },
-  GPS:        { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  emoji: "📍" },
-  TEXT:       { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   emoji: "📝" },
+const PROOF_CFG: Record<string, { bg: string; border: string; text: string; icon: ReactNode }> = {
+  PHOTO:      { bg: "bg-violet-100", border: "border-violet-400", text: "text-violet-800", icon: <Camera className="w-3 h-3 shrink-0" /> },
+  VIDEO:      { bg: "bg-pink-100",   border: "border-pink-400",   text: "text-pink-800",   icon: <Video className="w-3 h-3 shrink-0" /> },
+  SCREENSHOT: { bg: "bg-cyan-100",   border: "border-cyan-400",   text: "text-cyan-800",   icon: <Monitor className="w-3 h-3 shrink-0" /> },
+  GPS:        { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  icon: SI("/icon/Item/Location Pin/64px/Location Pin 1st 64px.png") },
+  TEXT:       { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
 };
 
 const ProofTypeBadge = ({ type }: { type: string }) => {
   const cfg = PROOF_CFG[type] ?? PROOF_CFG.TEXT;
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${cfg.bg} ${cfg.border} ${cfg.text}`}>
-      {cfg.emoji} {type}
+      {cfg.icon} {type}
     </span>
   );
 };
@@ -290,11 +289,10 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {v.wasCorrect !== null && (
-                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${
-                                  v.wasCorrect
+                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${v.wasCorrect
                                     ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
                                     : "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
-                                }`}>
+                                  }`}>
                                   {v.wasCorrect ? "✓ Correct" : "✗ Wrong"}
                                 </span>
                               )}
@@ -331,7 +329,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
 
                 {alreadyResolved && (
                   <div className="mb-4 flex items-start gap-2.5 px-3.5 py-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-2xl">
-                    <span className="text-sm shrink-0">⚠️</span>
+                    <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
                     <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                       Status is already <strong>{data.status}</strong>. Your verdict will override the existing resolution.
                     </p>
@@ -344,25 +342,46 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
                       Final Verdict *
                     </label>
-                    <select
-                      required
-                      value={verdict}
-                      onChange={e => setVerdict(e.target.value as typeof verdict)}
-                      className={inputCls}
-                    >
-                      <option value="">— Select Verdict —</option>
-                      <option value="Approved">✅ Approved</option>
-                      <option value="Rejected">❌ Rejected</option>
-                    </select>
+                    <div className="flex gap-2">
+                      {(["Approved", "Rejected"] as const).map(v => {
+                        const isApproved = v === "Approved";
+                        const active = verdict === v;
+                        return (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setVerdict(active ? "" : v)}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 rounded-2xl font-black text-sm transition-all ${
+                              active
+                                ? isApproved
+                                  ? "bg-green-200 border-green-600 text-green-900 shadow-none translate-x-0.5 translate-y-0.5"
+                                  : "bg-red-200 border-red-600 text-red-900 shadow-none translate-x-0.5 translate-y-0.5"
+                                : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+                            }`}
+                          >
+                            <img
+                              src={isApproved ? "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" : "/icon/UI/X/64px/X 1st 64px.png"}
+                              alt=""
+                              className="w-4 h-4 object-contain shrink-0"
+                            />
+                            {v}
+                          </button>
+                        );
+                      })}
+                    </div>
                     {verdict && (
-                      <div className={`mt-2 px-3 py-2 rounded-xl text-xs font-bold border-2 ${
-                        verdict === "Approved"
+                      <div className={`mt-2 px-3 py-2 rounded-xl text-xs font-bold border-2 flex items-center gap-2 ${verdict === "Approved"
                           ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
                           : "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
-                      }`}>
+                        }`}>
+                        <img
+                          src={verdict === "Approved" ? "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" : "/icon/UI/X/64px/X 1st 64px.png"}
+                          alt=""
+                          className="w-3.5 h-3.5 object-contain shrink-0"
+                        />
                         {verdict === "Approved"
-                          ? "✅ Submission APPROVED — karma will be awarded to the submitter."
-                          : "❌ Submission REJECTED — no karma awarded."}
+                          ? "Submission APPROVED — karma will be awarded to the submitter."
+                          : "Submission REJECTED — no karma awarded."}
                       </div>
                     )}
                   </div>
@@ -400,11 +419,10 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     <button
                       type="submit"
                       disabled={submitting || !verdict}
-                      className={`${btnBase} flex-1 justify-center ${
-                        verdict === "Approved" ? "bg-green-300 text-green-900" :
-                        verdict === "Rejected" ? "bg-red-300 text-red-900" :
-                        "bg-amber-200 text-amber-900"
-                      }`}
+                      className={`${btnBase} flex-1 justify-center ${verdict === "Approved" ? "bg-green-300 text-green-900" :
+                          verdict === "Rejected" ? "bg-red-300 text-red-900" :
+                            "bg-amber-200 text-amber-900"
+                        }`}
                     >
                       {submitting
                         ? <><Spinner size={13} /> Resolving…</>
@@ -429,12 +447,12 @@ type ActiveTab = "cases" | "karma";
 
 export default function CourtManagement() {
   // ── ALERT ─────────────────────────────────────────────────────────────────
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  useEffect(() => {
-    if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 4500);
-    return () => clearTimeout(t);
-  }, [alert]);
+  const globalAlert = useAlert();
+  const setAlert = useCallback(
+    (a: { type: "success" | "error"; message: string }) =>
+      a.type === "success" ? globalAlert.success(a.message) : globalAlert.error(a.message),
+    [globalAlert]
+  );
 
   // ── TABS ──────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ActiveTab>("cases");
@@ -513,14 +531,6 @@ export default function CourtManagement() {
       <PageMeta title="Court & Karma Management" description="Review community court cases and manage karma rankings" />
       <PageBreadcrumb pageTitle="Court & Karma" />
 
-      {/* Alert Toast */}
-      {alert && (
-        <div className={`fixed top-4 right-4 z-99998 flex items-center gap-3 px-5 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[4px_4px_0_0_#1A1D20] ${
-          alert.type === "success" ? "bg-green-300 text-green-900" : "bg-red-300 text-red-900"
-        }`}>
-          {alert.type === "success" ? "✅" : "❌"} {alert.message}
-        </div>
-      )}
 
       <div className="space-y-6 p-1">
 
@@ -540,17 +550,16 @@ export default function CourtManagement() {
         {/* Tab Strip */}
         <div className="flex items-end gap-1 border-b-2 border-black/10">
           {([
-            { id: "cases" as ActiveTab, label: "Court Cases",      icon: "⚖️" },
+            { id: "cases" as ActiveTab, label: "Court Cases", icon: "⚖️" },
             { id: "karma" as ActiveTab, label: "Karma Leaderboard", icon: "🏆" },
           ] as const).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2.5 font-black text-sm rounded-t-2xl border-2 transition-all ${
-                activeTab === tab.id
+              className={`px-5 py-2.5 font-black text-sm rounded-t-2xl border-2 transition-all ${activeTab === tab.id
                   ? "bg-amber-300 border-black text-gray-900 shadow-[3px_0_0_0_#1A1D20,0_3px_0_0_#1A1D20] -mb-0.5 relative z-10"
                   : "bg-white dark:bg-gray-800 border-black/20 dark:border-white/20 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-black/40"
-              }`}
+                }`}
             >
               {tab.icon} {tab.label}
             </button>
@@ -562,25 +571,24 @@ export default function CourtManagement() {
           <div className="space-y-4">
 
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-3 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
-              <span className="text-sm font-black text-gray-700">🔍 Status:</span>
-              <select
-                value={statusFilter}
-                onChange={e => handleStatusChange(e.target.value)}
-                className="px-4 py-2 border-2 border-black rounded-full text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer"
-              >
-                {STATUS_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              {statusFilter && (
-                <button
-                  onClick={() => handleStatusChange("")}
-                  className="px-3 py-1.5 text-xs font-black border-2 border-black rounded-full bg-gray-100 hover:bg-gray-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
-                >
-                  ✕ Clear
-                </button>
-              )}
+            <div className="flex flex-wrap items-center gap-2 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
+              <span className="text-sm font-black text-gray-700 flex items-center gap-1.5 mr-1 shrink-0">
+                <Filter className="w-4 h-4" /> Status:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_KEYS.map(key => {
+                  const cfg = STATUS_CONFIG[key];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleStatusChange(key)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 transition-all shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 ${cfg.bg} ${cfg.border} ${cfg.text} ${statusFilter === key ? "ring-2 ring-black ring-offset-1" : ""}`}
+                    >
+                      {cfg.icon} {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
               <button
                 onClick={fetchCases}
                 disabled={casesLoading}
@@ -594,16 +602,15 @@ export default function CourtManagement() {
             {Object.keys(statusCounts).length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {Object.entries(statusCounts).map(([status, count]) => {
-                  const cfg = STATUS_CFG[status];
+                  const cfg = STATUS_CONFIG[status];
                   return (
                     <button
                       key={status}
                       onClick={() => handleStatusChange(statusFilter === status ? "" : status)}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 transition-all shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 ${
-                        statusFilter === status ? "ring-2 ring-black ring-offset-1" : ""
-                      } ${cfg?.bg ?? "bg-gray-100"} ${cfg?.border ?? "border-gray-400"} ${cfg?.text ?? "text-gray-600"}`}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 transition-all shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 ${statusFilter === status ? "ring-2 ring-black ring-offset-1" : ""
+                        } ${cfg?.bg ?? "bg-gray-100"} ${cfg?.border ?? "border-gray-400"} ${cfg?.text ?? "text-gray-600"}`}
                     >
-                      {cfg?.emoji} {status}: {count}
+                      {cfg?.icon} {status}: {count}
                     </button>
                   );
                 })}
@@ -763,9 +770,9 @@ export default function CourtManagement() {
                     {([top3[1], top3[0], top3[2]] as const).map((entry, podIdx) => {
                       if (!entry) return <div key={podIdx} />;
                       const podCfg = [
-                        { bg: "bg-slate-100 dark:bg-slate-800/60",  border: "border-slate-400 dark:border-slate-600",  pt: "pt-8",  karma: "text-slate-700 dark:text-slate-300"  },
-                        { bg: "bg-yellow-50 dark:bg-yellow-900/20",  border: "border-yellow-500 dark:border-yellow-700", pt: "pt-3",  karma: "text-yellow-700 dark:text-yellow-300" },
-                        { bg: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-400 dark:border-orange-700", pt: "pt-12", karma: "text-orange-700 dark:text-orange-300" },
+                        { bg: "bg-slate-100 dark:bg-slate-800/60", border: "border-slate-400 dark:border-slate-600", pt: "pt-8", karma: "text-slate-700 dark:text-slate-300" },
+                        { bg: "bg-yellow-50 dark:bg-yellow-900/20", border: "border-yellow-500 dark:border-yellow-700", pt: "pt-3", karma: "text-yellow-700 dark:text-yellow-300" },
+                        { bg: "bg-orange-50 dark:bg-orange-900/20", border: "border-orange-400 dark:border-orange-700", pt: "pt-12", karma: "text-orange-700 dark:text-orange-300" },
                       ][podIdx];
                       return (
                         <div
@@ -799,14 +806,14 @@ export default function CourtManagement() {
                         {leaderboard.map(entry => {
                           const rowBg =
                             entry.rank === 1 ? "bg-yellow-50/70 dark:bg-yellow-900/10 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20" :
-                            entry.rank === 2 ? "bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-700/30" :
-                            entry.rank === 3 ? "bg-orange-50/70 dark:bg-orange-900/10 hover:bg-orange-100/50 dark:hover:bg-orange-900/20" :
-                            "hover:bg-gray-50/50 dark:hover:bg-gray-700/30";
+                              entry.rank === 2 ? "bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-700/30" :
+                                entry.rank === 3 ? "bg-orange-50/70 dark:bg-orange-900/10 hover:bg-orange-100/50 dark:hover:bg-orange-900/20" :
+                                  "hover:bg-gray-50/50 dark:hover:bg-gray-700/30";
                           const karmaColor =
                             entry.rank === 1 ? "text-yellow-700 dark:text-yellow-300" :
-                            entry.rank === 2 ? "text-slate-600 dark:text-slate-300" :
-                            entry.rank === 3 ? "text-orange-700 dark:text-orange-300" :
-                            "text-gray-700 dark:text-gray-300";
+                              entry.rank === 2 ? "text-slate-600 dark:text-slate-300" :
+                                entry.rank === 3 ? "text-orange-700 dark:text-orange-300" :
+                                  "text-gray-700 dark:text-gray-300";
                           return (
                             <tr key={entry.userId} className={`transition-colors ${rowBg}`}>
                               <td className="px-4 py-3"><MedalRank rank={entry.rank} /></td>

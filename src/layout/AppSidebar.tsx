@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 import {
   ChevronDownIcon,
 } from "../icons";
@@ -7,71 +8,72 @@ import { useSidebar } from "../context/SidebarContext";
 import { House, User, Handshake, Gavel, Swords, Layers, BadgeQuestionMark, Scale, CreditCard, Settings } from "lucide-react";
 
 type NavItem = {
-  name: string;
+  nameKey: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
-  sectionLabel?: string;
+  subItems?: { nameKey: string; path: string; pro?: boolean; new?: boolean }[];
+  sectionKey?: string;
 };
 
 const navItems: NavItem[] = [
   {
     icon: <House className="w-5 h-5 shrink-0" />,
-    name: "Dashboard",
+    nameKey: "nav.admin.dashboard",
     path: "/home",
   },
   {
     icon: <User className="w-5 h-5 shrink-0" />,
-    name: "User",
+    nameKey: "nav.admin.user",
     path: "/user-management",
   },
   {
     icon: <Handshake className="w-5 h-5 shrink-0" />,
-    name: "Party",
+    nameKey: "nav.admin.party",
     path: "/party-management",
   },
   {
     icon: <Gavel className="w-5 h-5 shrink-0" />,
-    name: "Court",
+    nameKey: "nav.admin.court",
     path: "/court-management",
   },
   {
     icon: <Swords className="w-5 h-5 shrink-0" />,
-    name: "Boss",
+    nameKey: "nav.admin.boss",
     path: "/boss-management",
-    sectionLabel: "GAMEPLAY",
+    sectionKey: "nav.sections.GAMEPLAY",
   },
   {
     icon: <Layers className="w-5 h-5 shrink-0" />,
-    name: "Goal Engine",
+    nameKey: "nav.admin.goalEngine",
     path: "/goal-engine",
-    sectionLabel: "PERSONALIZATION",
+    sectionKey: "nav.sections.PERSONALIZATION",
   },
   {
     icon: <BadgeQuestionMark className="w-5 h-5 shrink-0" />,
-    name: "Onboarding Eval",
+    nameKey: "nav.admin.onboardingEval",
     path: "/questionnaires",
   },
   {
     icon: <Scale className="w-5 h-5 shrink-0" />,
-    name: "Calc Rules",
+    nameKey: "nav.admin.calcRules",
     path: "/target-rules",
-    sectionLabel: "CONFIGURATION",
+    sectionKey: "nav.sections.CONFIGURATION",
   },
   {
     icon: <Settings className="w-5 h-5 shrink-0" />,
-    name: "System Config",
+    nameKey: "nav.admin.systemConfig",
     path: "/system-config",
   },
   {
     icon: <CreditCard className="w-5 h-5 shrink-0" />,
-    name: "Subscriptions",
+    nameKey: "nav.admin.subscriptions",
     path: "/subscription-packages",
-    sectionLabel: "MONETIZATION",
+    sectionKey: "nav.sections.MONETIZATION",
   },
 ];
 
 const AppSidebar: React.FC = () => {
+  const { t } = useTranslation();
   const { isExpanded, isMobileOpen, setIsHovered } = useSidebar();
   const location = useLocation();
 
@@ -154,7 +156,7 @@ const AppSidebar: React.FC = () => {
         </Link>
         {showFull && (
           <span className="text-balance inline-block mt-1 px-2 py-0.5 text-xs font-black bg-[#e18308] text-white rounded-full border-2 border-[#3b1f6e]">
-            ADMIN
+            {t("common.admin")}
           </span>
         )}
       </div>
@@ -174,26 +176,26 @@ const AppSidebar: React.FC = () => {
       {/* ── Navigation ──────────────────────────────────────────────── */}
       <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1a3a3a]/20 dark:[&::-webkit-scrollbar-thumb]:bg-white/20">
         {navItems.map((nav, index) => (
-          <div key={nav.name}>
+          <div key={nav.path ?? nav.nameKey}>
             {/* Section label — hidden when collapsed */}
-            {nav.sectionLabel && showFull && (
+            {nav.sectionKey && showFull && (
               <div className="px-2 pt-4 pb-1">
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-[#1a3a3a]/20 dark:bg-gray-600" />
                   <p className="text-[10px] font-black text-[#1a3a3a]/50 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                    {nav.sectionLabel}
+                    {t(nav.sectionKey)}
                   </p>
                   <div className="h-px flex-1 bg-[#1a3a3a]/20 dark:bg-gray-600" />
                 </div>
               </div>
             )}
             {/* Collapsed spacer between sections */}
-            {nav.sectionLabel && !showFull && <div className="h-3" />}
+            {nav.sectionKey && !showFull && <div className="h-3" />}
 
             {nav.subItems ? (
               <button
                 onClick={() => handleSubmenuToggle(index)}
-                title={!showFull ? nav.name : undefined}
+                title={!showFull ? t(nav.nameKey) : undefined}
                 className={`w-full flex items-center py-3 rounded-xl transition-all shadow-sm
                   ${showFull ? "space-x-3 px-4" : "justify-center px-0"}
                   ${openSubmenu === index
@@ -202,7 +204,7 @@ const AppSidebar: React.FC = () => {
                   }`}
               >
                 {nav.icon}
-                {showFull && <span className="font-medium truncate">{nav.name}</span>}
+                {showFull && <span className="font-medium truncate">{t(nav.nameKey)}</span>}
                 {showFull && (
                   <ChevronDownIcon
                     className={`ml-auto w-5 h-5 shrink-0 transition-transform duration-200 ${openSubmenu === index ? "rotate-180" : ""
@@ -214,7 +216,7 @@ const AppSidebar: React.FC = () => {
               nav.path && (
                 <Link
                   to={nav.path}
-                  title={!showFull ? nav.name : undefined}
+                  title={!showFull ? t(nav.nameKey) : undefined}
                   className={`flex items-center py-3 rounded-xl transition-all shadow-sm
                     ${showFull ? "space-x-3 px-4" : "justify-center px-0"}
                     ${isActive(nav.path)
@@ -223,7 +225,7 @@ const AppSidebar: React.FC = () => {
                     }`}
                 >
                   {nav.icon}
-                  {showFull && <span className="font-medium truncate">{nav.name}</span>}
+                  {showFull && <span className="font-medium truncate">{t(nav.nameKey)}</span>}
                 </Link>
               )
             )}
@@ -238,7 +240,7 @@ const AppSidebar: React.FC = () => {
               >
                 <ul className="mt-2 space-y-1 ml-9">
                   {nav.subItems.map((subItem) => (
-                    <li key={subItem.name}>
+                    <li key={subItem.path}>
                       <Link
                         to={subItem.path}
                         className={`font-medium text-sm flex items-center px-3 py-2 rounded transition-all ${isActive(subItem.path)
@@ -246,7 +248,7 @@ const AppSidebar: React.FC = () => {
                           : "text-gray-700 dark:text-gray-300 hover:bg-white/30 dark:hover:bg-white/10"
                           }`}
                       >
-                        {subItem.name}
+                        {t(subItem.nameKey)}
                         {subItem.new && (
                           <span className="ml-auto text-xs bg-blue-500 text-white px-2 py-1 rounded-full">new</span>
                         )}

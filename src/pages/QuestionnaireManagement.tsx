@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ClipboardList, Plus, Pencil, Trash2, ChevronRight, X,
   Loader2, ToggleLeft, ToggleRight, HelpCircle, List, CheckSquare,
@@ -48,6 +49,7 @@ function ConfirmDeleteModal({
   title: string; body: string;
   onConfirm: () => void; onCancel: () => void; loading?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Portal>
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -56,11 +58,11 @@ function ConfirmDeleteModal({
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{body}</p>
           <div className="flex gap-3">
             <button onClick={onCancel} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>
-              Cancel
+              {t('admin.questionnaire.deleteModal.cancel')}
             </button>
             <button onClick={onConfirm} disabled={loading} className={`${btnBase} flex-1 justify-center bg-red-400 text-white`}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Delete
+              {t('admin.questionnaire.deleteModal.delete')}
             </button>
           </div>
         </div>
@@ -77,6 +79,7 @@ function TemplateFormModal({
   onSave: (payload: QuestionnaireTemplatePayload) => Promise<void>;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState(editing?.templateName ?? '');
   const [desc, setDesc] = useState(editing?.description ?? '');
   const [saving, setSaving] = useState(false);
@@ -84,10 +87,10 @@ function TemplateFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) { setErr('Template name is required.'); return; }
+    if (!name.trim()) { setErr(t('admin.questionnaire.templateForm.nameRequired')); return; }
     setSaving(true); setErr('');
     try { await onSave({ templateName: name.trim(), description: desc.trim() || undefined }); }
-    catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
+    catch (ex: any) { setErr(ex?.response?.data?.message ?? t('admin.questionnaire.templateForm.nameRequired')); }
     finally { setSaving(false); }
   };
 
@@ -97,7 +100,7 @@ function TemplateFormModal({
         <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
           <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-amber-100 dark:bg-amber-900/30 rounded-t-3xl">
             <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">
-              {editing ? 'Edit Template' : 'New Template'}
+              {editing ? t('admin.questionnaire.templateForm.editTitle') : t('admin.questionnaire.templateForm.newTitle')}
             </h2>
             <button onClick={onClose} className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded-lg">
               <X className="w-5 h-5" />
@@ -106,18 +109,18 @@ function TemplateFormModal({
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Template Name *</label>
-              <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="e.g. Sleep Habit Assessment" required />
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.templateForm.nameLabel')}</label>
+              <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder={t('admin.questionnaire.templateForm.namePlaceholder')} required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Description</label>
-              <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} className={inputCls} placeholder="What does this questionnaire assess?" />
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.templateForm.descLabel')}</label>
+              <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} className={inputCls} placeholder={t('admin.questionnaire.templateForm.descPlaceholder')} />
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t('admin.questionnaire.templateForm.cancel')}</button>
               <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white`}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {editing ? 'Save' : 'Create'}
+                {editing ? t('admin.questionnaire.templateForm.save') : t('admin.questionnaire.templateForm.create')}
               </button>
             </div>
           </form>
@@ -136,6 +139,7 @@ function QuestionFormModal({
   onSave: (payload: any) => Promise<void>;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(editing?.questionText ?? '');
   const [type, setType] = useState<QuestionType>(editing?.questionType ?? 'SingleChoice');
   const [required, setRequired] = useState(editing?.isRequired ?? true);
@@ -145,7 +149,7 @@ function QuestionFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) { setErr('Question text is required.'); return; }
+    if (!text.trim()) { setErr(t('admin.questionnaire.questionForm.textRequired')); return; }
     setSaving(true); setErr('');
     const payload = editing
       ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order }
@@ -160,36 +164,36 @@ function QuestionFormModal({
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-lg">
           <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-violet-100 dark:bg-violet-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? 'Edit Question' : 'Add Question'}</h2>
+            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? t('admin.questionnaire.questionForm.editTitle') : t('admin.questionnaire.questionForm.newTitle')}</h2>
             <button onClick={onClose} className="p-1 hover:bg-violet-200 dark:hover:bg-violet-800 rounded-lg"><X className="w-5 h-5" /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Question Text *</label>
-              <textarea value={text} onChange={e => setText(e.target.value)} rows={2} className={inputCls} placeholder="e.g. How many hours do you sleep each night?" required />
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.questionForm.textLabel')}</label>
+              <textarea value={text} onChange={e => setText(e.target.value)} rows={2} className={inputCls} placeholder={t('admin.questionnaire.questionForm.textPlaceholder')} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.questionForm.typeLabel')}</label>
                 <select value={type} onChange={e => setType(e.target.value as QuestionType)} className={inputCls}>
-                  {QUESTION_TYPES.map(qt => <option key={qt.value} value={qt.value}>{qt.label}</option>)}
+                  {QUESTION_TYPES.map(qt => <option key={qt.value} value={qt.value}>{t(`admin.questionnaire.questionTypes.${qt.value}`)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.questionForm.orderLabel')}</label>
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="w-4 h-4 rounded border-gray-400 accent-violet-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Required answer</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('admin.questionnaire.questionForm.requiredLabel')}</span>
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t('admin.questionnaire.questionForm.cancel')}</button>
               <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-violet-300 dark:bg-violet-700 text-gray-900 dark:text-white`}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {editing ? 'Save' : 'Add'}
+                {editing ? t('admin.questionnaire.questionForm.save') : t('admin.questionnaire.questionForm.add')}
               </button>
             </div>
           </form>
@@ -208,6 +212,7 @@ function OptionFormModal({
   onSave: (payload: any) => Promise<void>;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(editing?.optionText ?? '');
   const [value, setValue] = useState(editing?.optionValue ?? '');
   const [order, setOrder] = useState(editing?.displayOrder ?? 1);
@@ -216,7 +221,7 @@ function OptionFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !value.trim()) { setErr('Both text and value are required.'); return; }
+    if (!text.trim() || !value.trim()) { setErr(t('admin.questionnaire.optionForm.bothRequired')); return; }
     setSaving(true); setErr('');
     const payload = editing
       ? { optionId: editing.optionId, optionText: text.trim(), optionValue: value.trim(), displayOrder: order }
@@ -231,29 +236,29 @@ function OptionFormModal({
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm">
           <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-emerald-100 dark:bg-emerald-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? 'Edit Option' : 'Add Option'}</h2>
+            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? t('admin.questionnaire.optionForm.editTitle') : t('admin.questionnaire.optionForm.newTitle')}</h2>
             <button onClick={onClose} className="p-1 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded-lg"><X className="w-5 h-5" /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Display Text *</label>
-              <input value={text} onChange={e => setText(e.target.value)} className={inputCls} placeholder="e.g. Less than 6 hours" required />
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.optionForm.displayLabel')}</label>
+              <input value={text} onChange={e => setText(e.target.value)} className={inputCls} placeholder={t('admin.questionnaire.optionForm.displayPlaceholder')} required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Machine Value *</label>
-              <input value={value} onChange={e => setValue(e.target.value)} className={inputCls} placeholder="e.g. LOW  or  1" required />
-              <p className="text-[10px] text-gray-400 mt-1">Used by Recommendation Engine to match rule conditions.</p>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.optionForm.valueLabel')}</label>
+              <input value={value} onChange={e => setValue(e.target.value)} className={inputCls} placeholder={t('admin.questionnaire.optionForm.valuePlaceholder')} required />
+              <p className="text-[10px] text-gray-400 mt-1">{t('admin.questionnaire.optionForm.valueHint')}</p>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.optionForm.orderLabel')}</label>
               <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t('admin.questionnaire.optionForm.cancel')}</button>
               <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-emerald-300 dark:bg-emerald-700 text-gray-900 dark:text-white`}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {editing ? 'Save' : 'Add'}
+                {editing ? t('admin.questionnaire.optionForm.save') : t('admin.questionnaire.optionForm.add')}
               </button>
             </div>
           </form>
@@ -265,6 +270,7 @@ function OptionFormModal({
 
 // ─── Options sub-panel ────────────────────────────────────────────────────────
 function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefresh: () => void }) {
+  const { t } = useTranslation();
   const [optModal, setOptModal] = useState<{ editing: QuestionOptionDto | null } | null>(null);
   const [delOpt, setDelOpt] = useState<QuestionOptionDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
@@ -288,13 +294,13 @@ function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefres
   return (
     <div className="pt-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-black uppercase tracking-wide text-gray-400">Options ({sorted.length})</p>
+        <p className="text-[11px] font-black uppercase tracking-wide text-gray-400">{t('admin.questionnaire.optionsLabel')} ({sorted.length})</p>
         <button onClick={() => setOptModal({ editing: null })} className={`${btnBase} bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 py-1 px-3 text-xs`}>
-          <Plus className="w-3 h-3" /> Add
+          <Plus className="w-3 h-3" /> {t('admin.questionnaire.optionForm.add')}
         </button>
       </div>
       {sorted.length === 0 ? (
-        <p className="text-xs text-gray-400 italic py-3 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">No options — add at least 2.</p>
+        <p className="text-xs text-gray-400 italic py-3 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">{t('admin.questionnaire.noOptions')}</p>
       ) : (
         <div className="space-y-1.5">
           {sorted.map(opt => (
@@ -311,13 +317,14 @@ function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefres
         </div>
       )}
       {optModal !== null && <OptionFormModal questionId={question.questionId} editing={optModal.editing} onSave={handleSave} onClose={() => setOptModal(null)} />}
-      {delOpt && <ConfirmDeleteModal title="Delete Option?" body={`Remove "${delOpt.optionText}"?`} loading={delLoading} onConfirm={handleDelete} onCancel={() => setDelOpt(null)} />}
+      {delOpt && <ConfirmDeleteModal title={t('admin.questionnaire.deleteModal.deleteOption')} body={t('admin.questionnaire.deleteModal.deleteOptionBody', { text: delOpt.optionText })} loading={delLoading} onConfirm={handleDelete} onCancel={() => setDelOpt(null)} />}
     </div>
   );
 }
 
 // ─── Questions right-panel ────────────────────────────────────────────────────
 function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateDto; onBack: () => void }) {
+  const { t } = useTranslation();
   const [questions, setQuestions] = useState<QuestionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedQ, setExpandedQ] = useState<number | null>(null);
@@ -356,26 +363,26 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <button onClick={onBack} className={`${btnBase} bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-1 px-3 text-xs`}>
-          <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Templates
+          <ChevronRight className="w-3.5 h-3.5 rotate-180" /> {t('admin.questionnaire.backToTemplates')}
         </button>
         <ChevronRight className="w-4 h-4 text-gray-400" />
         <span className="font-black text-gray-800 dark:text-gray-100 text-sm truncate max-w-xs">{template.templateName}</span>
         <span className={`text-[10px] px-2 py-0.5 rounded-full font-black border ${template.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
-          {template.isActive ? 'Active' : 'Inactive'}
+          {template.isActive ? t('admin.questionnaire.statusActive') : t('admin.questionnaire.statusInactive')}
         </span>
         <button onClick={() => setQModal({ editing: null })} className={`${btnBase} ml-auto bg-violet-200 dark:bg-violet-800 text-violet-900 dark:text-violet-100 py-1.5`}>
-          <Plus className="w-4 h-4" /> Add Question
+          <Plus className="w-4 h-4" /> {t('admin.questionnaire.addQuestion')}
         </button>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto space-y-3">
         {loading ? (
-          <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+          <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> {t('admin.questionnaire.loading')}</div>
         ) : sorted.length === 0 ? (
           <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
             <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" />
-            <p className="font-bold">No questions yet</p>
+            <p className="font-bold">{t('admin.questionnaire.noQuestions')}</p>
           </div>
         ) : sorted.map(q => (
           <div key={q.questionId} className="border-2 border-black dark:border-gray-600 rounded-2xl bg-white dark:bg-gray-800/80 shadow-[3px_3px_0_0_#1A1D20] overflow-hidden">
@@ -388,7 +395,7 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
                 <p className="font-bold text-sm text-gray-800 dark:text-gray-100">{q.questionText}</p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-[10px] font-black bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full border border-violet-200 dark:border-violet-700">{q.questionType}</span>
-                  {q.isRequired && <span className="text-[10px] font-black bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">Required</span>}
+                  {q.isRequired && <span className="text-[10px] font-black bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">{t('admin.questionnaire.requiredBadge')}</span>}
                   {isChoiceType(q.questionType) && <span className="text-[10px] text-gray-400">{q.options.length} option{q.options.length !== 1 ? 's' : ''}</span>}
                 </div>
               </div>
@@ -412,13 +419,14 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
       </div>
 
       {qModal !== null && <QuestionFormModal templateId={template.templateId} editing={qModal.editing} onSave={handleSaveQ} onClose={() => setQModal(null)} />}
-      {delQ && <ConfirmDeleteModal title="Delete Question?" body={`Remove "${delQ.questionText}" and all its options?`} loading={delLoading} onConfirm={handleDelQ} onCancel={() => setDelQ(null)} />}
+      {delQ && <ConfirmDeleteModal title={t('admin.questionnaire.deleteModal.deleteQuestion')} body={t('admin.questionnaire.deleteModal.deleteQuestionBody', { text: delQ.questionText })} loading={delLoading} onConfirm={handleDelQ} onCancel={() => setDelQ(null)} />}
     </div>
   );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function QuestionnaireManagement() {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState<QuestionnaireTemplateDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTpl, setSelectedTpl] = useState<QuestionnaireTemplateDto | null>(null);
@@ -445,10 +453,10 @@ export default function QuestionnaireManagement() {
   const handleSaveTpl = async (payload: QuestionnaireTemplatePayload) => {
     if (tplModal?.editing) {
       await adminGoalApi.updateTemplate(tplModal.editing.templateId, payload);
-      flash('success', 'Template updated.');
+      flash('success', t('admin.questionnaire.flashUpdated'));
     } else {
       await adminGoalApi.createTemplate(payload);
-      flash('success', 'Template created.');
+      flash('success', t('admin.questionnaire.flashCreated'));
     }
     setTplModal(null);
     fetchTemplates();
@@ -456,7 +464,7 @@ export default function QuestionnaireManagement() {
 
   const handleToggle = async (tpl: QuestionnaireTemplateDto) => {
     try { await adminGoalApi.toggleTemplateStatus(tpl.templateId, !tpl.isActive); fetchTemplates(); }
-    catch { flash('error', 'Status update failed.'); }
+    catch { flash('error', t('admin.questionnaire.flashStatusFailed')); }
   };
 
   const handleDelete = async () => {
@@ -464,12 +472,12 @@ export default function QuestionnaireManagement() {
     setDelLoading(true);
     try {
       await adminGoalApi.deleteTemplate(delTpl.templateId);
-      flash('success', 'Template deleted.');
+      flash('success', t('admin.questionnaire.flashDeleted'));
       if (selectedTpl?.templateId === delTpl.templateId) setSelectedTpl(null);
       setDelTpl(null);
       fetchTemplates();
     } catch (ex: any) {
-      flash('error', ex?.response?.data?.message ?? 'Delete failed.');
+      flash('error', ex?.response?.data?.message ?? t('admin.questionnaire.flashDeleteFailed'));
     } finally { setDelLoading(false); }
   };
 
@@ -488,11 +496,11 @@ export default function QuestionnaireManagement() {
           <ClipboardList className="w-6 h-6 text-gray-900" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Questionnaire Builder</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Templates → Questions → Options</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('admin.questionnaire.pageTitle')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.questionnaire.subtitle')}</p>
         </div>
         <button onClick={() => setTplModal({ editing: null })} className={`${btnBase} ml-auto bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white py-2`}>
-          <Plus className="w-4 h-4" /> New Template
+          <Plus className="w-4 h-4" /> {t('admin.questionnaire.newTemplate')}
         </button>
       </div>
 
@@ -501,10 +509,10 @@ export default function QuestionnaireManagement() {
         {/* Left pane — Template list */}
         <div className="w-72 shrink-0 overflow-y-auto flex flex-col gap-3 pr-1">
           {loading ? (
-            <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading…</div>
+            <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('admin.questionnaire.loading')}</div>
           ) : templates.length === 0 ? (
             <div className="text-center py-12 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
-              <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" /><p className="font-bold">No templates</p>
+              <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" /><p className="font-bold">{t('admin.questionnaire.noTemplates')}</p>
             </div>
           ) : templates.map(tpl => (
             <div
@@ -519,7 +527,7 @@ export default function QuestionnaireManagement() {
               <div className="flex items-start justify-between gap-2">
                 <p className="font-black text-sm text-gray-900 dark:text-gray-100 leading-tight">{tpl.templateName}</p>
                 <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-black border ${tpl.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600'}`}>
-                  {tpl.isActive ? 'Active' : 'Off'}
+                  {tpl.isActive ? t('admin.questionnaire.statusActive') : t('admin.questionnaire.statusOff')}
                 </span>
               </div>
               {tpl.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{tpl.description}</p>}
@@ -542,8 +550,8 @@ export default function QuestionnaireManagement() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400 gap-3">
               <ClipboardList className="w-16 h-16 opacity-20" />
-              <p className="font-black text-lg text-gray-500 dark:text-gray-400">Select a Template</p>
-              <p className="text-sm">Click a template on the left to manage its questions and answer options.</p>
+              <p className="font-black text-lg text-gray-500 dark:text-gray-400">{t('admin.questionnaire.selectTemplate')}</p>
+              <p className="text-sm">{t('admin.questionnaire.selectTemplateHint')}</p>
             </div>
           )}
         </div>
@@ -551,7 +559,7 @@ export default function QuestionnaireManagement() {
 
       {/* Modals */}
       {tplModal !== null && <TemplateFormModal editing={tplModal.editing} onSave={handleSaveTpl} onClose={() => setTplModal(null)} />}
-      {delTpl && <ConfirmDeleteModal title="Delete Template?" body={`Permanently delete "${delTpl.templateName}"? All questions and options will be removed.`} loading={delLoading} onConfirm={handleDelete} onCancel={() => setDelTpl(null)} />}
+      {delTpl && <ConfirmDeleteModal title={t('admin.questionnaire.deleteModal.deleteTemplate')} body={t('admin.questionnaire.deleteModal.deleteTemplateBody', { name: delTpl.templateName })} loading={delLoading} onConfirm={handleDelete} onCancel={() => setDelTpl(null)} />}
     </div>
   );
 }

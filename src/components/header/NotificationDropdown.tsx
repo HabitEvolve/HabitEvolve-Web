@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
 
@@ -60,6 +61,7 @@ const NOTIFICATIONS = [
 ];
 
 export default function NotificationDropdown() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
 
@@ -75,7 +77,7 @@ export default function NotificationDropdown() {
       {/* ── BELL BUTTON ───────────────────────────────────────────── */}
       <button
         onClick={handleClick}
-        aria-label="Notifications"
+        aria-label={t("notifications.title")}
         className="relative flex items-center justify-center w-11 h-11 bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-full shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all text-gray-800 dark:text-gray-200"
       >
         {/* Ping badge */}
@@ -99,7 +101,7 @@ export default function NotificationDropdown() {
         {/* Panel header */}
         <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-700 dark:to-gray-700 border-b-2 border-black dark:border-gray-600 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <h5 className="text-base font-black text-gray-900 dark:text-white">Notifications</h5>
+            <h5 className="text-base font-black text-gray-900 dark:text-white">{t("notifications.title")}</h5>
             <span className="flex items-center justify-center h-5 min-w-[22px] px-1.5 bg-orange-400 border-2 border-black rounded-full text-[10px] font-black text-white shadow-[1px_1px_0_0_#1A1D20]">
               {NOTIFICATIONS.length}
             </span>
@@ -107,7 +109,7 @@ export default function NotificationDropdown() {
           <button
             onClick={closeDropdown}
             className="flex items-center justify-center w-7 h-7 bg-white dark:bg-gray-700 border-2 border-black dark:border-gray-500 rounded-lg shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-gray-800 dark:text-gray-300"
-            aria-label="Close notifications"
+            aria-label={t("notifications.close")}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -166,7 +168,7 @@ export default function NotificationDropdown() {
             onClick={closeDropdown}
             className="flex items-center justify-center w-full py-2.5 border-2 border-black dark:border-gray-500 rounded-full bg-white dark:bg-gray-800 font-black text-sm text-gray-800 dark:text-gray-200 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
           >
-            View All Notifications
+            {t("notifications.viewAll")}
           </Link>
         </div>
       </Dropdown>

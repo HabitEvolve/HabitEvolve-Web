@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
@@ -49,6 +50,7 @@ const TIER_ORDER: Record<string, number> = { Free: 0, Basic: 1, Premium: 2 };
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function BossRaid() {
+    const { t } = useTranslation();
     const [boss, setBoss] = useState<BossTemplateDto | null>(null);
     const [bossSubscription, setBossSubscription] = useState<WeeklyBossSubscriptionDto | null>(null);
     const [parties, setParties] = useState<PartyItem[]>([]);
@@ -75,9 +77,9 @@ export default function BossRaid() {
                 if (bossRes.success) setBoss(bossRes.data ?? null);
                 if (subRes.success) setBossSubscription(subRes.data ?? null);
                 if (partiesRes.success) setParties(partiesRes.data ?? []);
-                if (!bossRes.success) setError("Could not load boss template.");
+                if (!bossRes.success) setError(t("mentor.bossRaid.couldNotLoad"));
             })
-            .catch((e) => setError(e?.response?.data?.message || "Failed to load boss data."))
+            .catch((e) => setError(e?.response?.data?.message || t("mentor.bossRaid.failedToLoad")))
             .finally(() => setLoading(false));
     }, []);
 
@@ -119,10 +121,10 @@ export default function BossRaid() {
                 setRegisterResult(res.data);
                 fetchPartyStatus(selectedPartyId as number);
             } else {
-                setRegisterError(res.message || "Registration failed.");
+                setRegisterError(res.message || t("mentor.bossRaid.registrationFailed"));
             }
         } catch (e: any) {
-            setRegisterError(e?.response?.data?.message || "An unexpected error occurred.");
+            setRegisterError(e?.response?.data?.message || t("mentor.bossRaid.unexpectedError"));
         } finally {
             setRegisterLoading(false);
         }
@@ -154,7 +156,7 @@ export default function BossRaid() {
     return (
         <>
             <PageMeta title="Boss Raid — HabitEvolve" description="Register your party for the weekly boss" />
-            <PageBreadcrumb pageTitle="Boss Raid" />
+            <PageBreadcrumb pageTitle={t("mentor.bossRaid.pageTitle")} />
 
             {error && (
                 <div className="mb-6 p-4 bg-red-100 border-4 border-red-400 rounded-2xl font-bold text-red-700">
@@ -190,7 +192,7 @@ export default function BossRaid() {
                         {/* Subscription tier */}
                         {bossSubscription && (
                             <div className="bg-white border-4 border-black rounded-xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-4 text-center min-w-[130px]">
-                                <p className="text-xs font-black uppercase tracking-wider text-gray-500 mb-1">Your Tier</p>
+                                <p className="text-xs font-black uppercase tracking-wider text-gray-500 mb-1">{t("mentor.bossRaid.yourTier")}</p>
                                 <p className="text-2xl font-black">{bossSubscription.tier}</p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     {bossSubscription.bossModes.join(" · ")}
@@ -218,10 +220,10 @@ export default function BossRaid() {
                                             )}
                                         </div>
                                         <div className="space-y-1 text-xs text-gray-600">
-                                            <div className="flex justify-between"><span>Boss HP</span><span className="font-black">{mode.bossHp.toLocaleString()}</span></div>
-                                            <div className="flex justify-between"><span>Party Size</span><span className="font-black">{mode.partyMin}–{mode.partyMax}</span></div>
-                                            <div className="flex justify-between"><span>Max Dmg/Quest</span><span className="font-black">{mode.maxDamagePerQuest}</span></div>
-                                            <div className="flex justify-between"><span>Reward Tier</span><span className="font-black">{mode.rewardTier}</span></div>
+                                            <div className="flex justify-between"><span>{t("mentor.bossRaid.bossHp")}</span><span className="font-black">{mode.bossHp.toLocaleString()}</span></div>
+                                            <div className="flex justify-between"><span>{t("mentor.bossRaid.partySize")}</span><span className="font-black">{mode.partyMin}–{mode.partyMax}</span></div>
+                                            <div className="flex justify-between"><span>{t("mentor.bossRaid.maxDmgPerQuest")}</span><span className="font-black">{mode.maxDamagePerQuest}</span></div>
+                                            <div className="flex justify-between"><span>{t("mentor.bossRaid.rewardTier")}</span><span className="font-black">{mode.rewardTier}</span></div>
                                         </div>
                                     </div>
                                 );
@@ -231,19 +233,19 @@ export default function BossRaid() {
                 </div>
             ) : (
                 <div className="mb-8 p-8 bg-gray-100 border-4 border-gray-300 rounded-2xl text-center">
-                    <p className="text-xl font-black text-gray-400">No active boss this week</p>
-                    <p className="text-sm text-gray-400 mt-1">Check back when the next boss template is published.</p>
+                    <p className="text-xl font-black text-gray-400">{t("mentor.bossRaid.noActiveBoss")}</p>
+                    <p className="text-sm text-gray-400 mt-1">{t("mentor.bossRaid.checkBack")}</p>
                 </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Registration Form */}
                 <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6">
-                    <h2 className="text-xl font-black mb-5">Register Party</h2>
+                    <h2 className="text-xl font-black mb-5">{t("mentor.bossRaid.registerParty")}</h2>
 
                     {/* Party selector */}
                     <div className="mb-4">
-                        <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Select Party</label>
+                        <label className="block text-xs font-black uppercase tracking-wider mb-1.5">{t("mentor.bossRaid.selectParty")}</label>
                         <select
                             value={selectedPartyId}
                             onChange={(e) => {
@@ -252,7 +254,7 @@ export default function BossRaid() {
                             }}
                             className="w-full px-3 py-2.5 border-2 border-black rounded-xl text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-red-300"
                         >
-                            <option value="">— Choose a party —</option>
+                            <option value="">{t("mentor.bossRaid.chooseParty")}</option>
                             {parties.map((p) => (
                                 <option key={p.partyId} value={p.partyId}>
                                     {p.name} ({p.memberCount} members)
@@ -263,7 +265,7 @@ export default function BossRaid() {
 
                     {/* Difficulty selector */}
                     <div className="mb-6">
-                        <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Difficulty Mode</label>
+                        <label className="block text-xs font-black uppercase tracking-wider mb-1.5">{t("mentor.bossRaid.difficultyMode")}</label>
                         {boss && boss.modes.length > 0 ? (
                             <div className="flex gap-2">
                                 {(["Easy", "Normal", "Hard"] as BossMode[]).map((diff) => {
@@ -284,13 +286,13 @@ export default function BossRaid() {
                                                 }`}
                                         >
                                             {diff}
-                                            {!enabled && <span className="block text-[10px] font-medium">🔒 Locked</span>}
+                                            {!enabled && <span className="block text-[10px] font-medium">🔒 {t("mentor.bossRaid.locked")}</span>}
                                         </button>
                                     );
                                 })}
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-400 font-medium">No difficulty modes available.</p>
+                            <p className="text-sm text-gray-400 font-medium">{t("mentor.bossRaid.noModesAvailable")}</p>
                         )}
                     </div>
 
@@ -306,21 +308,21 @@ export default function BossRaid() {
                         className="w-full py-3.5 border-2 border-black rounded-full font-black text-sm bg-red-500 text-white shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[4px_4px_0_0_#1A1D20] transition-all inline-flex items-center justify-center gap-2"
                     >
                         {registerLoading ? (
-                            <><Spinner size={16} /> Registering…</>
+                            <><Spinner size={16} /> {t("mentor.bossRaid.registering")}</>
                         ) : (
-                            "⚔️ Register for Boss Raid"
+                            t("mentor.bossRaid.registerBtn")
                         )}
                     </button>
 
                     {registerResult && (
                         <div className="mt-4 p-4 bg-emerald-100 border-4 border-emerald-400 rounded-xl">
-                            <p className="font-black text-emerald-800 mb-1">Registration Successful! ⚔️</p>
+                            <p className="font-black text-emerald-800 mb-1">{t("mentor.bossRaid.registrationSuccess")}</p>
                             <div className="text-sm text-emerald-700 font-medium space-y-0.5">
-                                <p>Party: <strong>{registerResult.partyName}</strong></p>
-                                <p>Boss: <strong>{registerResult.bossName}</strong></p>
-                                <p>Difficulty: <strong>{registerResult.difficulty}</strong></p>
-                                <p>Boss HP: <strong>{registerResult.maxHp.toLocaleString()}</strong></p>
-                                <p>Reward Tier: <strong>{registerResult.rewardTier}</strong></p>
+                                <p>{t("mentor.bossRaid.party")}: <strong>{registerResult.partyName}</strong></p>
+                                <p>{t("mentor.bossRaid.boss")}: <strong>{registerResult.bossName}</strong></p>
+                                <p>{t("mentor.bossRaid.difficulty")}: <strong>{registerResult.difficulty}</strong></p>
+                                <p>{t("mentor.bossRaid.bossHpLabel")}: <strong>{registerResult.maxHp.toLocaleString()}</strong></p>
+                                <p>{t("mentor.bossRaid.rewardTier")}: <strong>{registerResult.rewardTier}</strong></p>
                             </div>
                         </div>
                     )}
@@ -329,14 +331,14 @@ export default function BossRaid() {
                 {/* Party Raid Status */}
                 <div className="bg-[#1a1a2e] border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 text-white">
                     <h2 className="text-xl font-black mb-5 text-white">
-                        Raid Status
+                        {t("mentor.bossRaid.raidStatus")}
                         {statusLoading && <span className="ml-2 inline-flex opacity-60"><Spinner size={16} /></span>}
                     </h2>
 
                     {!selectedPartyId ? (
                         <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-500">
                             <span className="text-4xl">⚔️</span>
-                            <p className="text-sm font-medium">Select a party to see their raid status</p>
+                            <p className="text-sm font-medium">{t("mentor.bossRaid.selectPartyToSeeStatus")}</p>
                         </div>
                     ) : statusLoading ? (
                         <div className="flex items-center justify-center h-48">
@@ -357,10 +359,10 @@ export default function BossRaid() {
 
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 {[
-                                    ["Difficulty", partyStatus.difficulty],
-                                    ["Total Damage", partyStatus.totalDamageDealt.toLocaleString()],
-                                    ["Reward Tier", partyStatus.rewardTier],
-                                    ["Week Ends", new Date(partyStatus.weekEndDate).toLocaleDateString()],
+                                    [t("mentor.bossRaid.difficulty"), partyStatus.difficulty],
+                                    [t("mentor.bossRaid.totalDamage"), partyStatus.totalDamageDealt.toLocaleString()],
+                                    [t("mentor.bossRaid.rewardTier"), partyStatus.rewardTier],
+                                    [t("mentor.bossRaid.weekEnds"), new Date(partyStatus.weekEndDate).toLocaleDateString()],
                                 ].map(([k, v]) => (
                                     <div key={k} className="bg-white/10 rounded-xl p-3">
                                         <p className="text-gray-400 text-xs font-medium">{k}</p>
@@ -372,7 +374,7 @@ export default function BossRaid() {
                             {/* Participant list */}
                             {partyStatus.participants && partyStatus.participants.length > 0 && (
                                 <div>
-                                    <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Participants</p>
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-2">{t("mentor.bossRaid.participants")}</p>
                                     <div className="space-y-1.5">
                                         {partyStatus.participants.map((p, i) => (
                                             <div key={p.userId} className="flex items-center justify-between bg-white/10 rounded-xl px-3 py-2 text-sm">
@@ -390,7 +392,7 @@ export default function BossRaid() {
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-500">
                             <span className="text-4xl">💤</span>
-                            <p className="text-sm font-medium">Party hasn't registered for this week's boss yet.</p>
+                            <p className="text-sm font-medium">{t("mentor.bossRaid.notRegistered")}</p>
                         </div>
                     )}
                 </div>

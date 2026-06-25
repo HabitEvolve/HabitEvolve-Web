@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
@@ -21,6 +22,7 @@ interface RejectModalProps {
 }
 
 const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
+    const { t } = useTranslation();
     const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -33,10 +35,10 @@ const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
             if (res.success) {
                 onRejected(proof.proofId);
             } else {
-                setError(res.message || "Rejection failed.");
+                setError(res.message || t("mentor.proofQueue.rejectModal.rejectionFailed"));
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || "An error occurred.");
+            setError(e?.response?.data?.message || t("mentor.proofQueue.rejectModal.errorOccurred"));
         } finally {
             setLoading(false);
         }
@@ -51,18 +53,18 @@ const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
                 className="w-full max-w-md bg-[#FEE2E2] dark:bg-red-900/40 border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-xl font-black mb-1">Reject Proof</h2>
+                <h2 className="text-xl font-black mb-1">{t("mentor.proofQueue.rejectModal.title")}</h2>
                 <p className="text-sm text-gray-600 mb-4">
                     <strong>{proof.username}</strong> — {proof.questTitle}
                 </p>
 
                 <label className="block text-xs font-black uppercase tracking-wider mb-2">
-                    Rejection Reason (shown to player)
+                    {t("mentor.proofQueue.rejectModal.reason")}
                 </label>
                 <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="Explain why this proof was rejected…"
+                    placeholder={t("mentor.proofQueue.rejectModal.placeholder")}
                     rows={4}
                     className="w-full px-3 py-2.5 border-2 border-black rounded-xl text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-red-300 resize-none placeholder:text-gray-400"
                 />
@@ -78,14 +80,14 @@ const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
                         onClick={onClose}
                         className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
                     >
-                        Cancel
+                        {t("mentor.proofQueue.rejectModal.cancel")}
                     </button>
                     <button
                         onClick={handleReject}
                         disabled={loading}
                         className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-red-400 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2"
                     >
-                        {loading ? <><Spinner size={14} /> Rejecting…</> : "Reject Proof"}
+                        {loading ? <><Spinner size={14} /> {t("mentor.proofQueue.rejectModal.rejecting")}</> : t("mentor.proofQueue.rejectModal.rejectProof")}
                     </button>
                 </div>
             </div>
@@ -103,6 +105,7 @@ interface ProofCardProps {
 }
 
 const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps) => {
+    const { t } = useTranslation();
     const isSuspicious = proof.status === "Suspicious" || proof.status === "AiChecking";
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
 
@@ -120,7 +123,7 @@ const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps
                     {isSuspicious && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 blur-none">
                             <span className="bg-amber-400 border-2 border-black rounded-full px-3 py-1 text-xs font-black">
-                                🤖 AI Flagged — Blurred
+                                🤖 {t("mentor.proofQueue.aiFlagged")}
                             </span>
                         </div>
                     )}
@@ -132,7 +135,7 @@ const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps
                 </div>
             ) : (
                 <div className="w-full h-24 bg-gray-50 flex items-center justify-center border-b-2 border-gray-200">
-                    <span className="text-gray-400 text-xs font-bold">No media</span>
+                    <span className="text-gray-400 text-xs font-bold">{t("mentor.proofQueue.noMedia")}</span>
                 </div>
             )}
 
@@ -152,7 +155,7 @@ const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps
                     <span className="px-2 py-0.5 bg-gray-100 border-2 border-gray-300 rounded-full">{proof.proofType}</span>
                     <span>{new Date(proof.submittedAt).toLocaleString()}</span>
                     {proof.deadlineMet && (
-                        <span className="px-2 py-0.5 bg-emerald-100 border-2 border-emerald-300 rounded-full text-emerald-700">On Time ✓</span>
+                        <span className="px-2 py-0.5 bg-emerald-100 border-2 border-emerald-300 rounded-full text-emerald-700">{t("mentor.proofQueue.onTime")} ✓</span>
                     )}
                 </div>
 
@@ -169,14 +172,14 @@ const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps
                         disabled={actionLoading}
                         className="flex-1 py-2 border-2 border-black rounded-full font-black text-xs bg-emerald-400 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed transition-all inline-flex items-center justify-center gap-1"
                     >
-                        {actionLoading ? <Spinner size={12} /> : "✓ Approve"}
+                        {actionLoading ? <Spinner size={12} /> : `✓ ${t("mentor.proofQueue.approve")}`}
                     </button>
                     <button
                         onClick={() => onReject(proof)}
                         disabled={actionLoading}
                         className="flex-1 py-2 border-2 border-black rounded-full font-black text-xs bg-red-300 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed transition-all inline-flex items-center justify-center gap-1"
                     >
-                        ✕ Reject
+                        ✕ {t("mentor.proofQueue.reject")}
                     </button>
                 </div>
             </div>
@@ -186,6 +189,7 @@ const ProofCard = ({ proof, onApprove, onReject, actionLoading }: ProofCardProps
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function ProofQueue() {
+    const { t } = useTranslation();
     const alert = useAlert();
     const [proofs, setProofs] = useState<ProofDto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -201,10 +205,10 @@ export default function ProofQueue() {
             if (res.success) {
                 setProofs(res.data ?? []);
             } else {
-                setError(res.message || "Failed to load proof queue.");
+                setError(res.message || t("mentor.proofQueue.failedToLoad"));
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || "An error occurred.");
+            setError(e?.response?.data?.message || t("mentor.proofQueue.errorOccurred"));
         } finally {
             setLoading(false);
         }
@@ -218,12 +222,12 @@ export default function ProofQueue() {
             const res = await mentorApi.approveProof(proofId);
             if (res.success) {
                 setProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-                alert.success("Proof approved! Player rewarded.");
+                alert.success(t("mentor.proofQueue.approvedSuccess"));
             } else {
-                alert.error(res.message || "Approval failed.");
+                alert.error(res.message || t("mentor.proofQueue.approvalFailed"));
             }
         } catch (e: any) {
-            alert.error(e?.response?.data?.message || "An error occurred.");
+            alert.error(e?.response?.data?.message || t("mentor.proofQueue.errorOccurred"));
         } finally {
             setActionLoading(null);
         }
@@ -232,19 +236,19 @@ export default function ProofQueue() {
     const handleRejected = (proofId: number) => {
         setRejectTarget(null);
         setProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-        alert.success("Proof rejected. Player has been notified.");
+        alert.success(t("mentor.proofQueue.rejectedSuccess"));
     };
 
     return (
         <>
             <PageMeta title="Proof Queue — HabitEvolve" description="Review and judge submitted proof" />
-            <PageBreadcrumb pageTitle="The Judgement Hall" />
+            <PageBreadcrumb pageTitle={t("mentor.proofQueue.pageTitle")} />
 
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-black">Pending Reviews</h2>
+                    <h2 className="text-2xl font-black">{t("mentor.proofQueue.pendingReviews")}</h2>
                     <span className="px-3 py-1 bg-teal-500 text-white text-sm font-black border-2 border-black rounded-full">
                         {proofs.length}
                     </span>
@@ -259,7 +263,7 @@ export default function ProofQueue() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                     )}
-                    Refresh
+                    {t("mentor.proofQueue.refresh")}
                 </button>
             </div>
 
@@ -271,13 +275,13 @@ export default function ProofQueue() {
 
             {loading && proofs.length === 0 ? (
                 <div className="flex items-center justify-center h-64 gap-3 text-gray-500">
-                    <Spinner size={32} /> Loading queue…
+                    <Spinner size={32} /> {t("mentor.proofQueue.loadingQueue")}
                 </div>
             ) : proofs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-4">
                     <div className="text-6xl">⚖️</div>
-                    <p className="text-xl font-black text-gray-400">Queue is empty</p>
-                    <p className="text-sm text-gray-400 font-medium">All proofs have been reviewed. Check back later.</p>
+                    <p className="text-xl font-black text-gray-400">{t("mentor.proofQueue.queueEmpty")}</p>
+                    <p className="text-sm text-gray-400 font-medium">{t("mentor.proofQueue.allReviewed")}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

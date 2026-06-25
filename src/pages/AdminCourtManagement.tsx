@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Gavel, Trophy, X, ChevronLeft, ChevronRight, Loader2, ImageOff, Filter, Camera, Video, Monitor } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -112,6 +113,7 @@ interface ReviewCaseModalProps {
 }
 
 const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps) => {
+  const { t } = useTranslation();
   const [data, setData] = useState<CourtCaseDto>(caseItem);
   const [detailLoading, setDetailLoading] = useState(true);
   const [verdict, setVerdict] = useState<"Approved" | "Rejected" | "">("");
@@ -157,7 +159,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
               <GavelIcon size={17} />
             </div>
             <div>
-              <h2 className="text-base font-black text-gray-900">Review & Resolve Case</h2>
+              <h2 className="text-base font-black text-gray-900">{t("admin.courtManagement.reviewModal.title")}</h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs font-medium text-gray-500">Case #{caseItem.caseId}</p>
                 <StatusBadge status={data.status} />
@@ -176,7 +178,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
         {detailLoading ? (
           <div className="flex-1 flex items-center justify-center gap-3 p-16">
             <Spinner size={32} />
-            <p className="text-sm font-bold text-gray-500">Loading case details…</p>
+            <p className="text-sm font-bold text-gray-500">{t("admin.courtManagement.loadingCaseDetails")}</p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
@@ -187,16 +189,16 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
 
                 {/* Quest info */}
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Quest / Task</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("admin.courtManagement.reviewModal.questTask")}</p>
                   <p className="text-sm font-black text-gray-900 leading-snug">{data.questTitleMasked}</p>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <ProofTypeBadge type={data.proofType} />
                     <span className="text-xs font-medium text-gray-400">
-                      Submitted {fmtDate(data.createdAt)}
+                      {t("admin.courtManagement.submittedDate", { date: fmtDate(data.createdAt) })}
                     </span>
                     {data.expiresAt && (
                       <span className="text-xs font-medium text-orange-500">
-                        · Expires {fmtDateTime(data.expiresAt)}
+                        {t("admin.courtManagement.expiresDate", { date: fmtDateTime(data.expiresAt) })}
                       </span>
                     )}
                   </div>
@@ -206,7 +208,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                 {isMedia && data.mediaUrls.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                      Evidence Media ({data.mediaUrls.length} file{data.mediaUrls.length !== 1 ? "s" : ""})
+                      {t("admin.courtManagement.reviewModal.evidenceMedia")} ({data.mediaUrls.length} file{data.mediaUrls.length !== 1 ? "s" : ""})
                     </p>
                     <div className={`grid gap-2 ${data.mediaUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
                       {data.mediaUrls.map((url, i) => (
@@ -214,7 +216,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                           {imgErrors[i] ? (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-50">
                               <ImgOffIcon />
-                              <p className="text-[10px] font-medium text-gray-400">Media unavailable</p>
+                              <p className="text-[10px] font-medium text-gray-400">{t("admin.courtManagement.mediaUnavailable")}</p>
                             </div>
                           ) : (
                             <img
@@ -233,7 +235,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                 {/* Text note */}
                 {data.textNote && (
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Text Note</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{t("admin.courtManagement.reviewModal.textNote")}</p>
                     <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium leading-relaxed">
                       {data.textNote}
                     </div>
@@ -246,7 +248,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     <span className="text-xl">👍</span>
                     <div>
                       <p className="text-base font-black text-green-700">{data.validVotes}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Valid</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">{t("admin.courtManagement.reviewModal.valid")}</p>
                     </div>
                   </div>
                   <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600">
@@ -260,7 +262,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className="text-base font-black text-red-700">{data.fraudVotes}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Fraud</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">{t("admin.courtManagement.reviewModal.fraud")}</p>
                     </div>
                     <span className="text-xl">👎</span>
                   </div>
@@ -270,7 +272,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                 {data.votes && data.votes.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                      Community Votes ({data.votes.length})
+                      {t("admin.courtManagement.reviewModal.communityVotes")} ({data.votes.length})
                     </p>
                     <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
                       {data.votes.map(v => {
@@ -293,7 +295,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                                     ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
                                     : "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
                                   }`}>
-                                  {v.wasCorrect ? "✓ Correct" : "✗ Wrong"}
+                                  {v.wasCorrect ? t("admin.courtManagement.voteCorrect") : t("admin.courtManagement.voteWrong")}
                                 </span>
                               )}
                               {v.karmaEarned > 0 && (
@@ -316,13 +318,13 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                   <div className="w-7 h-7 rounded-xl bg-amber-300 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20]">
                     <GavelIcon size={13} />
                   </div>
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-wide">Admin Verdict</h3>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-wide">{t("admin.courtManagement.reviewModal.adminVerdict")}</h3>
                 </div>
 
                 {/* Existing admin note if case was previously resolved */}
                 {data.adminNote && (
                   <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl">
-                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Previous Admin Note</p>
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">{t("admin.courtManagement.reviewModal.prevAdminNote")}</p>
                     <p className="text-xs font-medium text-blue-800 dark:text-blue-300">{data.adminNote}</p>
                   </div>
                 )}
@@ -331,7 +333,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                   <div className="mb-4 flex items-start gap-2.5 px-3.5 py-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-2xl">
                     <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
                     <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                      Status is already <strong>{data.status}</strong>. Your verdict will override the existing resolution.
+                      {t("admin.courtManagement.alreadyResolved")} <strong>{data.status}</strong>. {t("admin.courtManagement.reviewModal.overrideWarning")}
                     </p>
                   </div>
                 )}
@@ -340,7 +342,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                   {/* Verdict select */}
                   <div>
                     <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
-                      Final Verdict *
+                      {t("admin.courtManagement.reviewModal.finalVerdictLabel")}
                     </label>
                     <div className="flex gap-2">
                       {(["Approved", "Rejected"] as const).map(v => {
@@ -380,8 +382,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                           className="w-3.5 h-3.5 object-contain shrink-0"
                         />
                         {verdict === "Approved"
-                          ? "Submission APPROVED — karma will be awarded to the submitter."
-                          : "Submission REJECTED — no karma awarded."}
+                          ? t("admin.courtManagement.reviewModal.approvedInfo")
+                          : t("admin.courtManagement.reviewModal.rejectedInfo")}
                       </div>
                     )}
                   </div>
@@ -389,14 +391,14 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                   {/* Admin note */}
                   <div>
                     <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
-                      Admin Note
-                      <span className="ml-1.5 font-semibold normal-case text-gray-400">(optional)</span>
+                      {t("admin.courtManagement.reviewModal.adminNoteLabel")}
+                      <span className="ml-1.5 font-semibold normal-case text-gray-400">{t("admin.courtManagement.reviewModal.optional")}</span>
                     </label>
                     <textarea
                       value={adminNote}
                       onChange={e => setAdminNote(e.target.value)}
                       rows={4}
-                      placeholder="Reason for this verdict override…"
+                      placeholder={t("admin.courtManagement.reviewModal.reasonPlaceholder")}
                       className={`${inputCls} resize-none`}
                     />
                   </div>
@@ -414,7 +416,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                       disabled={submitting}
                       className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}
                     >
-                      Cancel
+                      {t("admin.courtManagement.reviewModal.cancel")}
                     </button>
                     <button
                       type="submit"
@@ -425,8 +427,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                         }`}
                     >
                       {submitting
-                        ? <><Spinner size={13} /> Resolving…</>
-                        : <><GavelIcon size={13} /> Resolve Case</>}
+                        ? <><Spinner size={13} /> {t("admin.courtManagement.reviewModal.resolving")}</>
+                        : <><GavelIcon size={13} /> {t("admin.courtManagement.reviewModal.resolve")}</>}
                     </button>
                   </div>
                 </form>
@@ -446,6 +448,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
 type ActiveTab = "cases" | "karma";
 
 export default function CourtManagement() {
+  const { t } = useTranslation();
+
   // ── ALERT ─────────────────────────────────────────────────────────────────
   const globalAlert = useAlert();
   const setAlert = useCallback(
@@ -526,10 +530,35 @@ export default function CourtManagement() {
   // ── KARMA PODIUM (top 3 by rank) ──────────────────────────────────────────
   const top3 = [1, 2, 3].map(r => leaderboard.find(e => e.rank === r) ?? null);
 
+  // Tab definitions — labels resolved at render time via t()
+  const tabs = [
+    { id: "cases" as ActiveTab, label: t("admin.courtManagement.tabs.cases"), icon: "⚖️" },
+    { id: "karma" as ActiveTab, label: t("admin.courtManagement.tabs.karma"), icon: "🏆" },
+  ];
+
+  // Cases table headers
+  const caseTableHeaders = [
+    t("admin.courtManagement.table.num"),
+    t("admin.courtManagement.table.quest"),
+    t("admin.courtManagement.table.proofType"),
+    t("admin.courtManagement.table.status"),
+    t("admin.courtManagement.table.votes"),
+    t("admin.courtManagement.table.submitted"),
+    t("admin.courtManagement.table.action"),
+  ];
+
+  // Karma table headers
+  const karmaTableHeaders = [
+    t("admin.courtManagement.table.rank"),
+    t("admin.courtManagement.table.userId"),
+    t("admin.courtManagement.table.karma"),
+    t("admin.courtManagement.table.badge"),
+  ];
+
   return (
     <>
-      <PageMeta title="Court & Karma Management" description="Review community court cases and manage karma rankings" />
-      <PageBreadcrumb pageTitle="Court & Karma" />
+      <PageMeta title={t("admin.courtManagement.pageTitle")} description={t("admin.courtManagement.pageSubtitle")} />
+      <PageBreadcrumb pageTitle={t("admin.courtManagement.pageTitle")} />
 
 
       <div className="space-y-6 p-1">
@@ -540,19 +569,16 @@ export default function CourtManagement() {
             <GavelIcon size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Community Court & Karma</h1>
+            <h1 className="text-2xl font-black text-gray-900">{t("admin.courtManagement.pageTitle")}</h1>
             <p className="text-sm text-gray-500 font-medium mt-0.5">
-              Review proof submissions, issue verdicts, and track karma rankings.
+              {t("admin.courtManagement.pageSubtitle")}
             </p>
           </div>
         </div>
 
         {/* Tab Strip */}
         <div className="flex items-end gap-1 border-b-2 border-black/10">
-          {([
-            { id: "cases" as ActiveTab, label: "Court Cases", icon: "⚖️" },
-            { id: "karma" as ActiveTab, label: "Karma Leaderboard", icon: "🏆" },
-          ] as const).map(tab => (
+          {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -573,7 +599,7 @@ export default function CourtManagement() {
             {/* Filter Bar */}
             <div className="flex flex-wrap items-center gap-2 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
               <span className="text-sm font-black text-gray-700 flex items-center gap-1.5 mr-1 shrink-0">
-                <Filter className="w-4 h-4" /> Status:
+                <Filter className="w-4 h-4" /> {t("admin.courtManagement.filterStatus")}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {STATUS_KEYS.map(key => {
@@ -594,7 +620,7 @@ export default function CourtManagement() {
                 disabled={casesLoading}
                 className={`${btnBase} ml-auto bg-amber-200 text-amber-900 py-1.5`}
               >
-                {casesLoading ? <><Spinner size={13} /> Loading…</> : "↺ Refresh"}
+                {casesLoading ? <><Spinner size={13} /> {t("admin.courtManagement.loading")}</> : t("admin.courtManagement.refresh")}
               </button>
             </div>
 
@@ -622,21 +648,23 @@ export default function CourtManagement() {
               {casesError ? (
                 <div className="flex flex-col items-center gap-3 py-16">
                   <span className="text-4xl">⚠️</span>
-                  <p className="font-black text-gray-700">Failed to load cases</p>
+                  <p className="font-black text-gray-700">{t("admin.courtManagement.loadFailed")}</p>
                   <p className="text-sm text-gray-400 font-medium">{casesError}</p>
-                  <button onClick={fetchCases} className={`${btnBase} bg-red-100 text-red-800`}>↺ Retry</button>
+                  <button onClick={fetchCases} className={`${btnBase} bg-red-100 text-red-800`}>{t("admin.courtManagement.retry")}</button>
                 </div>
               ) : casesLoading && cases.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
                   <Spinner size={32} />
-                  <p className="font-bold text-sm">Loading court cases…</p>
+                  <p className="font-bold text-sm">{t("admin.courtManagement.loading")}</p>
                 </div>
               ) : cases.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
                   <span className="text-5xl">⚖️</span>
-                  <p className="font-black text-lg text-gray-500">No cases found</p>
+                  <p className="font-black text-lg text-gray-500">{t("admin.courtManagement.noCases")}</p>
                   <p className="text-sm font-medium">
-                    {statusFilter ? `No cases with status "${statusFilter}"` : "The court docket is empty!"}
+                    {statusFilter
+                      ? t("admin.courtManagement.noCasesFiltered", { status: statusFilter })
+                      : t("admin.courtManagement.docketEmpty")}
                   </p>
                 </div>
               ) : (
@@ -644,7 +672,7 @@ export default function CourtManagement() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-gray-800/60">
-                        {["#", "Quest / Task", "Proof Type", "Status", "Votes", "Submitted", "Action"].map(h => (
+                        {caseTableHeaders.map(h => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">
                             {h}
                           </th>
@@ -682,7 +710,7 @@ export default function CourtManagement() {
                               onClick={() => setReviewingCase(c)}
                               className={`${btnBase} bg-amber-200 text-amber-900 py-1.5 px-3 text-xs`}
                             >
-                              <GavelIcon size={12} /> Review
+                              <GavelIcon size={12} /> {t("admin.courtManagement.review")}
                             </button>
                           </td>
                         </tr>
@@ -697,7 +725,7 @@ export default function CourtManagement() {
             {!casesError && (cases.length > 0 || page > 1) && (
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold text-gray-500">
-                  Page {page} · {cases.length} case{cases.length !== 1 ? "s" : ""}
+                  {t(`admin.courtManagement.pagination${cases.length !== 1 ? "_plural" : ""}`, { page, count: cases.length })}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -731,34 +759,34 @@ export default function CourtManagement() {
                   <TrophyIcon size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-gray-900">Karma Champions</h2>
-                  <p className="text-xs text-gray-500 font-medium">Top 50 community reviewers by accumulated karma</p>
+                  <h2 className="text-lg font-black text-gray-900">{t("admin.courtManagement.karma.title")}</h2>
+                  <p className="text-xs text-gray-500 font-medium">{t("admin.courtManagement.karma.subtitle")}</p>
                 </div>
               </div>
               <button onClick={fetchLeaderboard} disabled={karmaLoading}
                 className={`${btnBase} bg-yellow-200 text-yellow-900 py-1.5`}>
-                {karmaLoading ? <><Spinner size={13} /> Loading…</> : "↺ Refresh"}
+                {karmaLoading ? <><Spinner size={13} /> {t("admin.courtManagement.karma.loading")}</> : t("admin.courtManagement.refresh")}
               </button>
             </div>
 
             {karmaError ? (
               <div className="flex flex-col items-center gap-3 py-16 bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl">
                 <span className="text-4xl">⚠️</span>
-                <p className="font-black text-gray-700">Failed to load leaderboard</p>
+                <p className="font-black text-gray-700">{t("admin.courtManagement.karma.loadFailed")}</p>
                 <p className="text-sm text-gray-400">{karmaError}</p>
-                <button onClick={fetchLeaderboard} className={`${btnBase} bg-red-100 text-red-800`}>↺ Retry</button>
+                <button onClick={fetchLeaderboard} className={`${btnBase} bg-red-100 text-red-800`}>{t("admin.courtManagement.retry")}</button>
               </div>
             ) : karmaLoading ? (
               <div className="flex flex-col items-center gap-3 py-16 bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl">
                 <Spinner size={32} />
-                <p className="font-bold text-sm text-gray-400">Loading karma leaderboard…</p>
+                <p className="font-bold text-sm text-gray-400">{t("admin.courtManagement.karma.loading")}</p>
               </div>
             ) : leaderboard.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-16 bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl text-gray-400">
                 <span className="text-5xl">🏆</span>
-                <p className="font-black text-lg text-gray-500">No karma data yet</p>
+                <p className="font-black text-lg text-gray-500">{t("admin.courtManagement.karma.noData")}</p>
                 <p className="text-sm font-medium text-center max-w-xs">
-                  Users appear here after reviewing community proof submissions.
+                  {t("admin.courtManagement.karma.noDataSubtitle")}
                 </p>
               </div>
             ) : (
@@ -784,7 +812,7 @@ export default function CourtManagement() {
                           <p className={`text-xl font-black mt-0.5 ${podCfg.karma}`}>
                             {entry.totalKarma.toLocaleString()}
                           </p>
-                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">karma pts</p>
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">{t("admin.courtManagement.karma.karmaPts")}</p>
                         </div>
                       );
                     })}
@@ -797,7 +825,7 @@ export default function CourtManagement() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b-2 border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-gray-800/60">
-                          {["Rank", "User ID", "Karma Points", "Badge"].map(h => (
+                          {karmaTableHeaders.map(h => (
                             <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
                           ))}
                         </tr>
@@ -824,23 +852,23 @@ export default function CourtManagement() {
                                   <span className={`text-base font-black ${karmaColor}`}>
                                     {entry.totalKarma.toLocaleString()}
                                   </span>
-                                  <span className="text-xs text-gray-400 font-medium">pts</span>
+                                  <span className="text-xs text-gray-400 font-medium">{t("admin.courtManagement.karma.pts")}</span>
                                 </div>
                               </td>
                               <td className="px-4 py-3">
                                 {entry.rank === 1 && (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300">
-                                    🥇 Champion
+                                    {t("admin.courtManagement.karma.champion")}
                                   </span>
                                 )}
                                 {entry.rank === 2 && (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-slate-100 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600 text-slate-700 dark:text-slate-300">
-                                    🥈 Runner-up
+                                    {t("admin.courtManagement.karma.runnerUp")}
                                   </span>
                                 )}
                                 {entry.rank === 3 && (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border-2 bg-orange-100 dark:bg-orange-900/30 border-orange-400 dark:border-orange-600 text-orange-800 dark:text-orange-300">
-                                    🥉 Third
+                                    {t("admin.courtManagement.karma.third")}
                                   </span>
                                 )}
                               </td>

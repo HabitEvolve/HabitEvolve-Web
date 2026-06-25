@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
@@ -40,6 +41,7 @@ interface DeleteQuestModalProps {
 }
 
 const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -50,10 +52,10 @@ const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) 
             if (res.success) {
                 onDeleted();
             } else {
-                setError(res.message || "Delete failed.");
+                setError(res.message || t("mentor.questCommand.errors.deleteFailed"));
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || "An error occurred.");
+            setError(e?.response?.data?.message || t("mentor.questCommand.errors.errorOccurred"));
         } finally {
             setLoading(false);
         }
@@ -68,9 +70,9 @@ const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) 
                 className="w-full max-w-sm bg-[#FEE2E2] dark:bg-red-900/40 border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20] p-6"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-xl font-black mb-2">Delete Quest?</h2>
+                <h2 className="text-xl font-black mb-2">{t("mentor.questCommand.deleteModal.title")}</h2>
                 <p className="text-sm text-gray-700 mb-4">
-                    Remove <strong>"{quest.title}"</strong>? This cannot be undone.
+                    Remove <strong>"{quest.title}"</strong>?
                 </p>
                 {error && (
                     <p className="mb-3 p-2.5 bg-red-100 border-2 border-red-400 rounded-xl text-sm font-bold text-red-700">
@@ -78,13 +80,13 @@ const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) 
                     </p>
                 )}
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all">Cancel</button>
+                    <button onClick={onClose} className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all">{t("mentor.questCommand.deleteModal.cancel")}</button>
                     <button
                         onClick={handleDelete}
                         disabled={loading}
                         className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-red-400 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2"
                     >
-                        {loading ? <><Spinner size={14} /> Deleting…</> : "Delete Forever"}
+                        {loading ? <><Spinner size={14} /> {t("mentor.questCommand.deleteModal.deleting")}</> : t("mentor.questCommand.deleteModal.deleteForever")}
                     </button>
                 </div>
             </div>
@@ -110,6 +112,7 @@ type AssignMode = "individual" | "party";
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function QuestCommand() {
+    const { t } = useTranslation();
     const [parties, setParties] = useState<PartyItem[]>([]);
     const [selectedPartyId, setSelectedPartyId] = useState<number | "">("");
     const [members, setMembers] = useState<PartyMember[]>([]);
@@ -172,10 +175,10 @@ export default function QuestCommand() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedPartyId) { setFormError("Please select a party first."); return; }
-        if (!form.title.trim()) { setFormError("Quest title is required."); return; }
+        if (!selectedPartyId) { setFormError(t("mentor.questCommand.errors.selectParty")); return; }
+        if (!form.title.trim()) { setFormError(t("mentor.questCommand.errors.titleRequired")); return; }
         if (assignMode === "individual" && !selectedMemberId) {
-            setFormError("Please select a member to assign to."); return;
+            setFormError(t("mentor.questCommand.errors.selectMember")); return;
         }
 
         setSubmitting(true);
@@ -199,11 +202,11 @@ export default function QuestCommand() {
                 };
                 const res = await mentorApi.createMentorQuest(payload);
                 if (res.success) {
-                    setFormSuccess(`Quest assigned to ${members.find(m => m.userId === selectedMemberId)?.username ?? "member"}!`);
+                    setFormSuccess(t("mentor.questCommand.assignedTo", { username: members.find(m => m.userId === selectedMemberId)?.username ?? "member" }));
                     setForm(emptyForm);
                     fetchQuests();
                 } else {
-                    setFormError(res.message || "Failed to assign quest.");
+                    setFormError(res.message || t("mentor.questCommand.errors.assignFailed"));
                 }
             } else {
                 const payload: CreatePartyQuestRequest = {
@@ -221,15 +224,15 @@ export default function QuestCommand() {
                 };
                 const res = await mentorApi.createPartyQuest(payload);
                 if (res.success && res.data) {
-                    setFormSuccess(`Fan-out complete! Assigned to ${res.data.memberCount} members in ${res.data.partyName}.`);
+                    setFormSuccess(t("mentor.questCommand.fanOutComplete", { count: res.data.memberCount, partyName: res.data.partyName }));
                     setForm(emptyForm);
                     fetchQuests();
                 } else {
-                    setFormError(res.message || "Fan-out failed.");
+                    setFormError(res.message || t("mentor.questCommand.errors.fanOutFailed"));
                 }
             }
         } catch (e: any) {
-            setFormError(e?.response?.data?.message || "An unexpected error occurred.");
+            setFormError(e?.response?.data?.message || t("mentor.questCommand.errors.unexpected"));
         } finally {
             setSubmitting(false);
         }
@@ -241,16 +244,16 @@ export default function QuestCommand() {
     return (
         <>
             <PageMeta title="Quest Command — HabitEvolve" description="Assign quests to your party" />
-            <PageBreadcrumb pageTitle="Quest Command Center" />
+            <PageBreadcrumb pageTitle={t("mentor.questCommand.pageTitle")} />
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 {/* Left: Target Selection */}
                 <div className="lg:col-span-2 flex flex-col gap-4">
                     <div className="bg-[#EDE9FE] border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-                        <h2 className="text-lg font-black mb-4">1. Select Target</h2>
+                        <h2 className="text-lg font-black mb-4">{t("mentor.questCommand.selectTarget")}</h2>
 
                         {/* Party */}
-                        <label className="block text-xs font-black uppercase tracking-wider mb-1">Party</label>
+                        <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.party")}</label>
                         <select
                             value={selectedPartyId}
                             onChange={(e) => {
@@ -260,7 +263,7 @@ export default function QuestCommand() {
                             className={inputCls}
                             disabled={loadingParties}
                         >
-                            <option value="">{loadingParties ? "Loading…" : "— Pick a party —"}</option>
+                            <option value="">{loadingParties ? t("mentor.questCommand.loading") : t("mentor.questCommand.pickParty")}</option>
                             {parties.map((p) => (
                                 <option key={p.partyId} value={p.partyId}>
                                     {p.name} ({p.memberCount} members)
@@ -271,7 +274,7 @@ export default function QuestCommand() {
                         {/* Assign Mode */}
                         {selectedPartyId !== "" && (
                             <div className="mt-4">
-                                <label className="block text-xs font-black uppercase tracking-wider mb-2">Assignment Mode</label>
+                                <label className="block text-xs font-black uppercase tracking-wider mb-2">{t("mentor.questCommand.assignmentMode")}</label>
                                 <div className="flex gap-2">
                                     {(["individual", "party"] as AssignMode[]).map((mode) => (
                                         <button
@@ -282,7 +285,7 @@ export default function QuestCommand() {
                                                 : "bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
                                                 }`}
                                         >
-                                            {mode === "individual" ? "👤 Individual" : "⚔️ Fan-out to Party"}
+                                            {mode === "individual" ? `👤 ${t("mentor.questCommand.individual")}` : `⚔️ ${t("mentor.questCommand.fanOut")}`}
                                         </button>
                                     ))}
                                 </div>
@@ -292,16 +295,16 @@ export default function QuestCommand() {
                         {/* Member Selector (individual mode only) */}
                         {selectedPartyId !== "" && assignMode === "individual" && (
                             <div className="mt-4">
-                                <label className="block text-xs font-black uppercase tracking-wider mb-1">Member</label>
+                                <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.member")}</label>
                                 {loadingMembers ? (
-                                    <div className="flex items-center gap-2 text-sm text-gray-500"><Spinner size={14} /> Loading members…</div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500"><Spinner size={14} /> {t("mentor.questCommand.loadingMembers")}</div>
                                 ) : (
                                     <select
                                         value={selectedMemberId}
                                         onChange={(e) => setSelectedMemberId(e.target.value ? parseInt(e.target.value) : "")}
                                         className={inputCls}
                                     >
-                                        <option value="">— Pick a member —</option>
+                                        <option value="">{t("mentor.questCommand.pickMember")}</option>
                                         {members.map((m) => (
                                             <option key={m.userId} value={m.userId}>{m.username}</option>
                                         ))}
@@ -313,7 +316,7 @@ export default function QuestCommand() {
                         {/* Fan-out info */}
                         {selectedPartyId !== "" && assignMode === "party" && (
                             <div className="mt-4 p-3 bg-violet-100 border-2 border-violet-400 rounded-xl text-sm font-medium text-violet-800">
-                                This quest will be assigned to all <strong>{members.length}</strong> party members.
+                                {t("mentor.questCommand.fanOutInfo", { count: members.length })}
                             </div>
                         )}
                     </div>
@@ -322,24 +325,24 @@ export default function QuestCommand() {
                 {/* Right: Quest Form */}
                 <div className="lg:col-span-3">
                     <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-                        <h2 className="text-lg font-black mb-4">2. Quest Details</h2>
+                        <h2 className="text-lg font-black mb-4">{t("mentor.questCommand.questDetails")}</h2>
 
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-xs font-black uppercase tracking-wider mb-1">Title *</label>
+                                <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.titleField")} *</label>
                                 <input
                                     value={form.title}
                                     onChange={(e) => handleField("title", e.target.value)}
-                                    placeholder="Enter quest title…"
+                                    placeholder={t("mentor.questCommand.titlePlaceholder")}
                                     className={inputCls}
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black uppercase tracking-wider mb-1">Description</label>
+                                <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.description")}</label>
                                 <textarea
                                     value={form.description}
                                     onChange={(e) => handleField("description", e.target.value)}
-                                    placeholder="Optional quest description…"
+                                    placeholder={t("mentor.questCommand.descPlaceholder")}
                                     rows={2}
                                     className={`${inputCls} resize-none`}
                                 />
@@ -347,10 +350,10 @@ export default function QuestCommand() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { label: "Damage", field: "damage" },
-                                    { label: "Gold Reward", field: "rewardGold" },
-                                    { label: "Bonus Gold", field: "rewardBonusGold" },
-                                    { label: "XP Reward", field: "rewardXp" },
+                                    { label: t("mentor.questCommand.damage"), field: "damage" },
+                                    { label: t("mentor.questCommand.goldReward"), field: "rewardGold" },
+                                    { label: t("mentor.questCommand.bonusGold"), field: "rewardBonusGold" },
+                                    { label: t("mentor.questCommand.xpReward"), field: "rewardXp" },
                                 ].map(({ label, field }) => (
                                     <div key={field}>
                                         <label className="block text-xs font-black uppercase tracking-wider mb-1">{label}</label>
@@ -367,7 +370,7 @@ export default function QuestCommand() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-black uppercase tracking-wider mb-1">Proof Type</label>
+                                    <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.proofType")}</label>
                                     <select
                                         value={form.proofType}
                                         onChange={(e) => handleField("proofType", e.target.value)}
@@ -379,7 +382,7 @@ export default function QuestCommand() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black uppercase tracking-wider mb-1">Deadline</label>
+                                    <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.deadline")}</label>
                                     <input
                                         type="datetime-local"
                                         value={form.deadlineAt}
@@ -396,7 +399,7 @@ export default function QuestCommand() {
                                     onChange={(e) => handleField("isMandatory", e.target.checked)}
                                     className="w-4 h-4 accent-violet-600"
                                 />
-                                <span className="text-sm font-bold">Mandatory Quest</span>
+                                <span className="text-sm font-bold">{t("mentor.questCommand.mandatoryQuest")}</span>
                             </label>
                         </div>
 
@@ -417,11 +420,11 @@ export default function QuestCommand() {
                             className="mt-5 w-full py-3 border-2 border-black rounded-full font-black text-sm bg-violet-500 text-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all inline-flex items-center justify-center gap-2"
                         >
                             {submitting ? (
-                                <><Spinner size={16} /> Assigning…</>
+                                <><Spinner size={16} /> {t("mentor.questCommand.assigning")}</>
                             ) : assignMode === "individual" ? (
-                                "⚡ Assign Quest"
+                                `⚡ ${t("mentor.questCommand.assignQuest")}`
                             ) : (
-                                "⚔️ Fan-out to Party"
+                                `⚔️ ${t("mentor.questCommand.fanOut")}`
                             )}
                         </button>
                     </div>
@@ -432,14 +435,22 @@ export default function QuestCommand() {
             {selectedPartyId !== "" && (
                 <div className="mt-8">
                     <h2 className="text-xl font-black mb-4">
-                        Active Quests
+                        {t("mentor.questCommand.activeQuests")}
                         {loadingQuests && <span className="ml-2 inline-flex"><Spinner size={16} /></span>}
                     </h2>
                     <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b-4 border-black bg-[#EDE9FE]">
-                                    {["Title", "Assignee", "Damage", "Proof", "Status", "Deadline", ""].map((h) => (
+                                    {[
+                                        t("mentor.questCommand.colTitle"),
+                                        t("mentor.questCommand.colAssignee"),
+                                        t("mentor.questCommand.damage"),
+                                        t("mentor.questCommand.proofType"),
+                                        t("mentor.questCommand.colStatus"),
+                                        t("mentor.questCommand.deadline"),
+                                        ""
+                                    ].map((h) => (
                                         <th key={h} className="px-4 py-3 text-left font-black text-xs uppercase tracking-wider">{h}</th>
                                     ))}
                                 </tr>
@@ -448,7 +459,7 @@ export default function QuestCommand() {
                                 {quests.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="py-12 text-center text-gray-400 font-medium">
-                                            No quests for this party yet.
+                                            {t("mentor.questCommand.noQuests")}
                                         </td>
                                     </tr>
                                 ) : (

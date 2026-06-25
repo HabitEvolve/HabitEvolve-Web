@@ -5,7 +5,14 @@ import OAuthCallback from "./pages/AuthPages/OAuthCallback";
 import NotFound from "./pages/OtherPage/NotFound";
 import Unauthorized from "./pages/OtherPage/Unauthorized";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { useAuth } from "./context/AuthContext";
 import UserProfiles from "./pages/UserProfiles";
+
+/** Renders AppLayout for ADMIN, MentorLayout for MENTOR — used by shared profile routes. */
+function RoleLayout() {
+  const { hasRole } = useAuth();
+  return hasRole("ADMIN") ? <AppLayout /> : <MentorLayout />;
+}
 import Videos from "./pages/UiElements/Videos";
 import Images from "./pages/UiElements/Images";
 import Alerts from "./pages/UiElements/Alerts";
@@ -48,58 +55,62 @@ export default function App() {
           <Route path="/" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
+          {/* Shared profile routes — accessible by ADMIN and MENTOR, layout auto-selected */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MENTOR']} />}>
+            <Route element={<RoleLayout />}>
+              <Route path="/profile" element={<UserProfiles />} />
+              <Route path="/edit-profile" element={<EditProfile />} />
+            </Route>
+          </Route>
+
           {/* Dashboard Layout — protected: ADMIN role required */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-          <Route element={<AppLayout />}>
+            <Route element={<AppLayout />}>
 
-            <Route index path="/home" element={<Home />} />
-            <Route path="/admin/dashboard" element={<Navigate to="/home" replace />} />
+              <Route index path="/home" element={<Home />} />
+              <Route path="/admin/dashboard" element={<Navigate to="/home" replace />} />
+              <Route path="/user-management" element={<UserManagement />} />
+              <Route path="/party-management" element={<PartyManagement />} />
+              <Route path="/target-rules" element={<TargetRuleManagement />} />
+              <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
+              <Route path="/questionnaires" element={<QuestionnaireManagement />} />
+              <Route path="/court-management" element={<AdminCourtManagement />} />
+              <Route path="/boss-management" element={<AdminBossManagement />} />
+              <Route path="/subscription-packages" element={<AdminSubscriptionPage />} />
+              <Route path="/system-config" element={<AdminConfigPage />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/blank" element={<Blank />} />
 
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/user-management" element={<UserManagement />} />
-            <Route path="/party-management" element={<PartyManagement />} />
-            <Route path="/target-rules" element={<TargetRuleManagement />} />
-            <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
-            <Route path="/questionnaires" element={<QuestionnaireManagement />} />
-            <Route path="/court-management" element={<AdminCourtManagement />} />
-            <Route path="/boss-management" element={<AdminBossManagement />} />
-            <Route path="/subscription-packages" element={<AdminSubscriptionPage />} />
-            <Route path="/system-config" element={<AdminConfigPage />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
+              {/* Forms */}
+              <Route path="/form-elements" element={<FormElements />} />
 
-            {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+              {/* Tables */}
+              <Route path="/basic-tables" element={<BasicTables />} />
 
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
+              {/* Ui Elements */}
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/avatars" element={<Avatars />} />
+              <Route path="/badge" element={<Badges />} />
+              <Route path="/buttons" element={<Buttons />} />
+              <Route path="/images" element={<Images />} />
+              <Route path="/videos" element={<Videos />} />
 
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
-          </Route>
+              {/* Charts */}
+              <Route path="/line-chart" element={<LineChart />} />
+              <Route path="/bar-chart" element={<BarChart />} />
+            </Route>
           </Route>
 
           {/* ── MENTOR PORTAL — protected: MENTOR role required ── */}
           <Route element={<ProtectedRoute allowedRoles={['MENTOR']} />}>
-          <Route element={<MentorLayout />}>
-            <Route path="/mentor/dashboard" element={<MentorDashboard />} />
-            <Route path="/mentor/parties" element={<PartyManagement />} />
-            <Route path="/mentor/subscription" element={<SubscriptionWallet />} />
-            <Route path="/mentor/quests" element={<QuestCommand />} />
-            <Route path="/mentor/proofs" element={<ProofQueue />} />
-            <Route path="/mentor/boss-raid" element={<BossRaid />} />
-          </Route>
+            <Route element={<MentorLayout />}>
+              <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+              <Route path="/mentor/parties" element={<PartyManagement />} />
+              <Route path="/mentor/subscription" element={<SubscriptionWallet />} />
+              <Route path="/mentor/quests" element={<QuestCommand />} />
+              <Route path="/mentor/proofs" element={<ProofQueue />} />
+              <Route path="/mentor/boss-raid" element={<BossRaid />} />
+            </Route>
           </Route>
 
           <Route path="/unauthorized" element={<Unauthorized />} />
@@ -107,10 +118,10 @@ export default function App() {
           {/* SePay payment callback routes — public (no auth): SePay redirects here after payment.
               Paths match SuccessUrl / ErrorUrl / CancelUrl in BE appsettings.json.
               /mentor/payment/callback is an alias for manual testing. */}
-          <Route path="/checkout/success"         element={<PaymentResultPage />} />
-          <Route path="/checkout/fail"            element={<PaymentResultPage />} />
-          <Route path="/checkout"                 element={<PaymentResultPage />} />
-          <Route path="/mentor/payment/callback"  element={<PaymentResultPage />} />
+          <Route path="/checkout/success" element={<PaymentResultPage />} />
+          <Route path="/checkout/fail" element={<PaymentResultPage />} />
+          <Route path="/checkout" element={<PaymentResultPage />} />
+          <Route path="/mentor/payment/callback" element={<PaymentResultPage />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

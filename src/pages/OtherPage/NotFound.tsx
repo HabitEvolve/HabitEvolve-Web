@@ -1,43 +1,63 @@
-import GridShape from "../../components/common/GridShape";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 
 export default function NotFound() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
   return (
     <>
-      <PageMeta
-        title="React.js 404 Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js 404 Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
-      />
-      <div className="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1">
-        <GridShape />
-        <div className="mx-auto w-full max-w-[242px] text-center sm:max-w-[472px]">
-          <h1 className="mb-8 font-bold text-gray-800 text-title-md dark:text-white/90 xl:text-title-2xl">
-            ERROR
-          </h1>
+      <PageMeta title="404 — HabitEvolve" description="Page not found" />
 
-          <img src="/images/error/404.svg" alt="404" className="dark:hidden" />
-          <img
-            src="/images/error/404-dark.svg"
-            alt="404"
-            className="hidden dark:block"
-          />
+      <div className="min-h-screen bg-[#FFFBF5] flex items-center justify-center p-8 relative overflow-hidden">
 
-          <p className="mt-10 mb-6 text-base text-gray-700 dark:text-gray-400 sm:text-lg">
-            We can’t seem to find the page you are looking for!
-          </p>
+        {/* Floating decorative blocks */}
+        <div className="absolute top-12 left-12 w-20 h-20 bg-[#A7F3D0] border-4 border-black rounded-2xl rotate-12 shadow-[4px_4px_0_0_#1A1D20] hidden sm:block" />
+        <div className="absolute top-24 right-16 w-12 h-12 bg-[#DDD6FE] border-4 border-black rounded-xl -rotate-6 shadow-[3px_3px_0_0_#1A1D20] hidden sm:block" />
+        <div className="absolute bottom-16 left-20 w-10 h-10 bg-[#FEE2E2] border-4 border-black rounded-full shadow-[3px_3px_0_0_#1A1D20] hidden sm:block" />
+        <div className="absolute bottom-20 right-24 w-16 h-16 bg-[#FDE68A] border-4 border-black rounded-2xl rotate-6 shadow-[4px_4px_0_0_#1A1D20] hidden sm:block" />
 
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-          >
-            Back to Home Page
-          </Link>
+        <div className="w-full max-w-md relative z-10">
+
+          {/* 404 number block */}
+          <div className="bg-[#FEF3C7] border-4 border-b-0 border-black rounded-t-2xl px-10 pt-10 pb-2 text-center">
+            <div className="text-[112px] font-black text-black leading-none tracking-tighter select-none">
+              404
+            </div>
+            {/* divider icon */}
+            <div className="flex items-center justify-center mt-3 -mb-5">
+              <div className="w-10 h-10 bg-white border-4 border-black rounded-full shadow-[3px_3px_0_0_#1A1D20] flex items-center justify-center text-xl z-10">
+                🧭
+              </div>
+            </div>
+          </div>
+
+          {/* Content block */}
+          <div className="bg-white border-4 border-black rounded-b-2xl shadow-[8px_8px_0_0_#1A1D20] px-10 pt-10 pb-8 text-center">
+            <h1 className="text-xl font-black text-black mb-3 uppercase tracking-tight">
+              {t("pages.notFound.title")}
+            </h1>
+            <p className="text-gray-600 font-medium mb-8 text-sm leading-relaxed">
+              {t("pages.notFound.message")}
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link
+                to="/"
+                className="w-full py-3 px-6 bg-[#A7F3D0] border-2 border-black rounded-xl font-bold text-black shadow-[3px_3px_0_0_#1A1D20] hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1A1D20] transition-all"
+              >
+                {t("pages.notFound.backHome")}
+              </Link>
+              <button
+                onClick={() => navigate(-1)}
+                className="w-full py-3 px-6 bg-white border-2 border-black rounded-xl font-bold text-black shadow-[3px_3px_0_0_#1A1D20] hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1A1D20] transition-all"
+              >
+                {t("pages.notFound.goBack")}
+              </button>
+            </div>
+          </div>
+
         </div>
-        {/* <!-- Footer --> */}
-        <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">
-          &copy; {new Date().getFullYear()} - TailAdmin
-        </p>
       </div>
     </>
   );

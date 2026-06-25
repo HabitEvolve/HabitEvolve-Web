@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import { useSidebar } from "../context/SidebarContext";
 import { useTheme } from "../context/ThemeContext";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
+import LanguageToggle from "../components/common/LanguageToggle";
 
 const HamburgerIcon = () => (
   <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -12,6 +14,7 @@ const HamburgerIcon = () => (
 );
 
 const AppHeader: React.FC = () => {
+  const { t } = useTranslation();
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
   const { theme, toggleTheme } = useTheme();
@@ -44,7 +47,7 @@ const AppHeader: React.FC = () => {
             {/* Desktop: collapses/expands sidebar in-place */}
             <button
               onClick={toggleSidebar}
-              aria-label="Toggle sidebar"
+              aria-label={t("header.toggleSidebar")}
               className={`hidden lg:flex ${toggleBtnClass}`}
             >
               <HamburgerIcon />
@@ -53,7 +56,7 @@ const AppHeader: React.FC = () => {
             {/* Mobile: opens sidebar as overlay */}
             <button
               onClick={toggleMobileSidebar}
-              aria-label="Open sidebar"
+              aria-label={t("header.openSidebar")}
               className={`lg:hidden flex ${toggleBtnClass}`}
             >
               <HamburgerIcon />
@@ -76,7 +79,7 @@ const AppHeader: React.FC = () => {
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Search or type command..."
+                  placeholder={t("header.searchPlaceholder")}
                   className="h-11 w-85 xl:w-107.5 rounded-full border-4 border-black bg-white dark:bg-gray-800 dark:text-white pl-12 pr-16 text-sm font-medium text-gray-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all"
                 />
                 <kbd className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-lg border-2 border-black dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-2 py-1 text-xs font-black text-gray-700 dark:text-gray-300 shadow-[2px_2px_0_0_#1A1D20] select-none">
@@ -89,10 +92,13 @@ const AppHeader: React.FC = () => {
           {/* RIGHT: dark mode toggle + mobile three-dots + desktop notifications/user */}
           <div className="flex items-center gap-2">
 
+            {/* Language toggle — always visible */}
+            <LanguageToggle />
+
             {/* Dark / Light mode toggle — always visible */}
             <button
               onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={theme === "dark" ? t("header.switchToLight") : t("header.switchToDark")}
               className={toggleBtnClass}
             >
               {theme === "dark" ? (
@@ -112,7 +118,7 @@ const AppHeader: React.FC = () => {
             {/* Mobile: three-dots expands header notification area */}
             <button
               onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
-              aria-label="Open menu"
+              aria-label={t("header.openMenu")}
               className={`lg:hidden flex ${toggleBtnClass} border-2`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">

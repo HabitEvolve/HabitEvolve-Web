@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 import { useSidebar } from "../context/SidebarContext";
 import { ChevronDownIcon } from "../icons";
 import {
@@ -12,49 +13,50 @@ import {
 } from "lucide-react";
 
 type NavItem = {
-    name: string;
+    nameKey: string;
     icon: React.ReactNode;
     path?: string;
-    subItems?: { name: string; path: string }[];
-    sectionLabel?: string;
+    subItems?: { nameKey: string; path: string }[];
+    sectionKey?: string;
 };
 
 const navItems: NavItem[] = [
     {
         icon: <LayoutDashboard className="w-5 h-5 shrink-0" />,
-        name: "Dashboard",
+        nameKey: "nav.mentor.dashboard",
         path: "/mentor/dashboard",
     },
     {
         icon: <Users className="w-5 h-5 shrink-0" />,
-        name: "My Parties",
+        nameKey: "nav.mentor.myParties",
         path: "/mentor/parties",
-        sectionLabel: "GUILD",
+        sectionKey: "nav.sections.GUILD",
     },
     {
         icon: <Gem className="w-5 h-5 shrink-0" />,
-        name: "Subscription & Wallet",
+        nameKey: "nav.mentor.subscriptionWallet",
         path: "/mentor/subscription",
     },
     {
         icon: <Target className="w-5 h-5 shrink-0" />,
-        name: "Quest Command",
+        nameKey: "nav.mentor.questCommand",
         path: "/mentor/quests",
-        sectionLabel: "COMMAND",
+        sectionKey: "nav.sections.COMMAND",
     },
     {
         icon: <Inbox className="w-5 h-5 shrink-0" />,
-        name: "Proof Queue",
+        nameKey: "nav.mentor.proofQueue",
         path: "/mentor/proofs",
     },
     {
         icon: <Skull className="w-5 h-5 shrink-0" />,
-        name: "Boss Raid",
+        nameKey: "nav.mentor.bossRaid",
         path: "/mentor/boss-raid",
     },
 ];
 
 const MentorSidebar: React.FC = () => {
+    const { t } = useTranslation();
     const { isExpanded, isMobileOpen, setIsHovered } = useSidebar();
     const location = useLocation();
 
@@ -154,25 +156,25 @@ const MentorSidebar: React.FC = () => {
             {/* ── Navigation ──────────────────────────────────────────── */}
             <nav className="flex-1 min-h-0 overflow-y-auto space-y-1.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#3b1f6e]/20 dark:[&::-webkit-scrollbar-thumb]:bg-white/20">
                 {navItems.map((nav, index) => (
-                    <div key={nav.name}>
+                    <div key={nav.path ?? nav.nameKey}>
                         {/* Section label — hidden when collapsed */}
-                        {nav.sectionLabel && showFull && (
+                        {nav.sectionKey && showFull && (
                             <div className="px-2 pt-4 pb-1">
                                 <div className="flex items-center gap-2">
                                     <div className="h-px flex-1 bg-[#3b1f6e]/20 dark:bg-gray-600" />
                                     <p className="text-[10px] font-black text-[#3b1f6e]/50 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                                        {nav.sectionLabel}
+                                        {t(nav.sectionKey)}
                                     </p>
                                     <div className="h-px flex-1 bg-[#3b1f6e]/20 dark:bg-gray-600" />
                                 </div>
                             </div>
                         )}
-                        {nav.sectionLabel && !showFull && <div className="h-3" />}
+                        {nav.sectionKey && !showFull && <div className="h-3" />}
 
                         {nav.subItems ? (
                             <button
                                 onClick={() => handleSubmenuToggle(index)}
-                                title={!showFull ? nav.name : undefined}
+                                title={!showFull ? t(nav.nameKey) : undefined}
                                 className={`w-full flex items-center py-3 rounded-xl transition-all shadow-sm
                                     ${showFull ? "space-x-3 px-4" : "justify-center px-0"}
                                     ${openSubmenu === index
@@ -181,7 +183,7 @@ const MentorSidebar: React.FC = () => {
                                     }`}
                             >
                                 {nav.icon}
-                                {showFull && <span className="font-medium truncate">{nav.name}</span>}
+                                {showFull && <span className="font-medium truncate">{t(nav.nameKey)}</span>}
                                 {showFull && (
                                     <ChevronDownIcon
                                         className={`ml-auto w-5 h-5 shrink-0 transition-transform duration-200 ${openSubmenu === index ? "rotate-180" : ""
@@ -193,7 +195,7 @@ const MentorSidebar: React.FC = () => {
                             nav.path && (
                                 <Link
                                     to={nav.path}
-                                    title={!showFull ? nav.name : undefined}
+                                    title={!showFull ? t(nav.nameKey) : undefined}
                                     className={`flex items-center py-3 rounded-xl transition-all shadow-sm
                                         ${showFull ? "space-x-3 px-4" : "justify-center px-0"}
                                         ${isActive(nav.path)
@@ -202,7 +204,7 @@ const MentorSidebar: React.FC = () => {
                                         }`}
                                 >
                                     {nav.icon}
-                                    {showFull && <span className="font-medium truncate">{nav.name}</span>}
+                                    {showFull && <span className="font-medium truncate">{t(nav.nameKey)}</span>}
                                 </Link>
                             )
                         )}
@@ -219,7 +221,7 @@ const MentorSidebar: React.FC = () => {
                             >
                                 <ul className="mt-2 space-y-1 ml-9">
                                     {nav.subItems.map((sub) => (
-                                        <li key={sub.name}>
+                                        <li key={sub.path}>
                                             <Link
                                                 to={sub.path}
                                                 className={`font-medium text-sm flex items-center px-3 py-2 rounded transition-all ${isActive(sub.path)
@@ -227,7 +229,7 @@ const MentorSidebar: React.FC = () => {
                                                     : "text-gray-700 dark:text-gray-300 hover:bg-white/30 dark:hover:bg-white/10"
                                                     }`}
                                             >
-                                                {sub.name}
+                                                {t(sub.nameKey)}
                                             </Link>
                                         </li>
                                     ))}

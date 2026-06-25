@@ -1,19 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import playerProfileApi from "../api/userProfileApi";
 import { UpdatePlayerProfilePayload } from "../types/api.types";
 import { uploadApi } from "../api/uploadApi";
-
-// ── REMINDER OPTIONS ──────────────────────────────────────────────────────────
-const REMINDER_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "Select a preference…" },
-  { value: "NONE", label: "None — I'll check manually" },
-  { value: "EMAIL", label: "Email" },
-  { value: "PUSH", label: "Push Notification" },
-  { value: "BOTH", label: "Email & Push" },
-];
 
 // ── ICONS ─────────────────────────────────────────────────────────────────────
 const ArrowLeftIcon = () => (
@@ -125,7 +117,16 @@ const inputCls =
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function EditProfile() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const REMINDER_OPTIONS: { value: string; label: string }[] = [
+    { value: "", label: t("editProfile.selectPreference") },
+    { value: "NONE", label: t("editProfile.reminderNone") },
+    { value: "EMAIL", label: t("editProfile.reminderEmail") },
+    { value: "PUSH", label: t("editProfile.reminderPush") },
+    { value: "BOTH", label: t("editProfile.reminderEmailPush") },
+  ];
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -211,10 +212,10 @@ export default function EditProfile() {
       if (url) {
         set("avatarUrl", url);
       } else {
-        setError("Avatar upload failed. Please try again or paste a URL below.");
+        setError(t("editProfile.uploadFailed"));
       }
     } catch {
-      setError("Avatar upload failed. Please try again or paste a URL below.");
+      setError(t("editProfile.uploadFailed"));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -227,7 +228,7 @@ export default function EditProfile() {
         title="Edit Profile | HabitEvolve"
         description="Update your HabitEvolve profile settings"
       />
-      <PageBreadcrumb pageTitle="Edit Profile" />
+      <PageBreadcrumb pageTitle={t("editProfile.title")} />
 
       {loading ? (
         <EditSkeleton />
@@ -239,8 +240,8 @@ export default function EditProfile() {
             <div className="mb-5 flex items-center gap-3 bg-green-50 border-4 border-green-400 rounded-3xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-4">
               <span className="text-green-500"><CheckIcon /></span>
               <div>
-                <p className="font-black text-green-800">Profile updated!</p>
-                <p className="text-xs text-green-700">Redirecting to your profile…</p>
+                <p className="font-black text-green-800">{t("editProfile.profileUpdated")}</p>
+                <p className="text-xs text-green-700">{t("editProfile.redirecting")}</p>
               </div>
             </div>
           )}
@@ -259,7 +260,7 @@ export default function EditProfile() {
           >
             {/* Card header */}
             <div className="px-6 pt-6 pb-5 border-b-2 border-gray-200">
-              <h2 className="text-lg font-black text-gray-900">Edit Profile</h2>
+              <h2 className="text-lg font-black text-gray-900">{t("editProfile.title")}</h2>
               <p className="text-sm text-gray-500 mt-0.5">
                 Update your avatar, schedule time, and notification preferences.
               </p>
@@ -270,14 +271,14 @@ export default function EditProfile() {
               {/* ── READ-ONLY ACCOUNT INFO ──────────────────────────────────── */}
               <div>
                 <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-3">
-                  Account Info
+                  {t("editProfile.accountInfo")}
                   <span className="ml-2 normal-case font-semibold text-gray-400">
-                    (managed by admin)
+                    {t("editProfile.managedByAdmin")}
                   </span>
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <LockedField label="Username" value={username} />
-                  <LockedField label="Email" value={email} />
+                  <LockedField label={t("editProfile.usernameLabel")} value={username} />
+                  <LockedField label={t("editProfile.emailLabel")} value={email} />
                 </div>
               </div>
 
@@ -287,7 +288,7 @@ export default function EditProfile() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-gray-500"><ImageIcon /></span>
-                  <span className="text-xs font-black text-gray-700 uppercase tracking-wide">Avatar</span>
+                  <span className="text-xs font-black text-gray-700 uppercase tracking-wide">{t("editProfile.avatarLabel")}</span>
                 </div>
 
                 <div className="flex items-start gap-5">
@@ -327,11 +328,11 @@ export default function EditProfile() {
                       className="flex items-center gap-2 px-4 py-2 border-2 border-black rounded-full font-black text-sm bg-sky-100 text-sky-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all"
                     >
                       {isUploading
-                        ? <><SmallSpinner /> Uploading…</>
-                        : <><ImageIcon /> Change Avatar</>
+                        ? <><SmallSpinner /> {t("editProfile.uploadingAvatar")}</>
+                        : <><ImageIcon /> {t("editProfile.changeAvatar")}</>
                       }
                     </button>
-                    <p className="text-xs text-gray-400 font-medium">JPG or PNG  — max 5 MB</p>
+                    <p className="text-xs text-gray-400 font-medium">{t("editProfile.avatarHint")}</p>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -346,8 +347,8 @@ export default function EditProfile() {
 
               {/* ── DAILY SCHEDULE TIME ─────────────────────────────────────── */}
               <FormField
-                label="Daily Habit Reminder Time"
-                hint="The time each day when you'll be prompted to check in on your habits."
+                label={t("editProfile.reminderLabel")}
+                hint={t("editProfile.scheduleHint")}
                 icon={<ClockIcon />}
               >
                 <input
@@ -360,8 +361,8 @@ export default function EditProfile() {
 
               {/* ── REMINDER PREFERENCE ─────────────────────────────────────── */}
               <FormField
-                label="Reminder Preference"
-                hint="Choose how you'd like to receive habit reminders."
+                label={t("editProfile.reminderPrefLabel")}
+                hint={t("editProfile.reminderPrefHint")}
                 icon={<BellIcon />}
               >
                 <select
@@ -386,7 +387,7 @@ export default function EditProfile() {
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
               >
                 <ArrowLeftIcon />
-                Back to Profile
+                {t("editProfile.backToProfile")}
               </Link>
               <button
                 type="submit"
@@ -394,7 +395,7 @@ export default function EditProfile() {
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-black rounded-full font-black text-sm bg-orange-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all"
               >
                 <SaveIcon />
-                {submitting ? "Saving…" : success ? "Saved!" : "Save Changes"}
+                {submitting ? t("editProfile.saving") : success ? t("editProfile.saved") : t("editProfile.saveChanges")}
               </button>
             </div>
           </form>

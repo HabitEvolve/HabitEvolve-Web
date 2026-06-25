@@ -4,6 +4,7 @@ import {
   Swords, Plus, Pencil, Settings2, X, Save,
   ChevronLeft, ChevronRight, Loader2, Filter, Users,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -134,6 +135,7 @@ interface TemplateFormModalProps {
 }
 
 const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFormModalProps) => {
+  const { t } = useTranslation();
   const isEdit = template !== null;
   const [form, setForm] = useState<BossTemplatePayload>(() =>
     isEdit ? {
@@ -168,7 +170,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
       onSuccess();
       onClose();
     } catch (err) {
-      setFormError(errMsg(err) ?? "Failed to save template.");
+      setFormError(errMsg(err) ?? t("admin.bossManagement.modesModal.errorSaveTemplate"));
     } finally {
       setSaving(false);
     }
@@ -184,8 +186,8 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
               <SwordsIcon size={17} />
             </div>
             <div>
-              <h2 className="text-base font-black text-gray-900">{isEdit ? "Edit Template" : "New Boss Template"}</h2>
-              <p className="text-xs font-medium text-gray-500">{isEdit ? template.themeName : "Set up the weekly boss event"}</p>
+              <h2 className="text-base font-black text-gray-900">{isEdit ? t("admin.bossManagement.form.editTitle") : t("admin.bossManagement.form.newTitle")}</h2>
+              <p className="text-xs font-medium text-gray-500">{isEdit ? template.themeName : t("admin.bossManagement.form.subtitle")}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
@@ -197,51 +199,51 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
         <div className="flex-1 overflow-y-auto p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label>Theme Name *</Label>
+              <Label>{t("admin.bossManagement.form.themeNameLabel")}</Label>
               <input required type="text" value={form.themeName} onChange={e => set("themeName", e.target.value)}
-                placeholder="e.g. Shadow Dragon Awakening" className={inputCls} />
+                placeholder={t("admin.bossManagement.form.themeNamePlaceholder")} className={inputCls} />
             </div>
             <div>
-              <Label>Description</Label>
+              <Label>{t("admin.bossManagement.form.descLabel")}</Label>
               <textarea value={form.description} onChange={e => set("description", e.target.value)}
-                rows={2} placeholder="Boss lore or event description…" className={`${inputCls} resize-none`} />
+                rows={2} placeholder={t("admin.bossManagement.form.descPlaceholder")} className={`${inputCls} resize-none`} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Active Week Start *</Label>
+                <Label>{t("admin.bossManagement.form.weekStartLabel")}</Label>
                 <input required type="date" value={form.activeWeekStart} onChange={e => set("activeWeekStart", e.target.value)} className={inputCls} />
               </div>
               <div>
-                <Label>Active Week End *</Label>
+                <Label>{t("admin.bossManagement.form.weekEndLabel")}</Label>
                 <input required type="date" value={form.activeWeekEnd} onChange={e => set("activeWeekEnd", e.target.value)} className={inputCls} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Start Time</Label>
+                <Label>{t("admin.bossManagement.form.startTimeLabel")}</Label>
                 <input type="text" value={form.startTime} onChange={e => set("startTime", e.target.value)}
-                  placeholder="MON 00:00" className={inputCls} />
+                  placeholder={t("admin.bossManagement.form.startTimePlaceholder")} className={inputCls} />
               </div>
               <div>
-                <Label>End Time</Label>
+                <Label>{t("admin.bossManagement.form.endTimeLabel")}</Label>
                 <input type="text" value={form.endTime} onChange={e => set("endTime", e.target.value)}
-                  placeholder="SUN 23:59" className={inputCls} />
+                  placeholder={t("admin.bossManagement.form.endTimePlaceholder")} className={inputCls} />
               </div>
             </div>
             <div>
-              <Label>Registration Window</Label>
+              <Label>{t("admin.bossManagement.form.regWindowLabel")}</Label>
               <input type="text" value={form.registrationWindow} onChange={e => set("registrationWindow", e.target.value)}
-                placeholder="e.g. MON 00:00 or 24h" className={inputCls} />
+                placeholder={t("admin.bossManagement.form.regWindowPlaceholder")} className={inputCls} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Proof Policy</Label>
+                <Label>{t("admin.bossManagement.form.proofPolicyLabel")}</Label>
                 <select value={form.proofPolicy} onChange={e => set("proofPolicy", e.target.value)} className={inputCls}>
                   <option value="BY_SUBSCRIPTION">BY_SUBSCRIPTION</option>
                 </select>
               </div>
               <div>
-                <Label>Reward Policy</Label>
+                <Label>{t("admin.bossManagement.form.rewardPolicyLabel")}</Label>
                 <select value={form.rewardPolicy} onChange={e => set("rewardPolicy", e.target.value)} className={inputCls}>
                   <option value="BY_MODE">BY_MODE</option>
                 </select>
@@ -254,10 +256,10 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
 
             <div className="flex gap-3 pt-2 border-t-2 border-gray-100 dark:border-gray-700">
               <button type="button" onClick={onClose} disabled={saving}
-                className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+                className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t("admin.bossManagement.form.cancel")}</button>
               <button type="submit" disabled={saving}
                 className={`${btnBase} flex-1 justify-center bg-purple-200 dark:bg-purple-700 text-purple-900 dark:text-white`}>
-                {saving ? <><Spinner size={13} /> Saving…</> : <><SaveIcon /> {isEdit ? "Update" : "Create"}</>}
+                {saving ? <><Spinner size={13} /> {t("admin.bossManagement.form.saving")}</> : <><SaveIcon /> {isEdit ? t("admin.bossManagement.form.update") : t("admin.bossManagement.form.create")}</>}
               </button>
             </div>
           </form>
@@ -277,6 +279,7 @@ interface BossModesModalProps {
 }
 
 const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossModesModalProps) => {
+  const { t } = useTranslation();
   const [tpl, setTpl] = useState<BossTemplateDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BossModePayload>({ ...EMPTY_MODE });
@@ -306,7 +309,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
   const handleAddMode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.allowedProofTypes.length === 0) { setFormError("Select at least one proof type."); return; }
+    if (form.allowedProofTypes.length === 0) { setFormError(t("admin.bossManagement.modesModal.errorNoProof")); return; }
     setSubmitting(true);
     setFormError(null);
     try {
@@ -315,7 +318,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
       await fetchTpl();
       setForm({ ...EMPTY_MODE });
     } catch (err) {
-      setFormError(errMsg(err) ?? "Failed to add boss mode.");
+      setFormError(errMsg(err) ?? t("admin.bossManagement.modesModal.errorAddMode"));
     } finally {
       setSubmitting(false);
     }
@@ -332,7 +335,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
               <SettingsIcon />
             </div>
             <div>
-              <h2 className="text-base font-black text-gray-900">Configure Boss Modes</h2>
+              <h2 className="text-base font-black text-gray-900">{t("admin.bossManagement.modesModal.title")}</h2>
               <p className="text-xs font-medium text-gray-500">{templateName}</p>
             </div>
           </div>
@@ -347,7 +350,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
           {/* ── LEFT: CURRENT MODES ───────────────────────────────────── */}
           <div className="lg:w-[52%] border-b-2 lg:border-b-0 lg:border-r-2 border-black/10 overflow-y-auto p-5 space-y-3">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-white dark:bg-[#1e2a3a] pb-2">
-              Current Modes ({tpl?.modes.length ?? 0} / 3)
+              {t("admin.bossManagement.modesModal.currentModes")} ({tpl?.modes.length ?? 0} / 3)
             </p>
 
             {loading ? (
@@ -357,8 +360,8 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
             ) : !tpl || tpl.modes.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-12 text-gray-400">
                 <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
-                <p className="font-black text-gray-500">No modes configured yet</p>
-                <p className="text-xs font-medium">Add modes using the form →</p>
+                <p className="font-black text-gray-500">{t("admin.bossManagement.modesModal.noModes")}</p>
+                <p className="text-xs font-medium">{t("admin.bossManagement.modesModal.addModeHint")}</p>
               </div>
             ) : (
               tpl.modes.map(m => {
@@ -431,24 +434,24 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
               {tpl && tpl.modes.length >= 3 ? (
               <span className="inline-flex items-center gap-1.5">
-                All 3 Modes Configured
+                {t("admin.bossManagement.modesModal.allConfigured")}
                 <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-3 h-3 object-contain" />
               </span>
-            ) : "Add New Mode"}
+            ) : t("admin.bossManagement.modesModal.addMode")}
             </p>
 
             {tpl && tpl.modes.length >= 3 ? (
               <div className="flex flex-col items-center gap-3 py-12 text-gray-400">
                 <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
-                <p className="font-black text-gray-600">Easy, Normal & Hard configured!</p>
-                <p className="text-xs font-medium text-center">All difficulty modes are set up for this boss template.</p>
+                <p className="font-black text-gray-600">{t("admin.bossManagement.modesModal.allConfiguredHint")}</p>
+                <p className="text-xs font-medium text-center">{t("admin.bossManagement.modesModal.allModesSet")}</p>
               </div>
             ) : (
               <form onSubmit={handleAddMode} className="space-y-3">
                 {/* mode + minTier */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Mode *</Label>
+                    <Label>{t("admin.bossManagement.modesModal.modeLabel")}</Label>
                     <select value={form.mode}
                       onChange={e => setS("mode", e.target.value)}
                       className={inputCls}>
@@ -461,7 +464,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                     </select>
                   </div>
                   <div>
-                    <Label>Min Tier *</Label>
+                    <Label>{t("admin.bossManagement.modesModal.minTierLabel")}</Label>
                     <select value={form.minTier}
                       onChange={e => setS("minTier", e.target.value)}
                       className={inputCls}>
@@ -475,12 +478,12 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 {/* partyMin + partyMax */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Party Min *</Label>
+                    <Label>{t("admin.bossManagement.modesModal.partyMinLabel")}</Label>
                     <input type="number" min={1} value={form.partyMin}
                       onChange={e => setN("partyMin", Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <Label>Party Max *</Label>
+                    <Label>{t("admin.bossManagement.modesModal.partyMaxLabel")}</Label>
                     <input type="number" min={1} value={form.partyMax}
                       onChange={e => setN("partyMax", Number(e.target.value))} className={inputCls} />
                   </div>
@@ -488,7 +491,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
                 {/* bossHp */}
                 <div>
-                  <Label>Boss HP *</Label>
+                  <Label>{t("admin.bossManagement.modesModal.bossHpLabel")}</Label>
                   <input type="number" min={1} value={form.bossHp}
                     onChange={e => setN("bossHp", Number(e.target.value))} className={inputCls} />
                 </div>
@@ -496,12 +499,12 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 {/* quest limits */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Max Quests/Member/Day</Label>
+                    <Label>{t("admin.bossManagement.modesModal.maxQuestsLabel")}</Label>
                     <input type="number" min={1} value={form.maxQuestPerMemberPerDay}
                       onChange={e => setN("maxQuestPerMemberPerDay", Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <Label>Max Party Quests/Week</Label>
+                    <Label>{t("admin.bossManagement.modesModal.maxPartyQuestsLabel")}</Label>
                     <input type="number" min={1} value={form.maxPartyQuestPerWeek}
                       onChange={e => setN("maxPartyQuestPerWeek", Number(e.target.value))} className={inputCls} />
                   </div>
@@ -510,14 +513,14 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 {/* damage + gold */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Max Damage/Quest</Label>
+                    <Label>{t("admin.bossManagement.modesModal.maxDamageLabel")}</Label>
                     <input type="number" min={1} value={form.maxDamagePerQuest}
                       onChange={e => setN("maxDamagePerQuest", Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
                     <Label>
                       <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="inline w-4 h-4 mr-1 align-text-bottom" />
-                      Gold Cap/Quest (mG)
+                      {t("admin.bossManagement.modesModal.goldCapLabel")}
                     </Label>
                     <input type="number" min={0} value={form.mGoldRewardCapPerQuest}
                       onChange={e => setN("mGoldRewardCapPerQuest", Number(e.target.value))} className={inputCls} />
@@ -526,7 +529,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
                 {/* allowedProofTypes */}
                 <div>
-                  <Label>Allowed Proof Types *</Label>
+                  <Label>{t("admin.bossManagement.modesModal.proofTypesLabel")}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {PROOF_TYPES.map(pt => {
                       const checked = form.allowedProofTypes.includes(pt);
@@ -546,7 +549,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
                 {/* rewardTier */}
                 <div>
-                  <Label>Reward Tier *</Label>
+                  <Label>{t("admin.bossManagement.modesModal.rewardTierLabel")}</Label>
                   <select value={form.rewardTier}
                     onChange={e => setS("rewardTier", e.target.value)}
                     className={inputCls}>
@@ -562,10 +565,10 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
 
                 <div className="flex gap-3 pt-1">
                   <button type="button" onClick={onClose} disabled={submitting}
-                    className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Close</button>
+                    className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t("admin.bossManagement.modesModal.close")}</button>
                   <button type="submit" disabled={submitting}
                     className={`${btnBase} flex-1 justify-center bg-orange-200 dark:bg-orange-700 text-orange-900 dark:text-white`}>
-                    {submitting ? <><Spinner size={13} /> Adding…</> : <><PlusIcon /> Add Mode</>}
+                    {submitting ? <><Spinner size={13} /> {t("admin.bossManagement.modesModal.adding")}</> : <><PlusIcon /> {t("admin.bossManagement.modesModal.addMode")}</>}
                   </button>
                 </div>
               </form>
@@ -589,6 +592,7 @@ interface StatusConfirmModalProps {
 }
 
 const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert, onSuccess }: StatusConfirmModalProps) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
@@ -615,28 +619,28 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
             alt="" className="w-9 h-9 object-contain shrink-0"
           />
           <div>
-            <h3 className="font-black text-gray-900">{isPublish ? "Publish Template?" : "Archive Template?"}</h3>
+            <h3 className="font-black text-gray-900">{isPublish ? t("admin.bossManagement.publishModal.title") : t("admin.bossManagement.archiveModal.title")}</h3>
             <p className="text-xs font-medium text-gray-500 mt-0.5">"{templateName}"</p>
           </div>
         </div>
         <p className="text-sm font-medium text-gray-700">
           {isPublish
-            ? "This will make the boss event visible and active for players."
-            : "This will hide the template from players. It can no longer be activated."}
+            ? t("admin.bossManagement.publishModal.message")
+            : t("admin.bossManagement.archiveModal.message")}
         </p>
         {!isPublish && (
           <div className="flex items-start gap-2 px-3 py-2.5 bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700 rounded-2xl">
             <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
-            <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">Archiving is permanent. You cannot restore an archived template.</p>
+            <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">{t("admin.bossManagement.archiveModal.warning")}</p>
           </div>
         )}
         <div className="flex gap-3 pt-1">
           <button onClick={onClose} disabled={loading}
-            className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
+            className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t("admin.bossManagement.form.cancel")}</button>
           <button onClick={handleConfirm} disabled={loading}
             className={`${btnBase} flex-1 justify-center ${isPublish ? "bg-green-300 text-green-900" : "bg-orange-300 text-orange-900"}`}>
-            {loading ? <><Spinner size={13} /> {isPublish ? "Publishing…" : "Archiving…"}</> : (
-              <><img src={isPublish ? "/icon/Main/Upgrade/64px/Green Upgrade 1st 64px.png" : "/icon/Item/Chest/64px/Chest 1st 64px.png"} alt="" className="w-3.5 h-3.5 object-contain" /> {isPublish ? "Publish" : "Archive"}</>
+            {loading ? <><Spinner size={13} /> {isPublish ? t("admin.bossManagement.publishModal.publishing") : t("admin.bossManagement.archiveModal.archiving")}</> : (
+              <><img src={isPublish ? "/icon/Main/Upgrade/64px/Green Upgrade 1st 64px.png" : "/icon/Item/Chest/64px/Chest 1st 64px.png"} alt="" className="w-3.5 h-3.5 object-contain" /> {isPublish ? t("admin.bossManagement.publishModal.confirm") : t("admin.bossManagement.archiveModal.confirm")}</>
             )}
           </button>
         </div>
@@ -654,6 +658,8 @@ interface StatusConfirmState {
 }
 
 export default function AdminBossManagement() {
+  const { t } = useTranslation();
+
   // ── ALERT ─────────────────────────────────────────────────────────────────
   const globalAlert = useAlert();
   const setAlert = useCallback(
@@ -700,8 +706,8 @@ export default function AdminBossManagement() {
 
   return (
     <>
-      <PageMeta title="Weekly Boss Management" description="Manage weekly boss templates and difficulty modes" />
-      <PageBreadcrumb pageTitle="Weekly Boss" />
+      <PageMeta title={t("admin.bossManagement.pageTitle")} description={t("admin.bossManagement.subtitle")} />
+      <PageBreadcrumb pageTitle={t("admin.bossManagement.pageTitle")} />
 
 
       <div className="space-y-6 p-1">
@@ -712,25 +718,25 @@ export default function AdminBossManagement() {
               <SwordsIcon size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-gray-900">Weekly Boss Templates</h1>
-              <p className="text-sm text-gray-500 font-medium mt-0.5">Configure boss events, difficulty modes, and reward tiers.</p>
+              <h1 className="text-2xl font-black text-gray-900">{t("admin.bossManagement.pageTitle")}</h1>
+              <p className="text-sm text-gray-500 font-medium mt-0.5">{t("admin.bossManagement.subtitle")}</p>
             </div>
           </div>
           <button onClick={() => setEditingTemplate("new")}
             className={`${btnBase} bg-purple-200 text-purple-900 shrink-0`}>
-            <PlusIcon /> New Boss Template
+            <PlusIcon /> {t("admin.bossManagement.newTemplate")}
           </button>
         </div>
 
         {/* Filter Bar */}
         <div className="flex flex-wrap items-center gap-2 p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_0_#1A1D20]">
           <span className="text-sm font-black text-gray-700 flex items-center gap-1.5 mr-1 shrink-0">
-            <Filter className="w-4 h-4" /> Status:
+            <Filter className="w-4 h-4" /> {t("admin.bossManagement.filterStatus")}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {STATUS_KEYS.map(key => {
               const cfg = STATUS_CFG[key];
-              const label = key === "" ? "All" : key;
+              const label = key === "" ? t("admin.bossManagement.filterAll") : key;
               return (
                 <button
                   key={key}
@@ -744,7 +750,7 @@ export default function AdminBossManagement() {
           </div>
           <button onClick={fetchTemplates} disabled={loading}
             className={`${btnBase} ml-auto bg-purple-100 text-purple-900 py-1.5`}>
-            {loading ? <><Spinner size={13} /> Loading…</> : "↺ Refresh"}
+            {loading ? <><Spinner size={13} /> {t("admin.bossManagement.loading")}</> : t("admin.bossManagement.refresh")}
           </button>
         </div>
 
@@ -753,21 +759,21 @@ export default function AdminBossManagement() {
           {error ? (
             <div className="flex flex-col items-center gap-3 py-16">
               <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
-              <p className="font-black text-gray-700">Failed to load templates</p>
+              <p className="font-black text-gray-700">{t("admin.bossManagement.loadError")}</p>
               <p className="text-sm text-gray-400">{error}</p>
-              <button onClick={fetchTemplates} className={`${btnBase} bg-red-100 text-red-800`}>↺ Retry</button>
+              <button onClick={fetchTemplates} className={`${btnBase} bg-red-100 text-red-800`}>{t("admin.bossManagement.retry")}</button>
             </div>
           ) : loading && templates.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
-              <Spinner size={32} /><p className="font-bold text-sm">Loading boss templates…</p>
+              <Spinner size={32} /><p className="font-bold text-sm">{t("admin.bossManagement.loadingTemplates")}</p>
             </div>
           ) : templates.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
               <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-14 h-14 object-contain" />
-              <p className="font-black text-lg text-gray-500">No boss templates yet</p>
-              <p className="text-sm font-medium">Create your first weekly boss event!</p>
+              <p className="font-black text-lg text-gray-500">{t("admin.bossManagement.noTemplates")}</p>
+              <p className="text-sm font-medium">{t("admin.bossManagement.createFirstBoss")}</p>
               <button onClick={() => setEditingTemplate("new")} className={`${btnBase} bg-purple-200 text-purple-900`}>
-                <PlusIcon /> New Template
+                <PlusIcon /> {t("admin.bossManagement.newTemplate")}
               </button>
             </div>
           ) : (
@@ -775,65 +781,72 @@ export default function AdminBossManagement() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-gray-200 bg-gray-50/60">
-                    {["#", "Theme Name", "Active Period", "Modes", "Status", "Actions"].map(h => (
+                    {[
+                      t("admin.bossManagement.table.num"),
+                      t("admin.bossManagement.table.themeName"),
+                      t("admin.bossManagement.table.activePeriod"),
+                      t("admin.bossManagement.table.modes"),
+                      t("admin.bossManagement.table.status"),
+                      t("admin.bossManagement.table.actions"),
+                    ].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {templates.map((t, idx) => (
-                    <tr key={t.bossTemplateId} className="hover:bg-purple-50/30 transition-colors">
+                  {templates.map((tpl, idx) => (
+                    <tr key={tpl.bossTemplateId} className="hover:bg-purple-50/30 transition-colors">
                       <td className="px-4 py-3 text-xs font-black text-gray-400">
                         {(page - 1) * PAGE_SIZE + idx + 1}
                       </td>
                       <td className="px-4 py-4 max-w-55">
-                        <p className="font-black text-gray-900 truncate">{t.themeName}</p>
-                        <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">{t.description || "No description"}</p>
+                        <p className="font-black text-gray-900 truncate">{tpl.themeName}</p>
+                        <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <p className="text-xs font-bold text-gray-700">{fmtDate(t.activeWeekStart)}</p>
-                        <p className="text-[10px] text-gray-400 font-medium">→ {fmtDate(t.activeWeekEnd)}</p>
+                        <p className="text-xs font-bold text-gray-700">{fmtDate(tpl.activeWeekStart)}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">→ {fmtDate(tpl.activeWeekEnd)}</p>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {t.modes.length === 0 ? (
+                          {tpl.modes.length === 0 ? (
                             <span className="text-xs text-gray-400 font-medium">None</span>
                           ) : (
-                            t.modes.map(m => <ModeBadge key={m.mode} mode={m.mode} />)
+                            tpl.modes.map(m => <ModeBadge key={m.mode} mode={m.mode} />)
                           )}
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <StatusBadge status={t.status} />
+                        <StatusBadge status={tpl.status} />
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {/* Edit */}
                           <button title="Edit template info"
-                            onClick={() => setEditingTemplate(t)}
+                            onClick={() => setEditingTemplate(tpl)}
                             className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-blue-800">
                             <PencilIcon />
                           </button>
                           {/* Configure Modes */}
                           <button title="Configure boss modes"
-                            onClick={() => setModesTemplate({ id: t.bossTemplateId, name: t.themeName })}
+                            onClick={() => setModesTemplate({ id: tpl.bossTemplateId, name: tpl.themeName })}
                             className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-orange-800">
                             <SettingsIcon />
                           </button>
                           {/* Publish */}
-                          {t.status === "Draft" && (
+                          {tpl.status === "Draft" && (
                             <button title="Publish template"
-                              onClick={() => setConfirmStatus({ templateId: t.bossTemplateId, templateName: t.themeName, action: "publish" })}
+                              onClick={() => setConfirmStatus({ templateId: tpl.bossTemplateId, templateName: tpl.themeName, action: "publish" })}
                               className="px-2.5 py-1 flex items-center gap-1 text-[10px] font-black rounded-full border-2 border-black bg-green-100 hover:bg-green-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-green-800 whitespace-nowrap">
-                              🚀 Publish
+                              {t("admin.bossManagement.publish")}
                             </button>
                           )}
                           {/* Archive */}
-                          {t.status === "Published" && (
+                          {tpl.status === "Published" && (
                             <button title="Archive template"
-                              onClick={() => setConfirmStatus({ templateId: t.bossTemplateId, templateName: t.themeName, action: "archive" })}
+                              onClick={() => setConfirmStatus({ templateId: tpl.bossTemplateId, templateName: tpl.themeName, action: "archive" })}
                               className="px-2.5 py-1 flex items-center gap-1 text-[10px] font-black rounded-full border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-orange-800 whitespace-nowrap">
-                              📦 Archive
+                              {t("admin.bossManagement.archive")}
                             </button>
                           )}
                         </div>
@@ -849,12 +862,16 @@ export default function AdminBossManagement() {
         {/* Pagination */}
         {!error && (templates.length > 0 || page > 1) && (
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-gray-500">Page {page} · {templates.length} template{templates.length !== 1 ? "s" : ""}</p>
+            <p className="text-xs font-bold text-gray-500">
+              {templates.length !== 1
+                ? t("admin.bossManagement.pageInfoPlural", { page, count: templates.length })
+                : t("admin.bossManagement.pageInfo", { page, count: templates.length })}
+            </p>
             <div className="flex gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1 || loading}
-                className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}><ChevLeft /> Prev</button>
+                className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}><ChevLeft /> {t("admin.bossManagement.prev")}</button>
               <button onClick={() => setPage(p => p + 1)} disabled={!hasMore || loading}
-                className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}>Next <ChevRight /></button>
+                className={`${btnBase} bg-white text-gray-700 py-1.5 px-3 text-xs`}>{t("admin.bossManagement.next")} <ChevRight /></button>
             </div>
           </div>
         )}

@@ -1,11 +1,12 @@
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 import { Gem, Target, Inbox, Skull, Users } from "lucide-react";
 
 const hubs = [
     {
-        title: "My Parties",
-        description: "Manage your squads, invite members, and handle join requests.",
+        titleKey: "mentor.dashboard.hubs.parties.title",
+        descKey: "mentor.dashboard.hubs.parties.subtitle",
         icon: <Users className="w-8 h-8" />,
         path: "/mentor/parties",
         bg: "bg-[#D1FAE5]",
@@ -14,8 +15,8 @@ const hubs = [
         shadow: "shadow-[4px_4px_0_0_#065f46]",
     },
     {
-        title: "Subscription & Wallet",
-        description: "Check your Gem balance, view your active plan, and upgrade.",
+        titleKey: "mentor.dashboard.hubs.subscription.title",
+        descKey: "mentor.dashboard.hubs.subscription.subtitle",
         icon: <Gem className="w-8 h-8" />,
         path: "/mentor/subscription",
         bg: "bg-[#FEF9C3]",
@@ -24,8 +25,8 @@ const hubs = [
         shadow: "shadow-[4px_4px_0_0_#92400e]",
     },
     {
-        title: "Quest Command",
-        description: "Assign quests to individual members or fan-out to your whole party.",
+        titleKey: "mentor.dashboard.hubs.questCommand.title",
+        descKey: "mentor.dashboard.hubs.questCommand.subtitle",
         icon: <Target className="w-8 h-8" />,
         path: "/mentor/quests",
         bg: "bg-[#EDE9FE]",
@@ -34,8 +35,8 @@ const hubs = [
         shadow: "shadow-[4px_4px_0_0_#3b1f6e]",
     },
     {
-        title: "Proof Queue",
-        description: "Review submitted proof, approve completions, or reject with feedback.",
+        titleKey: "mentor.dashboard.hubs.proofQueue.title",
+        descKey: "mentor.dashboard.hubs.proofQueue.subtitle",
         icon: <Inbox className="w-8 h-8" />,
         path: "/mentor/proofs",
         bg: "bg-[#CCFBF1]",
@@ -44,8 +45,8 @@ const hubs = [
         shadow: "shadow-[4px_4px_0_0_#0f766e]",
     },
     {
-        title: "Boss Raid",
-        description: "Register your party for the weekly boss and choose a difficulty mode.",
+        titleKey: "mentor.dashboard.hubs.bossRaid.title",
+        descKey: "mentor.dashboard.hubs.bossRaid.subtitle",
         icon: <Skull className="w-8 h-8" />,
         path: "/mentor/boss-raid",
         bg: "bg-[#FEE2E2]",
@@ -56,6 +57,8 @@ const hubs = [
 ];
 
 export default function MentorDashboard() {
+    const { t } = useTranslation();
+
     return (
         <>
             <PageMeta
@@ -67,20 +70,17 @@ export default function MentorDashboard() {
             <div className="mb-8">
                 <div className="inline-flex items-center gap-2 mb-2">
                     <span className="px-3 py-1 text-xs font-black bg-[#7C3AED] text-white rounded-full border-2 border-black">
-                        MENTOR PORTAL
+                        {t("mentor.dashboard.badge")}
                     </span>
                 </div>
-                <h1 className="text-4xl font-black text-gray-900 dark:text-white">Welcome back, Mentor!</h1>
-                <p className="text-gray-500 mt-1 font-medium">
-                    Use the hubs below to manage your parties, quests, and boss raids.
-                </p>
+                <h1 className="text-4xl font-black text-gray-900 dark:text-white">{t("mentor.dashboard.welcome")}</h1>
             </div>
 
             {/* Hub cards grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {hubs.map((hub) => (
                     <Link
-                        key={hub.title}
+                        key={hub.path}
                         to={hub.path}
                         className={`
                             group flex flex-col gap-4 p-6
@@ -97,11 +97,11 @@ export default function MentorDashboard() {
                             {hub.icon}
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-gray-900 dark:text-white">{hub.title}</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mt-1">{hub.description}</p>
+                            <h2 className="text-xl font-black text-gray-900 dark:text-white">{t(hub.titleKey)}</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mt-1">{t(hub.descKey)}</p>
                         </div>
                         <div className="mt-auto flex items-center gap-1 text-sm font-black text-gray-700 dark:text-gray-200">
-                            Enter Hub
+                            {t("mentor.dashboard.enterHub")}
                             <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                             </svg>

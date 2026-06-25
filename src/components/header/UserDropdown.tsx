@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import playerProfileApi from "../../api/userProfileApi";
 import { useAuth } from "../../context/AuthContext";
@@ -8,7 +9,7 @@ import type { PlayerProfile } from "../../types/api.types";
 const MENU_ITEMS = [
   {
     to: "/edit-profile",
-    label: "Edit profile",
+    labelKey: "userDropdown.editProfile",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -18,7 +19,7 @@ const MENU_ITEMS = [
   },
   {
     to: "/profile",
-    label: "Account settings",
+    labelKey: "userDropdown.accountSettings",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
@@ -28,7 +29,7 @@ const MENU_ITEMS = [
   },
   {
     to: "/",
-    label: "Support",
+    labelKey: "userDropdown.support",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
@@ -50,6 +51,7 @@ function getInitials(name: string): string {
 }
 
 export default function UserDropdown() {
+  const { t } = useTranslation();
   const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<PlayerProfile | null>(null);
@@ -70,7 +72,7 @@ export default function UserDropdown() {
     // Navigation is handled by SignIn.tsx: isAuthenticated becomes false → shows login form
   };
 
-  const displayName = user?.username ?? "Loading...";
+  const displayName = user?.username ?? t("userDropdown.loading");
   const displayEmail = user?.email ?? "...";
   const hasAvatar = user?.hasAvatar && user?.avatarUrl;
 
@@ -122,8 +124,8 @@ export default function UserDropdown() {
 
         {/* Nav items */}
         <ul className="p-2 space-y-0.5 border-b-2 border-black dark:border-gray-600">
-          {MENU_ITEMS.map(({ to, label, icon }) => (
-            <li key={label}>
+          {MENU_ITEMS.map(({ to, labelKey, icon }) => (
+            <li key={labelKey}>
               <Link
                 to={to}
                 onClick={closeDropdown}
@@ -132,7 +134,7 @@ export default function UserDropdown() {
                 <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors flex-shrink-0">
                   {icon}
                 </span>
-                {label}
+                {t(labelKey)}
               </Link>
             </li>
           ))}
@@ -151,7 +153,7 @@ export default function UserDropdown() {
                 <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
             </span>
-            Sign out
+            {t("userDropdown.signOut")}
           </button>
         </div>
       </Dropdown>

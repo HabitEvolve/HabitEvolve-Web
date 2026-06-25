@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
 import type {
   SubscriptionPackageDto,
@@ -98,18 +99,21 @@ const labelCls =
 
 // ─── Micro-components ────────────────────────────────────────────────────────
 
-const StatusBadge = ({ isActive }: { isActive: boolean }) => (
-  <span
-    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 ${
-      isActive
-        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-600'
-        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-500'
-    }`}
-  >
-    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`} />
-    {isActive ? 'ACTIVE' : 'INACTIVE'}
-  </span>
-);
+const StatusBadge = ({ isActive }: { isActive: boolean }) => {
+  const { t } = useTranslation();
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 ${
+        isActive
+          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-600'
+          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-500'
+      }`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+      {isActive ? t('admin.subscriptionPage.statusActive') : t('admin.subscriptionPage.statusInactive')}
+    </span>
+  );
+};
 
 const tierColors: Record<string, string> = {
   Basic: 'bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border-sky-500',
@@ -194,6 +198,7 @@ interface PackageFormModalProps {
 }
 
 const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModalProps) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState<PackageFormState>(
     initial ? pkgToForm(initial) : EMPTY_FORM
   );
@@ -206,8 +211,8 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!form.bossModes.length) { setError('Select at least one Boss Mode.'); return; }
-    if (!form.proofTypes.length) { setError('Select at least one Proof Type.'); return; }
+    if (!form.bossModes.length) { setError(t('admin.subscriptionPage.form.bossModesRequired')); return; }
+    if (!form.proofTypes.length) { setError(t('admin.subscriptionPage.form.proofTypesRequired')); return; }
 
     setSaving(true);
     try {
@@ -259,7 +264,9 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         {/* ── Modal header ── */}
         <div className="flex items-center justify-between px-6 py-4 border-b-4 border-black dark:border-white bg-[#f7a561] shrink-0">
           <h2 className="text-base font-black text-black uppercase tracking-widest">
-            {mode === 'create' ? '+ New Subscription Package' : `Edit: ${initial?.code}`}
+            {mode === 'create'
+              ? t('admin.subscriptionPage.form.newTitle')
+              : t('admin.subscriptionPage.form.editTitle', { code: initial?.code })}
           </h2>
           <button
             onClick={onClose}
@@ -278,41 +285,41 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         >
           {/* Section A: Basic Info */}
           <div>
-            <SectionHeader label="A — Basic Info" />
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionBasic')} />
             <div className="grid grid-cols-2 gap-3">
               {mode === 'create' && (
-                <Field label="Code *">
+                <Field label={t('admin.subscriptionPage.form.codeLabel')}>
                   <input
                     required
                     maxLength={50}
-                    placeholder="e.g. PREMIUM"
+                    placeholder={t('admin.subscriptionPage.form.codePlaceholder')}
                     className={inputCls}
                     value={form.code}
                     onChange={e => set('code', e.target.value.toUpperCase())}
                   />
                 </Field>
               )}
-              <Field label="Name *" span={mode === 'edit'}>
+              <Field label={t('admin.subscriptionPage.form.nameLabel')} span={mode === 'edit'}>
                 <input
                   required
                   maxLength={200}
-                  placeholder="Package display name"
+                  placeholder={t('admin.subscriptionPage.form.namePlaceholder')}
                   className={inputCls}
                   value={form.name}
                   onChange={e => set('name', e.target.value)}
                 />
               </Field>
-              <Field label="Description" span>
+              <Field label={t('admin.subscriptionPage.form.descLabel')} span>
                 <textarea
                   maxLength={1000}
                   rows={2}
-                  placeholder="Optional description shown to Mentors…"
+                  placeholder={t('admin.subscriptionPage.form.descPlaceholder')}
                   className={`${inputCls} resize-none`}
                   value={form.description}
                   onChange={e => set('description', e.target.value)}
                 />
               </Field>
-              <Field label="Price (Gems) *">
+              <Field label={t('admin.subscriptionPage.form.priceLabel')}>
                 <input
                   required
                   type="number"
@@ -323,26 +330,26 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   onChange={e => set('price', +e.target.value || 0)}
                 />
               </Field>
-              <Field label="Duration (Days) *">
+              <Field label={t('admin.subscriptionPage.form.durationLabel')}>
                 <input
                   required
                   type="number"
                   min={0}
                   step={1}
-                  placeholder="0 = unlimited"
+                  placeholder={t('admin.subscriptionPage.form.unlimitedHint')}
                   className={inputCls}
                   value={form.durationDays}
                   onChange={e => set('durationDays', +e.target.value || 0)}
                 />
               </Field>
-              <Field label="Reward Tier *" span>
+              <Field label={t('admin.subscriptionPage.form.rewardTierLabel')} span>
                 <select
                   className={inputCls}
                   value={form.rewardTier}
                   onChange={e => set('rewardTier', e.target.value as RewardTier)}
                 >
-                  {REWARD_TIER_OPTIONS.map(t => (
-                    <option key={t} value={t}>{t}</option>
+                  {REWARD_TIER_OPTIONS.map(tier => (
+                    <option key={tier} value={tier}>{tier}</option>
                   ))}
                 </select>
               </Field>
@@ -351,9 +358,9 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
 
           {/* Section B: Party & Member Limits */}
           <div>
-            <SectionHeader label="B — Party & Member Limits" />
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionParty')} />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Max Parties *">
+              <Field label={t('admin.subscriptionPage.form.maxPartiesLabel')}>
                 <input
                   required
                   type="number"
@@ -363,7 +370,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   onChange={e => set('maxParties', +e.target.value || 1)}
                 />
               </Field>
-              <Field label="Max Members / Party *">
+              <Field label={t('admin.subscriptionPage.form.maxMembersLabel')}>
                 <input
                   required
                   type="number"
@@ -373,7 +380,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   onChange={e => set('maxMembersPerParty', +e.target.value || 1)}
                 />
               </Field>
-              <Field label="Party Quests / Week *" span>
+              <Field label={t('admin.subscriptionPage.form.partyQuestsLabel')} span>
                 <input
                   required
                   type="number"
@@ -388,9 +395,9 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
 
           {/* Section C: Quest & Boss Limits */}
           <div>
-            <SectionHeader label="C — Quest & Boss Limits" />
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionQuest')} />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Quests / Member / Day *">
+              <Field label={t('admin.subscriptionPage.form.memberQuestsLabel')}>
                 <input
                   required
                   type="number"
@@ -400,7 +407,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   onChange={e => set('questsPerMemberPerDay', +e.target.value || 0)}
                 />
               </Field>
-              <Field label="Max Damage / Quest *">
+              <Field label={t('admin.subscriptionPage.form.maxDamageLabel')}>
                 <input
                   required
                   type="number"
@@ -410,7 +417,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   onChange={e => set('maxDamagePerQuest', +e.target.value || 0)}
                 />
               </Field>
-              <Field label="Max MGold Reward / Quest *">
+              <Field label={t('admin.subscriptionPage.form.maxGoldLabel')}>
                 <input
                   required
                   type="number"
@@ -421,22 +428,22 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                 />
               </Field>
               <div className="col-span-2 h-px bg-black/5 dark:bg-white/5" />
-              <Field label="Boss Modes *" span>
+              <Field label={t('admin.subscriptionPage.form.bossModesLabel')} span>
                 <ChipGroup
                   options={BOSS_MODE_OPTIONS}
                   selected={form.bossModes}
                   onChange={v => set('bossModes', v)}
                 />
               </Field>
-              <Field label="AI Verification Boss Modes" span>
-                <p className="text-[10px] text-gray-400 mb-1">Boss modes where AI proof verification is available</p>
+              <Field label={t('admin.subscriptionPage.form.aiModesLabel')} span>
+                <p className="text-[10px] text-gray-400 mb-1">{t('admin.subscriptionPage.form.aiModesHint')}</p>
                 <ChipGroup
                   options={BOSS_MODE_OPTIONS}
                   selected={form.aiVerificationBossModes}
                   onChange={v => set('aiVerificationBossModes', v)}
                 />
               </Field>
-              <Field label="Proof Types *" span>
+              <Field label={t('admin.subscriptionPage.form.proofTypesLabel')} span>
                 <ChipGroup
                   options={PROOF_TYPE_OPTIONS}
                   selected={form.proofTypes}
@@ -460,7 +467,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
             onClick={onClose}
             className="px-5 py-2.5 border-2 border-black dark:border-white rounded-xl font-black text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-all shadow-[3px_3px_0_0_#1A1D20] dark:shadow-[3px_3px_0_0_rgba(255,255,255,0.25)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px]"
           >
-            Cancel
+            {t('admin.subscriptionPage.form.cancel')}
           </button>
           <button
             type="submit"
@@ -468,7 +475,11 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
             disabled={saving}
             className="px-5 py-2.5 bg-[#f7a561] border-2 border-black rounded-xl font-black text-sm text-black shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving…' : mode === 'create' ? 'Create Package' : 'Save Changes'}
+            {saving
+              ? t('admin.subscriptionPage.form.saving')
+              : mode === 'create'
+                ? t('admin.subscriptionPage.form.createPackage')
+                : t('admin.subscriptionPage.form.saveChanges')}
           </button>
         </div>
       </div>
@@ -486,8 +497,9 @@ interface ToggleModalProps {
   onClose: () => void;
 }
 
-const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) =>
-  createPortal(
+const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) => {
+  const { t } = useTranslation();
+  return createPortal(
     <div
       className="modal-content fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
@@ -495,18 +507,23 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) =>
       <div className="bg-white text-gray-900 border-4 border-black dark:border-white shadow-[8px_8px_0_0_#1A1D20] dark:shadow-[8px_8px_0_0_rgba(255,255,255,0.25)] rounded-xl w-full max-w-md overflow-hidden">
         <div className={`px-6 py-4 border-b-4 border-black dark:border-white ${pkg.isActive ? 'bg-red-100 dark:bg-red-900/40' : 'bg-green-100 dark:bg-green-900/40'}`}>
           <h2 className="text-base font-black text-black dark:text-white uppercase tracking-widest">
-            {pkg.isActive ? '⛔ Deactivate Package' : '✅ Activate Package'}
+            {pkg.isActive
+              ? t('admin.subscriptionPage.toggleModal.deactivateTitle')
+              : t('admin.subscriptionPage.toggleModal.activateTitle')}
           </h2>
         </div>
         <div className="px-6 py-5">
           <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
-            Are you sure you want to{' '}
-            <strong>{pkg.isActive ? 'deactivate' : 'activate'}</strong> the package{' '}
-            <strong className="text-[#f7a561]">{pkg.code} — {pkg.name}</strong>?
+            {t('admin.subscriptionPage.toggleModal.areYouSure', {
+              action: pkg.isActive
+                ? t('admin.subscriptionPage.toggleModal.actionDeactivate')
+                : t('admin.subscriptionPage.toggleModal.actionActivate'),
+              codeName: `${pkg.code} — ${pkg.name}`,
+            })}
           </p>
           {pkg.isActive && (
             <p className="mt-2 text-xs font-bold text-red-500">
-              Deactivating hides this package from new Mentor subscribers.
+              {t('admin.subscriptionPage.toggleModal.deactivateMessage')}
             </p>
           )}
         </div>
@@ -515,7 +532,7 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) =>
             onClick={onClose}
             className="px-4 py-2 border-2 border-black dark:border-white rounded-xl font-black text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 shadow-[3px_3px_0_0_#1A1D20] dark:shadow-[3px_3px_0_0_rgba(255,255,255,0.25)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
           >
-            Cancel
+            {t('admin.subscriptionPage.toggleModal.cancel')}
           </button>
           <button
             onClick={onConfirm}
@@ -524,17 +541,21 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) =>
               pkg.isActive ? 'bg-red-400 text-black' : 'bg-green-400 text-black'
             }`}
           >
-            {loading ? 'Processing…' : 'Confirm'}
+            {loading
+              ? t('admin.subscriptionPage.toggleModal.processing')
+              : t('admin.subscriptionPage.toggleModal.confirm')}
           </button>
         </div>
       </div>
     </div>,
     document.body
   );
+};
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function AdminSubscriptionPage() {
+  const { t } = useTranslation();
   const [packages, setPackages] = useState<SubscriptionPackageDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
@@ -585,7 +606,12 @@ export default function AdminSubscriptionPage() {
       });
       if (!res.success) throw new Error(res.message);
       showToast(
-        `Package "${toggleTarget.code}" is now ${!toggleTarget.isActive ? 'Active' : 'Inactive'}.`
+        t('admin.subscriptionPage.toastStatusChanged', {
+          code: toggleTarget.code,
+          status: !toggleTarget.isActive
+            ? t('admin.subscriptionPage.statusActive')
+            : t('admin.subscriptionPage.statusInactive'),
+        })
       );
       setToggleTarget(null);
       fetchPackages();
@@ -596,6 +622,18 @@ export default function AdminSubscriptionPage() {
     }
   };
 
+  // Table headers translated at render time
+  const tableHeaders = [
+    t('admin.subscriptionPage.table.code'),
+    t('admin.subscriptionPage.table.name'),
+    t('admin.subscriptionPage.table.price'),
+    t('admin.subscriptionPage.table.duration'),
+    t('admin.subscriptionPage.table.tier'),
+    t('admin.subscriptionPage.table.bossModes'),
+    t('admin.subscriptionPage.table.status'),
+    t('admin.subscriptionPage.table.actions'),
+  ];
+
   return (
     // Outermost wrapper is transparent — lets the global bg-dot-grid bleed through
     <div className="p-6 space-y-6">
@@ -604,10 +642,10 @@ export default function AdminSubscriptionPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
-            Subscription Packages
+            {t('admin.subscriptionPage.pageTitle')}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
-            Manage Mentor subscription tiers, limits, and Gem pricing
+            {t('admin.subscriptionPage.pageSubtitle')}
           </p>
         </div>
         <button
@@ -615,7 +653,7 @@ export default function AdminSubscriptionPage() {
           className="flex items-center gap-2 px-5 py-2.5 bg-[#f7a561] border-2 border-black rounded-xl font-black text-sm text-black shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all whitespace-nowrap shrink-0"
         >
           <span className="text-xl leading-none">+</span>
-          New Package
+          {t('admin.subscriptionPage.newPackage')}
         </button>
       </div>
 
@@ -628,10 +666,12 @@ export default function AdminSubscriptionPage() {
             onChange={e => setShowInactive(e.target.checked)}
             className="w-4 h-4 accent-[#f7a561] cursor-pointer"
           />
-          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Show Inactive</span>
+          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+            {t('admin.subscriptionPage.showInactive')}
+          </span>
         </label>
         <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-          {packages.length} package{packages.length !== 1 ? 's' : ''}
+          {t(`admin.subscriptionPage.packageCount_${packages.length !== 1 ? 'other' : 'one'}`, { count: packages.length })}
         </span>
       </div>
 
@@ -640,7 +680,7 @@ export default function AdminSubscriptionPage() {
         {loading ? (
           <div className="py-24 text-center">
             <p className="text-gray-400 font-black uppercase tracking-widest text-sm animate-pulse">
-              Loading packages…
+              {t('admin.subscriptionPage.loading')}
             </p>
           </div>
         ) : fetchError ? (
@@ -650,12 +690,14 @@ export default function AdminSubscriptionPage() {
               onClick={fetchPackages}
               className="mt-4 px-4 py-2 bg-[#f7a561] border-2 border-black rounded-xl font-black text-xs shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
             >
-              Retry
+              {t('admin.subscriptionPage.retry')}
             </button>
           </div>
         ) : packages.length === 0 ? (
           <div className="py-24 text-center">
-            <p className="text-gray-400 dark:text-gray-500 font-bold text-sm">No packages found.</p>
+            <p className="text-gray-400 dark:text-gray-500 font-bold text-sm">
+              {t('admin.subscriptionPage.noPackages')}
+            </p>
           </div>
         ) : (
           <>
@@ -663,12 +705,14 @@ export default function AdminSubscriptionPage() {
               <table className="w-full text-sm min-w-[780px]">
                 <thead>
                   <tr className="bg-[#1A1D20] text-white">
-                    {['Code', 'Name', 'Price (Gems)', 'Duration', 'Tier', 'Boss Modes', 'Status', 'Actions'].map(h => (
+                    {tableHeaders.map((h, idx) => (
                       <th
-                        key={h}
+                        key={idx}
                         className={`px-4 py-3 font-black uppercase tracking-widest text-xs whitespace-nowrap ${
-                          ['Price (Gems)', 'Duration'].includes(h) ? 'text-right' : 'text-center'
-                        } ${h === 'Name' ? 'text-left' : ''} ${h === 'Code' ? 'text-left' : ''}`}
+                          [t('admin.subscriptionPage.table.price'), t('admin.subscriptionPage.table.duration')].includes(h)
+                            ? 'text-right'
+                            : 'text-center'
+                        } ${h === t('admin.subscriptionPage.table.name') ? 'text-left' : ''} ${h === t('admin.subscriptionPage.table.code') ? 'text-left' : ''}`}
                       >
                         {h}
                       </th>
@@ -705,7 +749,7 @@ export default function AdminSubscriptionPage() {
                       {/* Duration */}
                       <td className="px-4 py-3 text-right">
                         <span className="font-bold text-gray-700 dark:text-gray-300">
-                          {pkg.durationDays === 0 ? '∞ Unlimited' : `${pkg.durationDays}d`}
+                          {pkg.durationDays === 0 ? t('admin.subscriptionPage.unlimited') : `${pkg.durationDays}d`}
                         </span>
                       </td>
                       {/* Reward Tier */}
@@ -731,7 +775,7 @@ export default function AdminSubscriptionPage() {
                             onClick={() => setFormModal({ mode: 'edit', pkg })}
                             className="px-3 py-1.5 text-xs font-black bg-white dark:bg-boxdark text-gray-900 dark:text-white border-2 border-black dark:border-white rounded-lg shadow-[2px_2px_0_0_#1A1D20] dark:shadow-[2px_2px_0_0_rgba(255,255,255,0.25)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all whitespace-nowrap"
                           >
-                            ✏️ Edit
+                            {t('admin.subscriptionPage.editBtn')}
                           </button>
                           <button
                             onClick={() => setToggleTarget(pkg)}
@@ -741,7 +785,9 @@ export default function AdminSubscriptionPage() {
                                 : 'bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300'
                             }`}
                           >
-                            {pkg.isActive ? '⛔ Deactivate' : '✅ Activate'}
+                            {pkg.isActive
+                              ? t('admin.subscriptionPage.deactivateBtn')
+                              : t('admin.subscriptionPage.activateBtn')}
                           </button>
                         </div>
                       </td>
@@ -755,7 +801,7 @@ export default function AdminSubscriptionPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t-2 border-black/10 dark:border-white/10">
                 <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
-                  Page {page} of {totalPages} · {packages.length} total
+                  {t('admin.subscriptionPage.paginationInfo', { page, totalPages, total: packages.length })}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -763,7 +809,7 @@ export default function AdminSubscriptionPage() {
                     onClick={() => setPage(p => p - 1)}
                     className="px-3 py-1.5 text-xs font-black border-2 border-black dark:border-white rounded-lg text-gray-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed shadow-[2px_2px_0_0_#1A1D20] dark:shadow-[2px_2px_0_0_rgba(255,255,255,0.25)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                   >
-                    ← Prev
+                    {t('admin.subscriptionPage.prevPage')}
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                     <button
@@ -783,7 +829,7 @@ export default function AdminSubscriptionPage() {
                     onClick={() => setPage(p => p + 1)}
                     className="px-3 py-1.5 text-xs font-black border-2 border-black dark:border-white rounded-lg text-gray-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed shadow-[2px_2px_0_0_#1A1D20] dark:shadow-[2px_2px_0_0_rgba(255,255,255,0.25)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                   >
-                    Next →
+                    {t('admin.subscriptionPage.nextPage')}
                   </button>
                 </div>
               </div>
@@ -800,8 +846,8 @@ export default function AdminSubscriptionPage() {
           onClose={() => setFormModal(null)}
           onSuccess={() => {
             const msg = formModal.mode === 'create'
-              ? 'Package created successfully!'
-              : 'Package updated successfully!';
+              ? t('admin.subscriptionPage.toastCreated')
+              : t('admin.subscriptionPage.toastUpdated');
             setFormModal(null);
             showToast(msg);
             fetchPackages();

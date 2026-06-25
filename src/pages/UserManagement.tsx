@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import adminUserApi from "../api/adminUserApi";
@@ -220,37 +221,40 @@ const inputCls = (accent = "orange") =>
   `w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-${accent}-300 bg-white placeholder:text-gray-400`;
 
 // ── MODAL: VIEW ───────────────────────────────────────────────────────────────
-const ViewUserContent = ({ user }: { user: UserItem }) => (
-  <div className="space-y-5">
-    <div className="flex items-center gap-4">
-      <UserAvatar username={user.username} userId={user.userId} avatarUrl={user.avatarUrl} size="lg" />
-      <div>
-        <p className="text-xl font-black text-gray-900">{user.username}</p>
-        <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
-        <div className="mt-2"><StatusBadge status={user.status} /></div>
-      </div>
-    </div>
-    <div className="grid grid-cols-2 gap-3">
-      {[
-        { label: "User ID",        value: `#${user.userId}` },
-        { label: "Email Verified", value: user.emailVerified ? "✅ Verified" : "❌ Unverified" },
-        { label: "Created At",     value: formatDate(user.createdAt) },
-        { label: "Updated At",     value: user.updatedAt ? formatDate(user.updatedAt) : "—" },
-      ].map(({ label, value }) => (
-        <div key={label} className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-3">
-          <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{label}</p>
-          <p className="text-sm font-semibold text-gray-800 mt-0.5">{value}</p>
+const ViewUserContent = ({ user }: { user: UserItem }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-4">
+        <UserAvatar username={user.username} userId={user.userId} avatarUrl={user.avatarUrl} size="lg" />
+        <div>
+          <p className="text-xl font-black text-gray-900">{user.username}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
+          <div className="mt-2"><StatusBadge status={user.status} /></div>
         </div>
-      ))}
-    </div>
-    <div>
-      <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Roles</p>
-      <div className="flex flex-wrap gap-2">
-        {user.roles.map((r) => <RoleBadge key={r} role={r} />)}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: t("admin.userManagement.profileModal.userId"),        value: `#${user.userId}` },
+          { label: t("admin.userManagement.profileModal.emailVerified"), value: user.emailVerified ? t("admin.userManagement.profileModal.verified") : t("admin.userManagement.profileModal.unverified") },
+          { label: t("admin.userManagement.profileModal.createdAt"),     value: formatDate(user.createdAt) },
+          { label: t("admin.userManagement.profileModal.updatedAt"),     value: user.updatedAt ? formatDate(user.updatedAt) : "—" },
+        ].map(({ label, value }) => (
+          <div key={label} className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-3">
+            <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{label}</p>
+            <p className="text-sm font-semibold text-gray-800 mt-0.5">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div>
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">{t("admin.userManagement.profileModal.roles")}</p>
+        <div className="flex flex-wrap gap-2">
+          {user.roles.map((r) => <RoleBadge key={r} role={r} />)}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── MODAL: CREATE ─────────────────────────────────────────────────────────────
 const CreateUserForm = ({
@@ -259,6 +263,7 @@ const CreateUserForm = ({
   onClose: () => void;
   onSuccess: () => void;
 }) => {
+  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -277,7 +282,7 @@ const CreateUserForm = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? "Failed to create user.");
+      setApiError(err?.response?.data?.message ?? t("admin.userManagement.errors.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -290,36 +295,36 @@ const CreateUserForm = ({
           {apiError}
         </div>
       )}
-      <FormField label="Username">
+      <FormField label={t("admin.userManagement.form.usernameLabel")}>
         <input
           required
           value={form.username}
           onChange={(e) => setForm({ ...form, username: e.target.value })}
-          placeholder="e.g. CoolPanda99"
+          placeholder={t("admin.userManagement.form.usernamePlaceholder")}
           className={inputCls("orange")}
         />
       </FormField>
-      <FormField label="Email">
+      <FormField label={t("admin.userManagement.form.emailLabel")}>
         <input
           required
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          placeholder="user@habitevolve.com"
+          placeholder={t("admin.userManagement.form.emailPlaceholder")}
           className={inputCls("orange")}
         />
       </FormField>
-      <FormField label="Password">
+      <FormField label={t("admin.userManagement.form.passwordLabel")}>
         <input
           required
           type="password"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
-          placeholder="••••••••"
+          placeholder={t("admin.userManagement.form.passwordPlaceholder")}
           className={inputCls("orange")}
         />
       </FormField>
-      <FormField label="Role">
+      <FormField label={t("admin.userManagement.form.roleLabel")}>
         <select
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -336,14 +341,14 @@ const CreateUserForm = ({
           onClick={onClose}
           className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
         >
-          Cancel
+          {t("admin.userManagement.form.cancel")}
         </button>
         <button
           type="submit"
           disabled={submitting}
           className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-orange-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
         >
-          {submitting ? "Creating…" : "Create User"}
+          {submitting ? t("admin.userManagement.form.creating") : t("admin.userManagement.form.createTitle")}
         </button>
       </div>
     </form>
@@ -358,6 +363,7 @@ const UpdateUserForm = ({
   onClose: () => void;
   onSuccess: () => void;
 }) => {
+  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState({
@@ -380,7 +386,7 @@ const UpdateUserForm = ({
       return;
     }
     if (statusChanged && !statusForm.reason.trim()) {
-      setApiError("Please provide a reason for the status change.");
+      setApiError(t("admin.userManagement.errors.reasonRequired"));
       return;
     }
 
@@ -396,7 +402,7 @@ const UpdateUserForm = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? "Failed to update user.");
+      setApiError(err?.response?.data?.message ?? t("admin.userManagement.errors.updateFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -418,7 +424,7 @@ const UpdateUserForm = ({
         </div>
       </div>
 
-      <FormField label="Username">
+      <FormField label={t("admin.userManagement.form.usernameLabel")}>
         <input
           required
           value={profileForm.username}
@@ -426,7 +432,7 @@ const UpdateUserForm = ({
           className={inputCls("amber")}
         />
       </FormField>
-      <FormField label="Email">
+      <FormField label={t("admin.userManagement.form.emailLabel")}>
         <input
           required
           type="email"
@@ -437,21 +443,21 @@ const UpdateUserForm = ({
       </FormField>
 
       <div className="border-t-2 border-dashed border-gray-200 pt-4 space-y-3">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide">Account Status</p>
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{t("admin.userManagement.form.statusLabel")}</p>
         <select
           value={statusForm.status}
           onChange={(e) => setStatusForm({ ...statusForm, status: e.target.value })}
           className={inputCls("amber")}
         >
-          <option value="Active">Active</option>
-          <option value="Banned">Banned</option>
-          <option value="Deleted">Deleted</option>
+          <option value="Active">{t("admin.userManagement.form.statusActive")}</option>
+          <option value="Banned">{t("admin.userManagement.form.statusBanned")}</option>
+          <option value="Deleted">{t("admin.userManagement.form.statusDeleted")}</option>
         </select>
         {statusForm.status !== user.status && (
           <input
             value={statusForm.reason}
             onChange={(e) => setStatusForm({ ...statusForm, reason: e.target.value })}
-            placeholder="Reason for status change…"
+            placeholder={t("admin.userManagement.form.reasonPlaceholder")}
             className={inputCls("amber")}
           />
         )}
@@ -463,14 +469,14 @@ const UpdateUserForm = ({
           onClick={onClose}
           className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
         >
-          Cancel
+          {t("admin.userManagement.form.cancel")}
         </button>
         <button
           type="submit"
           disabled={submitting}
           className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-amber-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
         >
-          {submitting ? "Saving…" : "Save Changes"}
+          {submitting ? t("admin.userManagement.form.saving") : t("admin.userManagement.form.saveChanges")}
         </button>
       </div>
     </form>
@@ -485,6 +491,7 @@ const DeleteConfirm = ({
   onClose: () => void;
   onSuccess: () => void;
 }) => {
+  const { t } = useTranslation();
   const [deleting, setDeleting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -496,7 +503,7 @@ const DeleteConfirm = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? "Failed to delete user.");
+      setApiError(err?.response?.data?.message ?? t("admin.userManagement.errors.deleteFailed"));
       setDeleting(false);
     }
   };
@@ -512,16 +519,16 @@ const DeleteConfirm = ({
         <div className="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-black bg-red-100 flex items-center justify-center">
           <TrashIcon />
         </div>
-        <p className="font-black text-gray-900 text-lg">Delete User?</p>
+        <p className="font-black text-gray-900 text-lg">{t("admin.userManagement.deleteModal.title")}</p>
         <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
-          You are about to permanently delete{" "}
+          {t("admin.userManagement.deleteModal.message")}{" "}
           <span className="font-black text-gray-800">{user.username}</span>.
           <br />
-          This action cannot be undone.
+          {t("admin.userManagement.deleteModal.warning")}
         </p>
       </div>
       <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-3.5 text-sm text-red-700 font-semibold text-center">
-        All data associated with this account will be lost.
+        {t("admin.userManagement.deleteModal.dataLoss")}
       </div>
       <div className="flex gap-3">
         <button
@@ -529,14 +536,14 @@ const DeleteConfirm = ({
           disabled={deleting}
           className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
         >
-          Keep User
+          {t("admin.userManagement.deleteModal.keepUser")}
         </button>
         <button
           onClick={handleDelete}
           disabled={deleting}
           className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-red-400 text-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
         >
-          {deleting ? "Deleting…" : "Delete Forever"}
+          {deleting ? t("admin.userManagement.deleteModal.deleting") : t("admin.userManagement.deleteModal.deleteForever")}
         </button>
       </div>
     </div>
@@ -555,6 +562,7 @@ const ManageUserRolesModal = ({
   onClose: () => void;
   onRefresh: () => void;
 }) => {
+  const { t } = useTranslation();
   const [localRoles, setLocalRoles] = useState<string[]>(user.roles);
   const [removingRole, setRemovingRole] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
@@ -624,7 +632,7 @@ const ManageUserRolesModal = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b-2 border-gray-200">
           <div>
-            <h2 className="text-base font-black text-gray-900">Manage Roles</h2>
+            <h2 className="text-base font-black text-gray-900">{t("admin.userManagement.rolesModal.title")}</h2>
             <p className="text-xs text-gray-500 font-medium mt-0.5">
               {user.username} · #{user.userId}
             </p>
@@ -641,11 +649,11 @@ const ManageUserRolesModal = ({
           {/* ── Current Roles ─────────────────────────────────────────── */}
           <div>
             <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-3">
-              Current Roles
+              {t("admin.userManagement.rolesModal.currentRoles")}
             </p>
 
             {localRoles.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No roles assigned.</p>
+              <p className="text-sm text-gray-400 italic">{t("admin.userManagement.rolesModal.noRoles")}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {localRoles.map((role) => {
@@ -686,12 +694,12 @@ const ManageUserRolesModal = ({
           {/* ── Add Role ──────────────────────────────────────────────── */}
           <div>
             <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-3">
-              Add Role
+              {t("admin.userManagement.rolesModal.addRole")}
             </p>
 
             {availableRoles.length === 0 ? (
               <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3 text-xs text-green-700 font-semibold text-center">
-                ✓ User already has all available roles.
+                {t("admin.userManagement.rolesModal.allRolesAssigned")}
               </div>
             ) : (
               <form onSubmit={handleAssign} className="flex gap-2">
@@ -711,7 +719,7 @@ const ManageUserRolesModal = ({
                   disabled={assigning || !dropdownValue}
                   className="px-5 py-2.5 bg-violet-300 border-2 border-black rounded-xl font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all whitespace-nowrap"
                 >
-                  {assigning ? "Adding…" : "Assign"}
+                  {assigning ? t("admin.userManagement.rolesModal.adding") : t("admin.userManagement.rolesModal.assign")}
                 </button>
               </form>
             )}
@@ -814,9 +822,18 @@ const Pagination = ({
 };
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
-const TABLE_HEADERS = ["User", "Email", "Role(s)", "Status", "Created At", "Actions"];
-
 export default function UserManagement() {
+  const { t } = useTranslation();
+
+  const TABLE_HEADERS = [
+    t("admin.userManagement.table.user"),
+    t("admin.userManagement.table.email"),
+    t("admin.userManagement.table.roles"),
+    t("admin.userManagement.table.status"),
+    t("admin.userManagement.table.createdAt"),
+    t("admin.userManagement.table.actions"),
+  ];
+
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -861,7 +878,7 @@ export default function UserManagement() {
       setHasPreviousPage(res.hasPreviousPage);
       setHasNextPage(res.hasNextPage);
     } catch (err: any) {
-      setFetchError(err?.response?.data?.message ?? "Failed to load users.");
+      setFetchError(err?.response?.data?.message ?? t("admin.userManagement.errors.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -892,7 +909,7 @@ export default function UserManagement() {
         title="User Management | HabitEvolve Admin"
         description="Manage all users on the HabitEvolve platform"
       />
-      <PageBreadcrumb pageTitle="User Management" />
+      <PageBreadcrumb pageTitle={t("admin.userManagement.pageTitle")} />
 
       <div className="space-y-5">
         {/* ── TOP ACTION BAR ────────────────────────────────────────────────── */}
@@ -904,7 +921,7 @@ export default function UserManagement() {
             </span>
             <input
               type="text"
-              placeholder="Search by name, email or role…"
+              placeholder={t("admin.userManagement.searchPlaceholder")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-2xl bg-white dark:bg-white/3 dark:border-white/20 dark:text-white dark:placeholder:text-gray-500 text-sm font-medium shadow-[3px_3px_0_0_#1A1D20] dark:shadow-none focus:outline-none focus:shadow-none focus:translate-x-0.75 focus:translate-y-0.75 transition-all placeholder:text-gray-400"
@@ -917,7 +934,7 @@ export default function UserManagement() {
             className="flex items-center gap-2 px-5 py-2.5 bg-orange-300 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all whitespace-nowrap"
           >
             <PlusIcon />
-            Create New User
+            {t("admin.userManagement.createUser")}
           </button>
         </div>
 
@@ -929,7 +946,7 @@ export default function UserManagement() {
               <UserGroupIcon />
             </span>
             <span className="font-black text-gray-900 dark:text-white text-sm">
-              All Users
+              {t("admin.userManagement.allUsers")}
             </span>
             {!loading && (
               <span className="ml-auto bg-orange-200 border-2 border-black dark:border-white/20 text-gray-800 text-xs font-black px-2.5 py-0.5 rounded-full">
@@ -946,7 +963,7 @@ export default function UserManagement() {
                 onClick={fetchUsers}
                 className="underline font-black hover:no-underline"
               >
-                Retry
+                {t("admin.userManagement.retry")}
               </button>
             </div>
           )}
@@ -978,10 +995,10 @@ export default function UserManagement() {
                         <SearchIcon />
                       </div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-bold">
-                        No users found
+                        {t("admin.userManagement.noUsersFound")}
                       </p>
                       <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-                        {searchQuery ? "Try a different search term" : "No users in the system yet"}
+                        {searchQuery ? t("admin.userManagement.tryDifferentSearch") : t("admin.userManagement.noUsersYet")}
                       </p>
                     </td>
                   </tr>
@@ -1080,24 +1097,22 @@ export default function UserManagement() {
 
           <div className="px-6 py-3 border-t-2 border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/1">
             <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-              {loading
-                ? "Loading…"
-                : `Showing ${users.length} of ${totalRecords} users — page ${currentPage} of ${totalPages}`}
+              {loading ? t("admin.userManagement.loading") : `Showing ${users.length} of ${totalRecords} users — page ${currentPage} of ${totalPages}`}
             </span>
           </div>
         </div>
       </div>
 
       {/* ── MODALS ────────────────────────────────────────────────────────────── */}
-      <GameModal isOpen={activeModal === "view"} onClose={closeModal} title="User Profile">
+      <GameModal isOpen={activeModal === "view"} onClose={closeModal} title={t("admin.userManagement.profileModal.title")}>
         {selectedUser && <ViewUserContent user={selectedUser} />}
       </GameModal>
 
-      <GameModal isOpen={activeModal === "create"} onClose={closeModal} title="Create New User">
+      <GameModal isOpen={activeModal === "create"} onClose={closeModal} title={t("admin.userManagement.form.createTitle")}>
         <CreateUserForm onClose={closeModal} onSuccess={handleMutationSuccess} />
       </GameModal>
 
-      <GameModal isOpen={activeModal === "update"} onClose={closeModal} title="Update User">
+      <GameModal isOpen={activeModal === "update"} onClose={closeModal} title={t("admin.userManagement.form.editTitle")}>
         {selectedUser && (
           <UpdateUserForm
             user={selectedUser}
@@ -1110,7 +1125,7 @@ export default function UserManagement() {
       <GameModal
         isOpen={activeModal === "delete"}
         onClose={closeModal}
-        title="Confirm Delete"
+        title={t("admin.userManagement.deleteModal.title")}
         maxWidth="max-w-md"
       >
         {selectedUser && (

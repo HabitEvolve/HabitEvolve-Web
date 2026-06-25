@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminTargetRuleApi } from "../api/adminTargetRuleApi";
@@ -49,13 +50,6 @@ const CHANGE_VALUE_HINTS: Record<string, string> = {
 // getRules() accepts no server-side filter params, so filtering is done client-side via useMemo.
 type RuleFilters = { search: string; measurementType: string; difficulty: string };
 const RULE_INITIAL_FILTERS: RuleFilters = { search: "", measurementType: "", difficulty: "" };
-const RULE_FILTER_FIELDS: FilterField[] = [
-  { key: "search",          label: "Search",     type: "text",   placeholder: "Search description or example…" },
-  { key: "measurementType", label: "Type",        type: "select",
-    options: MEASUREMENT_TYPES.map(t => ({ label: MEASUREMENT_LABELS[t] ?? t, value: t })) },
-  { key: "difficulty",      label: "Difficulty",  type: "select",
-    options: DIFFICULTIES.map(d => ({ label: d, value: d })) },
-];
 
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
 const btnBase =
@@ -134,16 +128,19 @@ const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
 };
 
 // ── STATUS PILL ───────────────────────────────────────────────────────────────
-const StatusPill = ({ isActive }: { isActive: boolean }) => (
-  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${
-    isActive
-      ? "bg-green-100 border-green-400 text-green-800"
-      : "bg-gray-100 border-gray-400 text-gray-500"
-  }`}>
-    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
-    {isActive ? "Active" : "Inactive"}
-  </span>
-);
+const StatusPill = ({ isActive }: { isActive: boolean }) => {
+  const { t } = useTranslation();
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${
+      isActive
+        ? "bg-green-100 border-green-400 text-green-800"
+        : "bg-gray-100 border-gray-400 text-gray-500"
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
+      {isActive ? t("admin.targetRules.statusActive") : t("admin.targetRules.statusInactive")}
+    </span>
+  );
+};
 
 // ── ALERT BANNER ──────────────────────────────────────────────────────────────
 const AlertBanner = ({ alert }: { alert: { type: "success" | "error"; message: string } }) =>
@@ -202,24 +199,27 @@ const FormField = ({
   children: React.ReactNode;
   hint?: string;
   locked?: boolean;
-}) => (
-  <div>
-    <div className="flex items-center gap-2 mb-1.5">
-      <label className="text-xs font-black text-gray-700 uppercase tracking-wide">{label}</label>
-      {locked && (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-bold bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-500">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          Locked
-        </span>
-      )}
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <label className="text-xs font-black text-gray-700 uppercase tracking-wide">{label}</label>
+        {locked && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-bold bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-500">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            {t("admin.targetRules.locked")}
+          </span>
+        )}
+      </div>
+      {children}
+      {hint && <p className="text-xs text-gray-400 mt-1 font-medium">{hint}</p>}
     </div>
-    {children}
-    {hint && <p className="text-xs text-gray-400 mt-1 font-medium">{hint}</p>}
-  </div>
-);
+  );
+};
 
 // ── SKELETON ROW ─────────────────────────────────────────────────────────────
 const SkeletonRow = () => (
@@ -238,6 +238,15 @@ const SkeletonRow = () => (
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function TargetRuleManagement() {
+  const { t } = useTranslation();
+
+  const RULE_FILTER_FIELDS: FilterField[] = [
+    { key: "search",          label: t("admin.targetRules.filterSearch"),     type: "text",   placeholder: t("admin.targetRules.filterSearchPlaceholder") },
+    { key: "measurementType", label: t("admin.targetRules.filterType"),        type: "select",
+      options: MEASUREMENT_TYPES.map(mt => ({ label: MEASUREMENT_LABELS[mt] ?? mt, value: mt })) },
+    { key: "difficulty",      label: t("admin.targetRules.filterDifficulty"),  type: "select",
+      options: DIFFICULTIES.map(d => ({ label: d, value: d })) },
+  ];
 
   // ── RULES LIST ────────────────────────────────────────────────────────────
   const [rules, setRules] = useState<TargetCalculationRuleDto[]>([]);
@@ -360,17 +369,17 @@ export default function TargetRuleManagement() {
     try {
       if (editingRule) {
         await adminTargetRuleApi.updateRule(editingRule.ruleId, form);
-        setAlert({ type: "success", message: "Rule updated successfully!" });
+        setAlert({ type: "success", message: t("admin.targetRules.flashUpdated") });
       } else {
         await adminTargetRuleApi.createRule(form);
-        setAlert({ type: "success", message: "Rule created successfully!" });
+        setAlert({ type: "success", message: t("admin.targetRules.flashCreated") });
       }
       closeForm();
       fetchRules();
     } catch (err) {
       setFormError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-          ?? (editingRule ? "Failed to update rule." : "Failed to create rule.")
+          ?? (editingRule ? t("admin.targetRules.flashUpdateFailed") : t("admin.targetRules.flashCreateFailed"))
       );
     } finally {
       setSubmitting(false);
@@ -394,14 +403,14 @@ export default function TargetRuleManagement() {
     try {
       await adminTargetRuleApi.deleteRule(deletingRule.ruleId);
       closeDelete();
-      setAlert({ type: "success", message: "Rule deleted successfully." });
+      setAlert({ type: "success", message: t("admin.targetRules.flashDeleted") });
       fetchRules();
     } catch (err) {
       setAlert({
         type: "error",
         message:
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? "Failed to delete rule.",
+            ?? t("admin.targetRules.flashDeleteFailed"),
       });
       closeDelete();
     } finally {
@@ -416,21 +425,21 @@ export default function TargetRuleManagement() {
         title="Target Calculation Rules | HabitEvolve Admin"
         description="Manage target calculation rules for habit difficulty and measurement types"
       />
-      <PageBreadcrumb pageTitle="Target Calculation Rules" />
+      <PageBreadcrumb pageTitle={t("admin.targetRules.pageTitle")} />
 
       {alert && <AlertBanner alert={alert} />}
 
       {/* ── TOP ACTION BAR ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Calculation Rules</h1>
+          <h1 className="text-2xl font-black text-gray-900">{t("admin.targetRules.pageTitle")}</h1>
           <p className="text-sm text-gray-500 font-medium mt-0.5">
-            Define how habit targets adjust based on difficulty and measurement type.
+            {t("admin.targetRules.subtitle")}
           </p>
         </div>
         <button onClick={openCreate} className={`${btnBase} bg-emerald-300 text-gray-900 whitespace-nowrap`}>
           <PlusIcon />
-          Create New Rule
+          {t("admin.targetRules.createRule")}
         </button>
       </div>
 
@@ -442,7 +451,7 @@ export default function TargetRuleManagement() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
-          <span className="font-black text-gray-900 text-sm">All Rules</span>
+          <span className="font-black text-gray-900 text-sm">{t("admin.targetRules.allRules")}</span>
           {!loading && (
             <span className="ml-auto bg-orange-200 border-2 border-black text-gray-800 text-xs font-black px-2.5 py-0.5 rounded-full">
               {ruleHasActiveFilters ? `${filteredRules.length} / ${rules.length}` : rules.length}
@@ -464,7 +473,7 @@ export default function TargetRuleManagement() {
           <div className="mx-6 mt-5 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-2xl p-3 text-sm text-red-700 dark:text-red-400 font-semibold flex items-center justify-between gap-3">
             <span>{fetchError}</span>
             <button onClick={fetchRules} className="underline font-black hover:no-underline whitespace-nowrap">
-              Retry
+              {t("admin.targetRules.retry")}
             </button>
           </div>
         )}
@@ -474,7 +483,15 @@ export default function TargetRuleManagement() {
           <table className="min-w-full">
             <thead>
               <tr className="border-b-2 border-gray-200 bg-gray-50">
-                {["Measurement Type", "Difficulty", "Method", "Change Value", "Example", "Status", "Actions"].map((h) => (
+                {[
+                  t("admin.targetRules.table.measurementType"),
+                  t("admin.targetRules.table.difficulty"),
+                  t("admin.targetRules.table.method"),
+                  t("admin.targetRules.table.changeValue"),
+                  t("admin.targetRules.table.example"),
+                  t("admin.targetRules.table.status"),
+                  t("admin.targetRules.table.actions"),
+                ].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">
                     {h}
                   </th>
@@ -491,14 +508,14 @@ export default function TargetRuleManagement() {
                       📋
                     </div>
                     <p className="text-gray-600 text-sm font-black">
-                      {ruleHasActiveFilters ? "No rules match your filters." : "No rules defined yet"}
+                      {ruleHasActiveFilters ? t("admin.targetRules.noRulesMatch") : t("admin.targetRules.noRulesYet")}
                     </p>
                     {ruleHasActiveFilters ? (
                       <button onClick={clearRuleFilters} className="mt-2 text-xs font-black text-blue-600 underline hover:no-underline">
-                        Clear filters
+                        {t("admin.targetRules.clearFilters")}
                       </button>
                     ) : (
-                      <p className="text-gray-400 text-xs mt-1 font-medium">Click "Create New Rule" to get started.</p>
+                      <p className="text-gray-400 text-xs mt-1 font-medium">{t("admin.targetRules.createHint")}</p>
                     )}
                   </td>
                 </tr>
@@ -588,7 +605,7 @@ export default function TargetRuleManagement() {
       {/* ══════════════════ MODAL: CREATE / EDIT ═════════════════════════ */}
       {showForm && (
         <GameModal
-          title={editingRule ? "Edit Calculation Rule" : "Create Calculation Rule"}
+          title={editingRule ? t("admin.targetRules.form.editTitle") : t("admin.targetRules.form.newTitle")}
           onClose={closeForm}
           maxWidth="max-w-xl"
         >
@@ -596,7 +613,7 @@ export default function TargetRuleManagement() {
 
             {/* Row 1: Measurement Type + Difficulty — locked when editing */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Measurement Type *" locked={!!editingRule}>
+              <FormField label={t("admin.targetRules.form.measurementLabel")} locked={!!editingRule}>
                 <select
                   required
                   disabled={!!editingRule}
@@ -609,7 +626,7 @@ export default function TargetRuleManagement() {
                   ))}
                 </select>
               </FormField>
-              <FormField label="Difficulty *" locked={!!editingRule}>
+              <FormField label={t("admin.targetRules.form.difficultyLabel")} locked={!!editingRule}>
                 <select
                   required
                   disabled={!!editingRule}
@@ -633,15 +650,14 @@ export default function TargetRuleManagement() {
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                  <span className="font-black">Measurement Type</span> and <span className="font-black">Difficulty</span> cannot
-                  be changed on an existing rule due to a database unique constraint.
+                  {t("admin.targetRules.lockedHint")}
                 </p>
               </div>
             )}
 
             {/* Row 2: Calculation Method + Change Value */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Calculation Method *">
+              <FormField label={t("admin.targetRules.form.methodLabel")}>
                 <select
                   required
                   value={form.calculationMethod}
@@ -653,7 +669,7 @@ export default function TargetRuleManagement() {
                   ))}
                 </select>
               </FormField>
-              <FormField label="Change Value *">
+              <FormField label={t("admin.targetRules.form.changeValueLabel")}>
                 <input
                   type="number"
                   required
@@ -679,7 +695,7 @@ export default function TargetRuleManagement() {
 
             {/* Row 3: Min Value + Max Value */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Min Value" hint="Leave blank for no minimum">
+              <FormField label={t("admin.targetRules.form.minValueLabel")} hint={t("admin.targetRules.form.minHint")}>
                 <input
                   type="number"
                   step="any"
@@ -687,11 +703,11 @@ export default function TargetRuleManagement() {
                   onChange={(e) =>
                     setField("minValue", e.target.value === "" ? null : Number(e.target.value))
                   }
-                  placeholder="Optional"
+                  placeholder={t("admin.targetRules.form.optionalPlaceholder")}
                   className={inputCls}
                 />
               </FormField>
-              <FormField label="Max Value" hint="Leave blank for no maximum">
+              <FormField label={t("admin.targetRules.form.maxValueLabel")} hint={t("admin.targetRules.form.maxHint")}>
                 <input
                   type="number"
                   step="any"
@@ -699,30 +715,30 @@ export default function TargetRuleManagement() {
                   onChange={(e) =>
                     setField("maxValue", e.target.value === "" ? null : Number(e.target.value))
                   }
-                  placeholder="Optional"
+                  placeholder={t("admin.targetRules.form.optionalPlaceholder")}
                   className={inputCls}
                 />
               </FormField>
             </div>
 
             {/* Example */}
-            <FormField label="Example">
+            <FormField label={t("admin.targetRules.form.exampleLabel")}>
               <input
                 type="text"
                 value={form.example ?? ""}
                 onChange={(e) => setField("example", e.target.value)}
-                placeholder="e.g. Daily step count starts at 5000"
+                placeholder={t("admin.targetRules.form.examplePlaceholder")}
                 className={inputCls}
               />
             </FormField>
 
             {/* Description */}
-            <FormField label="Description">
+            <FormField label={t("admin.targetRules.form.descLabel")}>
               <textarea
                 rows={3}
                 value={form.description ?? ""}
                 onChange={(e) => setField("description", e.target.value)}
-                placeholder="Describe when and how this rule applies…"
+                placeholder={t("admin.targetRules.form.descPlaceholder")}
                 className={`${inputCls} resize-none`}
               />
             </FormField>
@@ -730,8 +746,8 @@ export default function TargetRuleManagement() {
             {/* isActive toggle */}
             <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl">
               <div>
-                <p className="text-sm font-black text-gray-800">Active</p>
-                <p className="text-xs text-gray-400 font-medium">This rule will be applied to habit targets</p>
+                <p className="text-sm font-black text-gray-800">{t("admin.targetRules.form.activeLabel")}</p>
+                <p className="text-xs text-gray-400 font-medium">{t("admin.targetRules.form.activeHint")}</p>
               </div>
               <button
                 type="button"
@@ -764,7 +780,7 @@ export default function TargetRuleManagement() {
                 disabled={submitting}
                 className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}
               >
-                Cancel
+                {t("admin.targetRules.form.cancel")}
               </button>
               <button
                 type="submit"
@@ -774,11 +790,11 @@ export default function TargetRuleManagement() {
                 }`}
               >
                 {submitting ? (
-                  <><Spinner size={13} />{editingRule ? "Saving…" : "Creating…"}</>
+                  <><Spinner size={13} />{editingRule ? t("admin.targetRules.form.saving") : t("admin.targetRules.form.creating")}</>
                 ) : editingRule ? (
-                  <><SaveIcon />Save Changes</>
+                  <><SaveIcon />{t("admin.targetRules.form.saveChanges")}</>
                 ) : (
-                  <><PlusIcon />Create Rule</>
+                  <><PlusIcon />{t("admin.targetRules.form.create")}</>
                 )}
               </button>
             </div>
@@ -788,7 +804,7 @@ export default function TargetRuleManagement() {
 
       {/* ══════════════════ MODAL: CONFIRM DELETE ════════════════════════ */}
       {showDelete && deletingRule && (
-        <GameModal title="Delete Rule?" onClose={closeDelete} maxWidth="max-w-md">
+        <GameModal title={t("admin.targetRules.deleteModal.title")} onClose={closeDelete} maxWidth="max-w-md">
           <div className="text-center space-y-5">
             <div className="flex items-center justify-center">
               <span className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-black bg-red-100 dark:bg-red-900/50 shadow-[4px_4px_0_0_#1A1D20] text-3xl">
@@ -806,7 +822,7 @@ export default function TargetRuleManagement() {
                 {" "}rule?
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mt-2 leading-relaxed bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl px-4 py-3">
-                Are you sure you want to delete this rule? This action cannot be undone.
+                {t("admin.targetRules.deleteModal.message")}
               </p>
             </div>
             <div className="flex gap-3">
@@ -816,7 +832,7 @@ export default function TargetRuleManagement() {
                 disabled={deleting}
                 className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}
               >
-                Cancel
+                {t("admin.targetRules.deleteModal.cancel")}
               </button>
               <button
                 onClick={handleDeleteConfirm}
@@ -824,9 +840,9 @@ export default function TargetRuleManagement() {
                 className={`${btnBase} flex-1 justify-center bg-red-500 text-white`}
               >
                 {deleting ? (
-                  <><Spinner size={13} />Deleting…</>
+                  <><Spinner size={13} />{t("admin.targetRules.deleteModal.deleting")}</>
                 ) : (
-                  <><TrashIcon />Yes, Delete</>
+                  <><TrashIcon />{t("admin.targetRules.deleteModal.confirm")}</>
                 )}
               </button>
             </div>

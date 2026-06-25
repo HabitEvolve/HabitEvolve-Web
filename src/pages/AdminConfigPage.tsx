@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import {
   Settings2, RefreshCw, Loader2, X, Pencil,
   Bot, Gavel, Target, CalendarCheck, Gauge, Filter,
@@ -69,6 +70,12 @@ const DEFAULT_GROUP: GroupDisplay = {
 const getGroupDisplay = (group: string): GroupDisplay =>
   GROUP_CFG[group] ?? { ...DEFAULT_GROUP, label: group.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) };
 
+// Maps configGroup keys to i18n sub-keys under admin.configPage.groups.*
+const GROUP_I18N: Record<string, string> = {
+  ai: "ai", court: "court", quest: "quest",
+  daily_task: "daily", difficulty: "difficulty",
+};
+
 // ── VALUE TYPE BADGE ──────────────────────────────────────────────────────────
 const TYPE_CLS: Record<string, string> = {
   bool:   "bg-violet-50 border-violet-300 text-violet-700 dark:bg-violet-900/30 dark:border-violet-600 dark:text-violet-300",
@@ -85,6 +92,7 @@ const TypeBadge = ({ type }: { type: string }) => (
 
 // ── VALUE BADGE ───────────────────────────────────────────────────────────────
 const ValueBadge = ({ value, type }: { value: string; type: string }) => {
+  const { t } = useTranslation();
   if (type === "bool") {
     const isTrue = value.toLowerCase() === "true";
     return (
@@ -111,7 +119,7 @@ const ValueBadge = ({ value, type }: { value: string; type: string }) => {
   }
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border-2 bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 max-w-[11rem] truncate shrink-0" title={value}>
-      {value || <span className="italic text-gray-400">empty</span>}
+      {value || <span className="italic text-gray-400">{t("admin.configPage.emptyValue")}</span>}
     </span>
   );
 };
@@ -159,14 +167,16 @@ interface GroupCardProps {
 }
 
 const GroupCard = ({ group, configs, onEdit }: GroupCardProps) => {
+  const { t } = useTranslation();
   const display = getGroupDisplay(group);
+  const groupLabel = t(`admin.configPage.groups.${GROUP_I18N[group] ?? "other"}`);
   return (
     <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black dark:border-white rounded-xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden flex flex-col">
       {/* Card header */}
       <div className={`flex items-center gap-2.5 px-4 py-3 border-b-4 border-black dark:border-white ${display.headerBg}`}>
         <span className={display.headerText}>{display.icon}</span>
         <h3 className={`font-black text-sm flex-1 ${display.headerText}`}>
-          {display.label}
+          {groupLabel}
         </h3>
         <span className={`text-[11px] font-black px-2 py-0.5 rounded-full border border-black/20 ${display.countBg} ${display.countText}`}>
           {configs.length}
@@ -194,6 +204,7 @@ const inputCls =
   "w-full px-3 py-2.5 text-sm font-medium border-2 border-black dark:border-gray-500 rounded-xl bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white placeholder:text-gray-400";
 
 const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
+  const { t } = useTranslation();
   const alert = useAlert();
   const [value, setValue] = useState(config.configValue);
   const [description, setDescription] = useState(config.description ?? "");
@@ -284,7 +295,7 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
             <Settings2 className="w-5 h-5 text-white dark:text-black" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-black text-base leading-tight">Edit Config</h2>
+            <h2 className="font-black text-base leading-tight">{t("admin.configPage.editModal.title")}</h2>
             <code className="text-xs text-gray-500 dark:text-gray-400 truncate block">{config.configKey}</code>
           </div>
           <button
@@ -303,7 +314,7 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
               return (
                 <>
                   <span className="text-gray-500 dark:text-gray-400">{d.icon}</span>
-                  <span className="text-xs font-black text-gray-600 dark:text-gray-300">{d.label}</span>
+                  <span className="text-xs font-black text-gray-600 dark:text-gray-300">{t(`admin.configPage.groups.${GROUP_I18N[config.configGroup] ?? "other"}`)}</span>
                 </>
               );
             })()}
@@ -315,24 +326,24 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
           {/* Value input */}
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">
-              Value
+              {t("admin.configPage.editModal.valueLabel")}
             </label>
             {renderValueInput()}
             {config.valueType === "string" && (
-              <p className="text-[10px] text-gray-400 mt-1">String type — any text is accepted.</p>
+              <p className="text-[10px] text-gray-400 mt-1">{t("admin.configPage.editModal.stringHint")}</p>
             )}
           </div>
 
           {/* Description input */}
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">
-              Description <span className="font-medium normal-case tracking-normal">(optional)</span>
+              {t("admin.configPage.editModal.descLabel")} <span className="font-medium normal-case tracking-normal">{t("admin.configPage.editModal.optional")}</span>
             </label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              placeholder="Human-readable description of this config…"
+              placeholder={t("admin.configPage.editModal.descPlaceholder")}
               className={`${inputCls} resize-none`}
             />
           </div>
@@ -345,7 +356,7 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
               disabled={saving}
               className="flex-1 py-2.5 border-2 border-black dark:border-white rounded-xl font-black text-sm bg-white dark:bg-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 transition-all"
             >
-              Cancel
+              {t("admin.configPage.editModal.cancel")}
             </button>
             <button
               type="submit"
@@ -353,11 +364,11 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
               className="flex-1 py-2.5 border-2 border-black rounded-xl font-black text-sm bg-emerald-400 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2"
             >
               {saving ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> {t("admin.configPage.editModal.saving")}</>
               ) : (
                 <>
                   <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
-                  Save Config
+                  {t("admin.configPage.editModal.save")}
                 </>
               )}
             </button>
@@ -373,6 +384,7 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
 const KNOWN_GROUPS = ["ai", "court", "quest", "daily_task", "difficulty"] as const;
 
 export default function AdminConfigPage() {
+  const { t } = useTranslation();
   const alert = useAlert();
 
   const [configs, setConfigs] = useState<SystemConfigDto[]>([]);
@@ -456,7 +468,7 @@ export default function AdminConfigPage() {
   return (
     <>
       <PageMeta title="System Configuration — HabitEvolve" description="Manage all game thresholds, economy limits, and system toggles" />
-      <PageBreadcrumb pageTitle="System Configuration" />
+      <PageBreadcrumb pageTitle={t("admin.configPage.pageTitle")} />
 
       {/* ── PAGE HEADER ────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
@@ -465,9 +477,9 @@ export default function AdminConfigPage() {
             <Settings2 className="w-5 h-5 text-white dark:text-black" />
           </div>
           <div>
-            <h1 className="text-xl font-black leading-tight">System Configuration</h1>
+            <h1 className="text-xl font-black leading-tight">{t("admin.configPage.pageTitle")}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              {totalCount} configs across {orderedGroups.length} groups — changes apply immediately
+              {totalCount} configs across {orderedGroups.length} groups — {t("admin.configPage.subtitle")}
             </p>
           </div>
         </div>
@@ -490,7 +502,7 @@ export default function AdminConfigPage() {
             className="flex items-center gap-2 px-4 py-2 border-2 border-black dark:border-white rounded-xl font-black text-sm bg-amber-400 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-60 transition-all"
           >
             {reloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Reload Cache
+            {t("admin.configPage.reloadCache")}
           </button>
         </div>
       </div>
@@ -499,7 +511,7 @@ export default function AdminConfigPage() {
       {filterGroups.length > 1 && (
         <div className="flex flex-wrap items-center gap-2 mb-6">
           <span className="text-xs font-black text-gray-500 dark:text-gray-400 flex items-center gap-1 mr-1">
-            <Filter className="w-3.5 h-3.5" /> Group:
+            <Filter className="w-3.5 h-3.5" /> {t("admin.configPage.groupFilter")}
           </span>
 
           {/* "All" pill */}
@@ -512,7 +524,7 @@ export default function AdminConfigPage() {
             }`}
           >
             <Filter className="w-3.5 h-3.5 shrink-0" />
-            All
+            {t("admin.configPage.groups.all")}
           </button>
 
           {filterGroups.map(g => {
@@ -529,7 +541,7 @@ export default function AdminConfigPage() {
                 }`}
               >
                 {d.icon}
-                {d.label}
+                {t(`admin.configPage.groups.${GROUP_I18N[g] ?? "other"}`)}
                 <span className="text-[10px] opacity-60">({groupedMap.get(g)?.length ?? 0})</span>
               </button>
             );
@@ -541,7 +553,7 @@ export default function AdminConfigPage() {
       {loading && (
         <div className="flex items-center justify-center gap-3 py-20 text-gray-500">
           <Loader2 className="w-7 h-7 animate-spin" />
-          <span className="font-bold">Loading system configs…</span>
+          <span className="font-bold">{t("admin.configPage.loading")}</span>
         </div>
       )}
 
@@ -550,9 +562,9 @@ export default function AdminConfigPage() {
         <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border-4 border-red-400 dark:border-red-700 rounded-xl text-red-700 dark:text-red-400">
           <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-5 h-5 object-contain shrink-0 mt-0.5" />
           <div>
-            <p className="font-black">Failed to load configs</p>
+            <p className="font-black">{t("admin.configPage.loadFailed")}</p>
             <p className="text-sm font-medium mt-0.5">{fetchError}</p>
-            <button onClick={fetchAll} className="mt-2 text-xs font-black underline">Retry</button>
+            <button onClick={fetchAll} className="mt-2 text-xs font-black underline">{t("admin.configPage.retry")}</button>
           </div>
         </div>
       )}
@@ -561,8 +573,8 @@ export default function AdminConfigPage() {
       {!loading && !fetchError && configs.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-gray-400">
           <Settings2 className="w-14 h-14 opacity-20" />
-          <p className="font-black text-lg">No configs found</p>
-          <p className="text-sm">The database has no system configuration entries yet.</p>
+          <p className="font-black text-lg">{t("admin.configPage.noConfigs")}</p>
+          <p className="text-sm">{t("admin.configPage.noConfigsHint")}</p>
         </div>
       )}
 

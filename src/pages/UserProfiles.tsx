@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import playerProfileApi from "../api/userProfileApi";
@@ -105,6 +106,7 @@ const CompletionItem = ({ done, label }: { done: boolean; label: string }) => (
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function UserProfiles() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,19 +138,19 @@ export default function UserProfiles() {
         title="My Profile | HabitEvolve"
         description="View and manage your HabitEvolve player profile"
       />
-      <PageBreadcrumb pageTitle="My Profile" />
+      <PageBreadcrumb pageTitle={t("profile.myProfile")} />
 
       {loading ? (
         <ProfileSkeleton />
       ) : error ? (
         <div className="bg-red-50 border-4 border-red-400 rounded-3xl shadow-[6px_6px_0_0_#1A1D20] p-8 text-center">
-          <p className="font-black text-red-800 text-lg mb-2">Failed to load profile</p>
+          <p className="font-black text-red-800 text-lg mb-2">{t("profile.failedToLoad")}</p>
           <p className="text-red-600 text-sm mb-5">{error}</p>
           <button
             onClick={fetchProfile}
             className="px-6 py-2.5 bg-red-400 text-white border-2 border-black rounded-full font-black text-sm shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
           >
-            Retry
+            {t("profile.retry")}
           </button>
         </div>
       ) : profile ? (
@@ -157,20 +159,20 @@ export default function UserProfiles() {
           {/* ── PROFILE INCOMPLETE BANNER ──────────────────────────────────── */}
           {!profile.isProfileCreated && (
             <div className="bg-amber-50 border-4 border-amber-400 rounded-3xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-              <p className="font-black text-amber-900 mb-1">Complete your profile</p>
+              <p className="font-black text-amber-900 mb-1">{t("profile.completeYourProfile")}</p>
               <p className="text-xs text-amber-700 mb-4">
                 Finish setting up your account to get the most out of HabitEvolve!
               </p>
               <div className="space-y-2">
-                <CompletionItem done={profile.hasAvatar}              label="Set a profile avatar"           />
-                <CompletionItem done={profile.hasDailySchedule}       label="Set your daily schedule time"   />
-                <CompletionItem done={profile.hasReminderPreference}  label="Set reminder preferences"      />
+                <CompletionItem done={profile.hasAvatar}              label={t("profile.completionItems.avatar")}    />
+                <CompletionItem done={profile.hasDailySchedule}       label={t("profile.completionItems.schedule")}  />
+                <CompletionItem done={profile.hasReminderPreference}  label={t("profile.completionItems.reminder")}  />
               </div>
               <Link
                 to="/edit-profile"
                 className="mt-4 inline-flex items-center gap-2 px-5 py-2 bg-amber-400 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
               >
-                Complete now →
+                {t("profile.completeNow")}
               </Link>
             </div>
           )}
@@ -215,18 +217,18 @@ export default function UserProfiles() {
                   {profile.emailVerified ? (
                     <span className="inline-flex items-center gap-1 self-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 bg-green-100 border-green-400 text-green-800">
                       <ShieldCheckIcon />
-                      Verified
+                      {t("profile.verified")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 self-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 bg-red-100 border-red-400 text-red-700">
                       <AlertCircleIcon />
-                      Unverified
+                      {t("profile.unverified")}
                     </span>
                   )}
                 </div>
 
                 <p className="text-xs text-gray-400 font-medium mt-2">
-                  Member since {formatDate(profile.createdAt)}
+                  {t("profile.memberSince")} {formatDate(profile.createdAt)}
                 </p>
               </div>
 
@@ -236,7 +238,7 @@ export default function UserProfiles() {
                 className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-orange-300 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all whitespace-nowrap"
               >
                 <PencilIcon />
-                Edit Profile
+                {t("profile.editProfileBtn")}
               </Link>
             </div>
           </div>
@@ -250,7 +252,7 @@ export default function UserProfiles() {
                   <ClockIcon />
                 </span>
                 <span className="text-xs font-black text-gray-400 uppercase tracking-wide">
-                  Daily Schedule
+                  {t("profile.sections.dailySchedule")}
                 </span>
               </div>
               {profile.hasDailySchedule ? (
@@ -259,16 +261,16 @@ export default function UserProfiles() {
                 </p>
               ) : (
                 <div className="flex items-center gap-2">
-                  <p className="text-lg font-bold text-gray-400">Not set</p>
+                  <p className="text-lg font-bold text-gray-400">{t("profile.notSet")}</p>
                   <Link
                     to="/edit-profile"
                     className="text-xs font-black text-orange-600 underline hover:no-underline"
                   >
-                    Set now
+                    {t("profile.setNow")}
                   </Link>
                 </div>
               )}
-              <p className="text-xs text-gray-400 mt-1">Your daily habit check-in time</p>
+              <p className="text-xs text-gray-400 mt-1">{t("profile.dailyScheduleDesc")}</p>
             </div>
 
             {/* Reminder Preference */}
@@ -278,7 +280,7 @@ export default function UserProfiles() {
                   <BellIcon />
                 </span>
                 <span className="text-xs font-black text-gray-400 uppercase tracking-wide">
-                  Reminders
+                  {t("profile.sections.reminders")}
                 </span>
               </div>
               {profile.hasReminderPreference && profile.reminderPreference ? (
@@ -287,30 +289,30 @@ export default function UserProfiles() {
                 </span>
               ) : (
                 <div className="flex items-center gap-2">
-                  <p className="text-lg font-bold text-gray-400">Not set</p>
+                  <p className="text-lg font-bold text-gray-400">{t("profile.notSet")}</p>
                   <Link
                     to="/edit-profile"
                     className="text-xs font-black text-orange-600 underline hover:no-underline"
                   >
-                    Set now
+                    {t("profile.setNow")}
                   </Link>
                 </div>
               )}
-              <p className="text-xs text-gray-400 mt-2">How you receive habit reminders</p>
+              <p className="text-xs text-gray-400 mt-2">{t("profile.remindersDesc")}</p>
             </div>
           </div>
 
           {/* ── ACCOUNT DETAILS ────────────────────────────────────────────── */}
           <div className="bg-white border-4 border-black rounded-3xl shadow-[4px_4px_0_0_#1A1D20] p-5">
             <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-4">
-              Account Details
+              {t("profile.sections.accountDetails")}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: "User ID",      value: `#${profile.userId}` },
-                { label: "Verified",     value: profile.emailVerified ? "✅ Yes" : "❌ No" },
-                { label: "Joined",       value: formatDate(profile.createdAt) },
-                { label: "Last Updated", value: profile.updatedAt ? formatDate(profile.updatedAt) : "—" },
+                { label: t("profile.details.userId"),      value: `#${profile.userId}` },
+                { label: t("profile.details.verified"),    value: profile.emailVerified ? t("profile.emailVerifiedYes") : t("profile.emailVerifiedNo") },
+                { label: t("profile.details.joined"),      value: formatDate(profile.createdAt) },
+                { label: t("profile.details.lastUpdated"), value: profile.updatedAt ? formatDate(profile.updatedAt) : "—" },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-3">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{label}</p>

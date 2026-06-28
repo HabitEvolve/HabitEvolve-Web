@@ -137,11 +137,19 @@ export const adminGoalApi = {
         return res.data;
     },
     bindTemplateToGoal: async (goalId: number, templateId: number): Promise<ApiResponse<any>> => {
-        const res = await axiosClient.post(`${ADMIN_URL}/goals/${goalId}/questionnaires`, { templateId });
+        const res = await axiosClient.post(`${ADMIN_URL}/goals/${goalId}/questionnaires`, { goalId, templateId });
         return res.data;
     },
     activateGoalQuestionnaire: async (goalId: number, id: number): Promise<ApiResponse<any>> => {
-        const res = await axiosClient.patch(`${ADMIN_URL}/goals/${goalId}/questionnaires/${id}/activate`);
+        const res = await axiosClient.patch(`${ADMIN_URL}/goals/${goalId}/questionnaires/${id}/activate`, { goalId, goalQuestionnaireId: id });
         return res.data;
-    }
+    },
+    deactivateGoalQuestionnaire: async (goalId: number, id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.patch(`${ADMIN_URL}/goals/${goalId}/questionnaires/${id}/deactivate`, { goalId, goalQuestionnaireId: id });
+        return res.data;
+    },
+    deleteGoalQuestionnaire: async (goalId: number, id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/goals/${goalId}/questionnaires/${id}`);
+        return res.data;
+    },
 };

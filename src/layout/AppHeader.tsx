@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useSidebar } from "../context/SidebarContext";
 import { useTheme } from "../context/ThemeContext";
-import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import LanguageToggle from "../components/common/LanguageToggle";
 
@@ -128,9 +127,8 @@ const AppHeader: React.FC = () => {
               </svg>
             </button>
 
-            {/* Desktop: notifications + user dropdown */}
+            {/* Desktop: user dropdown */}
             <div className="hidden lg:flex items-center gap-3">
-              <NotificationDropdown />
               <UserDropdown />
             </div>
           </div>
@@ -141,7 +139,6 @@ const AppHeader: React.FC = () => {
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
             } lg:hidden items-center gap-3 w-full px-4 pb-3 border-t-2 border-dashed border-gray-200 dark:border-gray-700 pt-3`}
         >
-          <NotificationDropdown />
           <UserDropdown />
         </div>
 

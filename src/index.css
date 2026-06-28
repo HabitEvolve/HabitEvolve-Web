@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&subset=vietnamese&display=swap')
 layer(base);
 
 @import "tailwindcss";
@@ -7,7 +7,8 @@ layer(base);
 
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  --font-sans: 'Space Grotesk', sans-serif;
+  --font-space: 'Space Grotesk', sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -41,18 +42,18 @@ layer(base);
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-brand-25: #f2f7ff;
-  --color-brand-50: #ecf3ff;
-  --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-  --color-brand-300: #9cb9ff;
-  --color-brand-400: #7592ff;
-  --color-brand-500: #465fff;
-  --color-brand-600: #3641f5;
-  --color-brand-700: #2a31d8;
-  --color-brand-800: #252dae;
-  --color-brand-900: #262e89;
-  --color-brand-950: #161950;
+  --color-brand-25: #f0fdf5;
+  --color-brand-50: #dcfce7;
+  --color-brand-100: #c7f0d8;
+  --color-brand-200: #b8dfc8;
+  --color-brand-300: #8fc8a8;
+  --color-brand-400: #4ade80;
+  --color-brand-500: #006d36;
+  --color-brand-600: #005a2e;
+  --color-brand-700: #004d26;
+  --color-brand-800: #003e1e;
+  --color-brand-900: #002f16;
+  --color-brand-950: #001f0e;
 
   --color-blue-light-25: #f5fbff;
   --color-blue-light-50: #f0f9ff;
@@ -68,7 +69,7 @@ layer(base);
   --color-blue-light-950: #062c41;
 
   --color-gray-25: #fcfcfd;
-  --color-gray-50: #f9fafb;
+  --color-gray-50: #f4fafd;
   --color-gray-100: #f2f4f7;
   --color-gray-200: #e4e7ec;
   --color-gray-300: #d0d5dd;
@@ -76,10 +77,10 @@ layer(base);
   --color-gray-500: #667085;
   --color-gray-600: #475467;
   --color-gray-700: #344054;
-  --color-gray-800: #1d2939;
-  --color-gray-900: #101828;
-  --color-gray-950: #0c111d;
-  --color-gray-dark: #1a2231;
+  --color-gray-800: #1a2b1e;
+  --color-gray-900: #0e1a12;
+  --color-gray-950: #091210;
+  --color-gray-dark: #162a1e;
 
   --color-orange-25: #fffaf5;
   --color-orange-50: #fff6ed;
@@ -146,8 +147,8 @@ layer(base);
   --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
   --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08),
     0px 8px 8px -4px rgba(16, 24, 40, 0.03);
-  --shadow-datepicker: -5px 0 0 #262d3c, 5px 0 0 #262d3c;
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+  --shadow-datepicker: -5px 0 0 #1a2e22, 5px 0 0 #1a2e22;
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(0, 109, 54, 0.15);
   --shadow-slider-navigation: 0px 1px 2px 0px rgba(16, 24, 40, 0.1),
     0px 1px 3px 0px rgba(16, 24, 40, 0.1);
   --shadow-tooltip: 0px 4px 6px -2px rgba(16, 24, 40, 0.05),
@@ -163,6 +164,46 @@ layer(base);
   --z-index-9999: 9999;
   --z-index-99999: 99999;
   --z-index-999999: 999999;
+
+  /* ── GAME / NEO-BRUTALISM DESIGN TOKENS (ported from mobile colors.ts) ──── */
+
+  /* Game palette — exact hex values from HabitEvolve Stitch design system */
+  --color-game-primary: #006d36;
+  --color-game-primary-container: #4ade80;
+  --color-game-secondary: #b45309;
+  --color-game-secondary-container: #fbbf24;
+  --color-game-tertiary: #7e22ce;
+  --color-game-tertiary-container: #a855f7;
+  --color-game-tertiary-surface: #f3e8ff;
+  --color-game-accent: #92400e;
+  --color-game-accent-container: #fbbf24;
+  --color-game-coral: #ffdad6;
+  --color-game-coral-border: #FF8080;
+  --color-game-bg: #f4fafd;
+  --color-game-text: #2D3436;
+  --color-game-text-dark: #161d1f;
+  --color-game-border: #b8dfc8;
+  --color-game-outline: #3d4a3e;
+  --color-game-surface: #ffffff;
+  --color-game-surface-container: #e4f4ec;
+  --color-game-muted: #8E9AA0;
+  --color-game-primary-dark: #004d26;
+  --color-game-primary-shadow: #8fc8a8;
+  --color-game-streak: #E85D20;
+  --color-game-flame: #FF6B35;
+
+  /* Border radii — from mobile spacing.ts BorderRadius */
+  --radius-game-primary: 1.5rem;   /* 24px */
+  --radius-game-secondary: 1rem;   /* 16px */
+  --radius-game-small: 0.75rem;    /* 12px */
+  --radius-game-xs: 0.5rem;        /* 8px */
+
+  /* Neo-brutalism shadows — solid hard-offset drop shadows (no blur) */
+  --shadow-neo-card: 4px 4px 0 0 #3d4a3e;
+  --shadow-neo-pressable: 4px 6px 0 0 #3d4a3e;
+  --shadow-neo-button: 4px 4px 0 0 #3d4a3e;
+  --shadow-neo-sticker: 2px 2px 0 0 #3d4a3e;
+  --shadow-neo-modal: 6px 6px 0 0 #3d4a3e;
 }
 
 /*
@@ -186,7 +227,7 @@ layer(base);
     cursor: pointer;
   }
   body {
-    @apply relative font-normal font-outfit z-1 bg-gray-50;
+    @apply relative font-normal font-sans z-1 bg-gray-50;
   }
 }
 
@@ -323,6 +364,64 @@ layer(base);
   }
 }
 
+/* ── NEO-BRUTALISM COMPONENT UTILITIES ─────────────────────────────────────
+ * Game-flavored component classes using the game.* design tokens.
+ * Apply alongside color utilities, e.g. <div class="neo-card bg-game-surface">
+ */
+
+/* Card container: chunky outline + hard drop shadow */
+@utility neo-card {
+  background-color: var(--color-game-surface);
+  border: 4px solid var(--color-game-outline);
+  border-radius: var(--radius-game-secondary);
+  box-shadow: var(--shadow-neo-card);
+}
+
+/* Pressable button: 3D lift on hover, presses down on active */
+@utility neo-button {
+  font-family: var(--font-space);
+  font-weight: 600;
+  border: 4px solid var(--color-game-outline);
+  border-radius: var(--radius-game-xs);
+  box-shadow: var(--shadow-neo-pressable);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+
+  &:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 8px 0 0 var(--color-game-outline);
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+/* Input field: thick green border, focus ring using primary color */
+@utility neo-input {
+  font-family: var(--font-space);
+  border: 2px solid var(--color-game-border);
+  border-radius: var(--radius-game-small);
+  background-color: var(--color-game-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-game-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-game-primary) 20%, transparent);
+  }
+
+  &::placeholder {
+    color: var(--color-game-muted);
+  }
+}
+
 @layer utilities {
   /* For Remove Date Icon */
   input[type="date"]::-webkit-inner-spin-button,
@@ -363,9 +462,9 @@ layer(base);
 }
 
 /* ── Backgrounds ─────────────────────────────────────────────────────────── */
-.dark .admin-content .bg-white        { background-color: #1e2a3a; }
-.dark .admin-content .bg-gray-50      { background-color: #162232; }
-.dark .admin-content .bg-gray-100     { background-color: #1a2843; }
+.dark .admin-content .bg-white        { background-color: #1a2e22; }
+.dark .admin-content .bg-gray-50      { background-color: #142318; }
+.dark .admin-content .bg-gray-100     { background-color: #1e3427; }
 
 /* ── Text ────────────────────────────────────────────────────────────────── */
 .dark .admin-content .text-gray-900   { color: #f1f5f9; }
@@ -384,7 +483,7 @@ layer(base);
 .dark .admin-content input:not([type="checkbox"]):not([type="radio"]),
 .dark .admin-content textarea,
 .dark .admin-content select {
-  background-color: #162232;
+  background-color: #142318;
   color: #e2e8f0;
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -401,9 +500,9 @@ layer(base);
    createPortal modals which render directly into document.body. */
 
 /* ── Backgrounds ─────────────────────────────────────────────────────────── */
-.dark .modal-content .bg-white        { background-color: #1e2a3a; }
-.dark .modal-content .bg-gray-50      { background-color: #162232; }
-.dark .modal-content .bg-gray-100     { background-color: #1a2843; }
+.dark .modal-content .bg-white        { background-color: #1a2e22; }
+.dark .modal-content .bg-gray-50      { background-color: #142318; }
+.dark .modal-content .bg-gray-100     { background-color: #1e3427; }
 
 /* ── Text ────────────────────────────────────────────────────────────────── */
 .dark .modal-content .text-gray-900   { color: #f1f5f9; }
@@ -425,7 +524,7 @@ layer(base);
 .dark .modal-content input:not([type="checkbox"]):not([type="radio"]),
 .dark .modal-content textarea,
 .dark .modal-content select {
-  background-color: #162232;
+  background-color: #142318;
   color: #e2e8f0;
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -625,7 +724,7 @@ span.flatpickr-weekday,
   @apply !bg-none;
 }
 .flatpickr-day.inRange {
-  box-shadow: -5px 0 0 #f9fafb, 5px 0 0 #f9fafb !important;
+  box-shadow: -5px 0 0 #f4fafd, 5px 0 0 #f4fafd !important;
   @apply dark:!shadow-datepicker;
 }
 .flatpickr-day.inRange,
@@ -666,13 +765,13 @@ span.flatpickr-weekday,
 .flatpickr-day.selected.nextMonthDay,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
-  background: #465fff;
+  background: #006d36;
   @apply !border-brand-500 !bg-brand-500 hover:!border-brand-500 hover:!bg-brand-500;
 }
 .flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.endRange.startRange + .endRange:not(:nth-child(7n + 1)) {
-  box-shadow: -10px 0 0 #465fff;
+  box-shadow: -10px 0 0 #006d36;
 }
 
 .flatpickr-months .flatpickr-prev-month svg,

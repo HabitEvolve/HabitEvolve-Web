@@ -36,6 +36,9 @@ import TargetRuleManagement from "./pages/TargetRuleManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
 import AdminCourtManagement from "./pages/AdminCourtManagement";
 import AdminBossManagement from "./pages/AdminBossManagement";
+import AdminDailyBossManagement from "./pages/AdminDailyBossManagement";
+import AdminQuestLibraryManagement from "./pages/AdminQuestLibraryManagement";
+import AdminSystemOpsPage from "./pages/AdminSystemOpsPage";
 import AdminSubscriptionPage from "./pages/AdminSubscriptionPage";
 import AdminConfigPage from "./pages/AdminConfigPage";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
@@ -70,14 +73,16 @@ export default function App() {
               <Route index path="/home" element={<Home />} />
               <Route path="/admin/dashboard" element={<Navigate to="/home" replace />} />
               <Route path="/user-management" element={<UserManagement />} />
-              <Route path="/party-management" element={<PartyManagement />} />
               <Route path="/target-rules" element={<TargetRuleManagement />} />
               <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
               <Route path="/questionnaires" element={<QuestionnaireManagement />} />
               <Route path="/court-management" element={<AdminCourtManagement />} />
               <Route path="/boss-management" element={<AdminBossManagement />} />
+              <Route path="/daily-boss" element={<AdminDailyBossManagement />} />
+              <Route path="/quest-library" element={<AdminQuestLibraryManagement />} />
               <Route path="/subscription-packages" element={<AdminSubscriptionPage />} />
               <Route path="/system-config" element={<AdminConfigPage />} />
+              <Route path="/system-ops" element={<AdminSystemOpsPage />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/blank" element={<Blank />} />
 

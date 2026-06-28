@@ -1,20 +1,28 @@
 // ==========================================
 // PARTY CHAT — Types
-// SignalR integration pending; REST shape defined here.
+// Matches BE ChatMessageDto exactly
 // ==========================================
 
-// role mirrors BE enum: MENTOR | PLAYER | SYSTEM
-export type ChatRole = 'MENTOR' | 'PLAYER' | 'SYSTEM';
+// Matches BE ChatMessageDto.Type: "USER" | "SYSTEM"
+export type ChatMessageType = 'USER' | 'SYSTEM';
 
-// Matches the expected BE ChatMessageDto
+// Matches BE ChatMessageDto
 export interface ChatMessage {
-  messageId: number;
-  senderId: number;
-  senderName: string;
-  role: ChatRole;
-  content: string;
-  createdAt: string;     // ISO-8601
-  isSystemMessage: boolean;
+  msgId: number;                // BE: MsgId
+  partyId: number;              // BE: PartyId
+  senderId: number | null;      // BE: SenderId (null for SYSTEM messages)
+  senderUsername: string | null; // BE: SenderUsername (null for SYSTEM messages)
+  content: string;              // BE: Content
+  type: ChatMessageType;        // BE: Type — "USER" | "SYSTEM"
+  isDeleted: boolean;           // BE: IsDeleted
+  sentAt: string;               // BE: SentAt (ISO-8601)
+}
+
+// Matches BE ChatUnreadCountDto
+export interface ChatUnreadCountDto {
+  partyId: number;
+  unreadCount: number;
+  latestMessageId: number;
 }
 
 // Payload for POST /api/party/{id}/chat/messages

@@ -5,7 +5,7 @@ import {
   ChevronDownIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import { House, User, Handshake, Gavel, Swords, Layers, BadgeQuestionMark, Scale, CreditCard, Settings } from "lucide-react";
+import { House, User, Gavel, Swords, Flame, Layers, BadgeQuestionMark, Scale, CreditCard, Settings, BookOpen, Activity } from "lucide-react";
 
 type NavItem = {
   nameKey: string;
@@ -27,11 +27,6 @@ const navItems: NavItem[] = [
     path: "/user-management",
   },
   {
-    icon: <Handshake className="w-5 h-5 shrink-0" />,
-    nameKey: "nav.admin.party",
-    path: "/party-management",
-  },
-  {
     icon: <Gavel className="w-5 h-5 shrink-0" />,
     nameKey: "nav.admin.court",
     path: "/court-management",
@@ -41,6 +36,16 @@ const navItems: NavItem[] = [
     nameKey: "nav.admin.boss",
     path: "/boss-management",
     sectionKey: "nav.sections.GAMEPLAY",
+  },
+  {
+    icon: <Flame className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.dailyBoss",
+    path: "/daily-boss",
+  },
+  {
+    icon: <BookOpen className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.questLibrary",
+    path: "/quest-library",
   },
   {
     icon: <Layers className="w-5 h-5 shrink-0" />,
@@ -63,6 +68,11 @@ const navItems: NavItem[] = [
     icon: <Settings className="w-5 h-5 shrink-0" />,
     nameKey: "nav.admin.systemConfig",
     path: "/system-config",
+  },
+  {
+    icon: <Activity className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.systemOps",
+    path: "/system-ops",
   },
   {
     icon: <CreditCard className="w-5 h-5 shrink-0" />,

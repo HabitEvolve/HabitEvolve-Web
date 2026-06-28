@@ -4,10 +4,11 @@ import type {
     SubscriptionPackageDto, ActiveSubscriptionDto,
     PurchaseSubscriptionRequest, PurchaseSubscriptionResultDto, MentorSubscriptionDto,
     MentorWalletDto, TopUpGemsRequest, TopUpGemsResultDto, GemTransactionDto,
-    QuestDto, CreateMentorQuestRequest, CreatePartyQuestRequest, CreatePartyQuestResultDto,
+    QuestDto, QuestDetailDto, MentorQuestRangeDto,
+    CreateMentorQuestRequest, CreatePartyQuestRequest, CreatePartyQuestResultDto,
     ProofDto,
     BossTemplateDto, RegisterWeeklyBossRequest, WeeklyBossRegisterResultDto,
-    WeeklyBossSubscriptionDto, WeeklyBossStatusDto,
+    WeeklyBossStatusDto, RaidActivityDto, SharedHpDto, WeeklyChestDto,
 } from '../types/mentor.types';
 
 const mid = (): number => {
@@ -79,6 +80,20 @@ const mentorApi = {
         return r.data;
     },
 
+    getQuestDetail: async (questId: number): Promise<ApiResponse<QuestDetailDto>> => {
+        const r = await axiosClient.get<ApiResponse<QuestDetailDto>>(
+            `/mentorquest/${questId}/detail`
+        );
+        return r.data;
+    },
+
+    getRewardRanges: async (): Promise<ApiResponse<MentorQuestRangeDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<MentorQuestRangeDto[]>>(
+            '/mentorquest/reward-ranges'
+        );
+        return r.data;
+    },
+
     createMentorQuest: async (
         payload: CreateMentorQuestRequest
     ): Promise<ApiResponse<QuestDto>> => {
@@ -109,6 +124,16 @@ const mentorApi = {
         return r.data;
     },
 
+    patchQuestMandatory: async (
+        questId: number, isMandatory: boolean
+    ): Promise<ApiResponse<QuestDto>> => {
+        const r = await axiosClient.patch<ApiResponse<QuestDto>>(
+            `/mentorquest/${questId}/mandatory`,
+            { mentorUserId: mid(), isMandatory }
+        );
+        return r.data;
+    },
+
     approveQuest: async (questId: number): Promise<ApiResponse<QuestDto>> => {
         const r = await axiosClient.post<ApiResponse<QuestDto>>(
             `/mentorquest/${questId}/approve`,
@@ -133,6 +158,13 @@ const mentorApi = {
         return r.data;
     },
 
+    getAiProofQueue: async (): Promise<ApiResponse<ProofDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<ProofDto[]>>(
+            '/mentor/proofs/ai-queue', { params: { mentorUserId: mid() } }
+        );
+        return r.data;
+    },
+
     approveProof: async (proofId: number): Promise<ApiResponse<ProofDto>> => {
         const r = await axiosClient.post<ApiResponse<ProofDto>>(
             `/mentor/proofs/${proofId}/approve`,
@@ -151,16 +183,18 @@ const mentorApi = {
         return r.data;
     },
 
-    // ── BOSS RAID ────────────────────────────────────────────────────────────
-    getCurrentBoss: async (): Promise<ApiResponse<BossTemplateDto>> => {
-        const r = await axiosClient.get<ApiResponse<BossTemplateDto>>('/weekly-boss/current');
+    simulateAiVerdict: async (
+        proofId: number, verdict: 'approve' | 'reject' | 'suspicious'
+    ): Promise<ApiResponse<ProofDto>> => {
+        const r = await axiosClient.post<ApiResponse<ProofDto>>(
+            `/proofs/${proofId}/ai-verdict`, { verdict }
+        );
         return r.data;
     },
 
-    getBossSubscription: async (): Promise<ApiResponse<WeeklyBossSubscriptionDto>> => {
-        const r = await axiosClient.get<ApiResponse<WeeklyBossSubscriptionDto>>(
-            '/weekly-boss/my-subscription', { params: { mentorUserId: mid() } }
-        );
+    // ── BOSS RAID ────────────────────────────────────────────────────────────
+    getCurrentBoss: async (): Promise<ApiResponse<BossTemplateDto>> => {
+        const r = await axiosClient.get<ApiResponse<BossTemplateDto>>('/weekly-boss/current');
         return r.data;
     },
 
@@ -176,6 +210,40 @@ const mentorApi = {
     getPartyBossStatus: async (partyId: number): Promise<ApiResponse<WeeklyBossStatusDto>> => {
         const r = await axiosClient.get<ApiResponse<WeeklyBossStatusDto>>(
             `/weekly-boss/party/${partyId}/status`
+        );
+        return r.data;
+    },
+
+    getPartyActivity: async (
+        partyId: number, limit = 20
+    ): Promise<ApiResponse<RaidActivityDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<RaidActivityDto[]>>(
+            `/weekly-boss/party/${partyId}/activity`, { params: { limit } }
+        );
+        return r.data;
+    },
+
+    // ── SHARED HP ────────────────────────────────────────────────────────────
+    getSharedHp: async (raidId: number): Promise<ApiResponse<SharedHpDto>> => {
+        const r = await axiosClient.get<ApiResponse<SharedHpDto>>(
+            `/raids/${raidId}/shared-hp`
+        );
+        return r.data;
+    },
+
+    // ── WEEKLY CHEST ─────────────────────────────────────────────────────────
+    getWeeklyChest: async (partyId: number): Promise<ApiResponse<WeeklyChestDto>> => {
+        const r = await axiosClient.get<ApiResponse<WeeklyChestDto>>(
+            `/weekly-boss/party/${partyId}/weekly-chest`,
+            { params: { userId: mid() } }
+        );
+        return r.data;
+    },
+
+    claimWeeklyChest: async (partyId: number): Promise<ApiResponse<WeeklyChestDto>> => {
+        const r = await axiosClient.post<ApiResponse<WeeklyChestDto>>(
+            `/weekly-boss/party/${partyId}/weekly-chest/claim`,
+            { userId: mid() }
         );
         return r.data;
     },

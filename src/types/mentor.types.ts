@@ -10,11 +10,12 @@ export interface SubscriptionPackageDto {
     maxMembersPerParty: number;
     questsPerMemberPerDay: number;
     partyQuestsPerWeek: number;
-    bossModes: string;
+    bossModes: string;               // CSV: "Easy,Normal"
     maxDamagePerQuest: number;
     maxMGoldRewardPerQuest: number;
-    proofTypes: string;
+    proofTypes: string;              // CSV: "Photo,Video"
     rewardTier: string;
+    aiVerificationBossModes: string; // CSV: "" | "Normal" | "Normal,Hard"
     isActive: boolean;
     createdAt: string;
     updatedAt?: string;
@@ -111,6 +112,8 @@ export type QuestStatus =
     | 'NotStarted' | 'InProgress' | 'Submitted'
     | 'Approved' | 'Rejected' | 'Expired' | 'Failed';
 
+export type QuestDifficulty = 'EASY' | 'NORMAL' | 'HARD';
+
 export interface QuestDto {
     questId: number;
     userId: number;
@@ -121,10 +124,9 @@ export interface QuestDto {
     title: string;
     description?: string;
     questType: string;
+    difficulty?: QuestDifficulty;
     damage: number;
-    rewardGold: number;
-    rewardBonusGold: number;
-    rewardXp: number;
+    rewardMGold: number;      // M-Gold rewarded on approval (replaces rewardGold)
     proofType?: string;
     isMandatory: boolean;
     status: QuestStatus;
@@ -134,16 +136,46 @@ export interface QuestDto {
     createdAt: string;
 }
 
+export interface MentorQuestRangeDto {
+    difficulty: QuestDifficulty;
+    damageMin: number;
+    damageMax: number;
+    mGoldMin: number;
+    mGoldMax: number;
+}
+
+export interface QuestDetailDto {
+    questId: number;
+    title: string;
+    description?: string;
+    questType: string;
+    difficulty?: QuestDifficulty;
+    damage: number;
+    rewardMGold: number;
+    proofType: string;
+    isMandatory: boolean;
+    status: QuestStatus;
+    startedAt?: string;
+    deadlineAt?: string;
+    mentorUsername?: string;
+    partyName?: string;
+    bossName?: string;
+    bossDifficulty?: string;
+    sharedHpPenalty: number;
+    reviewType: string;              // "Manual" | "AI + Mentor"
+    aiVerificationEnabled: boolean;
+    canUseLeavePass: boolean;
+}
+
 export interface CreateMentorQuestRequest {
     mentorUserId: number;
     targetUserId: number;
     partyId: number;
     title: string;
     description?: string;
+    difficulty: QuestDifficulty;
     damage: number;
-    rewardGold: number;
-    rewardBonusGold: number;
-    rewardXp: number;
+    rewardMGold: number;
     proofType?: string;
     isMandatory: boolean;
     deadlineAt: string;
@@ -154,10 +186,9 @@ export interface CreatePartyQuestRequest {
     partyId: number;
     title: string;
     description?: string;
+    difficulty: QuestDifficulty;
     damage: number;
-    rewardGold: number;
-    rewardBonusGold: number;
-    rewardXp: number;
+    rewardMGold: number;
     proofType?: string;
     isMandatory: boolean;
     deadlineAt: string;
@@ -174,6 +205,9 @@ export type ProofStatus =
     | 'Pending' | 'AiChecking' | 'Approved'
     | 'Suspicious' | 'Rejected' | 'AppealPending';
 
+export type AiVerdict = 'Not Used' | 'Approved' | 'Suspicious' | 'Rejected';
+export type ReviewType = 'Manual' | 'AI + Mentor';
+
 export interface ProofDto {
     proofId: number;
     questId: number;
@@ -187,6 +221,9 @@ export interface ProofDto {
     metadata?: string;
     status: ProofStatus;
     reviewRoute: string;
+    aiStatus?: AiVerdict;   // enriched by BE: "Not Used" | "Approved" | "Suspicious" | "Rejected"
+    reviewType?: ReviewType; // enriched: "Manual" | "AI + Mentor"
+    deadlineAt?: string;
     deadlineMet: boolean;
     submittedAt: string;
     reviewedAt?: string;
@@ -210,7 +247,7 @@ export interface BossModeConfigDto {
     maxPartyQuestPerWeek: number;
     maxDamagePerQuest: number;
     mGoldRewardCapPerQuest: number;
-    allowedProofTypes: string[];
+    // allowedProofTypes removed — proof type is now per subscription package
     rewardTier: string;
 }
 
@@ -249,28 +286,12 @@ export interface WeeklyBossRegisterResultDto {
     difficulty: string;
     maxHp: number;
     currentHp: number;
+    sharedHpMax: number;
+    sharedHpCurrent: number;
     rewardTier: string;
     weekStartDate: string;
     weekEndDate: string;
     status: string;
-}
-
-export interface WeeklyBossSubscriptionDto {
-    subscriptionId?: number;
-    mentorUserId: number;
-    tier: MentorTier;
-    isActive: boolean;
-    startsAt?: string;
-    expiresAt?: string;
-    partyLimit: number;
-    memberLimit: number;
-    bossModes: string[];
-    questPerMemberPerDay: number;
-    partyQuestPerWeek: number;
-    maxDamagePerQuest: number;
-    mGoldRewardCap: number;
-    proofTypes: string[];
-    rewardTier: string;
 }
 
 export interface RaidParticipantDto {
@@ -294,4 +315,31 @@ export interface WeeklyBossStatusDto {
     weekEndDate: string;
     defeatedAt?: string;
     participants: RaidParticipantDto[];
+}
+
+export interface RaidActivityDto {
+    username: string;
+    questTitle: string;
+    damageDealt: number;
+    bossHpAfter: number;
+    createdAt: string;
+}
+
+export interface SharedHpDto {
+    raidId: number;
+    sharedHpCurrent: number;
+    sharedHpMax: number;
+    percentage: number;
+    riskLevel: string;  // "Low" | "Medium" | "High" | "Critical"
+}
+
+export interface WeeklyChestDto {
+    bossName: string;
+    rewardTier: string;
+    goldReward: number;
+    mgoldReward: number;
+    badge: string;
+    eligibleMemberCount: number;
+    claimedCount: number;
+    alreadyClaimed: boolean;
 }

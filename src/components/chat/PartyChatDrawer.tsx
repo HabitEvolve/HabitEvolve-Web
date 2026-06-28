@@ -1,14 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  HubConnectionBuilder,
+  HubConnection,
+  LogLevel,
+} from '@microsoft/signalr';
 import { PaperPlaneIcon } from '../../icons';
 import partyChatApi from '../../api/partyChatApi';
 import type { ChatMessage } from '../../types/partyChat.types';
 
-// Poll interval while the drawer is open (replaces SignalR until BE is ready)
-const POLL_MS = 10_000;
+// Hub URL: strip /api suffix from VITE_API_URL, then append hub path
+const HUB_URL =
+  (import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, '') +
+  '/hubs/party-chat';
 
-const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const fmtTime = (iso: string | undefined) =>
+  iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+// Derive avatar initial safely (senderUsername is null for SYSTEM messages)
+const senderInitial = (msg: ChatMessage) =>
+  msg.senderUsername ? msg.senderUsername.charAt(0).toUpperCase() : '?';
 
 const Spinner = ({ size = 16 }: { size?: number }) => (
   <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -21,13 +32,13 @@ const Spinner = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-// ─── Bubble sub-components ────────────────────────────────────────────────────
+// ── Bubble sub-components ──────────────────────────────────────────────────────
 
 const SystemBubble = ({ msg }: { msg: ChatMessage }) => (
   <div className="flex justify-center px-4">
     <div className="bg-yellow-300 border-2 border-black shadow-[2px_2px_0_0_#000] rounded-xl px-4 py-2 text-center max-w-[85%]">
       <p className="text-xs font-black text-gray-900">⚡ {msg.content}</p>
-      <span className="text-[10px] font-medium text-gray-600 mt-0.5 block">{fmtTime(msg.createdAt)}</span>
+      <span className="text-[10px] font-medium text-gray-600 mt-0.5 block">{fmtTime(msg.sentAt)}</span>
     </div>
   </div>
 );
@@ -39,30 +50,28 @@ const MyBubble = ({ msg }: { msg: ChatMessage }) => (
         <p className="text-sm font-medium text-gray-900 break-words">{msg.content}</p>
       </div>
     </div>
-    <span className="text-[10px] text-gray-400 font-medium mr-1">{fmtTime(msg.createdAt)}</span>
+    <span className="text-[10px] text-gray-400 font-medium mr-1">{fmtTime(msg.sentAt)}</span>
   </div>
 );
 
 const PlayerBubble = ({ msg }: { msg: ChatMessage }) => (
   <div className="flex items-end gap-2">
-    {/* Avatar */}
     <span className="w-7 h-7 rounded-full border-2 border-black bg-gradient-to-br from-purple-200 to-blue-200 text-xs font-black flex items-center justify-center flex-shrink-0">
-      {msg.senderName.charAt(0).toUpperCase()}
+      {senderInitial(msg)}
     </span>
-    {/* Name + bubble + time */}
     <div className="max-w-[78%]">
-      <p className="text-[10px] font-black text-gray-500 mb-0.5 ml-0.5">{msg.senderName}</p>
+      <p className="text-[10px] font-black text-gray-500 mb-0.5 ml-0.5">{msg.senderUsername ?? ''}</p>
       <div className="bg-white border-2 border-black shadow-[2px_2px_0_0_#000] rounded-xl rounded-tl-none px-3 py-2">
         <p className="text-sm font-medium text-gray-900 break-words">{msg.content}</p>
       </div>
       <span className="text-[10px] text-gray-400 font-medium ml-0.5 mt-0.5 block">
-        {fmtTime(msg.createdAt)}
+        {fmtTime(msg.sentAt)}
       </span>
     </div>
   </div>
 );
 
-// ─── Main drawer ──────────────────────────────────────────────────────────────
+// ── Main drawer ────────────────────────────────────────────────────────────────
 
 interface PartyChatDrawerProps {
   partyId: number;
@@ -82,50 +91,93 @@ export default function PartyChatDrawer({
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
-  // Controls the CSS slide-in transition (starts false so transform: translateX-full, then flips)
+  const [connected, setConnected] = useState(false);
   const [panelIn, setPanelIn] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const connRef = useRef<HubConnection | null>(null);
   const myId = Number(localStorage.getItem('user_id') ?? 0);
 
-  // Trigger slide-in animation one paint after the portal mounts
+  // Slide-in animation
   useEffect(() => {
-    if (!isOpen) {
-      setPanelIn(false);
-      return;
-    }
+    if (!isOpen) { setPanelIn(false); return; }
     const raf = requestAnimationFrame(() => setPanelIn(true));
     return () => cancelAnimationFrame(raf);
   }, [isOpen]);
 
-  // Fetch messages silently; if BE endpoint not ready yet, just shows empty state
+  // Initial REST fetch (history before SignalR connects)
   const fetchMessages = useCallback(async () => {
     try {
       const res = await partyChatApi.getMessages(partyId);
       if (res.success && res.data) setMessages(res.data);
     } catch {
-      // BE endpoint not wired yet — silent; empty state shown
+      // silent — SignalR delivers new messages anyway
     }
   }, [partyId]);
 
-  // Initial load + polling while open
+  // SignalR connection lifecycle
   useEffect(() => {
     if (!isOpen) return;
+
+    // Load history first
     setLoading(true);
     fetchMessages().finally(() => setLoading(false));
-    const tick = setInterval(fetchMessages, POLL_MS);
-    return () => clearInterval(tick);
-  }, [isOpen, fetchMessages]);
 
-  // Auto-scroll to bottom whenever message list changes
+    const conn = new HubConnectionBuilder()
+      .withUrl(HUB_URL)
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Warning)
+      .build();
+
+    // Real-time: new message arrives
+    conn.on('message.new', (msg: ChatMessage) => {
+      setMessages(prev => {
+        // Deduplicate: REST send-response may have already appended it
+        if (prev.some(m => m.msgId === msg.msgId)) return prev;
+        return [...prev, msg];
+      });
+    });
+
+    // Real-time: message was soft-deleted
+    conn.on('message.deleted', (deletedMsgId: number) => {
+      setMessages(prev => prev.filter(m => m.msgId !== deletedMsgId));
+    });
+
+    conn.onreconnecting(() => setConnected(false));
+    conn.onreconnected(() => setConnected(true));
+    conn.onclose(() => setConnected(false));
+
+    connRef.current = conn;
+
+    conn
+      .start()
+      .then(() => {
+        setConnected(true);
+        return conn.invoke('JoinParty', partyId);
+      })
+      .catch(err => {
+        console.warn('[SignalR] connect failed:', err);
+      });
+
+    return () => {
+      setConnected(false);
+      const c = connRef.current;
+      connRef.current = null;
+      if (c) {
+        c.invoke('LeaveParty', partyId).catch(() => {}).finally(() => c.stop());
+      }
+    };
+  }, [isOpen, partyId, fetchMessages]);
+
+  // Auto-scroll on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Focus the input once the panel has slid in
+  // Focus input after slide-in
   useEffect(() => {
     if (panelIn) {
       const t = setTimeout(() => inputRef.current?.focus(), 300);
@@ -142,14 +194,16 @@ export default function PartyChatDrawer({
     try {
       const res = await partyChatApi.sendMessage(partyId, text);
       if (res.success && res.data) {
-        setMessages(prev => [...prev, res.data!]);
+        // Append immediately; SignalR broadcast will be deduped
+        setMessages(prev =>
+          prev.some(m => m.msgId === res.data!.msgId) ? prev : [...prev, res.data!]
+        );
       } else {
-        // Fallback: re-fetch to pick up whatever the server stored
         await fetchMessages();
       }
     } catch {
       setSendError('Failed to send — please try again.');
-      setInput(text); // restore so user doesn't lose their message
+      setInput(text);
     } finally {
       setSending(false);
     }
@@ -192,31 +246,33 @@ export default function PartyChatDrawer({
               <h3 className="text-sm font-black text-gray-900 truncate">{partyName}</h3>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close drawer"
-            className="flex items-center justify-center w-8 h-8 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex-shrink-0"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Connection status dot */}
+            <span
+              title={connected ? 'Real-time connected' : 'Connecting…'}
+              className={`w-2 h-2 rounded-full border border-black ${connected ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`}
+            />
+            <button
+              onClick={onClose}
+              aria-label="Close drawer"
+              className="flex items-center justify-center w-8 h-8 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* ── Message area ── */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50"
-        >
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
           {loading && messages.length === 0 ? (
-            /* Initial load state */
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
               <Spinner size={24} />
               <span className="text-sm font-bold">Loading messages…</span>
             </div>
           ) : messages.length === 0 ? (
-            /* Empty state */
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
               <span className="text-5xl">💬</span>
               <p className="font-black text-gray-700 text-base">No messages yet</p>
@@ -226,12 +282,11 @@ export default function PartyChatDrawer({
             </div>
           ) : (
             messages.map(msg => {
-              if (msg.isSystemMessage) return <SystemBubble key={msg.messageId} msg={msg} />;
-              if (msg.senderId === myId)  return <MyBubble     key={msg.messageId} msg={msg} />;
-              return                             <PlayerBubble  key={msg.messageId} msg={msg} />;
+              if (msg.type === 'SYSTEM') return <SystemBubble key={msg.msgId} msg={msg} />;
+              if (msg.senderId === myId)  return <MyBubble    key={msg.msgId} msg={msg} />;
+              return                             <PlayerBubble key={msg.msgId} msg={msg} />;
             })
           )}
-          {/* Invisible anchor — scrollIntoView target */}
           <div aria-hidden="true" />
         </div>
 
@@ -271,7 +326,7 @@ export default function PartyChatDrawer({
             </button>
           </div>
           <p className="text-[10px] text-gray-400 font-medium mt-1.5">
-            Polling every 10 s · Real-time via SignalR coming soon
+            {connected ? '🟢 Real-time connected' : '🟡 Connecting to real-time…'}
           </p>
         </div>
       </div>

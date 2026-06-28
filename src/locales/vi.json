@@ -50,10 +50,13 @@
       "party": "Nhóm",
       "court": "Tòa Án",
       "boss": "Trùm",
+      "dailyBoss": "Trùm Hàng Ngày",
+      "questLibrary": "Thư Viện Nhiệm Vụ",
       "goalEngine": "Công Cụ Mục Tiêu",
       "onboardingEval": "Đánh Giá Khởi Đầu",
       "calcRules": "Quy Tắc Tính Điểm",
       "systemConfig": "Cấu Hình Hệ Thống",
+      "systemOps": "Vận Hành Hệ Thống",
       "subscriptions": "Gói Đăng Ký"
     },
     "sections": {

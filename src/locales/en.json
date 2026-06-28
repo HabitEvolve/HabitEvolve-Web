@@ -50,10 +50,13 @@
       "party": "Party",
       "court": "Court",
       "boss": "Boss",
+      "dailyBoss": "Daily Boss",
+      "questLibrary": "Quest Library",
       "goalEngine": "Goal Engine",
       "onboardingEval": "Onboarding Eval",
       "calcRules": "Calc Rules",
       "systemConfig": "System Config",
+      "systemOps": "System Ops",
       "subscriptions": "Subscriptions"
     },
     "sections": {

@@ -8,11 +8,11 @@ export type RewardPolicyType = "BY_MODE" | string;
 
 // Matches BE BossMode enum — PascalCase
 export type BossModeType = "Easy" | "Normal" | "Hard";
-export type PackageTier = "FREE" | "BASIC" | "PREMIUM";
+export type PackageTier = "Free" | "Basic" | "Premium";
 export type RewardTierType = "BASIC" | "STANDARD" | "PREMIUM";
 
-// Matches BE BossModeConfigDto exactly
-// CRITICAL: field is minTier (not minPackage); deadlineMax does NOT exist in BE
+// Matches BE BossModeConfigDto exactly.
+// NOTE: allowedProofTypes removed — proof types are now per subscription package (SubscriptionPackageDto.proofTypes)
 export interface BossModeDto {
     bossModeConfigId: number;
     mode: BossModeType;
@@ -24,7 +24,6 @@ export interface BossModeDto {
     maxPartyQuestPerWeek: number;
     maxDamagePerQuest: number;
     mGoldRewardCapPerQuest: number;
-    allowedProofTypes: string[];
     rewardTier: RewardTierType;
 }
 
@@ -49,7 +48,6 @@ export interface BossTemplateDto {
 }
 
 // Payload for POST /admin/boss-templates (CreateBossTemplateCommand)
-// proofPolicy and rewardPolicy required for creation
 export interface BossTemplatePayload {
     themeName: string;
     description?: string;
@@ -65,7 +63,6 @@ export interface BossTemplatePayload {
 }
 
 // Payload for PUT /admin/boss-templates/{id}
-// Matches BE UpdateBossTemplateRequest — all fields optional (partial update)
 // NOTE: proofPolicy and rewardPolicy are NOT in the BE update request
 export interface UpdateBossTemplatePayload {
     themeName?: string;
@@ -79,10 +76,8 @@ export interface UpdateBossTemplatePayload {
     requestExceptionWindow?: string;
 }
 
-// Payload for POST /admin/boss-templates/{id}/modes
-// Matches BE UpsertBossModeRequest exactly
-// NOTE: allowedProofTypes is kept as string[] here for UI convenience;
-// adminBossApi.addBossMode joins to comma-separated string before sending to BE
+// Payload for POST /admin/boss-templates/{id}/modes (UpsertBossModeRequest)
+// NOTE: allowedProofTypes removed — proof types are per subscription package, not per mode
 export interface BossModePayload {
     mode: BossModeType;
     minTier: PackageTier;
@@ -93,6 +88,23 @@ export interface BossModePayload {
     maxPartyQuestPerWeek: number;
     maxDamagePerQuest: number;
     mGoldRewardCapPerQuest: number;
-    allowedProofTypes: string[];
     rewardTier: RewardTierType;
+}
+
+// ── WEEKLY BOSS SCHEDULE ──────────────────────────────────────────────────────
+// GET /admin/boss-templates/schedules — WeeklyBossScheduleDto
+export interface WeeklyBossScheduleDto {
+    weeklyBossScheduleId: number;
+    bossTemplateId: number;
+    themeName: string;
+    bossStatus: BossTemplateStatus;
+    weekStart: string;  // ISO date string (Monday of the week)
+    weekEnd: string;    // ISO date string (Sunday of the week)
+    isCurrentWeek: boolean;
+}
+
+// POST /admin/boss-templates/schedules — body
+export interface WeeklyBossSchedulePayload {
+    bossTemplateId: number;
+    weekDate: string;   // any date within target week → BE normalises to Monday
 }

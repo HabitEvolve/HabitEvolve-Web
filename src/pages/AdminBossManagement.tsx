@@ -21,7 +21,6 @@ import type {
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
-const PROOF_TYPES = ["PHOTO", "VIDEO", "GPS", "SCREENSHOT", "TEXT"] as const;
 
 const EMPTY_TEMPLATE: BossTemplatePayload = {
   themeName: "", description: "",
@@ -33,12 +32,11 @@ const EMPTY_TEMPLATE: BossTemplatePayload = {
 };
 
 const EMPTY_MODE: BossModePayload = {
-  mode: "EASY", minTier: "FREE",
+  mode: "Easy", minTier: "Free",
   partyMin: 2, partyMax: 6,
   bossHp: 10000,
   maxQuestPerMemberPerDay: 3, maxPartyQuestPerWeek: 20,
   maxDamagePerQuest: 500, mGoldRewardCapPerQuest: 100,
-  allowedProofTypes: ["PHOTO"],
   rewardTier: "BASIC",
 };
 
@@ -102,9 +100,9 @@ const ModeBadge = ({ mode }: { mode: BossModeType }) => {
 };
 
 const TIER_CFG: Record<PackageTier, { bg: string; border: string; text: string; icon: ReactNode }> = {
-  FREE:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   icon: SI("/icon/Item/Shield/64px/Shield 1st 64px.png") },
-  BASIC:   { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   icon: SI("/icon/Item/Medal/64px/Bronze Medal 1st 64px.png") },
-  PREMIUM: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800", icon: SI("/icon/Item/Crown/64px/Crown 1st 64px.png") },
+  Free:    { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   icon: SI("/icon/Item/Shield/64px/Shield 1st 64px.png") },
+  Basic:   { bg: "bg-blue-100",   border: "border-blue-400",   text: "text-blue-700",   icon: SI("/icon/Item/Medal/64px/Bronze Medal 1st 64px.png") },
+  Premium: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800", icon: SI("/icon/Item/Crown/64px/Crown 1st 64px.png") },
 };
 const TierBadge = ({ tier }: { tier: PackageTier }) => {
   const c = TIER_CFG[tier] ?? TIER_CFG.FREE;
@@ -300,16 +298,8 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
   const setN = (k: keyof BossModePayload, v: number) => setForm(f => ({ ...f, [k]: v }));
   const setS = (k: keyof BossModePayload, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const toggleProof = (type: string) => setForm(f => ({
-    ...f,
-    allowedProofTypes: f.allowedProofTypes.includes(type)
-      ? f.allowedProofTypes.filter(t => t !== type)
-      : [...f.allowedProofTypes, type],
-  }));
-
   const handleAddMode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.allowedProofTypes.length === 0) { setFormError(t("admin.bossManagement.modesModal.errorNoProof")); return; }
     setSubmitting(true);
     setFormError(null);
     try {
@@ -375,7 +365,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                         <img src={mc.iconSrc} alt="" className="w-8 h-8 object-contain shrink-0" />
                         <div>
                           <ModeBadge mode={m.mode} />
-                          <p className="text-[10px] font-bold text-gray-500 mt-0.5">Min: <TierBadge tier={m.minPackage as PackageTier} /></p>
+                          <p className="text-[10px] font-bold text-gray-500 mt-0.5">Min: <TierBadge tier={m.minTier} /></p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -408,20 +398,12 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                         <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Item/Calendar/64px/Calendar 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Quests/Wk</span>
                         <span className="font-black text-gray-800">{m.maxPartyQuestPerWeek}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Item/Clock/64px/Clock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Deadline</span>
-                        <span className="font-black text-gray-800 text-[10px]">{m.deadlineMax}</span>
-                      </div>
                     </div>
 
                     {/* Footer */}
                     <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-black/10">
                       <RewardBadge tier={m.rewardTier} />
-                      <div className="flex items-center gap-1 flex-wrap justify-end">
-                        {m.allowedProofTypes.map(p => (
-                          <span key={p} className="text-[10px] font-bold px-1.5 py-0.5 bg-white border border-gray-300 rounded-full text-gray-600">{p}</span>
-                        ))}
-                      </div>
+                      <span className="text-[10px] text-gray-400 font-medium">Proof: per package</span>
                     </div>
                   </div>
                 );
@@ -468,7 +450,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                     <select value={form.minTier}
                       onChange={e => setS("minTier", e.target.value)}
                       className={inputCls}>
-                      {(["FREE", "BASIC", "PREMIUM"] as PackageTier[]).map(t => (
+                      {(["Free", "Basic", "Premium"] as PackageTier[]).map(t => (
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>
@@ -524,26 +506,6 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                     </Label>
                     <input type="number" min={0} value={form.mGoldRewardCapPerQuest}
                       onChange={e => setN("mGoldRewardCapPerQuest", Number(e.target.value))} className={inputCls} />
-                  </div>
-                </div>
-
-                {/* allowedProofTypes */}
-                <div>
-                  <Label>{t("admin.bossManagement.modesModal.proofTypesLabel")}</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {PROOF_TYPES.map(pt => {
-                      const checked = form.allowedProofTypes.includes(pt);
-                      return (
-                        <button key={pt} type="button" onClick={() => toggleProof(pt)}
-                          className={`px-3 py-1.5 text-xs font-black border-2 rounded-full transition-all ${
-                            checked
-                              ? "bg-purple-200 border-purple-500 text-purple-900 shadow-[2px_2px_0_0_#1A1D20]"
-                              : "bg-white border-gray-300 text-gray-500 hover:border-gray-500"
-                          }`}>
-                          {checked ? "✓ " : ""}{pt}
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
 

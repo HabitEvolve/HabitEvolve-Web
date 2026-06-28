@@ -11,7 +11,13 @@
       "Bash(npx tsc *)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(xargs wc -l)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\('Coins:', typeof l.Coins\\); console.log\\('BadgeQuestionMark:', typeof l.BadgeQuestionMark\\); console.log\\('version:', require\\('./node_modules/lucide-react/package.json'\\).version\\);\")",
+      "Bash(xargs grep -l \"quest-library\\\\|QuestLibrary\")",
+      "Bash(xargs grep -l \"SpawnDailyMonsters\\\\|daily-monsters/spawn\")",
+      "Bash(xargs grep -l \"FinalizeDailyStreak\\\\|daily-streak/finalize\")",
+      "Bash(xargs grep -l \"broadcast\\\\|Broadcast\")",
+      "Bash(xargs grep -l \"in-app\\\\|InApp\\\\|NotificationController\")"
     ]
   }
 }

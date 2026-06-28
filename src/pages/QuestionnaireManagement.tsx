@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ClipboardList, Plus, Pencil, Trash2, ChevronRight, X,
@@ -427,6 +428,10 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function QuestionnaireManagement() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const initTemplateId = Number(searchParams.get('templateId')) || null;
+  const autoSelectedRef = useRef(false);
+
   const [templates, setTemplates] = useState<QuestionnaireTemplateDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTpl, setSelectedTpl] = useState<QuestionnaireTemplateDto | null>(null);
@@ -444,6 +449,13 @@ export default function QuestionnaireManagement() {
   }, []);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  // Auto-select template from URL ?templateId= on first load
+  useEffect(() => {
+    if (!initTemplateId || autoSelectedRef.current || templates.length === 0) return;
+    const tpl = templates.find(t => t.templateId === initTemplateId);
+    if (tpl) { setSelectedTpl(tpl); autoSelectedRef.current = true; }
+  }, [templates, initTemplateId]);
 
   const flash = (type: 'success' | 'error', msg: string) => {
     setAlert({ type, msg });

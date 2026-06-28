@@ -101,6 +101,8 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                         [t("mentor.subscriptionWallet.questsPerMember"), `${pkg.questsPerMemberPerDay}`],
                         [t("mentor.subscriptionWallet.partyQuestsPerWeek"), `${pkg.partyQuestsPerWeek}`],
                         [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes],
+                        ["Proof Types", pkg.proofTypes || "—"],
+                        ["🤖 AI Verification", pkg.aiVerificationBossModes || "—"],
                         [t("mentor.subscriptionWallet.duration"), `${pkg.durationDays} ${t("mentor.subscriptionWallet.days")}`],
                     ].map(([k, v]) => (
                         <div key={k} className="flex justify-between text-sm font-medium">
@@ -616,7 +618,7 @@ export default function SubscriptionWallet() {
                                     <p className="text-xs text-gray-500 mt-0.5">{pkg.description}</p>
                                 </div>
                                 <div className="text-2xl font-black text-amber-700">
-                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-gray-500">VND / {pkg.durationDays}d</span>
+                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-gray-500">💎 / {pkg.durationDays}d</span>
                                 </div>
                                 <ul className="text-xs space-y-1 text-gray-700 font-medium">
                                     <li>✦ {t("mentor.subscriptionWallet.upToParties", { count: pkg.maxParties })}</li>
@@ -624,6 +626,17 @@ export default function SubscriptionWallet() {
                                     <li>✦ <strong>{pkg.questsPerMemberPerDay}</strong> {t("mentor.subscriptionWallet.questsPerMemberDay")}</li>
                                     <li>✦ {t("mentor.subscriptionWallet.bossModes")}: <strong>{pkg.bossModes}</strong></li>
                                     <li>✦ {t("mentor.subscriptionWallet.rewardTier")}: <strong>{pkg.rewardTier}</strong></li>
+                                    {pkg.proofTypes && (
+                                        <li>✦ Proof: <strong>{pkg.proofTypes}</strong></li>
+                                    )}
+                                    {pkg.aiVerificationBossModes ? (
+                                        <li className="flex items-center gap-1">
+                                            <span>✦ 🤖 AI verify:</span>
+                                            <strong>{pkg.aiVerificationBossModes}</strong>
+                                        </li>
+                                    ) : (
+                                        <li className="text-gray-400">✦ 🤖 No AI verification</li>
+                                    )}
                                 </ul>
                                 <button
                                     disabled={isCurrent}

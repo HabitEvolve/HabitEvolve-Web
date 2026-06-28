@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Layers, Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
   Zap, ClipboardList, BookOpen, ToggleLeft, ToggleRight,
-  ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle,
+  ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import { adminGoalApi } from '../api/adminGoalApi';
 import { adminPracticalTaskApi } from '../api/adminPracticalTaskApi';
@@ -742,12 +743,14 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
 // TAB C — QUESTIONNAIRES
 // ═══════════════════════════════════════════════════════════════════════════════
 function QuestionnairesTab({ goal }: { goal: GoalDto }) {
+  const navigate = useNavigate();
   const [bindings, setBindings] = useState<GoalQuestionnaireDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [bindModal, setBindModal] = useState(false);
   const [activating, setActivating] = useState<number | null>(null);
+  const [actionErr, setActionErr] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  const loadBindings = useCallback(async () => {
     setLoading(true);
     try {
       const res = await adminGoalApi.getGoalQuestionnaires(goal.goalId);
@@ -755,12 +758,28 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
     } finally { setLoading(false); }
   }, [goal.goalId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { loadBindings(); }, [loadBindings]);
 
   const handleActivate = async (b: GoalQuestionnaireDto) => {
     setActivating(b.goalQuestionnaireId);
-    try { await adminGoalApi.activateGoalQuestionnaire(goal.goalId, b.goalQuestionnaireId); fetch(); }
-    finally { setActivating(null); }
+    setActionErr(null);
+    try {
+      await adminGoalApi.activateGoalQuestionnaire(goal.goalId, b.goalQuestionnaireId);
+      await loadBindings();
+    } catch (ex: any) {
+      setActionErr(ex?.response?.data?.message ?? 'Activate failed.');
+    } finally { setActivating(null); }
+  };
+
+  const handleDeactivate = async (b: GoalQuestionnaireDto) => {
+    setActivating(b.goalQuestionnaireId);
+    setActionErr(null);
+    try {
+      await adminGoalApi.deactivateGoalQuestionnaire(goal.goalId, b.goalQuestionnaireId);
+      await loadBindings();
+    } catch (ex: any) {
+      setActionErr(ex?.response?.data?.message ?? 'Deactivate failed.');
+    } finally { setActivating(null); }
   };
 
   return (
@@ -771,6 +790,9 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
           <LinkIcon className="w-4 h-4" /> Attach Template
         </button>
       </div>
+      {actionErr && (
+        <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{actionErr}</p>
+      )}
 
       {loading ? (
         <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
@@ -795,7 +817,23 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">Effective from: {new Date(b.effectiveFrom).toLocaleDateString()}</p>
               </div>
-              {!b.isActive && (
+              <button
+                onClick={() => navigate(`/questionnaires?templateId=${b.templateId}`)}
+                className={`${btnBase} bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-1.5`}
+                title="View in Onboarding Eval"
+              >
+                <ExternalLink className="w-4 h-4" /> Detail
+              </button>
+              {b.isActive ? (
+                <button
+                  onClick={() => handleDeactivate(b)}
+                  disabled={activating === b.goalQuestionnaireId}
+                  className={`${btnBase} bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-1.5`}
+                >
+                  {activating === b.goalQuestionnaireId ? <Loader2 className="w-4 h-4 animate-spin" /> : <ToggleLeft className="w-4 h-4" />}
+                  Deactivate
+                </button>
+              ) : (
                 <button
                   onClick={() => handleActivate(b)}
                   disabled={activating === b.goalQuestionnaireId}
@@ -810,7 +848,7 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
         </div>
       )}
 
-      {bindModal && <BindQuestionnaireModal goalId={goal.goalId} onBound={() => { setBindModal(false); fetch(); }} onClose={() => setBindModal(false)} />}
+      {bindModal && <BindQuestionnaireModal goalId={goal.goalId} onBound={() => { setBindModal(false); loadBindings(); }} onClose={() => setBindModal(false)} />}
     </div>
   );
 }

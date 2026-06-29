@@ -327,10 +327,41 @@ export interface RaidActivityDto {
 
 export interface SharedHpDto {
     raidId: number;
+    partyId: number;
+    enabled: boolean;
     sharedHpCurrent: number;
     sharedHpMax: number;
     percentage: number;
-    riskLevel: string;  // "Low" | "Medium" | "High" | "Critical"
+    status: string;       // Active | WipeOut | Defeated
+    riskLevel: string;    // SAFE | LOW | MEDIUM | HIGH | WIPED
+}
+
+// ── PARTY REMINDER ────────────────────────────────────────────────────────────
+export interface PartyReminderSettingDto {
+    partyId: number;
+    questDeadline2hEnabled: boolean;
+    questDeadline30mEnabled: boolean;
+    dailyReminderEnabled: boolean;
+    dailyReminderHour: number;
+    weeklyBossReminderEnabled: boolean;
+    weeklyBossReminderDay: number;
+    weeklyBossReminderHour: number;
+    sendInApp: boolean;
+    sendPush: boolean;
+    sendEmail: boolean;
+    sendPartyChat: boolean;
+}
+
+export interface ReminderDispatchResultDto {
+    partyId: number;
+    reminderType: string;
+    notificationsCreated: number;
+    chatMessagesCreated: number;
+    details: string[];
+}
+
+export interface UpdateReminderSettingsPayload extends Omit<PartyReminderSettingDto, 'partyId'> {
+    mentorUserId: number;
 }
 
 export interface WeeklyChestDto {

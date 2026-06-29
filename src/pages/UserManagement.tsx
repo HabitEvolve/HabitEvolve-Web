@@ -5,6 +5,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import adminUserApi from "../api/adminUserApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
+import { useAlert } from "../context/AlertContext";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 type ModalType = "create" | "view" | "update" | "delete" | "roles" | null;
@@ -264,8 +265,8 @@ const CreateUserForm = ({
   onSuccess: () => void;
 }) => {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -276,13 +277,13 @@ const CreateUserForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setApiError(null);
     try {
       await adminUserApi.createUser(form);
+      alert.success(t("admin.userManagement.errors.createSuccess", "User created successfully."));
       onSuccess();
       onClose();
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? t("admin.userManagement.errors.createFailed"));
+      alert.error(err?.response?.data?.message ?? t("admin.userManagement.errors.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -290,11 +291,6 @@ const CreateUserForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {apiError && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold">
-          {apiError}
-        </div>
-      )}
       <FormField label={t("admin.userManagement.form.usernameLabel")}>
         <input
           required
@@ -364,6 +360,7 @@ const UpdateUserForm = ({
   onSuccess: () => void;
 }) => {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState({
@@ -399,10 +396,11 @@ const UpdateUserForm = ({
       if (statusChanged) {
         await adminUserApi.updateUserStatus(user.userId, statusForm);
       }
+      alert.success(t("admin.userManagement.errors.updateSuccess", "User updated successfully."));
       onSuccess();
       onClose();
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? t("admin.userManagement.errors.updateFailed"));
+      alert.error(err?.response?.data?.message ?? t("admin.userManagement.errors.updateFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -492,29 +490,24 @@ const DeleteConfirm = ({
   onSuccess: () => void;
 }) => {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [deleting, setDeleting] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setDeleting(true);
-    setApiError(null);
     try {
       await adminUserApi.deleteUser(user.userId);
+      alert.success(t("admin.userManagement.errors.deleteSuccess", "User deleted successfully."));
       onSuccess();
       onClose();
     } catch (err: any) {
-      setApiError(err?.response?.data?.message ?? t("admin.userManagement.errors.deleteFailed"));
+      alert.error(err?.response?.data?.message ?? t("admin.userManagement.errors.deleteFailed"));
       setDeleting(false);
     }
   };
 
   return (
     <div className="space-y-5">
-      {apiError && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold">
-          {apiError}
-        </div>
-      )}
       <div className="text-center py-2">
         <div className="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-black bg-red-100 flex items-center justify-center">
           <TrashIcon />
@@ -563,11 +556,10 @@ const ManageUserRolesModal = ({
   onRefresh: () => void;
 }) => {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [localRoles, setLocalRoles] = useState<string[]>(user.roles);
   const [removingRole, setRemovingRole] = useState<string | null>(null);
-  const [removeError, setRemoveError] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
-  const [assignError, setAssignError] = useState<string | null>(null);
   const [selectedNewRole, setSelectedNewRole] = useState<string>("");
 
   // Roles not yet assigned to this user
@@ -579,17 +571,16 @@ const ManageUserRolesModal = ({
 
   const handleRemove = async (roleCode: string) => {
     setRemovingRole(roleCode);
-    setRemoveError(null);
     try {
       const res = await adminUserApi.removeRole(user.userId, roleCode);
       if (res.success && res.data) {
         setLocalRoles(res.data.roles);
         onRefresh();
       } else {
-        setRemoveError(res.message ?? `Failed to remove ${roleCode}.`);
+        alert.error(res.message ?? `Failed to remove ${roleCode}.`);
       }
     } catch (err: any) {
-      setRemoveError(
+      alert.error(
         err?.response?.data?.message ?? `Cannot remove ${roleCode}: ${err?.message ?? "unknown error"}.`
       );
     } finally {
@@ -601,7 +592,6 @@ const ManageUserRolesModal = ({
     e.preventDefault();
     if (!dropdownValue) return;
     setAssigning(true);
-    setAssignError(null);
     try {
       const res = await adminUserApi.assignRole(user.userId, { roleCode: dropdownValue });
       if (res.success && res.data) {
@@ -609,10 +599,10 @@ const ManageUserRolesModal = ({
         setSelectedNewRole("");
         onRefresh();
       } else {
-        setAssignError(res.message ?? `Failed to assign ${dropdownValue}.`);
+        alert.error(res.message ?? `Failed to assign ${dropdownValue}.`);
       }
     } catch (err: any) {
-      setAssignError(
+      alert.error(
         err?.response?.data?.message ?? `Failed to assign ${dropdownValue}.`
       );
     } finally {
@@ -682,11 +672,6 @@ const ManageUserRolesModal = ({
               </div>
             )}
 
-            {removeError && (
-              <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl p-2.5 text-xs text-red-700 font-semibold">
-                ⚠ {removeError}
-              </div>
-            )}
           </div>
 
           <div className="border-t-2 border-dashed border-gray-200" />
@@ -724,11 +709,6 @@ const ManageUserRolesModal = ({
               </form>
             )}
 
-            {assignError && (
-              <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl p-2.5 text-xs text-red-700 font-semibold">
-                ⚠ {assignError}
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -47,6 +47,7 @@ import SubscriptionWallet from "./pages/Mentor/SubscriptionWallet";
 import QuestCommand from "./pages/Mentor/QuestCommand";
 import ProofQueue from "./pages/Mentor/ProofQueue";
 import BossRaid from "./pages/Mentor/BossRaid";
+import PartyReminder from "./pages/Mentor/PartyReminder";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 
 export default function App() {
@@ -115,6 +116,7 @@ export default function App() {
               <Route path="/mentor/quests" element={<QuestCommand />} />
               <Route path="/mentor/proofs" element={<ProofQueue />} />
               <Route path="/mentor/boss-raid" element={<BossRaid />} />
+              <Route path="/mentor/party-reminder" element={<PartyReminder />} />
             </Route>
           </Route>
 

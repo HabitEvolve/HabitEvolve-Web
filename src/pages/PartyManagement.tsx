@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useAlert } from "../context/AlertContext";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import partyMentorApi from "../api/mentorPartyApi";
@@ -65,26 +66,6 @@ const JoinPolicyBadge = ({ policy }: { policy: JoinPolicy | string }) => {
   );
 };
 
-// ── ALERT BANNER ──────────────────────────────────────────────────────────────
-const AlertBanner = ({ alert }: { alert: { type: "success" | "error"; message: string } }) =>
-  alert.type === "success" ? (
-    <div className="mb-5 flex items-center gap-3 bg-emerald-50 border-4 border-emerald-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      <span className="font-black text-emerald-800 text-sm">{alert.message}</span>
-    </div>
-  ) : (
-    <div className="mb-5 flex items-center gap-3 bg-red-50 border-4 border-red-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      <span className="font-black text-red-800 text-sm">{alert.message}</span>
-    </div>
-  );
-
 // ── GAME MODAL ────────────────────────────────────────────────────────────────
 const GameModal = ({
   title,
@@ -145,19 +126,11 @@ const CountBadge = ({ count, color = "bg-blue-100 text-blue-900" }: { count: num
 // ══════════════════════════════════════════════════════════════════════════════
 export default function PartyManagement() {
   const { t } = useTranslation();
+  const notify = useAlert();
 
   // ── VIEW STATE ─────────────────────────────────────────────────────────────
   const [selectedParty, setSelectedParty] = useState<PartyItem | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-
-  // ── ALERT ──────────────────────────────────────────────────────────────────
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!alert) return;
-    const timer = setTimeout(() => setAlert(null), 4000);
-    return () => clearTimeout(timer);
-  }, [alert]);
 
   // ── PARTY LIST ─────────────────────────────────────────────────────────────
   const [parties, setParties] = useState<PartyItem[]>([]);
@@ -205,7 +178,7 @@ export default function PartyManagement() {
       const res = await partyMentorApi.createParty({ ...createForm, mentorUserId });
       if (res.success) {
         resetCreateModal();
-        setAlert({ type: "success", message: t("admin.partyManagement.flashCreated") });
+        notify.success(t("admin.partyManagement.flashCreated"));
         fetchParties();
       } else {
         setCreateError(res.message ?? t("admin.partyManagement.flashCreateFailed"));
@@ -233,12 +206,12 @@ export default function PartyManagement() {
       const res = await partyMentorApi.generateInviteCode(selectedParty.partyId);
       if (res.success && res.data) {
         setInviteCode(res.data);
-        setAlert({ type: "success", message: t("admin.partyManagement.flashCodeGenerated") });
+        notify.success(t("admin.partyManagement.flashCodeGenerated"));
       } else {
-        setAlert({ type: "error", message: res.message ?? t("admin.partyManagement.flashCodeFailed") });
+        notify.error(res.message ?? t("admin.partyManagement.flashCodeFailed"));
       }
     } catch (err: any) {
-      setAlert({ type: "error", message: err?.response?.data?.message ?? t("admin.partyManagement.flashCodeFailed") });
+      notify.error(err?.response?.data?.message ?? t("admin.partyManagement.flashCodeFailed"));
     } finally {
       setGeneratingCode(false);
     }
@@ -251,7 +224,7 @@ export default function PartyManagement() {
       setCodeCopied(true);
       setTimeout(() => setCodeCopied(false), 2000);
     } catch {
-      setAlert({ type: "error", message: t("admin.partyManagement.flashCopyFailed") });
+      notify.error(t("admin.partyManagement.flashCopyFailed"));
     }
   };
 
@@ -279,13 +252,13 @@ export default function PartyManagement() {
     try {
       const res = await partyMentorApi.removePlayerFromParty(selectedParty.partyId, memberToKick.userId);
       if (res.success) {
-        setAlert({ type: "success", message: t("admin.partyManagement.flashKicked", { username: memberToKick.username }) });
+        notify.success(t("admin.partyManagement.flashKicked", { username: memberToKick.username }));
         fetchMembers(selectedParty.partyId);
       } else {
-        setAlert({ type: "error", message: res.message ?? t("admin.partyManagement.flashKickFailed") });
+        notify.error(res.message ?? t("admin.partyManagement.flashKickFailed"));
       }
     } catch (err: any) {
-      setAlert({ type: "error", message: err?.response?.data?.message ?? t("admin.partyManagement.flashKickFailed") });
+      notify.error(err?.response?.data?.message ?? t("admin.partyManagement.flashKickFailed"));
     } finally {
       setKicking(false);
       setMemberToKick(null);
@@ -315,14 +288,14 @@ export default function PartyManagement() {
     try {
       const res = await partyMentorApi.approveJoinRequest(selectedParty.partyId, requestId);
       if (res.success) {
-        setAlert({ type: "success", message: t("admin.partyManagement.flashApproved") });
+        notify.success(t("admin.partyManagement.flashApproved"));
         fetchJoinRequests(selectedParty.partyId);
         fetchMembers(selectedParty.partyId);
       } else {
-        setAlert({ type: "error", message: res.message ?? t("admin.partyManagement.flashApproveFailed") });
+        notify.error(res.message ?? t("admin.partyManagement.flashApproveFailed"));
       }
     } catch (err: any) {
-      setAlert({ type: "error", message: err?.response?.data?.message ?? t("admin.partyManagement.flashApproveFailed") });
+      notify.error(err?.response?.data?.message ?? t("admin.partyManagement.flashApproveFailed"));
     } finally {
       setProcessingReqId(null);
     }
@@ -334,13 +307,13 @@ export default function PartyManagement() {
     try {
       const res = await partyMentorApi.rejectJoinRequest(selectedParty.partyId, requestId);
       if (res.success) {
-        setAlert({ type: "success", message: t("admin.partyManagement.flashRejected") });
+        notify.success(t("admin.partyManagement.flashRejected"));
         fetchJoinRequests(selectedParty.partyId);
       } else {
-        setAlert({ type: "error", message: res.message ?? t("admin.partyManagement.flashRejectFailed") });
+        notify.error(res.message ?? t("admin.partyManagement.flashRejectFailed"));
       }
     } catch (err: any) {
-      setAlert({ type: "error", message: err?.response?.data?.message ?? t("admin.partyManagement.flashRejectFailed") });
+      notify.error(err?.response?.data?.message ?? t("admin.partyManagement.flashRejectFailed"));
     } finally {
       setProcessingReqId(null);
     }
@@ -401,7 +374,7 @@ export default function PartyManagement() {
       if (res.success) {
         setSelectedParty((prev) => prev ? { ...prev, ...editForm } : null);
         resetEditModal();
-        setAlert({ type: "success", message: t("admin.partyManagement.flashUpdated") });
+        notify.success(t("admin.partyManagement.flashUpdated"));
         fetchParties();
       } else {
         setEditError(res.message ?? t("admin.partyManagement.flashUpdateFailed"));
@@ -432,19 +405,17 @@ export default function PartyManagement() {
         setMembers([]);
         setJoinRequests([]);
         setInviteCode("");
-        setAlert({ type: "success", message: t("admin.partyManagement.flashDisbanded", { name: disbandedName }) });
+        notify.success(t("admin.partyManagement.flashDisbanded", { name: disbandedName }));
         fetchParties();
       } else {
-        setAlert({ type: "error", message: res.message ?? t("admin.partyManagement.flashDisbandFailed") });
+        notify.error(res.message ?? t("admin.partyManagement.flashDisbandFailed"));
         setShowDisband(false);
       }
     } catch (err) {
-      setAlert({
-        type: "error",
-        message:
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? t("admin.partyManagement.flashDisbandFailed"),
-      });
+      notify.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ?? t("admin.partyManagement.flashDisbandFailed")
+      );
       setShowDisband(false);
     } finally {
       setDisbanding(false);
@@ -461,8 +432,6 @@ export default function PartyManagement() {
         description={t("admin.partyManagement.metaDesc")}
       />
       <PageBreadcrumb pageTitle={t("admin.partyManagement.pageTitle")} />
-
-      {alert && <AlertBanner alert={alert} />}
 
       {/* ══════════════════ VIEW 1: PARTY OVERVIEW LIST ══════════════════ */}
       {!selectedParty && (

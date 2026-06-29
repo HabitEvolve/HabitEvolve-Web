@@ -5,6 +5,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
 import partyMentorApi from "../../api/mentorPartyApi";
+import { useAlert } from "../../context/AlertContext";
 import type { PartyItem, PartyMember } from "../../types/api.types";
 import type {
     QuestDto,
@@ -54,20 +55,21 @@ interface DeleteQuestModalProps {
 
 const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) => {
     const { t } = useTranslation();
+    const alert = useAlert();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const handleDelete = async () => {
         setLoading(true);
         try {
             const res = await mentorApi.deleteMentorQuest(quest.questId);
             if (res.success) {
+                alert.success(t("mentor.questCommand.deleteModal.deleted"));
                 onDeleted();
             } else {
-                setError(res.message || t("mentor.questCommand.errors.deleteFailed"));
+                alert.error(res.message || t("mentor.questCommand.errors.deleteFailed"));
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || t("mentor.questCommand.errors.errorOccurred"));
+            alert.error(e?.response?.data?.message || t("mentor.questCommand.errors.errorOccurred"));
         } finally {
             setLoading(false);
         }
@@ -86,9 +88,6 @@ const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) 
                 <p className="text-sm text-gray-700 mb-4">
                     Remove <strong>"{quest.title}"</strong>?
                 </p>
-                {error && (
-                    <p className="mb-3 p-2.5 bg-red-100 border-2 border-red-400 rounded-xl text-sm font-bold text-red-700">{error}</p>
-                )}
                 <div className="flex gap-3">
                     <button onClick={onClose} className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all">
                         {t("mentor.questCommand.deleteModal.cancel")}
@@ -188,9 +187,9 @@ export default function QuestCommand() {
     const [loadingParties, setLoadingParties] = useState(true);
     const [loadingMembers, setLoadingMembers] = useState(false);
     const [loadingQuests, setLoadingQuests] = useState(false);
+    const alert = useAlert();
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
-    const [formSuccess, setFormSuccess] = useState<string | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<QuestDto | null>(null);
 
     // Load static data on mount
@@ -265,7 +264,6 @@ export default function QuestCommand() {
     const handleField = (field: string, value: string | number | boolean) => {
         setForm((prev) => ({ ...prev, [field]: value }));
         setFormError(null);
-        setFormSuccess(null);
     };
 
     const buildDeadline = () => {
@@ -299,7 +297,6 @@ export default function QuestCommand() {
 
         setSubmitting(true);
         setFormError(null);
-        setFormSuccess(null);
         try {
             if (assignMode === "individual") {
                 const payload: CreateMentorQuestRequest = {
@@ -317,13 +314,13 @@ export default function QuestCommand() {
                 };
                 const res = await mentorApi.createMentorQuest(payload);
                 if (res.success) {
-                    setFormSuccess(t("mentor.questCommand.assignedTo", {
+                    alert.success(t("mentor.questCommand.assignedTo", {
                         username: members.find((m) => m.userId === selectedMemberId)?.username ?? "member",
                     }));
                     setForm(emptyForm);
                     fetchQuests();
                 } else {
-                    setFormError(res.message || t("mentor.questCommand.errors.assignFailed"));
+                    alert.error(res.message || t("mentor.questCommand.errors.assignFailed"));
                 }
             } else {
                 const payload: CreatePartyQuestRequest = {
@@ -340,18 +337,18 @@ export default function QuestCommand() {
                 };
                 const res = await mentorApi.createPartyQuest(payload);
                 if (res.success && res.data) {
-                    setFormSuccess(t("mentor.questCommand.fanOutComplete", {
+                    alert.success(t("mentor.questCommand.fanOutComplete", {
                         count: res.data.memberCount,
                         partyName: res.data.partyName,
                     }));
                     setForm(emptyForm);
                     fetchQuests();
                 } else {
-                    setFormError(res.message || t("mentor.questCommand.errors.fanOutFailed"));
+                    alert.error(res.message || t("mentor.questCommand.errors.fanOutFailed"));
                 }
             }
         } catch (e: any) {
-            setFormError(e?.response?.data?.message || t("mentor.questCommand.errors.unexpected"));
+            alert.error(e?.response?.data?.message || t("mentor.questCommand.errors.unexpected"));
         } finally {
             setSubmitting(false);
         }
@@ -406,7 +403,10 @@ export default function QuestCommand() {
                                                     : "bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
                                             }`}
                                         >
-                                            {mode === "individual" ? `👤 ${t("mentor.questCommand.individual")}` : `⚔️ ${t("mentor.questCommand.fanOut")}`}
+                                            {mode === "individual"
+                                                ? <span className="inline-flex items-center gap-1.5"><img src="/icon/Player/Player/64px/Player 1st 64px.png" alt="" className="w-4 h-4 object-contain" />{t("mentor.questCommand.individual")}</span>
+                                                : <span className="inline-flex items-center gap-1.5"><img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-4 h-4 object-contain" />{t("mentor.questCommand.fanOut")}</span>
+                                            }
                                         </button>
                                     ))}
                                 </div>
@@ -587,11 +587,6 @@ export default function QuestCommand() {
                                 {formError}
                             </div>
                         )}
-                        {formSuccess && (
-                            <div className="mt-4 p-3 bg-emerald-100 border-2 border-emerald-400 rounded-xl text-sm font-bold text-emerald-800">
-                                {formSuccess}
-                            </div>
-                        )}
 
                         <button
                             onClick={handleSubmit}
@@ -601,9 +596,9 @@ export default function QuestCommand() {
                             {submitting ? (
                                 <><Spinner size={16} /> {t("mentor.questCommand.assigning")}</>
                             ) : assignMode === "individual" ? (
-                                `⚡ ${t("mentor.questCommand.assignQuest")}`
+                                <span className="inline-flex items-center gap-1.5"><img src="/icon/Main/Lighting/64px/Lighting 1st 64px.png" alt="" className="w-4 h-4 object-contain" />{t("mentor.questCommand.assignQuest")}</span>
                             ) : (
-                                `⚔️ ${t("mentor.questCommand.fanOut")}`
+                                <span className="inline-flex items-center gap-1.5"><img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-4 h-4 object-contain" />{t("mentor.questCommand.fanOut")}</span>
                             )}
                         </button>
                     </div>

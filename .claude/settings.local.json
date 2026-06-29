@@ -17,7 +17,14 @@
       "Bash(xargs grep -l \"SpawnDailyMonsters\\\\|daily-monsters/spawn\")",
       "Bash(xargs grep -l \"FinalizeDailyStreak\\\\|daily-streak/finalize\")",
       "Bash(xargs grep -l \"broadcast\\\\|Broadcast\")",
-      "Bash(xargs grep -l \"in-app\\\\|InApp\\\\|NotificationController\")"
+      "Bash(xargs grep -l \"in-app\\\\|InApp\\\\|NotificationController\")",
+      "WebFetch(domain:habitevolve-be-2.onrender.com)",
+      "Bash(xargs grep -l \"AppRouter\\\\|Routes\\\\|Route path\")",
+      "Bash(Admin)",
+      "Bash(PartyManagement)",
+      "Bash(UserManagement)",
+      "Bash(TargetRuleManagement)",
+      "Bash(QuestionnaireManagement\")"
     ]
   }
 }

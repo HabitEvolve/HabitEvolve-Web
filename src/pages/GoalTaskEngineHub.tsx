@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
-  Layers, Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
-  Zap, ClipboardList, BookOpen, ToggleLeft, ToggleRight,
+  Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
+  Zap, ToggleLeft, ToggleRight,
   ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle, ExternalLink,
 } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
 import { adminGoalApi } from '../api/adminGoalApi';
 import { adminPracticalTaskApi } from '../api/adminPracticalTaskApi';
 import { adminRecommendationRuleApi } from '../api/adminRecommendationRuleApi';
@@ -690,7 +691,7 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => setExpandedRule(expandedRule === rule.ruleId ? null : rule.ruleId)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400" title="Conditions">
-                    <BookOpen className="w-4 h-4" />
+                    <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
                   </button>
                   <button onClick={() => handleToggleRule(rule)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400">
                     {rule.isActive ? <ToggleRight className="w-4 h-4 text-green-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
@@ -798,7 +799,7 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
         <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : bindings.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
-          <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" />
+          <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
           <p className="font-bold">No questionnaires attached</p>
           <p className="text-sm">Players can't start Goal Wizard until a questionnaire is active.</p>
         </div>
@@ -861,7 +862,7 @@ type CommandTab = 'tasks' | 'rules' | 'questionnaires';
 const TABS: { id: CommandTab; label: string; icon: React.ReactNode; color: string }[] = [
   { id: 'tasks',          label: 'Practical Tasks',       icon: <Zap className="w-4 h-4" />,          color: 'bg-violet-300 dark:bg-violet-700' },
   { id: 'rules',          label: 'Recommendation Rules',  icon: <ShieldCheck className="w-4 h-4" />,   color: 'bg-blue-300 dark:bg-blue-700' },
-  { id: 'questionnaires', label: 'Questionnaires',         icon: <ClipboardList className="w-4 h-4" />, color: 'bg-orange-300 dark:bg-orange-700' },
+  { id: 'questionnaires', label: 'Questionnaires',         icon: <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-4 h-4 object-contain" />, color: 'bg-orange-300 dark:bg-orange-700' },
 ];
 
 function GoalCommandCenter({ category, goal, onBack }: {
@@ -890,7 +891,7 @@ function GoalCommandCenter({ category, goal, onBack }: {
       {/* Goal info banner */}
       <div className="flex items-center gap-4 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl">
         <div className="w-10 h-10 rounded-xl bg-emerald-300 border-2 border-black flex items-center justify-center shrink-0">
-          <Layers className="w-5 h-5 text-gray-900" />
+          <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-black text-gray-900 dark:text-gray-100">{goal.goalName}</p>
@@ -937,12 +938,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
   const [delCat, setDelCat] = useState<GoalCategoryDto | null>(null);
   const [delGoal, setDelGoal] = useState<GoalDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-
-  const flash = (type: 'success' | 'error', msg: string) => {
-    setAlert({ type, msg });
-    setTimeout(() => setAlert(null), 4000);
-  };
+  const alert = useAlert();
 
   const fetchCategories = useCallback(async () => {
     setCatLoading(true);
@@ -966,10 +962,10 @@ function CategoryGoalExplorer({ onEnterGoal }: {
   const handleSaveCat = async (payload: GoalCategoryPayload) => {
     if (catModal?.editing) {
       await adminGoalApi.updateCategory(catModal.editing.categoryId, payload);
-      flash('success', 'Category updated.');
+      alert.success('Category updated.');
     } else {
       await adminGoalApi.createCategory(payload);
-      flash('success', 'Category created.');
+      alert.success('Category created.');
     }
     setCatModal(null);
     fetchCategories();
@@ -977,7 +973,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
 
   const handleToggleCat = async (cat: GoalCategoryDto) => {
     try { await adminGoalApi.toggleCategoryStatus(cat.categoryId, !cat.isActive); fetchCategories(); }
-    catch { flash('error', 'Status update failed.'); }
+    catch { alert.error('Status update failed.'); }
   };
 
   const handleDeleteCat = async () => {
@@ -985,21 +981,21 @@ function CategoryGoalExplorer({ onEnterGoal }: {
     setDelLoading(true);
     try {
       await adminGoalApi.deleteCategory(delCat.categoryId);
-      flash('success', 'Category deleted.');
+      alert.success('Category deleted.');
       if (selectedCat?.categoryId === delCat.categoryId) setSelectedCat(null);
       setDelCat(null);
       fetchCategories();
-    } catch (ex: any) { flash('error', ex?.response?.data?.message ?? 'Delete failed.'); }
+    } catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Delete failed.'); }
     finally { setDelLoading(false); }
   };
 
   const handleSaveGoal = async (payload: GoalPayload) => {
     if (goalModal?.editing) {
       await adminGoalApi.updateGoal(goalModal.editing.goalId, payload);
-      flash('success', 'Goal updated.');
+      alert.success('Goal updated.');
     } else {
       await adminGoalApi.createGoal(payload);
-      flash('success', 'Goal created.');
+      alert.success('Goal created.');
     }
     setGoalModal(null);
     if (selectedCat) fetchGoals(selectedCat);
@@ -1010,21 +1006,15 @@ function CategoryGoalExplorer({ onEnterGoal }: {
     setDelLoading(true);
     try {
       await adminGoalApi.deleteGoal(delGoal.goalId);
-      flash('success', 'Goal deleted.');
+      alert.success('Goal deleted.');
       setDelGoal(null);
       if (selectedCat) fetchGoals(selectedCat);
-    } catch (ex: any) { flash('error', ex?.response?.data?.message ?? 'Delete failed.'); }
+    } catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Delete failed.'); }
     finally { setDelLoading(false); }
   };
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {alert && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[3px_3px_0_0_#1A1D20] ${alert.type === 'success' ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'}`}>
-          {alert.msg}
-        </div>
-      )}
-
       {/* Split pane */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Left: Categories */}
@@ -1072,7 +1062,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
         <div className="flex-1 flex flex-col gap-3 border-4 border-black dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-800 shadow-[4px_4px_0_0_#1A1D20] p-5 overflow-hidden">
           {!selectedCat ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-              <Layers className="w-16 h-16 opacity-20 mb-4" />
+              <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-16 h-16 object-contain opacity-20 mb-4" />
               <p className="font-black text-lg text-gray-500 dark:text-gray-400">Select a Category</p>
               <p className="text-sm">Choose a category on the left to view and manage its goals.</p>
             </div>
@@ -1093,7 +1083,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
                   <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
                 ) : goals.length === 0 ? (
                   <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
-                    <Layers className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
                     <p className="font-bold">No goals in this category</p>
                     <p className="text-sm">Add the first goal using the button above.</p>
                   </div>
@@ -1154,7 +1144,7 @@ export default function GoalTaskEngineHub() {
       {/* Page header */}
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-2xl bg-emerald-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-          <Layers className="w-6 h-6 text-gray-900" />
+          <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-6 h-6 object-contain" />
         </div>
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Goal Engine Hub</h1>

@@ -73,7 +73,8 @@
       "subscriptionWallet": "Gói & Ví Gem",
       "questCommand": "Trung Tâm Nhiệm Vụ",
       "proofQueue": "Hàng Đợi Bằng Chứng",
-      "bossRaid": "Đột Kích Trùm"
+      "bossRaid": "Đột Kích Trùm",
+      "partyReminder": "Nhắc Nhở Party"
     }
   },
   "header": {
@@ -240,6 +241,10 @@
         "bossRaid": {
           "title": "Đột Kích Trùm",
           "subtitle": "Đăng ký đột kích hàng tuần"
+        },
+        "partyReminder": {
+          "title": "Nhắc Nhở Party",
+          "subtitle": "Quản lý nhắc nhở & theo dõi Shared HP"
         }
       }
     },
@@ -271,6 +276,9 @@
       "couldNotLoad": "Không thể tải mẫu trùm.",
       "failedToLoad": "Không thể tải dữ liệu trùm.",
       "registrationFailed": "Đăng ký thất bại.",
+      "registrationSuccess": "Đã đăng ký Trùm tuần thành công!",
+      "chestClaimSuccess": "Đã nhận phần thưởng thành công!",
+      "chestClaimFailed": "Nhận phần thưởng thất bại.",
       "unexpectedError": "Đã xảy ra lỗi không mong đợi.",
       "party": "Nhóm",
       "boss": "Trùm",
@@ -319,7 +327,8 @@
         "title": "Xóa Nhiệm Vụ?",
         "cancel": "Hủy",
         "deleting": "Đang xóa…",
-        "deleteForever": "Xóa Vĩnh Viễn"
+        "deleteForever": "Xóa Vĩnh Viễn",
+        "deleted": "Đã xóa nhiệm vụ thành công!"
       },
       "errors": {
         "selectParty": "Vui lòng chọn một nhóm trước.",
@@ -434,6 +443,39 @@
         "rejectionFailed": "Từ chối thất bại.",
         "errorOccurred": "Đã xảy ra lỗi."
       }
+    },
+    "partyReminder": {
+      "pageTitle": "Nhắc Nhở Party",
+      "selectParty": "Chọn Party",
+      "chooseParty": "— Chọn một party —",
+      "selectPartyHint": "Chọn một party để xem rủi ro Shared HP và cấu hình nhắc nhở",
+      "sharedHpRisk": "Rủi Ro Shared HP",
+      "noActiveRaid": "Party chưa có Weekly Boss đang hoạt động",
+      "riskLevel": "Mức Rủi Ro",
+      "sharedHpEnabled": "Trạng Thái",
+      "highRiskWarning": "Shared HP đang ở mức nguy hiểm! Hãy thúc đẩy thành viên hoàn thành nhiệm vụ.",
+      "wipedWarning": "Party đã bị WipeOut! Shared HP đã cạn kiệt hoàn toàn.",
+      "settings": "Cấu Hình Nhắc Nhở",
+      "questDeadline": "Nhắc Hạn Chót Nhiệm Vụ",
+      "remind2h": "Nhắc trước 2 giờ",
+      "remind30m": "Nhắc trước 30 phút",
+      "dailyReminder": "Nhắc Hàng Ngày",
+      "weeklyBossReminder": "Nhắc Weekly Boss",
+      "hour": "Giờ (UTC)",
+      "day": "Thứ",
+      "channels": "Kênh Gửi",
+      "saveBtn": "Lưu Cấu Hình",
+      "saving": "Đang lưu…",
+      "saveSuccess": "Đã lưu cấu hình nhắc nhở thành công!",
+      "saveFailed": "Lưu cấu hình thất bại.",
+      "dispatchTitle": "Bắn Reminder Ngay",
+      "dispatchBtn": "Bắn Reminder",
+      "dispatching": "Đang gửi…",
+      "dispatchSuccess": "Đã gửi reminder thành công!",
+      "dispatchFailed": "Gửi reminder thất bại.",
+      "type": "Loại",
+      "notifications": "Thông Báo Đã Tạo",
+      "chatMessages": "Tin Party Chat"
     }
   },
   "profile": {
@@ -647,11 +689,7 @@
         "createParty": "Tạo Nhóm"
       },
       "disbandModal": {
-        "title": "Giải Tán Nhóm?",
-        "message": "Bạn có chắc muốn giải tán nhóm này không? Hành động này không thể hoàn tác và tất cả thành viên sẽ bị đuổi.",
-        "cancel": "Hủy",
-        "disbanding": "Đang giải tán…",
-        "confirm": "Có, Giải Tán"
+        "disbandVerb": "Giải Tán"
       },
       "kickModal": {
         "title": "Xóa Thành Viên?",
@@ -660,9 +698,6 @@
         "cancel": "Hủy",
         "removing": "Đang xóa…",
         "confirm": "Có, Đuổi"
-      },
-      "disbandModal": {
-        "disbandVerb": "Giải Tán"
       },
       "flashCreated": "Đã tạo nhóm thành công! 🎉",
       "flashCreateFailed": "Tạo nhóm thất bại.",

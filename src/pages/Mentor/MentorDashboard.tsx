@@ -1,13 +1,12 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
-import { Gem, Target, Inbox, Skull, Users } from "lucide-react";
 
 const hubs = [
     {
         titleKey: "mentor.dashboard.hubs.parties.title",
         descKey: "mentor.dashboard.hubs.parties.subtitle",
-        icon: <Users className="w-8 h-8" />,
+        icon: "/icon/Player/Friend/64px/Friend 1st 64px.png",
         path: "/mentor/parties",
         bg: "bg-[#D1FAE5]",
         darkBg: "dark:bg-emerald-900/30",
@@ -17,7 +16,7 @@ const hubs = [
     {
         titleKey: "mentor.dashboard.hubs.subscription.title",
         descKey: "mentor.dashboard.hubs.subscription.subtitle",
-        icon: <Gem className="w-8 h-8" />,
+        icon: "/icon/Currency/Premium/64px/Premium 1st 64px.png",
         path: "/mentor/subscription",
         bg: "bg-[#FEF9C3]",
         darkBg: "dark:bg-amber-900/30",
@@ -27,7 +26,7 @@ const hubs = [
     {
         titleKey: "mentor.dashboard.hubs.questCommand.title",
         descKey: "mentor.dashboard.hubs.questCommand.subtitle",
-        icon: <Target className="w-8 h-8" />,
+        icon: "/icon/Item/Target/64px/Golden Target 1st 64px.png",
         path: "/mentor/quests",
         bg: "bg-[#EDE9FE]",
         darkBg: "dark:bg-violet-900/30",
@@ -37,7 +36,7 @@ const hubs = [
     {
         titleKey: "mentor.dashboard.hubs.proofQueue.title",
         descKey: "mentor.dashboard.hubs.proofQueue.subtitle",
-        icon: <Inbox className="w-8 h-8" />,
+        icon: "/icon/Main/Verify/64px/Verify 1st 64px.png",
         path: "/mentor/proofs",
         bg: "bg-[#CCFBF1]",
         darkBg: "dark:bg-teal-900/30",
@@ -47,12 +46,22 @@ const hubs = [
     {
         titleKey: "mentor.dashboard.hubs.bossRaid.title",
         descKey: "mentor.dashboard.hubs.bossRaid.subtitle",
-        icon: <Skull className="w-8 h-8" />,
+        icon: "/icon/Player/Skull/64px/Skull 1st 64px.png",
         path: "/mentor/boss-raid",
         bg: "bg-[#FEE2E2]",
         darkBg: "dark:bg-red-900/30",
         border: "border-red-400",
         shadow: "shadow-[4px_4px_0_0_#991b1b]",
+    },
+    {
+        titleKey: "mentor.dashboard.hubs.partyReminder.title",
+        descKey: "mentor.dashboard.hubs.partyReminder.subtitle",
+        icon: "/icon/Item/Clock/64px/Golden Clock 1st 64px.png",
+        path: "/mentor/party-reminder",
+        bg: "bg-[#EDE9FE]",
+        darkBg: "dark:bg-violet-900/20",
+        border: "border-violet-300",
+        shadow: "shadow-[4px_4px_0_0_#3b1f6e]",
     },
 ];
 
@@ -94,7 +103,7 @@ export default function MentorDashboard() {
                         `}
                     >
                         <div className="p-3 bg-white dark:bg-gray-700 border-4 border-black rounded-xl w-fit shadow-[3px_3px_0_0_#1A1D20]">
-                            {hub.icon}
+                            <img src={hub.icon} alt="" className="w-8 h-8 object-contain" />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-gray-900 dark:text-white">{t(hub.titleKey)}</h2>

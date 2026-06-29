@@ -3,14 +3,9 @@ import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useSidebar } from "../context/SidebarContext";
 import { ChevronDownIcon } from "../icons";
-import {
-    LayoutDashboard,
-    Users,
-    Gem,
-    Target,
-    Inbox,
-    Skull,
-} from "lucide-react";
+const GameIcon = ({ src, alt = "" }: { src: string; alt?: string }) => (
+    <img src={src} alt={alt} className="w-5 h-5 object-contain shrink-0" />
+);
 
 type NavItem = {
     nameKey: string;
@@ -22,36 +17,41 @@ type NavItem = {
 
 const navItems: NavItem[] = [
     {
-        icon: <LayoutDashboard className="w-5 h-5 shrink-0" />,
+        icon: <GameIcon src="/icon/Main/House/64px/Green House 1st 64px.png" alt="Dashboard" />,
         nameKey: "nav.mentor.dashboard",
         path: "/mentor/dashboard",
     },
     {
-        icon: <Users className="w-5 h-5 shrink-0" />,
+        icon: <GameIcon src="/icon/Player/Friend/64px/Friend 1st 64px.png" alt="My Parties" />,
         nameKey: "nav.mentor.myParties",
         path: "/mentor/parties",
         sectionKey: "nav.sections.GUILD",
     },
     {
-        icon: <Gem className="w-5 h-5 shrink-0" />,
+        icon: <GameIcon src="/icon/Currency/Premium/64px/Premium 1st 64px.png" alt="Subscription" />,
         nameKey: "nav.mentor.subscriptionWallet",
         path: "/mentor/subscription",
     },
     {
-        icon: <Target className="w-5 h-5 shrink-0" />,
+        icon: <GameIcon src="/icon/Item/Target/64px/Golden Target 1st 64px.png" alt="Quest Command" />,
         nameKey: "nav.mentor.questCommand",
         path: "/mentor/quests",
         sectionKey: "nav.sections.COMMAND",
     },
     {
-        icon: <Inbox className="w-5 h-5 shrink-0" />,
+        icon: <GameIcon src="/icon/Main/Verify/64px/Verify 1st 64px.png" alt="Proof Queue" />,
         nameKey: "nav.mentor.proofQueue",
         path: "/mentor/proofs",
     },
     {
-        icon: <Skull className="w-5 h-5 shrink-0" />,
+        icon: <GameIcon src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="Boss Raid" />,
         nameKey: "nav.mentor.bossRaid",
         path: "/mentor/boss-raid",
+    },
+    {
+        icon: <GameIcon src="/icon/Item/Clock/64px/Golden Clock 1st 64px.png" alt="Party Reminder" />,
+        nameKey: "nav.mentor.partyReminder",
+        path: "/mentor/party-reminder",
     },
 ];
 

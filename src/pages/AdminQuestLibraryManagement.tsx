@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  BookOpen, Plus, Pencil, Trash2, X, Loader2,
-  ToggleLeft, ToggleRight, Trophy, ShieldAlert,
-  ChevronDown, ChevronUp, Users, Zap, Star, Coins,
+  Plus, Pencil, Trash2, X, Loader2,
+  ToggleLeft, ToggleRight, ShieldAlert,
+  ChevronDown, ChevronUp, Users, Zap, Coins,
 } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
 import { adminQuestLibraryApi } from '../api/adminQuestLibraryApi';
 import { adminGoalApi } from '../api/adminGoalApi';
 import type {
@@ -52,16 +53,6 @@ const btnBase = [
 const Portal = ({ children }: { children: React.ReactNode }) =>
   createPortal(children, document.body);
 
-// ─── Flash ───────────────────────────────────────────────────────────────────
-function Flash({ alert }: { alert: { type: 'success' | 'error'; msg: string } | null }) {
-  if (!alert) return null;
-  return (
-    <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[3px_3px_0_0_#1A1D20] max-w-sm ${alert.type === 'success' ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'}`}>
-      {alert.msg}
-    </div>
-  );
-}
-
 // ─── Reward Modal ─────────────────────────────────────────────────────────────
 function RewardModal({ item, onClose, onSaved }: {
   item: QuestLibraryItemDto;
@@ -73,15 +64,16 @@ function RewardModal({ item, onClose, onSaved }: {
   const [xp, setXp] = useState(item.rewardXp);
   const [gems, setGems] = useState(item.rewardGems);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
+  const alert = useAlert();
 
   const handleSave = async () => {
-    setSaving(true); setErr('');
+    setSaving(true);
     try {
       await adminQuestLibraryApi.setRewardMatrix(item.templateId, { gold, bonusGold, xp, gems } as SetRewardMatrixPayload);
+      alert.success('Rewards saved.');
       onSaved();
     } catch (ex: any) {
-      setErr(ex?.response?.data?.message ?? 'Failed to save rewards.');
+      alert.error(ex?.response?.data?.message ?? 'Failed to save rewards.');
     } finally { setSaving(false); }
   };
 
@@ -91,20 +83,19 @@ function RewardModal({ item, onClose, onSaved }: {
         <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
           <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-amber-100 dark:bg-amber-900/30 rounded-t-3xl">
             <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-700 dark:text-amber-400" />
+              <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-5 h-5 object-contain" alt="" />
               <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">Edit Rewards</h2>
             </div>
             <button onClick={onClose} className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded-lg"><X className="w-5 h-5" /></button>
           </div>
           <div className="p-5 space-y-4">
             <p className="text-xs font-bold text-gray-400 truncate">Quest: {item.title}</p>
-            {err && <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
 
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Gold', icon: <Coins className="w-3.5 h-3.5 text-yellow-500" />, val: gold, set: setGold },
                 { label: 'Bonus Gold', icon: <Coins className="w-3.5 h-3.5 text-orange-400" />, val: bonusGold, set: setBonusGold },
-                { label: 'XP', icon: <Star className="w-3.5 h-3.5 text-blue-500" />, val: xp, set: setXp },
+                { label: 'XP', icon: <img src="/icon/Item/Medal/64px/Bronze Medal 1st 64px.png" className="w-3.5 h-3.5 object-contain" alt="" />, val: xp, set: setXp },
                 { label: 'Gems', icon: <Zap className="w-3.5 h-3.5 text-purple-500" />, val: gems, set: setGems },
               ].map(f => (
                 <div key={f.label}>
@@ -124,7 +115,7 @@ function RewardModal({ item, onClose, onSaved }: {
             <div className="flex gap-3 pt-1">
               <button onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
               <button onClick={handleSave} disabled={saving} className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white`}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />} Save
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-4 h-4 object-contain" alt="" />} Save
               </button>
             </div>
           </div>
@@ -143,19 +134,20 @@ function GoalsModal({ item, allGoals, onClose, onSaved }: {
 }) {
   const [selectedIds, setSelectedIds] = useState<number[]>(item.goalIds ?? []);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
+  const alert = useAlert();
 
   const toggle = (id: number) =>
     setSelectedIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
 
   const handleSave = async () => {
-    if (selectedIds.length === 0) { setErr('Must keep at least 1 goal.'); return; }
-    setSaving(true); setErr('');
+    if (selectedIds.length === 0) { alert.error('Must keep at least 1 goal.'); return; }
+    setSaving(true);
     try {
       await adminQuestLibraryApi.setPersonalization(item.templateId, { goalIds: selectedIds } as SetPersonalizationPayload);
+      alert.success('Goal mappings updated.');
       onSaved();
     } catch (ex: any) {
-      setErr(ex?.response?.data?.message ?? 'Failed to update goals.');
+      alert.error(ex?.response?.data?.message ?? 'Failed to update goals.');
     } finally { setSaving(false); }
   };
 
@@ -173,7 +165,6 @@ function GoalsModal({ item, allGoals, onClose, onSaved }: {
           <div className="p-5 space-y-3 overflow-y-auto flex-1">
             <p className="text-xs font-bold text-gray-400 truncate">Quest: {item.title}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Thay thế toàn bộ goal mappings. <strong>({selectedIds.length} selected)</strong></p>
-            {err && <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-300 rounded-xl px-3 py-2">{err}</p>}
             {allGoals.length === 0 ? (
               <p className="text-xs text-amber-600 font-semibold">No goals found.</p>
             ) : (
@@ -222,16 +213,16 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
   const [gems, setGems] = useState(editing?.rewardGems ?? 0);
   const [selectedGoalIds, setSelectedGoalIds] = useState<number[]>(editing?.goalIds ?? []);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
+  const alert = useAlert();
 
   const toggleGoal = (id: number) =>
     setSelectedGoalIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) { setErr('Title is required.'); return; }
-    if (!editing && selectedGoalIds.length === 0) { setErr('Map to at least 1 goal.'); return; }
-    setSaving(true); setErr('');
+    if (!title.trim()) { alert.error('Title is required.'); return; }
+    if (!editing && selectedGoalIds.length === 0) { alert.error('Map to at least 1 goal.'); return; }
+    setSaving(true);
     try {
       if (editing) {
         const payload: UpdateQuestLibraryItemPayload = {
@@ -261,7 +252,7 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
         await onSave(payload, true);
       }
     } catch (ex: any) {
-      setErr(ex?.response?.data?.message ?? 'Save failed.');
+      alert.error(ex?.response?.data?.message ?? 'Save failed.');
     } finally { setSaving(false); }
   };
 
@@ -271,15 +262,13 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
         <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-xl max-h-[90vh] flex flex-col">
           <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-violet-100 dark:bg-violet-900/30 rounded-t-3xl shrink-0">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-violet-700 dark:text-violet-400" />
+              <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-5 h-5 object-contain" alt="" />
               <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? 'Edit Quest' : 'New Quest'}</h2>
             </div>
             <button onClick={onClose} className="p-1 hover:bg-violet-200 dark:hover:bg-violet-800 rounded-lg"><X className="w-5 h-5" /></button>
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
-            {err && <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
-
             <div>
               <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Title *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Drink 2L of water" required />
@@ -449,7 +438,7 @@ function ExpandedRow({ item, allGoals, onRefresh }: {
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
         <button onClick={() => setShowReward(true)} className={`${btnBase} bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 py-1.5 text-xs`}>
-          <Trophy className="w-3.5 h-3.5" /> Edit Rewards
+          <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-3.5 h-3.5 object-contain" alt="" /> Edit Rewards
         </button>
         <button onClick={() => setShowGoals(true)} className={`${btnBase} bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 py-1.5 text-xs`}>
           <Users className="w-3.5 h-3.5" /> Edit Goals
@@ -553,12 +542,7 @@ export default function AdminQuestLibraryManagement() {
   const [delItem, setDelItem] = useState<QuestLibraryItemDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
   const [statusChanging, setStatusChanging] = useState<number | null>(null);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-
-  const flash = useCallback((type: 'success' | 'error', msg: string) => {
-    setAlert({ type, msg });
-    setTimeout(() => setAlert(null), 3500);
-  }, []);
+  const alertCtx = useAlert();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -571,14 +555,14 @@ export default function AdminQuestLibraryManagement() {
         const data = Array.isArray(res.data) ? res.data : [];
         setItems(data);
       } else {
-        flash('error', res.message ?? 'Failed to load.');
+        alertCtx.error(res.message ?? 'Failed to load.');
       }
     } catch {
-      flash('error', 'Failed to load quest library.');
+      alertCtx.error('Failed to load quest library.');
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterDiff, flash]);
+  }, [filterStatus, filterDiff, alertCtx]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -591,11 +575,11 @@ export default function AdminQuestLibraryManagement() {
   const handleSave = async (payload: CreateQuestLibraryItemPayload | UpdateQuestLibraryItemPayload, isNew: boolean) => {
     if (isNew) {
       await adminQuestLibraryApi.create(payload as CreateQuestLibraryItemPayload);
-      flash('success', 'Quest created.');
+      alertCtx.success('Quest created.');
     } else {
       const p = payload as UpdateQuestLibraryItemPayload;
       await adminQuestLibraryApi.update(p.templateId, p);
-      flash('success', 'Quest updated.');
+      alertCtx.success('Quest updated.');
     }
     setFormModal(null);
     load();
@@ -605,10 +589,10 @@ export default function AdminQuestLibraryManagement() {
     setStatusChanging(item.templateId);
     try {
       await adminQuestLibraryApi.changeStatus(item.templateId, { action });
-      flash('success', `Quest ${action}ed.`);
+      alertCtx.success(`Quest ${action}ed.`);
       load();
     } catch (ex: any) {
-      flash('error', ex?.response?.data?.message ?? 'Status change failed.');
+      alertCtx.error(ex?.response?.data?.message ?? 'Status change failed.');
     } finally { setStatusChanging(null); }
   };
 
@@ -617,11 +601,11 @@ export default function AdminQuestLibraryManagement() {
     setDelLoading(true);
     try {
       await adminQuestLibraryApi.deleteItem(delItem.templateId);
-      flash('success', 'Quest deleted.');
+      alertCtx.success('Quest deleted.');
       setDelItem(null);
       load();
     } catch (ex: any) {
-      flash('error', ex?.response?.data?.message ?? 'Delete failed.');
+      alertCtx.error(ex?.response?.data?.message ?? 'Delete failed.');
     } finally { setDelLoading(false); }
   };
 
@@ -634,12 +618,10 @@ export default function AdminQuestLibraryManagement() {
 
   return (
     <div className="space-y-6">
-      <Flash alert={alert} />
-
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="w-12 h-12 rounded-2xl bg-violet-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-          <BookOpen className="w-6 h-6 text-gray-900" />
+          <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-6 h-6 object-contain" alt="" />
         </div>
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">System Quest Library</h1>
@@ -696,7 +678,7 @@ export default function AdminQuestLibraryManagement() {
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-20 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl text-gray-400">
-          <BookOpen className="w-14 h-14 mx-auto mb-3 opacity-20" />
+          <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-14 h-14 mx-auto mb-3 opacity-20 object-contain" alt="" />
           <p className="font-black text-lg">No quests found</p>
           <p className="text-sm mt-1">Create a quest and map it to at least one goal before publishing.</p>
         </div>

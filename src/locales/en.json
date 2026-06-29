@@ -73,7 +73,8 @@
       "subscriptionWallet": "Subscription & Wallet",
       "questCommand": "Quest Command",
       "proofQueue": "Proof Queue",
-      "bossRaid": "Boss Raid"
+      "bossRaid": "Boss Raid",
+      "partyReminder": "Party Reminder"
     }
   },
   "header": {
@@ -240,6 +241,10 @@
         "bossRaid": {
           "title": "Boss Raid",
           "subtitle": "Register for weekly raid"
+        },
+        "partyReminder": {
+          "title": "Party Reminder",
+          "subtitle": "Manage reminders & monitor Shared HP"
         }
       }
     },
@@ -271,6 +276,9 @@
       "couldNotLoad": "Could not load boss template.",
       "failedToLoad": "Failed to load boss data.",
       "registrationFailed": "Registration failed.",
+      "registrationSuccess": "Weekly Boss registered successfully!",
+      "chestClaimSuccess": "Reward claimed successfully!",
+      "chestClaimFailed": "Failed to claim reward.",
       "unexpectedError": "An unexpected error occurred.",
       "party": "Party",
       "boss": "Boss",
@@ -319,7 +327,8 @@
         "title": "Delete Quest?",
         "cancel": "Cancel",
         "deleting": "Deleting…",
-        "deleteForever": "Delete Forever"
+        "deleteForever": "Delete Forever",
+        "deleted": "Quest deleted successfully!"
       },
       "errors": {
         "selectParty": "Please select a party first.",
@@ -434,6 +443,39 @@
         "rejectionFailed": "Rejection failed.",
         "errorOccurred": "An error occurred."
       }
+    },
+    "partyReminder": {
+      "pageTitle": "Party Reminder",
+      "selectParty": "Select Party",
+      "chooseParty": "— Choose a party —",
+      "selectPartyHint": "Select a party to view Shared HP risk and configure reminders",
+      "sharedHpRisk": "Shared HP Risk",
+      "noActiveRaid": "This party has no active Weekly Boss raid",
+      "riskLevel": "Risk Level",
+      "sharedHpEnabled": "Status",
+      "highRiskWarning": "Shared HP is critically low! Encourage members to complete their quests.",
+      "wipedWarning": "Party has been Wiped Out! Shared HP is fully depleted.",
+      "settings": "Reminder Settings",
+      "questDeadline": "Quest Deadline Reminders",
+      "remind2h": "Remind 2 hours before deadline",
+      "remind30m": "Remind 30 minutes before deadline",
+      "dailyReminder": "Daily Party Reminder",
+      "weeklyBossReminder": "Weekly Boss Reminder",
+      "hour": "Hour (UTC)",
+      "day": "Day",
+      "channels": "Delivery Channels",
+      "saveBtn": "Save Settings",
+      "saving": "Saving…",
+      "saveSuccess": "Reminder settings saved successfully!",
+      "saveFailed": "Failed to save reminder settings.",
+      "dispatchTitle": "Dispatch Reminder Now",
+      "dispatchBtn": "Dispatch",
+      "dispatching": "Dispatching…",
+      "dispatchSuccess": "Reminder dispatched successfully!",
+      "dispatchFailed": "Failed to dispatch reminder.",
+      "type": "Type",
+      "notifications": "Notifications Created",
+      "chatMessages": "Party Chat Messages"
     }
   },
   "profile": {
@@ -647,11 +689,7 @@
         "createParty": "Create Party"
       },
       "disbandModal": {
-        "title": "Disband Party?",
-        "message": "Are you sure you want to disband this party? This action cannot be undone and all members will be kicked.",
-        "cancel": "Cancel",
-        "disbanding": "Disbanding…",
-        "confirm": "Yes, Disband"
+        "disbandVerb": "Disband"
       },
       "kickModal": {
         "title": "Remove Member?",
@@ -660,9 +698,6 @@
         "cancel": "Cancel",
         "removing": "Removing…",
         "confirm": "Yes, Kick"
-      },
-      "disbandModal": {
-        "disbandVerb": "Disband"
       },
       "flashCreated": "Party created successfully! 🎉",
       "flashCreateFailed": "Failed to create party.",

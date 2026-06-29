@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
+import { useAlert } from '../context/AlertContext';
 import type {
   SubscriptionPackageDto,
   RewardTier,
@@ -199,6 +200,7 @@ interface PackageFormModalProps {
 
 const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModalProps) => {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [form, setForm] = useState<PackageFormState>(
     initial ? pkgToForm(initial) : EMPTY_FORM
   );
@@ -248,7 +250,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
       if (!res.success) throw new Error(res.message);
       onSuccess();
     } catch (e) {
-      setError(errMsg(e));
+      alert.error(errMsg(e));
     } finally {
       setSaving(false);
     }
@@ -556,12 +558,12 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) => 
 
 export default function AdminSubscriptionPage() {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [packages, setPackages] = useState<SubscriptionPackageDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [showInactive, setShowInactive] = useState(true);
   const [page, setPage] = useState(1);
-  const [toast, setToast] = useState('');
 
   // Modal state
   const [formModal, setFormModal] = useState<{
@@ -570,11 +572,6 @@ export default function AdminSubscriptionPage() {
   } | null>(null);
   const [toggleTarget, setToggleTarget] = useState<SubscriptionPackageDto | null>(null);
   const [toggling, setToggling] = useState(false);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3200);
-  };
 
   const fetchPackages = useCallback(async () => {
     setLoading(true);
@@ -605,7 +602,7 @@ export default function AdminSubscriptionPage() {
         isActive: !toggleTarget.isActive,
       });
       if (!res.success) throw new Error(res.message);
-      showToast(
+      alert.success(
         t('admin.subscriptionPage.toastStatusChanged', {
           code: toggleTarget.code,
           status: !toggleTarget.isActive
@@ -616,7 +613,7 @@ export default function AdminSubscriptionPage() {
       setToggleTarget(null);
       fetchPackages();
     } catch (e) {
-      alert(errMsg(e));
+      alert.error(errMsg(e));
     } finally {
       setToggling(false);
     }
@@ -849,7 +846,7 @@ export default function AdminSubscriptionPage() {
               ? t('admin.subscriptionPage.toastCreated')
               : t('admin.subscriptionPage.toastUpdated');
             setFormModal(null);
-            showToast(msg);
+            alert.success(msg);
             fetchPackages();
           }}
         />
@@ -864,12 +861,6 @@ export default function AdminSubscriptionPage() {
         />
       )}
 
-      {/* ── Toast notification ── */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[100000] bg-[#1A1D20] dark:bg-white text-white dark:text-black px-5 py-3 rounded-xl border-2 border-[#f7a561] shadow-[4px_4px_0_0_#f7a561] font-bold text-sm pointer-events-none">
-          ✅ {toast}
-        </div>
-      )}
     </div>
   );
 }

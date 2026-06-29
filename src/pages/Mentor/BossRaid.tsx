@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
 import partyMentorApi from "../../api/mentorPartyApi";
+import { useAlert } from "../../context/AlertContext";
 import type { PartyItem } from "../../types/api.types";
 import type {
     BossTemplateDto,
@@ -62,6 +63,7 @@ const RISK_COLORS: Record<string, string> = {
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function BossRaid() {
     const { t } = useTranslation();
+    const alert = useAlert();
     const [boss, setBoss] = useState<BossTemplateDto | null>(null);
     const [activeSub, setActiveSub] = useState<ActiveSubscriptionDto | null>(null);
     const [parties, setParties] = useState<PartyItem[]>([]);
@@ -79,7 +81,6 @@ export default function BossRaid() {
     const [statusLoading, setStatusLoading] = useState(false);
     const [registerLoading, setRegisterLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [registerError, setRegisterError] = useState<string | null>(null);
 
     // Load boss template + subscription + parties in parallel
     useEffect(() => {
@@ -146,7 +147,6 @@ export default function BossRaid() {
     const handleRegister = async () => {
         if (!selectedPartyId || !selectedDifficulty || !boss) return;
         setRegisterLoading(true);
-        setRegisterError(null);
         try {
             const res = await mentorApi.registerBossRaid({
                 mentorUserId: getMentorId(),
@@ -156,12 +156,13 @@ export default function BossRaid() {
             });
             if (res.success && res.data) {
                 setRegisterResult(res.data);
+                alert.success(t("mentor.bossRaid.registrationSuccess"));
                 fetchPartyStatus(selectedPartyId as number);
             } else {
-                setRegisterError(res.message || t("mentor.bossRaid.registrationFailed"));
+                alert.error(res.message || t("mentor.bossRaid.registrationFailed"));
             }
         } catch (e: any) {
-            setRegisterError(e?.response?.data?.message || t("mentor.bossRaid.unexpectedError"));
+            alert.error(e?.response?.data?.message || t("mentor.bossRaid.unexpectedError"));
         } finally {
             setRegisterLoading(false);
         }
@@ -175,8 +176,13 @@ export default function BossRaid() {
             if (res.success) {
                 setWeeklyChest(res.data ?? weeklyChest);
                 setClaimSuccess(true);
+                alert.success(t("mentor.bossRaid.chestClaimSuccess"));
+            } else {
+                alert.error(res.message || t("mentor.bossRaid.chestClaimFailed"));
             }
-        } catch { /* silent */ } finally {
+        } catch (e: any) {
+            alert.error(e?.response?.data?.message || t("mentor.bossRaid.unexpectedError"));
+        } finally {
             setClaimLoading(false);
         }
     };
@@ -228,7 +234,7 @@ export default function BossRaid() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-3 mb-1">
-                                <span className="text-4xl">💀</span>
+                                <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-10 h-10 object-contain" />
                                 <h1 className="text-3xl font-black">{boss.themeName}</h1>
                                 <span className={`px-2 py-0.5 text-xs font-black border-2 border-black rounded-full ${boss.status === "Published" ? "bg-emerald-400 text-emerald-900" : "bg-gray-200"}`}>
                                     {boss.status}
@@ -382,18 +388,16 @@ export default function BossRaid() {
                         )}
                     </div>
 
-                    {registerError && (
-                        <div className="mb-4 p-3 bg-red-100 border-2 border-red-400 rounded-xl text-sm font-bold text-red-700">
-                            {registerError}
-                        </div>
-                    )}
 
                     <button
                         onClick={handleRegister}
                         disabled={registerLoading || !selectedPartyId || !selectedDifficulty || !boss}
                         className="w-full py-3.5 border-2 border-black rounded-full font-black text-sm bg-red-500 text-white shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[4px_4px_0_0_#1A1D20] transition-all inline-flex items-center justify-center gap-2"
                     >
-                        {registerLoading ? <><Spinner size={16} /> {t("mentor.bossRaid.registering")}</> : t("mentor.bossRaid.registerBtn")}
+                        {registerLoading
+                        ? <><Spinner size={16} /> {t("mentor.bossRaid.registering")}</>
+                        : <><img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-5 h-5 object-contain" /> {t("mentor.bossRaid.registerBtn")}</>
+                    }
                     </button>
 
                     {/* Registration success */}
@@ -425,7 +429,7 @@ export default function BossRaid() {
 
                     {!selectedPartyId ? (
                         <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-500">
-                            <span className="text-4xl">⚔️</span>
+                            <img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-12 h-12 object-contain opacity-40" />
                             <p className="text-sm font-medium">{t("mentor.bossRaid.selectPartyToSeeStatus")}</p>
                         </div>
                     ) : statusLoading ? (
@@ -531,7 +535,7 @@ export default function BossRaid() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-500">
-                            <span className="text-4xl">💤</span>
+                            <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-12 h-12 object-contain opacity-30" />
                             <p className="text-sm font-medium">{t("mentor.bossRaid.notRegistered")}</p>
                         </div>
                     )}

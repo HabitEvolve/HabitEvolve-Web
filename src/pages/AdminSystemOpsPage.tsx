@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useAlert } from "../context/AlertContext";
 import {
     Zap, Flame, RotateCcw, Bell, User, Loader2,
     CheckCircle2, AlertCircle, ShieldAlert, HeartPulse,
@@ -22,20 +23,20 @@ interface DailyTaskPanelProps {
 }
 
 function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPanelProps) {
+    const alert = useAlert();
     const [date, setDate] = useState("");
     const [running, setRunning] = useState(false);
     const [result, setResult] = useState<number | null>(null);
-    const [err, setErr] = useState<string | null>(null);
 
     const handleRun = async () => {
         setRunning(true);
         setResult(null);
-        setErr(null);
         try {
             const count = await onRun(date || undefined);
             setResult(count);
+            alert.success(`Done — ${count} record(s) affected`);
         } catch (e: unknown) {
-            setErr(e instanceof Error ? e.message : "Operation failed.");
+            alert.error(e instanceof Error ? e.message : "Operation failed.");
         } finally {
             setRunning(false);
         }
@@ -78,12 +79,6 @@ function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPan
                         </span>
                     </div>
                 )}
-                {err && (
-                    <div className="flex items-center gap-2 bg-[#FFD6D6] border-2 border-[#1A1D20] rounded-xl px-4 py-3">
-                        <AlertCircle className="w-5 h-5 text-red-700 shrink-0" />
-                        <span className="text-sm font-black text-[#8b0000]">{err}</span>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -91,6 +86,7 @@ function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPan
 
 // ── Broadcast Panel ─────────────────────────────────────────────────────────
 function BroadcastPanel() {
+    const alert = useAlert();
     const [target, setTarget] = useState<BroadcastTarget>("ALL");
     const [role, setRole] = useState("");
     const [userIds, setUserIds] = useState("");
@@ -99,12 +95,11 @@ function BroadcastPanel() {
     const [body, setBody] = useState("");
     const [running, setRunning] = useState(false);
     const [result, setResult] = useState<BroadcastResultDto | null>(null);
-    const [err, setErr] = useState<string | null>(null);
 
     const handleSend = async () => {
-        if (!title.trim()) { setErr("Title is required."); return; }
-        if (target === "ROLE" && !role.trim()) { setErr("Role is required for ROLE target."); return; }
-        if (target === "USERS" && !userIds.trim()) { setErr("User IDs are required for USERS target."); return; }
+        if (!title.trim()) { alert.error("Title is required."); return; }
+        if (target === "ROLE" && !role.trim()) { alert.error("Role is required for ROLE target."); return; }
+        if (target === "USERS" && !userIds.trim()) { alert.error("User IDs are required for USERS target."); return; }
 
         const parsedIds = target === "USERS"
             ? userIds.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
@@ -112,7 +107,6 @@ function BroadcastPanel() {
 
         setRunning(true);
         setResult(null);
-        setErr(null);
         try {
             const res = await adminSystemOpsApi.broadcastNotification({
                 target,
@@ -123,9 +117,9 @@ function BroadcastPanel() {
                 body: body.trim() || undefined,
             });
             if (res.success) setResult(res.data);
-            else setErr(res.message ?? "Broadcast failed.");
+            else alert.error(res.message ?? "Broadcast failed.");
         } catch (e: unknown) {
-            setErr(e instanceof Error ? e.message : "Broadcast failed.");
+            alert.error(e instanceof Error ? e.message : "Broadcast failed.");
         } finally {
             setRunning(false);
         }
@@ -208,12 +202,6 @@ function BroadcastPanel() {
                         className="w-full border-2 border-[#1A1D20] rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f7a561] dark:bg-gray-800 dark:text-gray-100 resize-none"
                     />
                 </div>
-                {err && (
-                    <div className="flex items-center gap-2 bg-[#FFD6D6] border-2 border-[#1A1D20] rounded-lg px-4 py-2">
-                        <AlertCircle className="w-4 h-4 text-red-700 shrink-0" />
-                        <span className="text-xs font-black text-[#8b0000]">{err}</span>
-                    </div>
-                )}
                 <button
                     onClick={handleSend}
                     disabled={running}

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import { useAlert } from "../context/AlertContext";
 import { adminPracticalTaskApi } from "../api/adminPracticalTaskApi";
 import { adminGoalApi } from "../api/adminGoalApi";
 import { useTableFilters } from "../hooks/useTableFilters";
@@ -145,24 +146,6 @@ const TargetIcon = () => (
   </svg>
 );
 
-// ── ALERT BANNER ──────────────────────────────────────────────────────────────
-const AlertBanner = ({ alert }: { alert: { type: "success" | "error"; message: string } }) =>
-  alert.type === "success" ? (
-    <div className="mb-5 flex items-center gap-3 bg-emerald-50 border-4 border-emerald-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      <span className="font-black text-emerald-800 text-sm">{alert.message}</span>
-    </div>
-  ) : (
-    <div className="mb-5 flex items-center gap-3 bg-red-50 border-4 border-red-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      <span className="font-black text-red-800 text-sm">{alert.message}</span>
-    </div>
-  );
-
 // ── SKELETON ROW ──────────────────────────────────────────────────────────────
 const SkeletonRow = ({ cells }: { cells: number }) => (
   <tr className="border-b-2 border-gray-100 animate-pulse">
@@ -241,10 +224,10 @@ interface TaskFormModalProps {
   editing: PracticalTaskDto | null;
   onClose: () => void;
   onSuccess: () => void;
-  onAlert: (a: { type: "success" | "error"; message: string }) => void;
 }
 
-const TaskFormModal = ({ goalId, goalName, editing, onClose, onSuccess, onAlert }: TaskFormModalProps) => {
+const TaskFormModal = ({ goalId, goalName, editing, onClose, onSuccess }: TaskFormModalProps) => {
+  const notify = useAlert();
   const [form, setForm] = useState<Omit<PracticalTaskPayload, "goalId">>({
     title: editing?.title ?? "",
     description: editing?.description ?? "",
@@ -265,10 +248,10 @@ const TaskFormModal = ({ goalId, goalName, editing, onClose, onSuccess, onAlert 
     try {
       if (editing) {
         await adminPracticalTaskApi.updateTask(editing.taskId, payload);
-        onAlert({ type: "success", message: "Task updated successfully!" });
+        notify.success("Task updated successfully!");
       } else {
         await adminPracticalTaskApi.createTask(payload);
-        onAlert({ type: "success", message: "Task created successfully!" });
+        notify.success("Task created successfully!");
       }
       onClose();
       onSuccess();
@@ -371,10 +354,10 @@ interface DeleteConfirmModalProps {
   task: PracticalTaskDto;
   onClose: () => void;
   onSuccess: () => void;
-  onAlert: (a: { type: "success" | "error"; message: string }) => void;
 }
 
-const DeleteConfirmModal = ({ task, onClose, onSuccess, onAlert }: DeleteConfirmModalProps) => {
+const DeleteConfirmModal = ({ task, onClose, onSuccess }: DeleteConfirmModalProps) => {
+  const notify = useAlert();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -383,7 +366,7 @@ const DeleteConfirmModal = ({ task, onClose, onSuccess, onAlert }: DeleteConfirm
     setError(null);
     try {
       await adminPracticalTaskApi.deleteTask(task.taskId);
-      onAlert({ type: "success", message: `"${task.title}" has been deleted.` });
+      notify.success(`"${task.title}" has been deleted.`);
       onClose();
       onSuccess();
     } catch (err) {
@@ -438,14 +421,6 @@ const DeleteConfirmModal = ({ task, onClose, onSuccess, onAlert }: DeleteConfirm
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AdminPracticalTaskManagement() {
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 4000);
-    return () => clearTimeout(t);
-  }, [alert]);
-
   // ── URL CONTEXT (pre-selection from Hub 1) ────────────────────────────────
   const [searchParams] = useSearchParams();
 
@@ -554,8 +529,6 @@ export default function AdminPracticalTaskManagement() {
         description="Manage practical task templates for the HabitEvolve platform"
       />
       <PageBreadcrumb pageTitle="Practical Task Templates" />
-
-      {alert && <AlertBanner alert={alert} />}
 
       {/* ── PAGE HEADER ──────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -803,7 +776,6 @@ export default function AdminPracticalTaskManagement() {
           editing={editingTask}
           onClose={closeForm}
           onSuccess={fetchTasks}
-          onAlert={a => setAlert(a)}
         />
       )}
 
@@ -813,7 +785,6 @@ export default function AdminPracticalTaskManagement() {
           task={deletingTask}
           onClose={() => setDeletingTask(null)}
           onSuccess={fetchTasks}
-          onAlert={a => setAlert(a)}
         />
       )}
     </>

@@ -5,6 +5,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import mentorApi from "../../api/mentorApi";
 import mentorWalletApi, { submitSepayForm } from "../../api/mentorWalletApi";
+import { useAlert } from "../../context/AlertContext";
 import type {
     ActiveSubscriptionDto,
     MentorWalletDto,
@@ -57,12 +58,11 @@ interface PurchaseModalProps {
 
 const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
     const { t } = useTranslation();
+    const alert = useAlert();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const handlePurchase = async () => {
         setLoading(true);
-        setError(null);
         try {
             const res = await mentorApi.purchaseSubscription({
                 mentorUserId: getMentorId(),
@@ -73,10 +73,10 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
             if (res.success && res.data) {
                 onSuccess(res.data);
             } else {
-                setError(res.message || t("mentor.subscriptionWallet.purchaseFailed"));
+                alert.error(res.message || t("mentor.subscriptionWallet.purchaseFailed"));
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || t("mentor.subscriptionWallet.unexpectedError"));
+            alert.error(e?.response?.data?.message || t("mentor.subscriptionWallet.unexpectedError"));
         } finally {
             setLoading(false);
         }
@@ -115,15 +115,9 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                 <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-gray-500 font-medium">{t("mentor.subscriptionWallet.cost")}</span>
                     <span className="text-2xl font-black text-amber-700">
-                        {pkg.price.toLocaleString()} 💎
+                        {pkg.price.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-5 h-5 object-contain align-text-bottom" />
                     </span>
                 </div>
-
-                {error && (
-                    <p className="mb-3 p-2.5 bg-red-100 border-2 border-red-400 rounded-xl text-sm font-bold text-red-700">
-                        {error}
-                    </p>
-                )}
 
                 <div className="flex gap-3">
                     <button
@@ -164,15 +158,14 @@ interface GemStoreModalProps {
 
 const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps) => {
     const { t } = useTranslation();
+    const alert = useAlert();
     const [selected, setSelected] = useState<GemPackage>(GEM_PACKAGES[1]);
     const [method, setMethod] = useState<WalletPaymentMethod>('SEPAY');
     const [loading, setLoading] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const handleBuy = async () => {
         setLoading(true);
-        setError(null);
         let willRedirect = false;
         try {
             const res = await mentorWalletApi.topUpGems({
@@ -181,7 +174,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                 paymentMethod: method,
             });
             if (!res.success || !res.data) {
-                setError(res.message || t("mentor.subscriptionWallet.topUpFailed"));
+                alert.error(res.message || t("mentor.subscriptionWallet.topUpFailed"));
                 return;
             }
             const data = res.data;
@@ -194,7 +187,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                 onDemoSuccess(data.gemsBalance);
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || t("mentor.subscriptionWallet.unexpectedError"));
+            alert.error(e?.response?.data?.message || t("mentor.subscriptionWallet.unexpectedError"));
         } finally {
             if (!willRedirect) setLoading(false);
         }
@@ -224,7 +217,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-2xl font-black">💎 {t("mentor.subscriptionWallet.gemStore")}</h2>
+                    <h2 className="text-2xl font-black flex items-center gap-2"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-7 h-7 object-contain" />{t("mentor.subscriptionWallet.gemStore")}</h2>
                     <button
                         onClick={onClose}
                         className="w-8 h-8 flex items-center justify-center border-2 border-black rounded-full font-black text-lg hover:bg-gray-100 transition-colors"
@@ -233,7 +226,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     </button>
                 </div>
                 <p className="text-xs text-gray-500 font-medium mb-5">
-                    Rate: 1 💎 = {vndPerGem.toLocaleString()} VND
+                    Rate: 1 <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-3.5 h-3.5 object-contain align-text-bottom" /> = {vndPerGem.toLocaleString()} VND
                 </p>
 
                 {/* Package grid */}
@@ -256,7 +249,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                                 )}
                                 <div className="text-3xl font-black text-gray-900">
                                     {pkg.gems.toLocaleString()}
-                                    <span className="text-lg ml-1">💎</span>
+                                    <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-6 h-6 object-contain align-text-bottom ml-1" />
                                 </div>
                                 <div className="text-xs font-black text-gray-600 mt-0.5">{pkg.label}</div>
                                 <div className="text-sm font-black text-gray-800 mt-1">
@@ -283,12 +276,6 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     ))}
                 </div>
 
-                {error && (
-                    <p className="mb-4 p-2.5 bg-red-100 border-2 border-red-400 rounded-xl text-sm font-bold text-red-700">
-                        {error}
-                    </p>
-                )}
-
                 {/* Buy button */}
                 <div className="flex gap-3">
                     <button
@@ -304,7 +291,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     >
                         {loading
                             ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</>
-                            : `${t("mentor.subscriptionWallet.buy")} ${selected.gems.toLocaleString()} 💎 — ${vndPrice} VND`
+                            : <>{t("mentor.subscriptionWallet.buy")} {selected.gems.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-4 h-4 object-contain align-text-bottom" /> — {vndPrice} VND</>
                         }
                     </button>
                 </div>
@@ -324,21 +311,20 @@ interface CancelSubModalProps {
 
 const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: CancelSubModalProps) => {
     const { t } = useTranslation();
+    const alert = useAlert();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const handleConfirmCancel = async () => {
         setLoading(true);
-        setError(null);
         try {
             const res = await mentorApi.cancelSubscription(subscriptionId);
             if (res.success) {
                 onSuccess();
             } else {
-                setError(res.message || t("mentor.subscriptionWallet.cancellationFailed"));
+                alert.error(res.message || t("mentor.subscriptionWallet.cancellationFailed"));
             }
         } catch (e: any) {
-            setError(e?.response?.data?.message || t("mentor.subscriptionWallet.unexpectedError"));
+            alert.error(e?.response?.data?.message || t("mentor.subscriptionWallet.unexpectedError"));
         } finally {
             setLoading(false);
         }
@@ -386,12 +372,6 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                         ))}
                     </ul>
                 </div>
-
-                {error && (
-                    <p className="mb-4 p-2.5 bg-red-100 border-2 border-red-400 rounded-xl text-sm font-bold text-red-700">
-                        {error}
-                    </p>
-                )}
 
                 <div className="flex gap-3">
                     {/* Ghost/secondary — "safe" choice always on the left */}
@@ -511,7 +491,7 @@ export default function SubscriptionWallet() {
                 {/* Wallet Card */}
                 <div className="bg-[#FEF9C3] dark:bg-amber-900/30 border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-black">{t("mentor.subscriptionWallet.gemWallet")} 💎</h2>
+                        <h2 className="text-lg font-black flex items-center gap-2">{t("mentor.subscriptionWallet.gemWallet")} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-5 h-5 object-contain" /></h2>
                         <button
                             onClick={() => setShowTopUp(true)}
                             className="px-3 py-1.5 text-xs border-2 border-black rounded-full font-black bg-amber-400 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
@@ -521,11 +501,11 @@ export default function SubscriptionWallet() {
                     </div>
                     <div className="text-5xl font-black text-amber-700">
                         {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
-                        <span className="text-2xl ml-1">💎</span>
+                        <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-8 h-8 object-contain align-text-bottom ml-1" />
                     </div>
                     {wallet && (
                         <p className="text-xs text-gray-500 font-medium">
-                            Rate: 1 💎 = {wallet.vndPerGem.toLocaleString()} VND
+                            Rate: 1 <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-3.5 h-3.5 object-contain align-text-bottom" /> = {wallet.vndPerGem.toLocaleString()} VND
                         </p>
                     )}
                 </div>
@@ -618,7 +598,7 @@ export default function SubscriptionWallet() {
                                     <p className="text-xs text-gray-500 mt-0.5">{pkg.description}</p>
                                 </div>
                                 <div className="text-2xl font-black text-amber-700">
-                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-gray-500">💎 / {pkg.durationDays}d</span>
+                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-gray-500 inline-flex items-center gap-0.5"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> / {pkg.durationDays}d</span>
                                 </div>
                                 <ul className="text-xs space-y-1 text-gray-700 font-medium">
                                     <li>✦ {t("mentor.subscriptionWallet.upToParties", { count: pkg.maxParties })}</li>

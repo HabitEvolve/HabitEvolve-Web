@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Flame, Plus, Pencil, Trash2, X, Loader2,
-  ToggleLeft, ToggleRight, Skull, ShieldAlert,
+  Plus, Pencil, Trash2, X, Loader2,
+  ToggleLeft, ToggleRight, ShieldAlert,
 } from 'lucide-react';
 import { adminDailyBossApi } from '../api/adminDailyBossApi';
 import type { DailyBossTemplateDto, DailyBossPayload } from '../types/adminDailyBoss.types';
@@ -110,7 +110,7 @@ function BossFormModal({ editing, onSave, onClose }: {
         <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
           <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-orange-100 dark:bg-orange-900/30 rounded-t-3xl">
             <div className="flex items-center gap-2">
-              <Skull className="w-5 h-5 text-orange-700 dark:text-orange-400" />
+              <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
               <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">
                 {editing ? 'Edit Daily Boss' : 'New Daily Boss'}
               </h2>
@@ -213,7 +213,7 @@ function BossCard({ boss, onEdit, onToggle, onDelete, toggling }: {
       {/* Boss identity */}
       <div className="flex items-center gap-3 mb-3 pr-20">
         <div className="w-12 h-12 rounded-2xl border-2 border-black bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-2xl shrink-0 shadow-[2px_2px_0_0_#1A1D20]">
-          {boss.icon || <Skull className="w-6 h-6 text-orange-400" />}
+          {boss.icon || <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-5 h-5 object-contain" />}
         </div>
         <div className="min-w-0">
           <p className="font-black text-base text-gray-900 dark:text-gray-100 truncate">{boss.name}</p>
@@ -333,7 +333,7 @@ export default function AdminDailyBossManagement() {
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="w-12 h-12 rounded-2xl bg-orange-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-          <Flame className="w-6 h-6 text-gray-900" />
+          <img src="/icon/Main/Fire 2/64w/Fire 64px.png" alt="" className="w-5 h-5 object-contain" />
         </div>
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Daily Boss Pool</h1>
@@ -387,7 +387,7 @@ export default function AdminDailyBossManagement() {
         </div>
       ) : bosses.length === 0 ? (
         <div className="text-center py-20 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl text-gray-400">
-          <Skull className="w-14 h-14 mx-auto mb-3 opacity-20" />
+          <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-14 h-14 mx-auto mb-3 opacity-20 object-contain" />
           <p className="font-black text-lg">No bosses yet</p>
           <p className="text-sm mt-1">Add the first boss to the daily pool.</p>
         </div>

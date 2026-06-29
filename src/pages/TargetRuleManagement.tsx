@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminTargetRuleApi } from "../api/adminTargetRuleApi";
@@ -142,26 +143,6 @@ const StatusPill = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// ── ALERT BANNER ──────────────────────────────────────────────────────────────
-const AlertBanner = ({ alert }: { alert: { type: "success" | "error"; message: string } }) =>
-  alert.type === "success" ? (
-    <div className="mb-5 flex items-center gap-3 bg-emerald-50 border-4 border-emerald-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      <span className="font-black text-emerald-800 text-sm">{alert.message}</span>
-    </div>
-  ) : (
-    <div className="mb-5 flex items-center gap-3 bg-red-50 border-4 border-red-500 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-3.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      <span className="font-black text-red-800 text-sm">{alert.message}</span>
-    </div>
-  );
-
 // ── GAME MODAL ────────────────────────────────────────────────────────────────
 const GameModal = ({
   title, onClose, children, maxWidth = "max-w-xl",
@@ -239,6 +220,7 @@ const SkeletonRow = () => (
 // ══════════════════════════════════════════════════════════════════════════════
 export default function TargetRuleManagement() {
   const { t } = useTranslation();
+  const notify = useAlert();
 
   const RULE_FILTER_FIELDS: FilterField[] = [
     { key: "search",          label: t("admin.targetRules.filterSearch"),     type: "text",   placeholder: t("admin.targetRules.filterSearchPlaceholder") },
@@ -278,15 +260,6 @@ export default function TargetRuleManagement() {
     }
     return result;
   }, [rules, debouncedRuleFilters]);
-
-  // ── ALERT ─────────────────────────────────────────────────────────────────
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!alert) return;
-    const t = setTimeout(() => setAlert(null), 4000);
-    return () => clearTimeout(t);
-  }, [alert]);
 
   // ── FORM MODAL ────────────────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
@@ -369,10 +342,10 @@ export default function TargetRuleManagement() {
     try {
       if (editingRule) {
         await adminTargetRuleApi.updateRule(editingRule.ruleId, form);
-        setAlert({ type: "success", message: t("admin.targetRules.flashUpdated") });
+        notify.success(t("admin.targetRules.flashUpdated"));
       } else {
         await adminTargetRuleApi.createRule(form);
-        setAlert({ type: "success", message: t("admin.targetRules.flashCreated") });
+        notify.success(t("admin.targetRules.flashCreated"));
       }
       closeForm();
       fetchRules();
@@ -403,15 +376,13 @@ export default function TargetRuleManagement() {
     try {
       await adminTargetRuleApi.deleteRule(deletingRule.ruleId);
       closeDelete();
-      setAlert({ type: "success", message: t("admin.targetRules.flashDeleted") });
+      notify.success(t("admin.targetRules.flashDeleted"));
       fetchRules();
     } catch (err) {
-      setAlert({
-        type: "error",
-        message:
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? t("admin.targetRules.flashDeleteFailed"),
-      });
+      notify.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ?? t("admin.targetRules.flashDeleteFailed")
+      );
       closeDelete();
     } finally {
       setDeleting(false);
@@ -426,8 +397,6 @@ export default function TargetRuleManagement() {
         description="Manage target calculation rules for habit difficulty and measurement types"
       />
       <PageBreadcrumb pageTitle={t("admin.targetRules.pageTitle")} />
-
-      {alert && <AlertBanner alert={alert} />}
 
       {/* ── TOP ACTION BAR ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">

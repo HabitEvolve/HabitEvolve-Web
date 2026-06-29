@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ClipboardList, Plus, Pencil, Trash2, ChevronRight, X,
+  Plus, Pencil, Trash2, ChevronRight, X,
   Loader2, ToggleLeft, ToggleRight, HelpCircle, List, CheckSquare,
   Hash, AlignLeft, Star, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
 import { adminGoalApi } from '../api/adminGoalApi';
 import {
   QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
@@ -81,6 +82,7 @@ function TemplateFormModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [name, setName] = useState(editing?.templateName ?? '');
   const [desc, setDesc] = useState(editing?.description ?? '');
   const [saving, setSaving] = useState(false);
@@ -91,7 +93,7 @@ function TemplateFormModal({
     if (!name.trim()) { setErr(t('admin.questionnaire.templateForm.nameRequired')); return; }
     setSaving(true); setErr('');
     try { await onSave({ templateName: name.trim(), description: desc.trim() || undefined }); }
-    catch (ex: any) { setErr(ex?.response?.data?.message ?? t('admin.questionnaire.templateForm.nameRequired')); }
+    catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
   };
 
@@ -141,6 +143,7 @@ function QuestionFormModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [text, setText] = useState(editing?.questionText ?? '');
   const [type, setType] = useState<QuestionType>(editing?.questionType ?? 'SingleChoice');
   const [required, setRequired] = useState(editing?.isRequired ?? true);
@@ -156,7 +159,7 @@ function QuestionFormModal({
       ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order }
       : { templateId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order };
     try { await onSave(payload); }
-    catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
+    catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
   };
 
@@ -214,6 +217,7 @@ function OptionFormModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [text, setText] = useState(editing?.optionText ?? '');
   const [value, setValue] = useState(editing?.optionValue ?? '');
   const [order, setOrder] = useState(editing?.displayOrder ?? 1);
@@ -228,7 +232,7 @@ function OptionFormModal({
       ? { optionId: editing.optionId, optionText: text.trim(), optionValue: value.trim(), displayOrder: order }
       : { questionId, optionText: text.trim(), optionValue: value.trim(), displayOrder: order };
     try { await onSave(payload); }
-    catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
+    catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
   };
 
@@ -272,6 +276,7 @@ function OptionFormModal({
 // ─── Options sub-panel ────────────────────────────────────────────────────────
 function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefresh: () => void }) {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [optModal, setOptModal] = useState<{ editing: QuestionOptionDto | null } | null>(null);
   const [delOpt, setDelOpt] = useState<QuestionOptionDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
@@ -288,8 +293,13 @@ function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefres
   const handleDelete = async () => {
     if (!delOpt) return;
     setDelLoading(true);
-    try { await adminGoalApi.deleteQuestionOption(delOpt.optionId); setDelOpt(null); onRefresh(); }
-    finally { setDelLoading(false); }
+    try {
+      await adminGoalApi.deleteQuestionOption(delOpt.optionId);
+      setDelOpt(null);
+      onRefresh();
+    } catch (ex: any) {
+      alert.error(ex?.response?.data?.message ?? 'Delete failed.');
+    } finally { setDelLoading(false); }
   };
 
   return (
@@ -326,6 +336,7 @@ function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefres
 // ─── Questions right-panel ────────────────────────────────────────────────────
 function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateDto; onBack: () => void }) {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [questions, setQuestions] = useState<QuestionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedQ, setExpandedQ] = useState<number | null>(null);
@@ -344,17 +355,27 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
   useEffect(() => { fetch(); }, [fetch]);
 
   const handleSaveQ = async (payload: any) => {
-    if (qModal?.editing) await adminGoalApi.updateQuestion(qModal.editing.questionId, payload);
-    else await adminGoalApi.createQuestion(template.templateId, payload);
-    setQModal(null);
-    fetch();
+    try {
+      if (qModal?.editing) await adminGoalApi.updateQuestion(qModal.editing.questionId, payload);
+      else await adminGoalApi.createQuestion(template.templateId, payload);
+      alert.success(t('admin.questionnaire.flashUpdated'));
+      setQModal(null);
+      fetch();
+    } catch (ex: any) {
+      alert.error(ex?.response?.data?.message ?? 'Save failed.');
+    }
   };
 
   const handleDelQ = async () => {
     if (!delQ) return;
     setDelLoading(true);
-    try { await adminGoalApi.deleteQuestion(delQ.questionId); setDelQ(null); fetch(); }
-    finally { setDelLoading(false); }
+    try {
+      await adminGoalApi.deleteQuestion(delQ.questionId);
+      setDelQ(null);
+      fetch();
+    } catch (ex: any) {
+      alert.error(ex?.response?.data?.message ?? 'Delete failed.');
+    } finally { setDelLoading(false); }
   };
 
   const sorted = [...questions].sort((a, b) => a.displayOrder - b.displayOrder);
@@ -382,7 +403,7 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
           <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> {t('admin.questionnaire.loading')}</div>
         ) : sorted.length === 0 ? (
           <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
-            <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" />
+            <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
             <p className="font-bold">{t('admin.questionnaire.noQuestions')}</p>
           </div>
         ) : sorted.map(q => (
@@ -505,7 +526,7 @@ export default function QuestionnaireManagement() {
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="w-12 h-12 rounded-2xl bg-amber-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-          <ClipboardList className="w-6 h-6 text-gray-900" />
+          <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
         </div>
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('admin.questionnaire.pageTitle')}</h1>
@@ -524,7 +545,7 @@ export default function QuestionnaireManagement() {
             <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('admin.questionnaire.loading')}</div>
           ) : templates.length === 0 ? (
             <div className="text-center py-12 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
-              <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-40" /><p className="font-bold">{t('admin.questionnaire.noTemplates')}</p>
+              <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" /><p className="font-bold">{t('admin.questionnaire.noTemplates')}</p>
             </div>
           ) : templates.map(tpl => (
             <div
@@ -561,7 +582,7 @@ export default function QuestionnaireManagement() {
             <QuestionsPanel template={selectedTpl} onBack={() => setSelectedTpl(null)} />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400 gap-3">
-              <ClipboardList className="w-16 h-16 opacity-20" />
+              <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-16 h-16 object-contain opacity-20" />
               <p className="font-black text-lg text-gray-500 dark:text-gray-400">{t('admin.questionnaire.selectTemplate')}</p>
               <p className="text-sm">{t('admin.questionnaire.selectTemplateHint')}</p>
             </div>

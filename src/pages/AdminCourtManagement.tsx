@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Gavel, Trophy, X, ChevronLeft, ChevronRight, Loader2, ImageOff, Filter, Camera, Video, Monitor } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Loader2, ImageOff, Filter, Camera, Video, Monitor } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<string, {
   Rejected:      { label: "Rejected",       bg: "bg-red-100",     border: "border-red-400",     text: "text-red-800",     icon: SI("/icon/UI/X/64px/X 1st 64px.png") },
   ValidApprove:  { label: "Valid Approve",  bg: "bg-emerald-100", border: "border-emerald-400", text: "text-emerald-800", icon: SI("/icon/Main/Verify/64px/Verify 1st 64px.png") },
   FraudReject:   { label: "Fraud Reject",   bg: "bg-orange-100",  border: "border-orange-400",  text: "text-orange-800",  icon: SI("/icon/UI/Warning/64px/Warning 1st 64px.png") },
-  AdminOverride: { label: "Admin Override", bg: "bg-blue-100",    border: "border-blue-400",    text: "text-blue-800",    icon: <Gavel className="w-3.5 h-3.5 shrink-0" /> },
+  AdminOverride: { label: "Admin Override", bg: "bg-blue-100",    border: "border-blue-400",    text: "text-blue-800",    icon: <img src="/icon/Item/Hammer/64px/Hammer 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> },
   Expired:       { label: "Expired",        bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-600",    icon: SI("/icon/UI/Skip/64w/Skip 1st 64px.png") },
 };
 
@@ -60,9 +60,13 @@ const fmtDateTime = (d: string) =>
     hour: "2-digit", minute: "2-digit",
   });
 
-// ── ICONS (lucide-react wrappers) ─────────────────────────────────────────────
-const GavelIcon = ({ size = 16 }: { size?: number }) => <Gavel width={size} height={size} />;
-const TrophyIcon = ({ size = 16 }: { size?: number }) => <Trophy width={size} height={size} />;
+// ── ICONS (game icons) ────────────────────────────────────────────────────────
+const GavelIcon = ({ size = 16 }: { size?: number }) => (
+  <img src="/icon/Item/Hammer/64px/Hammer 1st 64px.png" alt="" style={{ width: size, height: size }} className="object-contain shrink-0" />
+);
+const TrophyIcon = ({ size = 16 }: { size?: number }) => (
+  <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" alt="" style={{ width: size, height: size }} className="object-contain shrink-0" />
+);
 const XIcon = () => <X className="w-4 h-4" />;
 const ChevronLeftIcon = () => <ChevronLeft className="w-3.5 h-3.5" />;
 const ChevronRightIcon = () => <ChevronRight className="w-3.5 h-3.5" />;
@@ -114,12 +118,12 @@ interface ReviewCaseModalProps {
 
 const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps) => {
   const { t } = useTranslation();
+  const alert = useAlert();
   const [data, setData] = useState<CourtCaseDto>(caseItem);
   const [detailLoading, setDetailLoading] = useState(true);
   const [verdict, setVerdict] = useState<"Approved" | "Rejected" | "">("");
   const [adminNote, setAdminNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
@@ -134,13 +138,12 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
     e.preventDefault();
     if (!verdict) return;
     setSubmitting(true);
-    setSubmitError(null);
     try {
       const payload: ResolveVerdictPayload = { verdict, adminNote };
       await adminCourtApi.resolveCase(caseItem.caseId, payload);
       onSuccess(caseItem.caseId);
     } catch (err) {
-      setSubmitError(errMsg(err) ?? "Failed to resolve case. Please try again.");
+      alert.error(errMsg(err) ?? "Failed to resolve case. Please try again.");
       setSubmitting(false);
     }
   };
@@ -402,12 +405,6 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                       className={`${inputCls} resize-none`}
                     />
                   </div>
-
-                  {submitError && (
-                    <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">
-                      {submitError}
-                    </p>
-                  )}
 
                   <div className="flex gap-3 pt-1">
                     <button

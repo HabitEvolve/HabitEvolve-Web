@@ -5,7 +5,10 @@ import {
   ChevronDownIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import { House, User, Gavel, Swords, Flame, Layers, BadgeQuestionMark, Scale, CreditCard, Settings, BookOpen, Activity } from "lucide-react";
+
+const GI = ({ src, alt = "" }: { src: string; alt?: string }) => (
+  <img src={src} alt={alt} className="w-5 h-5 object-contain shrink-0" />
+);
 
 type NavItem = {
   nameKey: string;
@@ -17,65 +20,65 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <House className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Main/House/64px/Blue House 1st 64px.png" alt="Dashboard" />,
     nameKey: "nav.admin.dashboard",
     path: "/home",
   },
   {
-    icon: <User className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Player/Player/64px/Player 1st 64px.png" alt="Users" />,
     nameKey: "nav.admin.user",
     path: "/user-management",
   },
   {
-    icon: <Gavel className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Item/Hammer/64px/Hammer 1st 64px.png" alt="Court" />,
     nameKey: "nav.admin.court",
     path: "/court-management",
   },
   {
-    icon: <Swords className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="Boss" />,
     nameKey: "nav.admin.boss",
     path: "/boss-management",
     sectionKey: "nav.sections.GAMEPLAY",
   },
   {
-    icon: <Flame className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Main/Fire 2/64w/Fire 64px.png" alt="Daily Boss" />,
     nameKey: "nav.admin.dailyBoss",
     path: "/daily-boss",
   },
   {
-    icon: <BookOpen className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="Quest Library" />,
     nameKey: "nav.admin.questLibrary",
     path: "/quest-library",
   },
   {
-    icon: <Layers className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="Goal Engine" />,
     nameKey: "nav.admin.goalEngine",
     path: "/goal-engine",
     sectionKey: "nav.sections.PERSONALIZATION",
   },
   {
-    icon: <BadgeQuestionMark className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/UI/Question Mark/64px/Question Mark 1st 64px.png" alt="Questionnaires" />,
     nameKey: "nav.admin.onboardingEval",
     path: "/questionnaires",
   },
   {
-    icon: <Scale className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Item/Target/64px/Golden Target 1st 64px.png" alt="Calc Rules" />,
     nameKey: "nav.admin.calcRules",
     path: "/target-rules",
     sectionKey: "nav.sections.CONFIGURATION",
   },
   {
-    icon: <Settings className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Main/Settings/64px/Settings 1 1st 64px.png" alt="System Config" />,
     nameKey: "nav.admin.systemConfig",
     path: "/system-config",
   },
   {
-    icon: <Activity className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Main/Stats/64px/Stats 2nd 64px.png" alt="System Ops" />,
     nameKey: "nav.admin.systemOps",
     path: "/system-ops",
   },
   {
-    icon: <CreditCard className="w-5 h-5 shrink-0" />,
+    icon: <GI src="/icon/Currency/Premium/64px/Premium 1st 64px.png" alt="Subscriptions" />,
     nameKey: "nav.admin.subscriptions",
     path: "/subscription-packages",
     sectionKey: "nav.sections.MONETIZATION",

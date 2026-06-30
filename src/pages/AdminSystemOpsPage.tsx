@@ -116,7 +116,7 @@ function BroadcastPanel() {
                 title: title.trim(),
                 body: body.trim() || undefined,
             });
-            if (res.success) setResult(res.data);
+            if (res.success) setResult(res.data ?? null);
             else alert.error(res.message ?? "Broadcast failed.");
         } catch (e: unknown) {
             alert.error(e instanceof Error ? e.message : "Broadcast failed.");
@@ -155,12 +155,16 @@ function BroadcastPanel() {
                 {target === "ROLE" && (
                     <div>
                         <label className="block text-xs font-black text-[#1A1D20] dark:text-gray-300 mb-1">Role *</label>
-                        <input
+                        <select
                             value={role}
                             onChange={e => setRole(e.target.value)}
-                            placeholder="ADMIN | MENTOR | USER"
                             className="w-full border-2 border-[#1A1D20] rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f7a561] dark:bg-gray-800 dark:text-gray-100"
-                        />
+                        >
+                            <option value="">— Select role —</option>
+                            <option value="PLAYER">PLAYER</option>
+                            <option value="MENTOR">MENTOR</option>
+                            <option value="ADMIN">ADMIN</option>
+                        </select>
                     </div>
                 )}
                 {target === "USERS" && (
@@ -256,7 +260,7 @@ function InAppPanel() {
                 title: title.trim(),
                 body: body.trim() || undefined,
             });
-            if (res.success) setResult(res.data);
+            if (res.success) setResult(res.data ?? null);
             else setErr(res.message ?? "Failed to send notification.");
         } catch (e: unknown) {
             setErr(e instanceof Error ? e.message : "Failed to send notification.");
@@ -374,7 +378,7 @@ function ProofOverridePanel() {
                 decision,
                 reason: reason.trim() || undefined,
             });
-            if (res.success) setResult(res.data);
+            if (res.success) setResult(res.data ?? null);
             else setErr(res.message ?? "Override failed.");
         } catch (e: unknown) {
             setErr(e instanceof Error ? e.message : "Override failed.");
@@ -508,7 +512,7 @@ function SharedHpPanel() {
             const res = action === "penalty"
                 ? await adminSystemOpsApi.applyHpPenalty(rid, payload)
                 : await adminSystemOpsApi.restoreHp(rid, payload);
-            if (res.success) setResult(res.data);
+            if (res.success) setResult(res.data ?? null);
             else setErr(res.message ?? `${action} failed.`);
         } catch (e: unknown) {
             setErr(e instanceof Error ? e.message : `${action} failed.`);

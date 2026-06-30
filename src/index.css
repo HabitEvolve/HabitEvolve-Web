@@ -321,15 +321,12 @@ layer(base);
   background-color: #344054;
 }
 
-/* ── DOT GRID BACKGROUND — Neo-Brutalism retro graph-paper texture ─────────── */
+/* ── GRADIENT BACKGROUND — brand palette: mint (primary) × gold (secondary) ─── */
 @utility dot-grid-bg {
-  background-color: #F9F8F6;
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.09) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background: linear-gradient(135deg, #f4fafd 0%, #e4f4ec 50%, #fef9ed 100%);
 
   .dark & {
-    background-color: #1a2231;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
   }
 }
 
@@ -432,16 +429,12 @@ layer(base);
     -webkit-appearance: none;
   }
 
-  /* Dot Grid backgrounds — apply as bg-dot-grid-light dark:bg-dot-grid-dark */
+  /* Gradient backgrounds — apply as bg-dot-grid-light dark:bg-dot-grid-dark */
   .bg-dot-grid-light {
-    background-color: #F9F8F6;
-    background-image: radial-gradient(#1A1D20 1px, transparent 1px);
-    background-size: 24px 24px;
+    background: linear-gradient(135deg, #f4fafd 0%, #e4f4ec 50%, #fef9ed 100%);
   }
   .bg-dot-grid-dark {
-    background-color: #1A1D20;
-    background-image: radial-gradient(#F9F8F6 1px, transparent 1px);
-    background-size: 24px 24px;
+    background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
   }
 }
 
@@ -452,13 +445,11 @@ layer(base);
    outside .admin-content). Elements with explicit dark: variants keep their own
    styles — use .dark-preserve-bg on elements that must stay white. */
 
-/* ── Dot Grid background dark mode ────────────────────────────────────────
-   bg-dot-grid-light/dark are defined as raw classes in @layer, so Tailwind v4
-   cannot generate dark: variants for them. Override directly here instead. */
+/* ── Gradient background dark mode override ─────────────────────────────────
+   bg-dot-grid-light/dark are in @layer, so Tailwind v4 can't generate dark:
+   variants for them. Override directly here for dark mode. */
 .dark .bg-dot-grid-light {
-  background-color: #1A1D20;
-  background-image: radial-gradient(#F9F8F6 1px, transparent 1px);
-  background-size: 24px 24px;
+  background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
 }
 
 /* ── Backgrounds ─────────────────────────────────────────────────────────── */

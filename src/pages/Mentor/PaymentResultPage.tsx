@@ -6,11 +6,9 @@ import mentorWalletApi from '../../api/mentorWalletApi';
 type PaymentStatus = 'LOADING' | 'SUCCESS' | 'FAILED';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-// Dot-grid background — a classic Neo-Brutalism texture
+// Gradient background — matches global brand palette (light mode only, page is standalone)
 const DOT_BG: React.CSSProperties = {
-    backgroundColor: '#FFFBF5',
-    backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
-    backgroundSize: '24px 24px',
+    background: 'linear-gradient(135deg, #f4fafd 0%, #e4f4ec 50%, #fef9ed 100%)',
 };
 
 // Minimum time (ms) the LOADING view is shown regardless of how fast the API responds.

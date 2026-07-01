@@ -6,7 +6,7 @@ const hubs = [
     {
         titleKey: "mentor.dashboard.hubs.parties.title",
         descKey: "mentor.dashboard.hubs.parties.subtitle",
-        icon: "/icon/Player/Friend/64px/Friend 1st 64px.png",
+        icon: "https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png",
         path: "/mentor/parties",
         bg: "bg-[#D1FAE5]",
         darkBg: "dark:bg-emerald-900/30",
@@ -17,51 +17,11 @@ const hubs = [
         titleKey: "mentor.dashboard.hubs.subscription.title",
         descKey: "mentor.dashboard.hubs.subscription.subtitle",
         icon: "/icon/Currency/Premium/64px/Premium 1st 64px.png",
-        path: "/mentor/subscription",
+        path: "/mentor/wallet",
         bg: "bg-[#FEF9C3]",
         darkBg: "dark:bg-amber-900/30",
         border: "border-amber-400",
         shadow: "shadow-[4px_4px_0_0_#92400e]",
-    },
-    {
-        titleKey: "mentor.dashboard.hubs.questCommand.title",
-        descKey: "mentor.dashboard.hubs.questCommand.subtitle",
-        icon: "/icon/Item/Target/64px/Golden Target 1st 64px.png",
-        path: "/mentor/quests",
-        bg: "bg-[#EDE9FE]",
-        darkBg: "dark:bg-violet-900/30",
-        border: "border-violet-400",
-        shadow: "shadow-[4px_4px_0_0_#3b1f6e]",
-    },
-    {
-        titleKey: "mentor.dashboard.hubs.proofQueue.title",
-        descKey: "mentor.dashboard.hubs.proofQueue.subtitle",
-        icon: "/icon/Main/Verify/64px/Verify 1st 64px.png",
-        path: "/mentor/proofs",
-        bg: "bg-[#CCFBF1]",
-        darkBg: "dark:bg-teal-900/30",
-        border: "border-teal-400",
-        shadow: "shadow-[4px_4px_0_0_#0f766e]",
-    },
-    {
-        titleKey: "mentor.dashboard.hubs.bossRaid.title",
-        descKey: "mentor.dashboard.hubs.bossRaid.subtitle",
-        icon: "/icon/Player/Skull/64px/Skull 1st 64px.png",
-        path: "/mentor/boss-raid",
-        bg: "bg-[#FEE2E2]",
-        darkBg: "dark:bg-red-900/30",
-        border: "border-red-400",
-        shadow: "shadow-[4px_4px_0_0_#991b1b]",
-    },
-    {
-        titleKey: "mentor.dashboard.hubs.partyReminder.title",
-        descKey: "mentor.dashboard.hubs.partyReminder.subtitle",
-        icon: "/icon/Item/Clock/64px/Golden Clock 1st 64px.png",
-        path: "/mentor/party-reminder",
-        bg: "bg-[#EDE9FE]",
-        darkBg: "dark:bg-violet-900/20",
-        border: "border-violet-300",
-        shadow: "shadow-[4px_4px_0_0_#3b1f6e]",
     },
 ];
 
@@ -89,7 +49,7 @@ export default function MentorDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {hubs.map((hub) => (
                     <Link
-                        key={hub.path}
+                        key={hub.titleKey}
                         to={hub.path}
                         className={`
                             group flex flex-col gap-4 p-6

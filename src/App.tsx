@@ -31,7 +31,6 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import UserManagement from "./pages/UserManagement";
 import EditProfile from "./pages/EditProfile";
-import PartyManagement from "./pages/PartyManagement";
 import TargetRuleManagement from "./pages/TargetRuleManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
 import AdminCourtManagement from "./pages/AdminCourtManagement";
@@ -44,10 +43,13 @@ import AdminConfigPage from "./pages/AdminConfigPage";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 import MentorDashboard from "./pages/Mentor/MentorDashboard";
 import SubscriptionWallet from "./pages/Mentor/SubscriptionWallet";
-import QuestCommand from "./pages/Mentor/QuestCommand";
-import ProofQueue from "./pages/Mentor/ProofQueue";
-import BossRaid from "./pages/Mentor/BossRaid";
-import PartyReminder from "./pages/Mentor/PartyReminder";
+import PartyList from "./pages/Mentor/PartyList";
+import PartyWorkspace from "./pages/Mentor/PartyWorkspace/PartyWorkspace";
+import OverviewTab from "./pages/Mentor/PartyWorkspace/OverviewTab";
+import QuestForgeTab from "./pages/Mentor/PartyWorkspace/QuestForgeTab";
+import ProofsTab from "./pages/Mentor/PartyWorkspace/ProofsTab";
+import BossRaidTab from "./pages/Mentor/PartyWorkspace/BossRaidTab";
+import RallyTab from "./pages/Mentor/PartyWorkspace/RallyTab";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 
 export default function App() {
@@ -111,12 +113,20 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['MENTOR']} />}>
             <Route element={<MentorLayout />}>
               <Route path="/mentor/dashboard" element={<MentorDashboard />} />
-              <Route path="/mentor/parties" element={<PartyManagement />} />
-              <Route path="/mentor/subscription" element={<SubscriptionWallet />} />
-              <Route path="/mentor/quests" element={<QuestCommand />} />
-              <Route path="/mentor/proofs" element={<ProofQueue />} />
-              <Route path="/mentor/boss-raid" element={<BossRaid />} />
-              <Route path="/mentor/party-reminder" element={<PartyReminder />} />
+              <Route path="/mentor/wallet" element={<SubscriptionWallet />} />
+              {/* Renamed from /mentor/subscription — redirect so old links/bookmarks still work */}
+              <Route path="/mentor/subscription" element={<Navigate to="/mentor/wallet" replace />} />
+              <Route path="/mentor/parties" element={<PartyList />} />
+              {/* Quests/Proofs/Boss Raid/Rally are now tabs inside a specific party's
+                  workspace instead of separate top-level pages. */}
+              <Route path="/mentor/parties/:partyId" element={<PartyWorkspace />}>
+                <Route index element={<Navigate to="overview" replace />} />
+                <Route path="overview" element={<OverviewTab />} />
+                <Route path="quests" element={<QuestForgeTab />} />
+                <Route path="proofs" element={<ProofsTab />} />
+                <Route path="boss-raid" element={<BossRaidTab />} />
+                <Route path="rally" element={<RallyTab />} />
+              </Route>
             </Route>
           </Route>
 

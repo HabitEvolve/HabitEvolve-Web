@@ -1,5 +1,8 @@
 ### dotenv ###
 .env
+.claude
+.impeccable
+.agents
 
 # Logs
 logs

@@ -436,6 +436,16 @@ layer(base);
   .bg-dot-grid-dark {
     background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
   }
+
+  /* Literal dot-texture — apply as bg-dot-pattern-light. Distinct from
+     bg-dot-grid-* above (those are gradients, not dots); used by the Mentor
+     "Command Ribbon" workspace background. Dark-mode swap is handled by the
+     .dark .bg-dot-pattern-light override below (same mechanism as bg-dot-grid-*,
+     since Tailwind v4 can't generate a dark: variant for a plain @layer class). */
+  .bg-dot-pattern-light {
+    background-image: radial-gradient(circle, rgba(61, 74, 62, 0.14) 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+  }
 }
 
 /* ── DARK MODE CONTENT AREA OVERRIDES ───────────────────────────────────────
@@ -450,6 +460,10 @@ layer(base);
    variants for them. Override directly here for dark mode. */
 .dark .bg-dot-grid-light {
   background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
+}
+
+.dark .bg-dot-pattern-light {
+  background-image: radial-gradient(circle, rgba(143, 200, 168, 0.16) 1.5px, transparent 1.5px);
 }
 
 /* ── Backgrounds ─────────────────────────────────────────────────────────── */
@@ -1040,4 +1054,52 @@ span.flatpickr-weekday,
 }
 .habit-toast-exit {
   animation: habitToastOut 0.33s ease-in forwards;
+}
+
+/* ── QUEST-BOARD ENTRANCE STAGGER — used by Party Management redesign ────── */
+@keyframes questRowIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.quest-row-in {
+  animation: questRowIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quest-row-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── PARTY WORKSPACE TAB-SWITCH CROSSFADE — no bounce, ease-out only ──────── */
+@keyframes tabPanelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tab-panel-in {
+  animation: tabPanelIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── MENTOR COMMAND RIBBON — mobile nav overlay slide-down ────────────────── */
+@keyframes navOverlayIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nav-overlay-in {
+  animation: navOverlayIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-overlay-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

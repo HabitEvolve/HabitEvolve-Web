@@ -70,6 +70,7 @@
     "mentor": {
       "dashboard": "Bảng Điều Khiển",
       "myParties": "Nhóm Của Tôi",
+      "wallet": "Ví",
       "subscriptionWallet": "Gói & Ví Gem",
       "questCommand": "Trung Tâm Nhiệm Vụ",
       "proofQueue": "Hàng Đợi Bằng Chứng",
@@ -80,6 +81,8 @@
   "header": {
     "toggleSidebar": "Ẩn/hiện thanh bên",
     "openSidebar": "Mở thanh bên",
+    "openNav": "Mở menu điều hướng",
+    "closeNav": "Đóng menu điều hướng",
     "searchPlaceholder": "Tìm kiếm hoặc nhập lệnh...",
     "switchToLight": "Chuyển sang chế độ sáng",
     "switchToDark": "Chuyển sang chế độ tối",
@@ -263,7 +266,7 @@
       "selectPartyToSeeStatus": "Chọn một nhóm để xem trạng thái đột kích",
       "notRegistered": "Nhóm chưa đăng ký đột kích trùm tuần này.",
       "participants": "Người Tham Gia",
-      "registrationSuccess": "Đăng Ký Thành Công! ⚔️",
+      "registrationSuccess": "Đã đăng ký Trùm tuần thành công!",
       "locked": "Khóa",
       "bossHp": "HP Trùm",
       "partySize": "Kích Thước Nhóm",
@@ -276,14 +279,29 @@
       "couldNotLoad": "Không thể tải mẫu trùm.",
       "failedToLoad": "Không thể tải dữ liệu trùm.",
       "registrationFailed": "Đăng ký thất bại.",
-      "registrationSuccess": "Đã đăng ký Trùm tuần thành công!",
       "chestClaimSuccess": "Đã nhận phần thưởng thành công!",
       "chestClaimFailed": "Nhận phần thưởng thất bại.",
       "unexpectedError": "Đã xảy ra lỗi không mong đợi.",
       "party": "Nhóm",
       "boss": "Trùm",
       "bossHpLabel": "HP Trùm",
-      "members": "thành viên"
+      "members": "thành viên",
+      "grimoire": {
+        "heroKicker": "Trận Chiến Hiện Tại",
+        "heroTimeLeft": "Thời Gian Còn Lại",
+        "heroLoot": "Tổng Phần Thưởng",
+        "countdownExpired": "Tuần đã kết thúc",
+        "countdownFormat": "{{d}} ngày {{h}} giờ {{m}} phút",
+        "sectionTitle": "Sách Triệu Hồi Quái Vật",
+        "sectionSubtitle": "Chọn độ khó và triệu hồi trùm tuần này cho nhóm.",
+        "filterAll": "Tất Cả",
+        "summonBtn": "Triệu Hồi",
+        "summoning": "Đang triệu hồi…",
+        "lootMGoldCap": "Giới hạn M-Gold",
+        "lootRewardTier": "Cấp Thưởng",
+        "selectPartyFirst": "Chọn một nhóm ở trên để triệu hồi",
+        "gridEmpty": "Trùm này chưa có chế độ độ khó nào được cấu hình."
+      }
     },
     "questCommand": {
       "pageTitle": "Trung Tâm Chỉ Huy Nhiệm Vụ",
@@ -349,7 +367,27 @@
       "colTitle": "Tiêu Đề",
       "colAssignee": "Người Được Giao",
       "colStatus": "Trạng Thái",
-      "assignQuest": "Giao Nhiệm Vụ"
+      "assignQuest": "Giao Nhiệm Vụ",
+      "forge": {
+        "kicker": "Chỉ Huy Nhiệm Vụ",
+        "title": "Lò Rèn Nhiệm Vụ",
+        "subtitle": "Tạo hình nhiệm vụ, nhắm mục tiêu, rồi gửi đi.",
+        "stepTarget": "Bước 1 · Mục Tiêu",
+        "stepIntel": "Bước 2 · Thông Tin",
+        "stepStakes": "Bước 3 · Phần Thưởng & Rủi Ro",
+        "deploymentDetails": "Chi tiết triển khai",
+        "noPartiesYet": "Chưa có nhóm nào — hãy tạo một nhóm ở Danh Sách Guild trước.",
+        "memberChipsHint": "Chạm vào một thành viên để nhắm mục tiêu",
+        "fanOutChipsHint": "Mỗi thành viên bên dưới sẽ nhận được nhiệm vụ này",
+        "previewKicker": "Xem Trước Cho Người Chơi",
+        "previewTitle": "Người chơi sẽ thấy như thế này",
+        "previewEmpty": "Điền thông tin nhiệm vụ để xem trước trực tiếp",
+        "previewUntitled": "Nhiệm Vụ Chưa Đặt Tên",
+        "previewNoDescription": "Chưa có mô tả.",
+        "previewMandatoryBadge": "Bắt Buộc",
+        "previewDeadlineNone": "Chưa đặt hạn chót",
+        "selectMemberAria": "Nhắm mục tiêu {{username}}"
+      }
     },
     "subscriptionWallet": {
       "pageTitle": "Gói Đăng Ký & Ví Gem",
@@ -442,6 +480,29 @@
         "rejectProof": "Từ Chối Bằng Chứng",
         "rejectionFailed": "Từ chối thất bại.",
         "errorOccurred": "Đã xảy ra lỗi."
+      },
+      "grid": {
+        "aiWarningTag": "CẢNH BÁO: AI NGHI NGỜ",
+        "filterAll": "Tất Cả",
+        "filterFlagged": "AI Đánh Dấu",
+        "filterRecent": "Gần Đây",
+        "selectAria": "Chọn bằng chứng này để duyệt hàng loạt",
+        "selectedCount": "Đã chọn {{count}}",
+        "approveSelected": "Chấp Thuận Đã Chọn",
+        "approvingSelected": "Đang chấp thuận…",
+        "clearSelection": "Bỏ chọn",
+        "viewComparison": "Chạm để đối chiếu yêu cầu với bằng chứng",
+        "comparisonTitle": "Yêu Cầu so với Bằng Chứng",
+        "comparisonRequirement": "Yêu Cầu",
+        "comparisonSubmitted": "Đã Nộp",
+        "comparisonQuestType": "Loại nhiệm vụ",
+        "comparisonProofType": "Loại bằng chứng yêu cầu",
+        "comparisonDeadline": "Hạn chót",
+        "comparisonNoDeadline": "Không có hạn chót",
+        "comparisonPlayerNote": "Ghi chú người chơi",
+        "comparisonClose": "Đóng",
+        "mascotEmptyTitle": "Xong hết rồi!",
+        "mascotEmptySubtitle": "Không có bằng chứng nào đang chờ — nghỉ ăn bánh thôi. 🍩"
       }
     },
     "partyReminder": {
@@ -475,7 +536,20 @@
       "dispatchFailed": "Gửi reminder thất bại.",
       "type": "Loại",
       "notifications": "Thông Báo Đã Tạo",
-      "chatMessages": "Tin Party Chat"
+      "chatMessages": "Tin Party Chat",
+      "guildRally": "Hiệu Triệu Guild",
+      "guildRallySubtitle": "Thổi kèn tập hợp — chọn một lời hiệu triệu và gửi tới cả nhóm.",
+      "autoRallySchedule": "Lịch Hiệu Triệu Tự Động"
+    },
+    "workspace": {
+      "tabsAria": "Các mục trong không gian nhóm",
+      "tabs": {
+        "overview": "Tổng Quan",
+        "quests": "Nhiệm Vụ",
+        "proofs": "Bằng Chứng",
+        "bossRaid": "Đột Kích Trùm",
+        "rally": "Hiệu Triệu"
+      }
     }
   },
   "profile": {
@@ -689,7 +763,14 @@
         "createParty": "Tạo Nhóm"
       },
       "disbandModal": {
-        "disbandVerb": "Giải Tán"
+        "disbandVerb": "Giải Tán",
+        "title": "Giải Tán Nhóm Này?",
+        "message": "Thao tác này sẽ xóa vĩnh viễn nhóm, loại toàn bộ thành viên và không thể hoàn tác.",
+        "cancel": "Hủy",
+        "confirm": "Giải Tán Vĩnh Viễn",
+        "disbanding": "Đang giải tán…",
+        "typeToConfirm": "Nhập \"{{name}}\" để xác nhận",
+        "typeToConfirmPlaceholder": "Tên nhóm"
       },
       "kickModal": {
         "title": "Xóa Thành Viên?",
@@ -713,7 +794,23 @@
       "flashUpdated": "Đã cập nhật nhóm thành công!",
       "flashUpdateFailed": "Cập nhật nhóm thất bại.",
       "flashDisbanded": "\"{{name}}\" đã bị giải tán.",
-      "flashDisbandFailed": "Giải tán nhóm thất bại."
+      "flashDisbandFailed": "Giải tán nhóm thất bại.",
+      "hub": {
+        "kicker": "Danh Sách Guild",
+        "heroLede": "Mọi nhóm bạn quản lý, tại một nơi duy nhất. Mở một nhóm để vào Trung Tâm Chỉ Huy.",
+        "createCta": "Rèn Nhóm Mới",
+        "createSub": "Khởi tạo một nhóm mới và cấp mã mời.",
+        "capacity": "{{current}}/{{max}} chỗ đã lấp đầy",
+        "full": "Đã đầy",
+        "commandKicker": "Trung Tâm Chỉ Huy",
+        "secretKeyLabel": "Mã Bí Mật",
+        "secretKeyHint": "Chia sẻ mã này để người chơi tham gia ngay lập tức, không cần phê duyệt.",
+        "membersKicker": "Đội Hình",
+        "kickAria": "Xóa {{username}} khỏi nhóm",
+        "requestsKicker": "Đang Chờ Tham Gia",
+        "requestsEmptyHint": "Yêu cầu tham gia mới sẽ xuất hiện ở đây ngay khi có người gõ cửa.",
+        "hazardEyebrow": "Hành động không thể hoàn tác"
+      }
     },
     "bossManagement": {
       "pageTitle": "Mẫu Boss Hàng Tuần",

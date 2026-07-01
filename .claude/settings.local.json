@@ -24,7 +24,26 @@
       "Bash(PartyManagement)",
       "Bash(UserManagement)",
       "Bash(TargetRuleManagement)",
-      "Bash(QuestionnaireManagement\")"
+      "Bash(QuestionnaireManagement\")",
+      "Bash(node .agents/skills/impeccable/scripts/context.mjs)",
+      "Bash(ls \"C:/Users/ADMIN/.claude/skills/impeccable/scripts/\" 2>&1; echo \"---\"; ls -la /d/HabitEvolve-Web/.agents 2>&1)",
+      "Read(//c/Users/ADMIN/.claude/skills/impeccable/scripts/**)",
+      "Bash(node \"C:/Users/ADMIN/.claude/skills/impeccable/scripts/context.mjs\")",
+      "Bash(sed -n '1,60p' src/layout/MentorSidebar.tsx)",
+      "Bash(sed -n '1,60p' src/components/common/ComponentCard.tsx)",
+      "Bash(node \"C:/Users/ADMIN/.claude/skills/impeccable/scripts/detect-csp.mjs\")",
+      "Read(//c/Users/ADMIN/.claude/skills/**)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(xargs grep -l \"partyManagement\")",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(npx eslint *)",
+      "Bash(npx vite *)",
+      "Bash(ls \"public/icon/Main/Fire 2/64px\")",
+      "Bash(find public/icon -iname \"*bell*\" -o -iname \"*mail*\" -o -iname \"*envelope*\" -o -iname \"*phone*\" -o -iname \"*robot*\" -o -iname \"*owl*\" -o -iname \"*bot*\" -o -iname \"*megaphone*\" -o -iname \"*speaker*\" -o -iname \"*book*\")",
+      "Bash(ls \"public/icon/Main/Save/64px\")",
+      "Bash(ls \"public/icon/Item/Target/64px\")",
+      "Bash(ls \"public/icon/Main/Star/64px\")"
     ]
   }
 }

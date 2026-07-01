@@ -70,6 +70,7 @@
     "mentor": {
       "dashboard": "Dashboard",
       "myParties": "My Parties",
+      "wallet": "Wallet",
       "subscriptionWallet": "Subscription & Wallet",
       "questCommand": "Quest Command",
       "proofQueue": "Proof Queue",
@@ -80,6 +81,8 @@
   "header": {
     "toggleSidebar": "Toggle sidebar",
     "openSidebar": "Open sidebar",
+    "openNav": "Open navigation menu",
+    "closeNav": "Close navigation menu",
     "searchPlaceholder": "Search or type command...",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
@@ -263,7 +266,7 @@
       "selectPartyToSeeStatus": "Select a party to see their raid status",
       "notRegistered": "Party hasn't registered for this week's boss yet.",
       "participants": "Participants",
-      "registrationSuccess": "Registration Successful! ⚔️",
+      "registrationSuccess": "Weekly Boss registered successfully!",
       "locked": "Locked",
       "bossHp": "Boss HP",
       "partySize": "Party Size",
@@ -276,14 +279,29 @@
       "couldNotLoad": "Could not load boss template.",
       "failedToLoad": "Failed to load boss data.",
       "registrationFailed": "Registration failed.",
-      "registrationSuccess": "Weekly Boss registered successfully!",
       "chestClaimSuccess": "Reward claimed successfully!",
       "chestClaimFailed": "Failed to claim reward.",
       "unexpectedError": "An unexpected error occurred.",
       "party": "Party",
       "boss": "Boss",
       "bossHpLabel": "Boss HP",
-      "members": "members"
+      "members": "members",
+      "grimoire": {
+        "heroKicker": "Current Encounter",
+        "heroTimeLeft": "Time Left",
+        "heroLoot": "Total Rewards",
+        "countdownExpired": "Week ended",
+        "countdownFormat": "{{d}}d {{h}}h {{m}}m",
+        "sectionTitle": "The Monster Grimoire",
+        "sectionSubtitle": "Pick a difficulty and summon the weekly boss for this party.",
+        "filterAll": "All",
+        "summonBtn": "Summon",
+        "summoning": "Summoning…",
+        "lootMGoldCap": "M-Gold cap",
+        "lootRewardTier": "Reward Tier",
+        "selectPartyFirst": "Select a party above to summon",
+        "gridEmpty": "This boss has no difficulty modes configured yet."
+      }
     },
     "questCommand": {
       "pageTitle": "Quest Command Center",
@@ -349,7 +367,27 @@
       "colTitle": "Title",
       "colAssignee": "Assignee",
       "colStatus": "Status",
-      "assignQuest": "Assign Quest"
+      "assignQuest": "Assign Quest",
+      "forge": {
+        "kicker": "Quest Command",
+        "title": "Quest Forge",
+        "subtitle": "Shape a quest, aim it, send it out.",
+        "stepTarget": "Step 1 · The Target",
+        "stepIntel": "Step 2 · The Intel",
+        "stepStakes": "Step 3 · The Stakes",
+        "deploymentDetails": "Deployment details",
+        "noPartiesYet": "No parties yet — create one in Guild Roster first.",
+        "memberChipsHint": "Tap a member to target them",
+        "fanOutChipsHint": "Every member below will receive this quest",
+        "previewKicker": "Player Preview",
+        "previewTitle": "How players will see it",
+        "previewEmpty": "Fill in the quest to see a live preview",
+        "previewUntitled": "Untitled Quest",
+        "previewNoDescription": "No description yet.",
+        "previewMandatoryBadge": "Mandatory",
+        "previewDeadlineNone": "No deadline set",
+        "selectMemberAria": "Target {{username}}"
+      }
     },
     "subscriptionWallet": {
       "pageTitle": "Subscription & Wallet",
@@ -442,6 +480,29 @@
         "rejectProof": "Reject Proof",
         "rejectionFailed": "Rejection failed.",
         "errorOccurred": "An error occurred."
+      },
+      "grid": {
+        "aiWarningTag": "WARNING: AI SUSPICIOUS",
+        "filterAll": "All",
+        "filterFlagged": "Flagged by AI",
+        "filterRecent": "Recent",
+        "selectAria": "Select this proof for batch review",
+        "selectedCount": "{{count}} selected",
+        "approveSelected": "Approve Selected",
+        "approvingSelected": "Approving…",
+        "clearSelection": "Clear",
+        "viewComparison": "Tap to compare requirement vs proof",
+        "comparisonTitle": "Requirement vs. Proof",
+        "comparisonRequirement": "The Requirement",
+        "comparisonSubmitted": "What Was Submitted",
+        "comparisonQuestType": "Quest type",
+        "comparisonProofType": "Proof type required",
+        "comparisonDeadline": "Deadline",
+        "comparisonNoDeadline": "No deadline",
+        "comparisonPlayerNote": "Player note",
+        "comparisonClose": "Close",
+        "mascotEmptyTitle": "All caught up!",
+        "mascotEmptySubtitle": "No proof pending — time for a snack. 🍩"
       }
     },
     "partyReminder": {
@@ -475,7 +536,20 @@
       "dispatchFailed": "Failed to dispatch reminder.",
       "type": "Type",
       "notifications": "Notifications Created",
-      "chatMessages": "Party Chat Messages"
+      "chatMessages": "Party Chat Messages",
+      "guildRally": "Guild Rally",
+      "guildRallySubtitle": "Sound the horn — pick a battle cry and send it to the whole party.",
+      "autoRallySchedule": "Auto-Rally Schedule"
+    },
+    "workspace": {
+      "tabsAria": "Party workspace sections",
+      "tabs": {
+        "overview": "Overview",
+        "quests": "Quests",
+        "proofs": "Proofs",
+        "bossRaid": "Boss Raid",
+        "rally": "Rally"
+      }
     }
   },
   "profile": {
@@ -689,7 +763,14 @@
         "createParty": "Create Party"
       },
       "disbandModal": {
-        "disbandVerb": "Disband"
+        "disbandVerb": "Disband",
+        "title": "Disband This Party?",
+        "message": "This permanently deletes the party, removes every member, and cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Disband Forever",
+        "disbanding": "Disbanding…",
+        "typeToConfirm": "Type \"{{name}}\" to confirm",
+        "typeToConfirmPlaceholder": "Party name"
       },
       "kickModal": {
         "title": "Remove Member?",
@@ -713,7 +794,23 @@
       "flashUpdated": "Party updated successfully!",
       "flashUpdateFailed": "Failed to update party.",
       "flashDisbanded": "\"{{name}}\" has been disbanded.",
-      "flashDisbandFailed": "Failed to disband party."
+      "flashDisbandFailed": "Failed to disband party.",
+      "hub": {
+        "kicker": "Guild Roster",
+        "heroLede": "Every party you run, in one place. Open one to step into its Command Center.",
+        "createCta": "Forge a New Party",
+        "createSub": "Start a fresh roster and issue its invite code.",
+        "capacity": "{{current}}/{{max}} seats filled",
+        "full": "Full",
+        "commandKicker": "Command Center",
+        "secretKeyLabel": "Secret Key",
+        "secretKeyHint": "Share this key so players can join instantly, no approval needed.",
+        "membersKicker": "Roster",
+        "kickAria": "Remove {{username}} from the party",
+        "requestsKicker": "Waiting to Join",
+        "requestsEmptyHint": "New join requests will land here the moment someone knocks.",
+        "hazardEyebrow": "Irreversible action"
+      }
     },
     "bossManagement": {
       "pageTitle": "Weekly Boss Templates",

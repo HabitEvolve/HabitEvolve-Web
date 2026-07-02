@@ -192,6 +192,10 @@ layer(base);
   --color-game-streak: #E85D20;
   --color-game-flame: #FF6B35;
 
+  /* Brand logo gradient — auth "Visual Gate" panel, matches the logo's own green */
+  --color-brand-green-dark: #0C6542;
+  --color-brand-green-light: #107D5A;
+
   /* Border radii — from mobile spacing.ts BorderRadius */
   --radius-game-primary: 1.5rem;   /* 24px */
   --radius-game-secondary: 1rem;   /* 16px */

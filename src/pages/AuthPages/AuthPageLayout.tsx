@@ -8,7 +8,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <div className="relative bg-white z-1 min-h-screen">
+    <div className="relative bg-white z-1 min-h-screen dark:bg-slate-950">
       {/* Language toggle — top right corner */}
       <div className="absolute top-4 right-4 z-50">
         <LanguageToggle />

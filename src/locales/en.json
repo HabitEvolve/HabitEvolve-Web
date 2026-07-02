@@ -2,7 +2,11 @@
   "auth": {
     "common": {
       "emailPlaceholder": "Email Address",
-      "passwordPlaceholder": "Password"
+      "passwordPlaceholder": "Password",
+      "emailLabel": "Player ID / Email",
+      "passwordLabel": "Secret Passphrase",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
     },
     "errors": {
       "emailRequired": "Email is required",
@@ -11,6 +15,13 @@
       "termsRequired": "You must agree to the terms and conditions",
       "invalidCredentials": "Invalid email or password. Please try again.",
       "registrationFailed": "Registration failed. Please try again."
+    },
+    "gate": {
+      "mascotAlt": "HabitEvolve fox mascot",
+      "signInSlogan": "Enter the Guild",
+      "signInTagline": "Ready to level up your habits?",
+      "signUpSlogan": "Join the Guild",
+      "signUpTagline": "Every legend starts with a single quest."
     },
     "signIn": {
       "title": "Welcome Back, Hero!",
@@ -26,6 +37,7 @@
       "title": "Join the Adventure!",
       "subtitle": "Create your account to begin your journey.",
       "usernamePlaceholder": "User Name",
+      "usernameLabel": "Hero Name",
       "termsText": "By creating an account, I agree to the",
       "termsLink": "Terms and Conditions",
       "and": "and",

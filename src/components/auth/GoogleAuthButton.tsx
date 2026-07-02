@@ -56,16 +56,17 @@ export default function GoogleAuthButton({ mode, className = '' }: GoogleAuthBut
           'shadow-[4px_4px_0_0_#1A1D20]',
           'transition-all duration-150',
           'px-6',
+          'dark:bg-slate-800 dark:text-white dark:border-white dark:shadow-[4px_4px_0_0_#ffffff]',
           isLoading
             ? 'opacity-60 cursor-not-allowed'
-            : 'hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1A1D20] active:translate-x-1 active:translate-y-1 active:shadow-none',
+            : 'hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1A1D20] active:translate-x-1 active:translate-y-1 active:shadow-none dark:hover:shadow-[2px_2px_0_0_#ffffff]',
         ].join(' ')}
         style={{ height: '3.5rem' }}
       >
         {isLoading ? (
           <>
             <div
-              className="w-5 h-5 border-[3px] border-black border-t-transparent rounded-full animate-spin shrink-0"
+              className="w-5 h-5 border-[3px] border-black border-t-transparent rounded-full animate-spin shrink-0 dark:border-white dark:border-t-transparent"
               role="status"
               aria-hidden="true"
             />
@@ -90,7 +91,7 @@ export default function GoogleAuthButton({ mode, className = '' }: GoogleAuthBut
       </button>
 
       {error && (
-        <p className="text-center text-sm font-bold text-red-600 border-2 border-red-400 rounded-lg px-3 py-2 bg-red-50">
+        <p className="text-center text-sm font-bold text-red-600 border-2 border-red-400 rounded-lg px-3 py-2 bg-red-50 dark:text-red-400 dark:border-red-500/60 dark:bg-red-950/40">
           {error}
         </p>
       )}

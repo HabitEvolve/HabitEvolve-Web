@@ -43,7 +43,14 @@
       "Bash(find public/icon -iname \"*bell*\" -o -iname \"*mail*\" -o -iname \"*envelope*\" -o -iname \"*phone*\" -o -iname \"*robot*\" -o -iname \"*owl*\" -o -iname \"*bot*\" -o -iname \"*megaphone*\" -o -iname \"*speaker*\" -o -iname \"*book*\")",
       "Bash(ls \"public/icon/Main/Save/64px\")",
       "Bash(ls \"public/icon/Item/Target/64px\")",
-      "Bash(ls \"public/icon/Main/Star/64px\")"
+      "Bash(ls \"public/icon/Main/Star/64px\")",
+      "Bash(node -e \"console.log\\(require\\('fs'\\).existsSync\\('C:/Users/ADMIN/AppData/Roaming/npm/node_modules/playwright'\\)\\)\")",
+      "Bash(npx --yes playwright --help)",
+      "Bash(npx --yes playwright screenshot --help)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(pkill -f \"vite\")"
     ]
   }
 }

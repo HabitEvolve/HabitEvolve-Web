@@ -2,7 +2,11 @@
   "auth": {
     "common": {
       "emailPlaceholder": "Địa chỉ Email",
-      "passwordPlaceholder": "Mật khẩu"
+      "passwordPlaceholder": "Mật khẩu",
+      "emailLabel": "ID Người Chơi / Email",
+      "passwordLabel": "Mật Khẩu Bí Mật",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu"
     },
     "errors": {
       "emailRequired": "Email là bắt buộc",
@@ -11,6 +15,13 @@
       "termsRequired": "Bạn phải đồng ý với các điều khoản và điều kiện",
       "invalidCredentials": "Email hoặc mật khẩu không đúng. Vui lòng thử lại.",
       "registrationFailed": "Đăng ký thất bại. Vui lòng thử lại."
+    },
+    "gate": {
+      "mascotAlt": "Linh vật cáo của HabitEvolve",
+      "signInSlogan": "Bước Vào Guild",
+      "signInTagline": "Sẵn sàng nâng cấp thói quen của bạn?",
+      "signUpSlogan": "Gia Nhập Guild",
+      "signUpTagline": "Mọi huyền thoại đều bắt đầu từ một nhiệm vụ."
     },
     "signIn": {
       "title": "Chào Mừng Trở Lại, Anh Hùng!",
@@ -26,6 +37,7 @@
       "title": "Tham Gia Cuộc Phiêu Lưu!",
       "subtitle": "Tạo tài khoản để bắt đầu hành trình của bạn.",
       "usernamePlaceholder": "Tên người dùng",
+      "usernameLabel": "Tên Anh Hùng",
       "termsText": "Bằng cách tạo tài khoản, tôi đồng ý với",
       "termsLink": "Điều Khoản và Điều Kiện",
       "and": "và",

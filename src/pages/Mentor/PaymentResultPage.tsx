@@ -15,6 +15,32 @@ const DOT_BG: React.CSSProperties = {
 // Keeps the "Goblin Bank verification" moment from feeling like a blink.
 const MIN_LOADING_MS = 1800;
 
+// SePay's success redirect and its confirmation webhook (POST /api/payment/confirm, which
+// actually credits the wallet) are two independent, unordered calls — the browser can land
+// on this page before the webhook has committed. There is no single-transaction status
+// endpoint, so we poll the transaction ledger for this order's reference to turn Pending
+// into a confirmed Completed before trusting the wallet balance we show the user.
+const SYNC_POLL_ATTEMPTS = 5;
+const SYNC_POLL_INTERVAL_MS = 1500;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Best-effort — never throws. If confirmation doesn't land within the poll window we still
+// fall through to a final wallet fetch rather than blocking the user forever.
+const waitForTopUpConfirmation = async (orderId: string | null): Promise<void> => {
+    if (!orderId) return;
+    for (let attempt = 0; attempt < SYNC_POLL_ATTEMPTS; attempt++) {
+        try {
+            const res = await mentorWalletApi.getTransactions();
+            const tx = res.success && res.data ? res.data.find((t) => t.reference === orderId) : undefined;
+            if (tx?.status === 'Completed') return;
+        } catch {
+            // network hiccup mid-poll — fall through and retry
+        }
+        if (attempt < SYNC_POLL_ATTEMPTS - 1) await sleep(SYNC_POLL_INTERVAL_MS);
+    }
+};
+
 // ── PARAM RESOLVER ────────────────────────────────────────────────────────────
 // Handles multiple payment gateway redirect formats:
 //   SePay   → ?payment=success|error|cancel  &orderId=GEM-{id}
@@ -81,10 +107,11 @@ const LoadingView = () => (
 interface SuccessViewProps {
     orderId: string | null;
     newBalance: number | null;
+    isSyncing: boolean;
     onReturn: () => void;
 }
 
-const SuccessView = ({ orderId, newBalance, onReturn }: SuccessViewProps) => (
+const SuccessView = ({ orderId, newBalance, isSyncing, onReturn }: SuccessViewProps) => (
     <div style={DOT_BG} className="min-h-screen flex items-center justify-center p-6">
         <div className="relative w-full max-w-lg bg-green-300 border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#16a34a] p-10 overflow-hidden">
             {/* Decorative background shapes */}
@@ -125,17 +152,37 @@ const SuccessView = ({ orderId, newBalance, onReturn }: SuccessViewProps) => (
                     Your gems have been safely deposited into your wallet. Time to command your party!
                 </p>
 
-                {/* New wallet balance */}
-                {newBalance !== null && (
-                    <div className="w-full bg-white border-4 border-black rounded-2xl px-6 py-5 shadow-[4px_4px_0_0_#1A1D20]">
-                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
-                            Wallet Balance
+                {/* Wallet balance — verifying spinner until the webhook-confirmed balance lands */}
+                {isSyncing ? (
+                    <div className="w-full bg-white border-4 border-black rounded-2xl px-6 py-6 shadow-[4px_4px_0_0_#1A1D20] flex flex-col items-center gap-3">
+                        <div className="w-14 h-14 bg-amber-300 border-4 border-black rounded-xl shadow-[3px_3px_0_0_#1A1D20] flex items-center justify-center animate-bounce select-none">
+                            <span className="text-2xl">🪙</span>
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+                            Verifying transaction with the Guild...
                         </p>
-                        <p className="text-5xl font-black text-amber-600 leading-none">
-                            {newBalance.toLocaleString()}
-                            <span className="text-3xl ml-2">💎</span>
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                            {[0, 1, 2].map((i) => (
+                                <div
+                                    key={i}
+                                    className="w-2 h-2 bg-black rounded-full animate-bounce"
+                                    style={{ animationDelay: `${i * 0.18}s` }}
+                                />
+                            ))}
+                        </div>
                     </div>
+                ) : (
+                    newBalance !== null && (
+                        <div className="w-full bg-white border-4 border-black rounded-2xl px-6 py-5 shadow-[4px_4px_0_0_#1A1D20]">
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Wallet Balance
+                            </p>
+                            <p className="text-5xl font-black text-amber-600 leading-none">
+                                {newBalance.toLocaleString()}
+                                <span className="text-3xl ml-2">💎</span>
+                            </p>
+                        </div>
+                    )
                 )}
 
                 {/* Reference */}
@@ -145,12 +192,18 @@ const SuccessView = ({ orderId, newBalance, onReturn }: SuccessViewProps) => (
                     </p>
                 )}
 
-                {/* CTA */}
+                {/* CTA — stays disabled until the wallet sync above has actually landed,
+                    so the user can't bounce to a page that reads stale local state. */}
                 <button
                     onClick={onReturn}
-                    className="w-full py-4 border-4 border-black rounded-2xl font-black text-base bg-black text-white uppercase tracking-wide shadow-[6px_6px_0_0_#166534] hover:shadow-none hover:translate-x-1.5 hover:translate-y-1.5 transition-all duration-150"
+                    disabled={isSyncing}
+                    className={`w-full py-4 border-4 border-black rounded-2xl font-black text-base uppercase tracking-wide transition-all duration-150 ${
+                        isSyncing
+                            ? 'bg-gray-300 text-gray-500 shadow-none cursor-not-allowed'
+                            : 'bg-black text-white shadow-[6px_6px_0_0_#166534] hover:shadow-none hover:translate-x-1.5 hover:translate-y-1.5'
+                    }`}
                 >
-                    Return to Wallet ✦
+                    {isSyncing ? 'Syncing your loot...' : 'Return to Wallet ✦'}
                 </button>
             </div>
         </div>
@@ -307,28 +360,35 @@ export default function PaymentResultPage() {
     const navigate = useNavigate();
     const [status, setStatus] = useState<PaymentStatus>('LOADING');
     const [newBalance, setNewBalance] = useState<number | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const orderId = searchParams.get('orderId');
 
     useEffect(() => {
         const resolved = resolveStatus(searchParams);
+        const minDelay = sleep(MIN_LOADING_MS);
 
-        // Run the minimum display delay and wallet fetch in parallel.
-        // Both must finish before we leave the LOADING state.
-        const minDelay = new Promise<void>((res) => setTimeout(res, MIN_LOADING_MS));
+        if (resolved !== 'SUCCESS') {
+            minDelay.then(() => setStatus(resolved));
+            return;
+        }
 
-        const walletFetch =
-            resolved === 'SUCCESS'
-                ? mentorWalletApi
-                      .getWallet()
-                      .then((r) => {
-                          if (r.success && r.data) setNewBalance(r.data.gemsBalance);
-                      })
-                      .catch(() => {/* session may have expired — balance stays null, still show success */})
-                : Promise.resolve();
+        // Leave LOADING as soon as the minimum delay elapses — the Success card
+        // itself carries the "isSyncing" state below rather than blocking on it here.
+        minDelay.then(() => setStatus('SUCCESS'));
 
-        Promise.all([minDelay, walletFetch]).then(() => setStatus(resolved));
-    // searchParams is stable after the initial SePay redirect — single run is intentional
+        // Poll the ledger for webhook confirmation, then pull the now-trustworthy
+        // balance. Runs exactly once per mount (this effect has no dependencies
+        // that change after the initial SePay redirect lands).
+        setIsSyncing(true);
+        waitForTopUpConfirmation(orderId)
+            .then(() => mentorWalletApi.getWallet())
+            .then((r) => {
+                if (r.success && r.data) setNewBalance(r.data.gemsBalance);
+            })
+            .catch(() => {/* session may have expired — balance stays null, still show success */})
+            .finally(() => setIsSyncing(false));
+    // searchParams/orderId are stable after the initial SePay redirect — single run is intentional
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -336,7 +396,7 @@ export default function PaymentResultPage() {
     const goToDashboard = () => navigate('/mentor/dashboard',    { replace: true });
 
     if (status === 'LOADING') return <LoadingView />;
-    if (status === 'SUCCESS') return <SuccessView orderId={orderId} newBalance={newBalance} onReturn={goToWallet} />;
+    if (status === 'SUCCESS') return <SuccessView orderId={orderId} newBalance={newBalance} isSyncing={isSyncing} onReturn={goToWallet} />;
     if (status === 'CANCELED') return <CanceledView orderId={orderId} onRetry={goToWallet} onDashboard={goToDashboard} />;
     return <FailedView orderId={orderId} onRetry={goToWallet} onDashboard={goToDashboard} />;
 }

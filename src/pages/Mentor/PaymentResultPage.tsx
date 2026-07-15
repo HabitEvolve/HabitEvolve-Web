@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router';
 import mentorWalletApi from '../../api/mentorWalletApi';
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
-type PaymentStatus = 'LOADING' | 'SUCCESS' | 'FAILED';
+type PaymentStatus = 'LOADING' | 'SUCCESS' | 'FAILED' | 'CANCELED';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 // Gradient background — matches global brand palette (light mode only, page is standalone)
@@ -23,7 +23,8 @@ const MIN_LOADING_MS = 1800;
 const resolveStatus = (params: URLSearchParams): PaymentStatus => {
     const payment = params.get('payment');
     if (payment === 'success') return 'SUCCESS';
-    if (payment === 'error' || payment === 'cancel') return 'FAILED';
+    if (payment === 'error') return 'FAILED';
+    if (payment === 'cancel') return 'CANCELED';
 
     const vnpCode = params.get('vnp_ResponseCode');
     if (vnpCode === '00') return 'SUCCESS';
@@ -228,6 +229,78 @@ const FailedView = ({ orderId, onRetry, onDashboard }: FailedViewProps) => (
     </div>
 );
 
+// ── CANCELED VIEW ─────────────────────────────────────────────────────────────
+interface CanceledViewProps {
+    orderId: string | null;
+    onRetry: () => void;
+    onDashboard: () => void;
+}
+
+const CanceledView = ({ orderId, onRetry, onDashboard }: CanceledViewProps) => (
+    <div style={DOT_BG} className="min-h-screen flex items-center justify-center p-6">
+        <div className="relative w-full max-w-lg bg-slate-200 dark:bg-slate-800 border-4 border-black dark:border-white rounded-3xl shadow-[6px_6px_0_0_#E85D20] p-10 overflow-hidden">
+            {/* Decorative background shapes */}
+            <div className="absolute -top-8 -right-8 w-36 h-36 bg-slate-300 dark:bg-slate-700 border-4 border-black dark:border-white rounded-3xl rotate-12 opacity-60 pointer-events-none" />
+            <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-orange-300 dark:bg-orange-500/40 border-4 border-black dark:border-white rounded-2xl -rotate-6 opacity-50 pointer-events-none" />
+            <div className="absolute top-20 -left-5 w-14 h-14 bg-amber-200 dark:bg-amber-500/30 border-4 border-black dark:border-white rounded-xl rotate-45 opacity-40 pointer-events-none" />
+
+            {/* "RETREAT!" diagonal ribbon */}
+            <div
+                className="absolute -top-1 -right-14 bg-game-streak border-2 border-black dark:border-white text-white font-black text-xs px-16 py-1.5 rotate-12 shadow-[2px_2px_0_0_#1A1D20] select-none uppercase tracking-widest z-10 pointer-events-none"
+                aria-hidden
+            >
+                RETREAT!
+            </div>
+
+            {/* Main content */}
+            <div className="relative flex flex-col items-center gap-6 text-center">
+                {/* Retreat icon */}
+                <div className="w-28 h-28 bg-white dark:bg-slate-900 border-4 border-black dark:border-white rounded-2xl shadow-[4px_4px_0_0_#1A1D20] flex items-center justify-center select-none">
+                    <span className="text-6xl">🏳️</span>
+                </div>
+
+                <div>
+                    <div className="inline-block bg-black dark:bg-white text-white dark:text-black font-black text-xs px-4 py-1 rounded-full mb-3 uppercase tracking-widest">
+                        Transaction Canceled
+                    </div>
+                    <h1 className="text-4xl font-black text-black dark:text-white uppercase tracking-tight leading-tight">
+                        Payment Canceled
+                    </h1>
+                </div>
+
+                <p className="text-gray-800 dark:text-gray-300 font-medium text-base leading-relaxed max-w-xs">
+                    You called off the transaction before it landed. No gems were charged — your gold stays right where it was.
+                </p>
+
+                {/* Reference */}
+                {orderId && (
+                    <p className="text-xs text-gray-700 dark:text-gray-300 font-medium bg-white/70 dark:bg-white/10 border border-black/20 dark:border-white/20 rounded-full px-4 py-1.5">
+                        Ref: <span className="font-black">{orderId}</span>
+                    </p>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex flex-col gap-3 w-full">
+                    {/* Primary: Try Again */}
+                    <button
+                        onClick={onRetry}
+                        className="w-full py-4 border-4 border-black dark:border-white rounded-2xl font-black text-base bg-game-streak text-white uppercase tracking-wide shadow-[6px_6px_0_0_#1A1D20] hover:shadow-none hover:translate-x-1.5 hover:translate-y-1.5 transition-all duration-150"
+                    >
+                        Try Again
+                    </button>
+                    {/* Secondary/Ghost: Back to Dashboard */}
+                    <button
+                        onClick={onDashboard}
+                        className="w-full py-4 border-4 border-black dark:border-white rounded-2xl font-black text-base bg-white dark:bg-slate-900 text-black dark:text-white uppercase tracking-wide shadow-[6px_6px_0_0_#1A1D20] hover:shadow-none hover:translate-x-1.5 hover:translate-y-1.5 transition-all duration-150"
+                    >
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function PaymentResultPage() {
     const [searchParams] = useSearchParams();
@@ -264,5 +337,6 @@ export default function PaymentResultPage() {
 
     if (status === 'LOADING') return <LoadingView />;
     if (status === 'SUCCESS') return <SuccessView orderId={orderId} newBalance={newBalance} onReturn={goToWallet} />;
+    if (status === 'CANCELED') return <CanceledView orderId={orderId} onRetry={goToWallet} onDashboard={goToDashboard} />;
     return <FailedView orderId={orderId} onRetry={goToWallet} onDashboard={goToDashboard} />;
 }

@@ -20,7 +20,7 @@ export interface GemTransactionDto {
     gemAmount: number;
     status: GemTransactionStatus;
     balanceAfter: number;
-    reference?: string;       // "GEM-{id}" for top-up; "SUB-{subscriptionId}" for purchase
+    reference?: string;       // "GEM{id:D8}" (e.g. "GEM00000022") for top-up; "SUB-{subscriptionId}" for purchase
     description?: string;
     amountVnd: number;        // VND charged; 0 for PURCHASE transactions
     paymentMethod?: WalletPaymentMethod;
@@ -43,7 +43,7 @@ export interface TopUpGemsResultDto {
     checkoutUrl?: string;
     // All form fields to POST to checkoutUrl, including pre-computed HMAC signature
     paymentFormFields?: Record<string, string>;
-    // "GEM-{transactionId}" — echoed back by SePay webhook to identify the transaction
+    // "GEM{transactionId:D8}" (e.g. "GEM00000022") — echoed back by SePay's IPN/webhook to identify the transaction
     orderInvoiceNumber?: string;
 }
 

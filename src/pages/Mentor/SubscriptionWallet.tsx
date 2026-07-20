@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import Pagination from "../../components/common/Pagination";
 import mentorApi from "../../api/mentorApi";
 import mentorWalletApi, { submitSepayForm } from "../../api/mentorWalletApi";
 import { useAlert } from "../../context/AlertContext";
@@ -571,6 +572,19 @@ export default function SubscriptionWallet() {
 
     useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
+    // Client-side pagination — GET /mentor/wallet/transactions doesn't accept
+    // pageNumber/pageSize on the BE (unlike the Admin list endpoints), so there's no
+    // server-side page to request. Paginating the already-fetched list locally still
+    // gets the same standardized <Pagination /> UI without inventing BE support that
+    // doesn't exist.
+    const TX_PAGE_SIZE = 8;
+    const [txPage, setTxPage] = useState(1);
+    const txTotalPages = Math.max(1, Math.ceil(transactions.length / TX_PAGE_SIZE));
+    const pagedTransactions = transactions.slice((txPage - 1) * TX_PAGE_SIZE, txPage * TX_PAGE_SIZE);
+    useEffect(() => {
+        if (txPage > txTotalPages) setTxPage(txTotalPages);
+    }, [txPage, txTotalPages]);
+
     const handlePurchaseSuccess = (result: PurchaseSubscriptionResultDto) => {
         setPurchasePkg(null);
         setPurchaseResult(result);
@@ -726,7 +740,10 @@ export default function SubscriptionWallet() {
                 <p className="text-xs text-gray-500 font-medium mb-4">
                     {t("mentor.subscriptionWallet.transactionLogHint", "Every top-up and purchase, in order.")}
                 </p>
-                <TransactionLogbook transactions={transactions} loading={loadingTx} error={txError} />
+                <TransactionLogbook transactions={pagedTransactions} loading={loadingTx} error={txError} />
+                {!loadingTx && !txError && transactions.length > 0 && (
+                    <Pagination currentPage={txPage} totalPages={txTotalPages} onPageChange={setTxPage} />
+                )}
             </div>
 
             {/* Available Packages */}

@@ -17,7 +17,7 @@ const MIN_LOADING_MS = 1800;
 
 // ── PARAM RESOLVER ────────────────────────────────────────────────────────────
 // Handles multiple payment gateway redirect formats:
-//   SePay   → ?payment=success|error|cancel  &orderId=GEM-{id}
+//   SePay   → ?payment=success|error|cancel  &orderId=GEM00000022 (GEM + 8-digit zero-padded id, no dash)
 //   VNPay   → ?vnp_ResponseCode=00           &orderId=...   &vnp_Amount=...
 //   Generic → ?status=success|failed
 const resolveStatus = (params: URLSearchParams): PaymentStatus => {

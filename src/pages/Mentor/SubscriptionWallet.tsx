@@ -7,6 +7,7 @@ import Pagination from "../../components/common/Pagination";
 import mentorApi from "../../api/mentorApi";
 import mentorWalletApi, { submitSepayForm } from "../../api/mentorWalletApi";
 import { useAlert } from "../../context/AlertContext";
+import { useWallet } from "../../context/WalletContext";
 import type {
     ActiveSubscriptionDto,
     MentorWalletDto,
@@ -260,10 +261,8 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 
 // ── GEM STORE MODAL ───────────────────────────────────────────────────────────
 const GEM_PACKAGES = [
-    { gems: 100,  label: "Starter",  color: "bg-success-100 dark:bg-success-500/15", badge: null },
-    { gems: 500,  label: "Explorer", color: "bg-warning-100 dark:bg-warning-500/15", badge: "POPULAR" },
-    { gems: 1000, label: "Champion", color: "bg-purple-100 dark:bg-purple-500/15",  badge: null },
-    { gems: 3000, label: "Legend",   color: "bg-error-100 dark:bg-error-500/15",   badge: "BEST VALUE" },
+    { gems: 5000,  label: "Guild",  color: "bg-warning-100 dark:bg-warning-500/15", badge: "POPULAR" },
+    { gems: 10000, label: "Legend", color: "bg-error-100 dark:bg-error-500/15",     badge: "BEST VALUE" },
 ] as const;
 
 type GemPackage = typeof GEM_PACKAGES[number];
@@ -277,18 +276,38 @@ interface GemStoreModalProps {
 const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps) => {
     const { t } = useTranslation();
     const alert = useAlert();
-    const [selected, setSelected] = useState<GemPackage>(GEM_PACKAGES[1]);
+    const [selected, setSelected] = useState<GemPackage | null>(GEM_PACKAGES[0]);
+    const [customAmount, setCustomAmount] = useState('');
     const [method, setMethod] = useState<WalletPaymentMethod>('SEPAY');
     const [loading, setLoading] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
 
+    const parsedCustom = parseInt(customAmount, 10);
+    const effectiveGems = selected
+        ? selected.gems
+        : (Number.isFinite(parsedCustom) && parsedCustom > 0 ? parsedCustom : 0);
+
+    const selectPackage = (pkg: GemPackage) => {
+        setSelected(pkg);
+        setCustomAmount('');
+    };
+
+    const handleCustomAmountChange = (value: string) => {
+        setCustomAmount(value);
+        setSelected(null);
+    };
+
     const handleBuy = async () => {
+        if (effectiveGems <= 0) {
+            alert.error(t("mentor.subscriptionWallet.enterValidAmount", "Enter a valid gem amount."));
+            return;
+        }
         setLoading(true);
         let willRedirect = false;
         try {
             const res = await mentorWalletApi.topUpGems({
                 mentorUserId: getMentorId(),
-                gemAmount: selected.gems,
+                gemAmount: effectiveGems,
                 paymentMethod: method,
             });
             if (!res.success || !res.data) {
@@ -311,7 +330,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
         }
     };
 
-    const vndPrice = (selected.gems * vndPerGem).toLocaleString();
+    const vndPrice = (effectiveGems * vndPerGem).toLocaleString();
 
     return createPortal(
         <div
@@ -348,13 +367,13 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                 </p>
 
                 {/* Package grid */}
-                <div className="grid grid-cols-2 gap-3 mb-5">
+                <div className="grid grid-cols-2 gap-3 mb-3">
                     {GEM_PACKAGES.map((pkg) => {
-                        const isSelected = selected.gems === pkg.gems;
+                        const isSelected = selected?.gems === pkg.gems;
                         return (
                             <button
                                 key={pkg.gems}
-                                onClick={() => setSelected(pkg)}
+                                onClick={() => selectPackage(pkg)}
                                 className={`relative text-left p-4 rounded-2xl transition-all ${pkg.color} ${isSelected
                                     ? `border-4 ${inkBorder} shadow-none translate-x-0.5 translate-y-0.5`
                                     : `border-2 border-gray-300 dark:border-gray-600 shadow-[3px_3px_0_0_#d1d5db] dark:shadow-[3px_3px_0_0_#374151] hover:${inkBorder} hover:${shadowSm}`
@@ -376,6 +395,35 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                             </button>
                         );
                     })}
+                </div>
+
+                {/* Custom amount */}
+                <div className="mb-5">
+                    <label className="block text-xs font-black uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                        {t("mentor.subscriptionWallet.customAmount", "Or enter a custom amount")}
+                    </label>
+                    <div
+                        className={`relative rounded-2xl transition-all ${!selected && customAmount
+                            ? `border-4 ${inkBorder} shadow-none`
+                            : "border-2 border-gray-300 dark:border-gray-600 shadow-[3px_3px_0_0_#d1d5db] dark:shadow-[3px_3px_0_0_#374151]"
+                        }`}
+                    >
+                        <input
+                            type="number"
+                            min={1}
+                            inputMode="numeric"
+                            value={customAmount}
+                            onChange={(e) => handleCustomAmountChange(e.target.value)}
+                            placeholder={t("mentor.subscriptionWallet.customAmountPlaceholder", "e.g. 2500")}
+                            className="w-full px-4 py-3 rounded-2xl bg-gray-25 dark:bg-gray-700 text-gray-900 dark:text-white font-black text-lg focus:outline-none placeholder:text-gray-400 placeholder:font-medium"
+                        />
+                        <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 object-contain pointer-events-none" />
+                    </div>
+                    {!selected && parsedCustom > 0 && (
+                        <p className="text-xs font-bold text-gray-500 mt-1.5">
+                            = {(parsedCustom * vndPerGem).toLocaleString()} VND
+                        </p>
+                    )}
                 </div>
 
                 {/* Payment method toggle */}
@@ -404,12 +452,14 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     </button>
                     <button
                         onClick={handleBuy}
-                        disabled={loading}
+                        disabled={loading || effectiveGems <= 0}
                         className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-brand-300 text-game-outline ${shadowSm} ${btnPress} inline-flex items-center justify-center gap-2`}
                     >
                         {loading
                             ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</>
-                            : <>{t("mentor.subscriptionWallet.buy")} {selected.gems.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-4 h-4 object-contain align-text-bottom" /> — {vndPrice} VND</>
+                            : effectiveGems > 0
+                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-4 h-4 object-contain align-text-bottom" /> — {vndPrice} VND</>
+                                : t("mentor.subscriptionWallet.enterValidAmount", "Enter a valid gem amount.")
                         }
                     </button>
                 </div>
@@ -518,6 +568,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function SubscriptionWallet() {
     const { t } = useTranslation();
+    const { refetchWallet } = useWallet();
     const [wallet, setWallet] = useState<MentorWalletDto | null>(null);
     const [activeSub, setActiveSub] = useState<ActiveSubscriptionDto | null>(null);
     const [packages, setPackages] = useState<SubscriptionPackageDto[]>([]);
@@ -589,6 +640,7 @@ export default function SubscriptionWallet() {
         setPurchasePkg(null);
         setPurchaseResult(result);
         fetchAll();
+        refetchWallet(); // purchase spends gems — keep the header chip in sync
     };
 
     const handleCancelSuccess = () => {
@@ -825,6 +877,7 @@ export default function SubscriptionWallet() {
                         setShowTopUp(false);
                         setWallet((prev) => prev ? { ...prev, gemsBalance: newBalance } : prev);
                         fetchTransactions();
+                        refetchWallet(); // gems credited immediately — keep the header chip in sync
                     }}
                 />
             )}

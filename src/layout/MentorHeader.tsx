@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
+import { useWallet } from "../context/WalletContext";
 import UserDropdown from "../components/header/UserDropdown";
 import LanguageToggle from "../components/common/LanguageToggle";
-import mentorApi from "../api/mentorApi";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
 // Same "Guild Command Center" neo-brutalism system used across the Mentor
@@ -43,17 +43,11 @@ const HamburgerIcon = ({ open }: { open: boolean }) => (
 );
 
 const GemBalance = () => {
-  const [gems, setGems] = useState<number | null>(null);
+  // Shared with the Wallet page via WalletContext — one fetch, both places update
+  // together instead of each holding its own independent (and easily stale) copy.
+  const { wallet } = useWallet();
 
-  useEffect(() => {
-    let cancelled = false;
-    mentorApi.getWallet().then((res) => {
-      if (!cancelled && res.success && res.data) setGems(res.data.gemsBalance);
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  if (gems === null) return null;
+  if (wallet === null) return null;
 
   return (
     <Link
@@ -61,7 +55,7 @@ const GemBalance = () => {
       className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-25 dark:bg-gray-800 border-[3px] ${inkBorder} ${shadowSm} hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-150 ${easeExpo}`}
     >
       <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
-      <span className="text-sm font-black text-gray-900 dark:text-white">{gems.toLocaleString()}</span>
+      <span className="text-sm font-black text-gray-900 dark:text-white">{wallet.gemsBalance.toLocaleString()}</span>
     </Link>
   );
 };

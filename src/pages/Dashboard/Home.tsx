@@ -1,234 +1,313 @@
+import { useState, useEffect, useCallback } from "react";
+import Chart from "react-apexcharts";
+import type { ApexOptions } from "apexcharts";
+import { RefreshCw } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
+import DatePicker from "../../components/form/date-picker";
+import { adminReportsApi } from "../../api/adminReportsApi";
+import type {
+    EconomyReportDto,
+    QuestCompletionReportDto,
+    UserActivityReportDto,
+} from "../../types/adminReports.types";
 
-// Shared dark-mode class for the mint-green cards used throughout this page
+// ── STYLES ────────────────────────────────────────────────────────────────────
+// Shared soft mint card used throughout this page — operational dashboard,
+// no neo-brutalism here (that's reserved for gamified mentor surfaces).
 const CARD = "bg-[#E6FAF3] dark:bg-gray-800 p-6 rounded-4xl shadow-sm";
+const chartFont = { fontFamily: "Space Grotesk, sans-serif" };
 
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const errMsg = (e: unknown) =>
+    (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
+
+const toIso = (d: Date) => d.toISOString().slice(0, 10);
+
+const defaultRange = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 29);
+    return { startDate: toIso(start), endDate: toIso(end) };
+};
+
+const average = (nums: number[]) => (nums.length === 0 ? 0 : Math.round(nums.reduce((a, b) => a + b, 0) / nums.length));
+
+// ── SKELETONS ─────────────────────────────────────────────────────────────────
+const SkeletonLine = ({ className = "" }: { className?: string }) => (
+    <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-md ${className}`} />
+);
+
+const MetricSkeleton = () => (
+    <div className={`${CARD} flex flex-col justify-between`}>
+        <SkeletonLine className="h-4 w-28 mb-4" />
+        <SkeletonLine className="h-8 w-24" />
+    </div>
+);
+
+const ChartSkeleton = ({ height = 280 }: { height?: number }) => (
+    <div className="flex flex-col gap-3" style={{ height }}>
+        <SkeletonLine className="h-full w-full" />
+    </div>
+);
+
+// ── METRIC CARD ───────────────────────────────────────────────────────────────
+interface MetricCardProps {
+    icon: React.ReactNode;
+    iconBg: string;
+    label: string;
+    value: string;
+    sub?: React.ReactNode;
+}
+const MetricCard = ({ icon, iconBg, label, value, sub }: MetricCardProps) => (
+    <div className={`${CARD} flex flex-col justify-between`}>
+        <div className="flex items-center space-x-3 mb-4">
+            <div className={`p-2 rounded-lg ${iconBg}`}>{icon}</div>
+            <span className="font-bold text-gray-700 dark:text-gray-200">{label}</span>
+        </div>
+        <div>
+            <div className="text-3xl font-black text-gray-900 dark:text-gray-100 mb-1">{value}</div>
+            {sub && <div className="text-xs font-semibold">{sub}</div>}
+        </div>
+    </div>
+);
+
+const CurrencyDelta = ({ label, delta }: { label: string; delta: number }) => (
+    <div className="flex items-center justify-between text-xs font-bold">
+        <span className="text-gray-500 dark:text-gray-400">{label}</span>
+        <span className={delta >= 0 ? "text-emerald-500" : "text-red-500"}>
+            {delta >= 0 ? "+" : ""}{delta.toLocaleString()}
+        </span>
+    </div>
+);
+
+// ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function Home() {
-  return (
-    <>
-      <PageMeta
-        title="HabitEvolve Admin Dashboard"
-        description="HabitEvolve Admin Dashboard - Mentoring & Learning Management"
-      />
+    const [range, setRange] = useState(defaultRange());
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-      {/* Metric Cards */}
-      <section className="grid grid-cols-4 gap-6 mb-8">
-        {/* Total Mentors */}
-        <div className={`${CARD} flex flex-col justify-between`}>
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <svg className="w-6 h-6 text-orange-500 dark:text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3.005 3.005 0 013.75-2.906z" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-700">Total Mentors</span>
-          </div>
-          <div>
-            <div className="text-3xl font-black text-gray-900 mb-1">4,520</div>
-            <div className="text-xs font-semibold text-emerald-500 flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path clipRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" fillRule="evenodd" />
-              </svg>
-              +12.5% since last month
-            </div>
-          </div>
-        </div>
+    const [economy, setEconomy] = useState<EconomyReportDto | null>(null);
+    const [questCompletion, setQuestCompletion] = useState<QuestCompletionReportDto | null>(null);
+    const [userActivity, setUserActivity] = useState<UserActivityReportDto | null>(null);
 
-        {/* Total Students */}
-        <div className={`${CARD} flex flex-col justify-between`}>
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <svg className="w-6 h-6 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-700">Total Students</span>
-          </div>
-          <div>
-            <div className="text-3xl font-black text-gray-900 mb-1">32,150</div>
-            <div className="text-xs font-semibold text-emerald-500 flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path clipRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" fillRule="evenodd" />
-              </svg>
-              +8.1% since last month
-            </div>
-          </div>
-        </div>
+    const fetchReports = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [econRes, questRes, activityRes] = await Promise.all([
+                adminReportsApi.getEconomyReport(range),
+                adminReportsApi.getQuestCompletionReport(range),
+                adminReportsApi.getUserActivityReport(range),
+            ]);
+            if (econRes.success) setEconomy(econRes.data ?? null);
+            if (questRes.success) setQuestCompletion(questRes.data ?? null);
+            if (activityRes.success) setUserActivity(activityRes.data ?? null);
+            if (!econRes.success && !questRes.success && !activityRes.success) {
+                setError(econRes.message || "Failed to load dashboard data.");
+            }
+        } catch (err) {
+            setError(errMsg(err) ?? "Network error fetching dashboard data.");
+        } finally {
+            setLoading(false);
+        }
+    }, [range]);
 
-        {/* Total Revenue */}
-        <div className={`${CARD} flex flex-col justify-between`}>
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                <path clipRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" fillRule="evenodd" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-700">Total Revenue</span>
-          </div>
-          <div>
-            <div className="text-3xl font-black text-gray-900 mb-1">$125,000</div>
-            <div className="text-xs font-semibold text-emerald-500 flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path clipRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" fillRule="evenodd" />
-              </svg>
-              +4.2% since last month
-            </div>
-          </div>
-        </div>
+    useEffect(() => { fetchReports(); }, [fetchReports]);
 
-        {/* Active Courses */}
-        <div className={`${CARD} flex flex-col justify-between`}>
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-              <svg className="w-6 h-6 text-indigo-500 dark:text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-700">Active Courses</span>
-          </div>
-          <div>
-            <div className="text-3xl font-black text-gray-900 mb-1">85</div>
-            <div className="text-xs font-semibold text-red-500 flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path clipRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v3.586l-4.293-4.293a1 1 0 00-1.414 0L8 10.586 3.707 6.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 10.414 14.586 14H12z" fillRule="evenodd" />
-              </svg>
-              -2.1% since last month
-            </div>
-          </div>
-        </div>
-      </section>
+    // ── Safe, guaranteed-array views of each report ──────────────────────────
+    // The BE contract for these 3 endpoints is inferred, not confirmed — if the real
+    // response omits `entries` (e.g. totals-only, no day-by-day breakdown) or renames
+    // it, `foo?.entries` alone still crashes downstream because optional chaining only
+    // guards `foo`, not the property read after it. Normalize to arrays once, here,
+    // and never touch `.entries` directly anywhere else in this component.
+    const economyEntries = economy?.entries ?? [];
+    const questEntries = questCompletion?.entries ?? [];
+    const activityEntries = userActivity?.entries ?? [];
 
-      {/* Analytics Section */}
-      <section className="grid grid-cols-3 gap-6 mb-8">
-        {/* Revenue Analytics */}
-        <div className="col-span-2 bg-[#E6FAF3] dark:bg-gray-800 p-8 rounded-4xl shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold text-gray-800">Revenue Analytics</h3>
-            <div className="text-sm text-gray-500">Last 12 months</div>
-          </div>
+    // ── Derived metrics ──────────────────────────────────────────────────────
+    const avgActiveUsers = average(activityEntries.map(e => e?.activeUsers ?? 0));
+    const netGold = (economy?.totalGoldInflow ?? 0) - (economy?.totalGoldOutflow ?? 0);
+    const netGems = (economy?.totalGemsInflow ?? 0) - (economy?.totalGemsOutflow ?? 0);
+    const netMGold = (economy?.totalMGoldInflow ?? 0) - (economy?.totalMGoldOutflow ?? 0);
 
-          {/* Legend */}
-          <div className="flex space-x-6 mb-6">
-            <div className="flex items-center">
-              <span className="w-3 h-3 rounded-sm bg-orange-400 mr-2" />
-              <span className="text-xs font-medium text-gray-600">Revenue (2024)</span>
-            </div>
-            <div className="flex items-center">
-              <span className="w-3 h-3 rounded-sm bg-blue-300 mr-2" />
-              <span className="text-xs font-medium text-gray-600">Revenue (2023)</span>
-            </div>
-          </div>
+    // ── Economy chart ────────────────────────────────────────────────────────
+    const economyOptions: ApexOptions = {
+        chart: { ...chartFont, height: 280, type: "area", toolbar: { show: false } },
+        colors: ["#12b76a", "#f04438"],
+        stroke: { curve: "smooth", width: 2 },
+        fill: { type: "gradient", gradient: { opacityFrom: 0.45, opacityTo: 0 } },
+        dataLabels: { enabled: false },
+        legend: { position: "top", horizontalAlign: "left" },
+        xaxis: { categories: economyEntries.map(e => e?.date ?? ""), labels: { style: { fontSize: "11px" } } },
+        yaxis: { labels: { style: { fontSize: "11px" } } },
+        grid: { xaxis: { lines: { show: false } }, borderColor: "rgba(148,163,184,0.2)" },
+        tooltip: { x: { format: "dd MMM yyyy" } },
+    };
+    const economySeries = [
+        { name: "Gold Inflow", data: economyEntries.map(e => e?.goldInflow ?? 0) },
+        { name: "Gold Outflow", data: economyEntries.map(e => e?.goldOutflow ?? 0) },
+    ];
 
-          <div className="relative h-[280px]">
-            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 800 240">
-              <line stroke="currentColor" className="text-gray-200 dark:text-gray-600" x1="0" x2="800" y1="0" y2="0" />
-              <line stroke="currentColor" className="text-gray-200 dark:text-gray-600" x1="0" x2="800" y1="40" y2="40" />
-              <line stroke="currentColor" className="text-gray-200 dark:text-gray-600" x1="0" x2="800" y1="80" y2="80" />
-              <line stroke="currentColor" className="text-gray-200 dark:text-gray-600" x1="0" x2="800" y1="120" y2="120" />
-              <line stroke="currentColor" className="text-gray-200 dark:text-gray-600" x1="0" x2="800" y1="160" y2="160" />
-              <line stroke="currentColor" className="text-gray-200 dark:text-gray-600" x1="0" x2="800" y1="200" y2="200" />
-              {/* 2023 Line (Blue) */}
-              <path d="M0,200 L66,185 L132,180 L198,185 L264,150 L330,152 L396,165 L462,175 L528,170 L594,140 L660,150 L726,125" fill="none" stroke="#93c5fd" strokeWidth="3" />
-              {/* 2024 Line (Orange) */}
-              <path d="M0,180 L66,165 L132,145 L198,150 L264,115 L330,113 L396,90 L462,85 L528,75 L594,45 L660,40 L726,15" fill="none" stroke="#f7a561" strokeWidth="3" />
-              {/* Area for 2024 */}
-              <path d="M0,180 L66,165 L132,145 L198,150 L264,115 L330,113 L396,90 L462,85 L528,75 L594,45 L660,40 L726,15 V240 H0 Z" fill="url(#orange-gradient)" fillOpacity="0.1" />
-              <defs>
-                <linearGradient id="orange-gradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#f7a561" />
-                  <stop offset="100%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
+    // ── Quest completion chart ───────────────────────────────────────────────
+    const questOptions: ApexOptions = {
+        chart: { ...chartFont, height: 280, type: "bar", toolbar: { show: false } },
+        colors: ["#7C3AED"],
+        plotOptions: { bar: { borderRadius: 6, columnWidth: "45%" } },
+        dataLabels: { enabled: true, formatter: (v: number) => `${(v ?? 0).toFixed(0)}%` },
+        xaxis: { categories: questEntries.map(e => e?.questType ?? "Unknown"), labels: { style: { fontSize: "11px" } } },
+        yaxis: { max: 100, labels: { formatter: (v: number) => `${v ?? 0}%`, style: { fontSize: "11px" } } },
+        grid: { xaxis: { lines: { show: false } }, borderColor: "rgba(148,163,184,0.2)" },
+    };
+    const questSeries = [{ name: "Completion Rate", data: questEntries.map(e => e?.completionRate ?? 0) }];
 
-          {/* X-Axis Labels */}
-          <div className="flex justify-between mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">
-            {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map(m => (
-              <span key={m}>{m}</span>
-            ))}
-          </div>
-        </div>
+    // Nothing has loaded yet on this mount/range change — show a full-page skeleton
+    // instead of partially-empty cards flashing in.
+    const isInitialLoading = loading && !economy && !questCompletion && !userActivity;
+    if (isInitialLoading) {
+        return (
+            <>
+                <PageMeta title="HabitEvolve Admin Dashboard" description="Loading dashboard…" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                    <MetricSkeleton /><MetricSkeleton /><MetricSkeleton />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className={CARD}><ChartSkeleton /></div>
+                    <div className={CARD}><ChartSkeleton /></div>
+                </div>
+            </>
+        );
+    }
 
-        {/* Visitor Analytics */}
-        <div className="bg-[#E6FAF3] dark:bg-gray-800 p-8 rounded-4xl shadow-sm flex flex-col items-center">
-          <h3 className="text-xl font-bold text-gray-800 w-full mb-10 text-left">Visitor Analytics</h3>
-          <div className="relative w-48 h-48 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#3b82f6" strokeDasharray="65 35" strokeDashoffset="0" strokeWidth="4.5" />
-              <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#93c5fd" strokeDasharray="25 75" strokeDashoffset="-65" strokeWidth="4.5" />
-              <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#cbd5e1" strokeDasharray="10 90" strokeDashoffset="-90" strokeWidth="4.5" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-bold text-gray-500 uppercase">Total Visitors</span>
-              <span className="text-lg font-black text-gray-900">45,600</span>
-            </div>
-            <div className="absolute -top-4 -left-8 text-xs font-bold text-gray-600">
-              Tablet: <span className="text-gray-400">10%</span>
-            </div>
-            <div className="absolute top-1/2 -left-12 -translate-y-1/2 text-xs font-bold text-gray-600">
-              Mobile:<br /><span className="text-gray-400 text-sm">25%</span>
-            </div>
-            <div className="absolute top-1/2 -right-12 -translate-y-1/2 text-xs font-bold text-gray-600">
-              Desktop:<br /><span className="text-gray-400 text-sm">65%</span>
-            </div>
-          </div>
-        </div>
-      </section>
+    return (
+        <>
+            <PageMeta
+                title="HabitEvolve Admin Dashboard"
+                description="HabitEvolve Admin Dashboard - real-time economy, quest, and user activity reporting"
+            />
 
-      {/* Recent Activities Table */}
-      <section className="bg-[#E6FAF3] dark:bg-gray-800 rounded-4xl shadow-sm overflow-hidden grow">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-          <h3 className="text-xl font-bold text-gray-800">Recent Activities</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-900/40 text-gray-500 text-sm font-semibold uppercase tracking-wider">
-                <th className="px-8 py-4">Activity</th>
-                <th className="px-8 py-4">User</th>
-                <th className="px-8 py-4">Date</th>
-                <th className="px-8 py-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm font-medium text-gray-700">
-              <tr>
-                <td className="px-8 py-5">New Mentor Registration: 'Sarah Jones'</td>
-                <td className="px-8 py-5 text-gray-500">User: Sarah J.</td>
-                <td className="px-8 py-5 text-gray-500">2024-05-20 10:30 AM</td>
-                <td className="px-8 py-5">
-                  <span className="px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs font-medium">Pending</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-8 py-5">Course Created: 'Advanced Python'</td>
-                <td className="px-8 py-5 text-gray-500">David L.</td>
-                <td className="px-8 py-5 text-gray-500">2024-05-20 09:45 AM</td>
-                <td className="px-8 py-5">
-                  <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-medium">Active</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-8 py-5">Student Enrollment: 'John Doe' in 'Web Dev'</td>
-                <td className="px-8 py-5 text-gray-500">John D.</td>
-                <td className="px-8 py-5 text-gray-500">2024-05-19 03:15 PM</td>
-                <td className="px-8 py-5">
-                  <span className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs font-medium">Completed</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-8 py-5">System Update</td>
-                <td className="px-8 py-5 text-gray-500">Admin User</td>
-                <td className="px-8 py-5 text-gray-500">2024-05-18 01:00 AM</td>
-                <td className="px-8 py-5">
-                  <span className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium">Done</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </>
-  );
+            {/* Header + global date filter */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Dashboard</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                        Economy, quest completion, and user activity for the selected range
+                    </p>
+                </div>
+                <div className="flex items-end gap-3">
+                    <div className="w-56">
+                        <DatePicker
+                            id="dashboard-date-range"
+                            mode="range"
+                            label="Date Range"
+                            defaultDate={[range.startDate, range.endDate]}
+                            onChange={(dates) => {
+                                if (dates.length === 2) {
+                                    setRange({ startDate: toIso(dates[0]), endDate: toIso(dates[1]) });
+                                }
+                            }}
+                        />
+                    </div>
+                    <button
+                        onClick={fetchReports}
+                        disabled={loading}
+                        className="h-11 inline-flex items-center gap-2 px-4 font-bold text-sm rounded-lg bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 transition-colors"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+                    </button>
+                </div>
+            </div>
+
+            {error && (
+                <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl font-bold text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
+                    {error}
+                    <button onClick={fetchReports} className="underline underline-offset-2 shrink-0 ml-4">Retry</button>
+                </div>
+            )}
+
+            {/* Row 1 — Metrics Overview */}
+            <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                {loading && !userActivity ? <MetricSkeleton /> : (
+                    <MetricCard
+                        label="Avg Active Users / Day"
+                        value={avgActiveUsers.toLocaleString()}
+                        iconBg="bg-blue-100 dark:bg-blue-900/30"
+                        icon={
+                            <svg className="w-6 h-6 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                            </svg>
+                        }
+                        sub={<span className="text-gray-400">Averaged across {activityEntries.length} day(s)</span>}
+                    />
+                )}
+
+                {loading && !userActivity ? <MetricSkeleton /> : (
+                    <MetricCard
+                        label="New Signups"
+                        value={(userActivity?.totalNewSignups ?? 0).toLocaleString()}
+                        iconBg="bg-orange-100 dark:bg-orange-900/30"
+                        icon={
+                            <svg className="w-6 h-6 text-orange-500 dark:text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3.005 3.005 0 013.75-2.906z" />
+                            </svg>
+                        }
+                        sub={<span className="text-gray-400">In selected range</span>}
+                    />
+                )}
+
+                {loading && !economy ? <MetricSkeleton /> : (
+                    <div className={`${CARD} flex flex-col justify-between`}>
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                                    <path clipRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" fillRule="evenodd" />
+                                </svg>
+                            </div>
+                            <span className="font-bold text-gray-700 dark:text-gray-200">Net Economy (In − Out)</span>
+                        </div>
+                        <div className="space-y-1.5">
+                            <CurrencyDelta label="Gold" delta={netGold} />
+                            <CurrencyDelta label="Gems" delta={netGems} />
+                            <CurrencyDelta label="M-Gold" delta={netMGold} />
+                        </div>
+                    </div>
+                )}
+            </section>
+
+            {/* Row 2 — Charts */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className={CARD}>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Economy Trend — Gold</h3>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{range.startDate} → {range.endDate}</div>
+                    </div>
+                    {loading && !economy ? <ChartSkeleton /> : economyEntries.length > 0 ? (
+                        <div className="max-w-full overflow-x-auto">
+                            <div className="min-w-100">
+                                <Chart options={economyOptions} series={economySeries} type="area" height={280} />
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-400 font-medium py-16 text-center">No economy data for this range.</p>
+                    )}
+                </div>
+
+                <div className={CARD}>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Quest Completion Rate</h3>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">by Quest Type</div>
+                    </div>
+                    {loading && !questCompletion ? <ChartSkeleton /> : questEntries.length > 0 ? (
+                        <div className="max-w-full overflow-x-auto">
+                            <div className="min-w-100">
+                                <Chart options={questOptions} series={questSeries} type="bar" height={280} />
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-400 font-medium py-16 text-center">No quest completion data for this range.</p>
+                    )}
+                </div>
+            </section>
+        </>
+    );
 }

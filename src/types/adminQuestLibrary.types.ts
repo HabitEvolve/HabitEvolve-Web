@@ -83,10 +83,12 @@ export interface ToggleGlobalPayload {
     isGlobal: boolean;
 }
 
+// pageNumber/pageSize match the convention confirmed working for GET /admin/users
+// (see GetUsersQueryParams) and reused across the other Admin list endpoints.
 export interface GetQuestLibraryParams {
     status?: QuestLibraryStatus;
     difficulty?: QuestLibraryDifficulty;
     goalId?: number;
-    page?: number;
+    pageNumber?: number;
     pageSize?: number;
 }

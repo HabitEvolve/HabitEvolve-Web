@@ -40,6 +40,10 @@ import AdminQuestLibraryManagement from "./pages/AdminQuestLibraryManagement";
 import AdminSystemOpsPage from "./pages/AdminSystemOpsPage";
 import AdminSubscriptionPage from "./pages/AdminSubscriptionPage";
 import AdminConfigPage from "./pages/AdminConfigPage";
+import AdminItemManagement from "./pages/AdminItemManagement";
+import AdminSystemJobsPage from "./pages/AdminSystemJobsPage";
+import AdminLootTableManagement from "./pages/AdminLootTableManagement";
+import AdminShopManagement from "./pages/AdminShopManagement";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 import MentorDashboard from "./pages/Mentor/MentorDashboard";
 import SubscriptionWallet from "./pages/Mentor/SubscriptionWallet";
@@ -86,6 +90,10 @@ export default function App() {
               <Route path="/subscription-packages" element={<AdminSubscriptionPage />} />
               <Route path="/system-config" element={<AdminConfigPage />} />
               <Route path="/system-ops" element={<AdminSystemOpsPage />} />
+              <Route path="/system-jobs" element={<AdminSystemJobsPage />} />
+              <Route path="/item-catalog" element={<AdminItemManagement />} />
+              <Route path="/loot-tables" element={<AdminLootTableManagement />} />
+              <Route path="/shop-management" element={<AdminShopManagement />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/blank" element={<Blank />} />
 

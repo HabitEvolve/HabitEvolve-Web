@@ -69,7 +69,11 @@
       "calcRules": "Calc Rules",
       "systemConfig": "System Config",
       "systemOps": "System Ops",
-      "subscriptions": "Subscriptions"
+      "systemJobs": "System Jobs",
+      "subscriptions": "Subscriptions",
+      "itemCatalog": "Item Catalog",
+      "lootTables": "Loot Tables",
+      "shopManagement": "Shop Management"
     },
     "sections": {
       "GAMEPLAY": "GAMEPLAY",

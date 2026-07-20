@@ -78,10 +78,30 @@ const navItems: NavItem[] = [
     path: "/system-ops",
   },
   {
+    icon: <GI src="/icon/Main/Settings/64px/Settings 2 1st 64px.png" alt="System Jobs" />,
+    nameKey: "nav.admin.systemJobs",
+    path: "/system-jobs",
+  },
+  {
     icon: <GI src="/icon/Currency/Premium/64px/Premium 1st 64px.png" alt="Subscriptions" />,
     nameKey: "nav.admin.subscriptions",
     path: "/subscription-packages",
     sectionKey: "nav.sections.MONETIZATION",
+  },
+  {
+    icon: <GI src="/icon/Item/Chest/64px/Chest 1st 64px.png" alt="Item Catalog" />,
+    nameKey: "nav.admin.itemCatalog",
+    path: "/item-catalog",
+  },
+  {
+    icon: <GI src="/icon/Item/Dice/64px/Golden Dice 1st 64px.png" alt="Loot Tables" />,
+    nameKey: "nav.admin.lootTables",
+    path: "/loot-tables",
+  },
+  {
+    icon: <GI src="/icon/Main/Shopping Bag/64px/Golden Shopping Bag 1st 64px.png" alt="Shop Management" />,
+    nameKey: "nav.admin.shopManagement",
+    path: "/shop-management",
   },
 ];
 

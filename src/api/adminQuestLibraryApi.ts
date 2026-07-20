@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import { ApiResponse } from '../types/api.types';
+import { ApiResponse, PaginatedApiResponse } from '../types/api.types';
 import type {
     QuestLibraryItemDto,
     CreateQuestLibraryItemPayload,
@@ -15,12 +15,14 @@ const BASE = '/admin/quest-library';
 
 export const adminQuestLibraryApi = {
     // GET /api/admin/quest-library?pageNumber=&pageSize=&status=&difficulty=&goalId=
-    // Returns PagedResponse (which extends ApiResponse) — data field is the items array
-    getItems: async (params?: GetQuestLibraryParams): Promise<ApiResponse<QuestLibraryItemDto[]>> => {
-        const res = await axiosClient.get<ApiResponse<QuestLibraryItemDto[]>>(BASE, {
+    // Returns PagedResponse (which extends ApiResponse) — data field is the items array.
+    // Was previously hardcoding pageNumber:1/pageSize:100 and discarding the pagination
+    // metadata entirely — callers now get the real page and totalPages back.
+    getItems: async (params?: GetQuestLibraryParams): Promise<PaginatedApiResponse<QuestLibraryItemDto>> => {
+        const res = await axiosClient.get<PaginatedApiResponse<QuestLibraryItemDto>>(BASE, {
             params: {
-                pageNumber: 1,
-                pageSize: 100,
+                pageNumber: params?.pageNumber ?? 1,
+                pageSize: params?.pageSize ?? 20,
                 status: params?.status,
                 difficulty: params?.difficulty,
                 goalId: params?.goalId,

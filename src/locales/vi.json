@@ -69,7 +69,11 @@
       "calcRules": "Quy Tắc Tính Điểm",
       "systemConfig": "Cấu Hình Hệ Thống",
       "systemOps": "Vận Hành Hệ Thống",
-      "subscriptions": "Gói Đăng Ký"
+      "systemJobs": "Tác Vụ Hệ Thống",
+      "subscriptions": "Gói Đăng Ký",
+      "itemCatalog": "Danh Mục Vật Phẩm",
+      "lootTables": "Bảng Rơi Đồ",
+      "shopManagement": "Quản Lý Cửa Hàng"
     },
     "sections": {
       "GAMEPLAY": "THỬ THÁCH",

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import Pagination from "../components/common/Pagination";
 import adminUserApi from "../api/adminUserApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
 import { useAlert } from "../context/AlertContext";
@@ -112,17 +113,6 @@ const ShieldIcon = () => (
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
-const ChevronLeftIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
-);
-const ChevronRightIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
-
 // ── ROLE BADGE ────────────────────────────────────────────────────────────────
 const ROLE_STYLES: Record<string, string> = {
   ADMIN:  "bg-red-100 border-red-400 text-red-800",
@@ -727,79 +717,6 @@ const SkeletonRow = () => (
     ))}
   </tr>
 );
-
-// ── PAGINATION ────────────────────────────────────────────────────────────────
-const Pagination = ({
-  currentPage,
-  totalPages,
-  hasPreviousPage,
-  hasNextPage,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-  onPageChange: (page: number) => void;
-}) => {
-  if (totalPages <= 1) return null;
-
-  const pages: (number | "...")[] = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    if (currentPage > 3) pages.push("...");
-    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-      pages.push(i);
-    }
-    if (currentPage < totalPages - 2) pages.push("...");
-    pages.push(totalPages);
-  }
-
-  const btnBase =
-    "w-9 h-9 flex items-center justify-center rounded-xl border-2 border-black font-bold text-sm shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_0_#1A1D20] transition-all";
-
-  return (
-    <div className="flex items-center justify-center gap-2 px-6 py-4 border-t-2 border-gray-100">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={!hasPreviousPage}
-        className={`${btnBase} bg-white text-gray-700`}
-      >
-        <ChevronLeftIcon />
-      </button>
-
-      {pages.map((page, idx) =>
-        page === "..." ? (
-          <span key={`dots-${idx}`} className="text-gray-400 font-bold px-1 text-sm">
-            …
-          </span>
-        ) : (
-          <button
-            key={page}
-            onClick={() => onPageChange(page as number)}
-            className={`${btnBase} ${
-              page === currentPage
-                ? "bg-orange-300 text-gray-900"
-                : "bg-white text-gray-700"
-            }`}
-          >
-            {page}
-          </button>
-        )
-      )}
-
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={!hasNextPage}
-        className={`${btnBase} bg-white text-gray-700`}
-      >
-        <ChevronRightIcon />
-      </button>
-    </div>
-  );
-};
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function UserManagement() {

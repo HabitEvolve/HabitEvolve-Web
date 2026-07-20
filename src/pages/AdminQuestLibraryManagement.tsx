@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronUp, Users, Zap, Coins,
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
+import Pagination from '../components/common/Pagination';
 import { adminQuestLibraryApi } from '../api/adminQuestLibraryApi';
 import { adminGoalApi } from '../api/adminGoalApi';
 import type {
@@ -16,6 +17,7 @@ import type {
 import type { GoalDto } from '../types/adminGoal.types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 20;
 const DIFFICULTIES: QuestLibraryDifficulty[] = ['EASY', 'NORMAL', 'HARD', 'EPIC'];
 const STATUSES: QuestLibraryStatus[] = ['Draft', 'Published', 'Archived'];
 const REPEAT_RULES: RepeatRule[] = ['Daily', 'Weekly', 'Monthly', 'OneTime'];
@@ -542,6 +544,9 @@ export default function AdminQuestLibraryManagement() {
   const [delItem, setDelItem] = useState<QuestLibraryItemDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
   const [statusChanging, setStatusChanging] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
   const alertCtx = useAlert();
 
   const load = useCallback(async () => {
@@ -550,10 +555,13 @@ export default function AdminQuestLibraryManagement() {
       const res = await adminQuestLibraryApi.getItems({
         status: filterStatus || undefined,
         difficulty: filterDiff || undefined,
+        pageNumber: page,
+        pageSize: PAGE_SIZE,
       });
       if (res.success) {
-        const data = Array.isArray(res.data) ? res.data : [];
-        setItems(data);
+        setItems(Array.isArray(res.data) ? res.data : []);
+        setTotalPages(res.totalPages ?? 1);
+        setTotalRecords(res.totalRecords ?? 0);
       } else {
         alertCtx.error(res.message ?? 'Failed to load.');
       }
@@ -562,7 +570,7 @@ export default function AdminQuestLibraryManagement() {
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterDiff, alertCtx]);
+  }, [filterStatus, filterDiff, page, alertCtx]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -609,13 +617,6 @@ export default function AdminQuestLibraryManagement() {
     } finally { setDelLoading(false); }
   };
 
-  const counts = {
-    total:     items.length,
-    Draft:     items.filter(i => i.status === 'Draft').length,
-    Published: items.filter(i => i.status === 'Published').length,
-    Archived:  items.filter(i => i.status === 'Archived').length,
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -639,22 +640,18 @@ export default function AdminQuestLibraryManagement() {
 
       {/* Stats + Filters */}
       <div className="flex gap-3 flex-wrap items-center">
-        {[
-          { label: 'Total',     val: counts.total,     cls: 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' },
-          { label: 'Published', val: counts.Published, cls: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300' },
-          { label: 'Draft',     val: counts.Draft,     cls: 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400' },
-          { label: 'Archived',  val: counts.Archived,  cls: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500' },
-        ].map(s => (
-          <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border-2 ${s.cls} shadow-[2px_2px_0_0_#1A1D20]`}>
-            <span className="text-[10px] font-black uppercase tracking-wide opacity-60">{s.label}</span>
-            <span className="text-base font-black">{s.val}</span>
-          </div>
-        ))}
+        {/* Per-status breakdown can't be computed client-side once the list is
+            server-paginated (items only holds the current page) — Total is the one
+            count the BE's page metadata actually gives us accurately. */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl border-2 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 shadow-[2px_2px_0_0_#1A1D20]">
+          <span className="text-[10px] font-black uppercase tracking-wide opacity-60">Total</span>
+          <span className="text-base font-black">{totalRecords}</span>
+        </div>
 
         <div className="ml-auto flex items-center gap-2">
           <select
             value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value as QuestLibraryStatus | '')}
+            onChange={e => { setFilterStatus(e.target.value as QuestLibraryStatus | ''); setPage(1); }}
             className="px-3 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-xs font-black bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400 shadow-[2px_2px_0_0_#1A1D20]"
           >
             <option value="">All statuses</option>
@@ -662,7 +659,7 @@ export default function AdminQuestLibraryManagement() {
           </select>
           <select
             value={filterDiff}
-            onChange={e => setFilterDiff(e.target.value as QuestLibraryDifficulty | '')}
+            onChange={e => { setFilterDiff(e.target.value as QuestLibraryDifficulty | ''); setPage(1); }}
             className="px-3 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-xs font-black bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400 shadow-[2px_2px_0_0_#1A1D20]"
           >
             <option value="">All difficulties</option>
@@ -671,8 +668,10 @@ export default function AdminQuestLibraryManagement() {
         </div>
       </div>
 
-      {/* Quest list */}
-      {loading ? (
+      {/* Quest list — only the true initial load (no items yet) replaces this whole
+          section with a spinner; a page-change/filter-change refetch just dims the
+          existing list in place so the table never unmounts under the user. */}
+      {loading && items.length === 0 ? (
         <div className="flex items-center gap-2 justify-center py-20 text-gray-400">
           <Loader2 className="w-6 h-6 animate-spin" /> Loading quest library…
         </div>
@@ -683,7 +682,7 @@ export default function AdminQuestLibraryManagement() {
           <p className="text-sm mt-1">Create a quest and map it to at least one goal before publishing.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={`space-y-3 transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>
           {items.map(item => (
             <QuestRow
               key={item.templateId}
@@ -698,6 +697,8 @@ export default function AdminQuestLibraryManagement() {
           ))}
         </div>
       )}
+
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
 
       {formModal !== null && (
         <QuestFormModal

@@ -1,21 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus, Pencil, Trash2, X, Loader2,
-  ToggleLeft, ToggleRight, ShieldAlert,
+  ToggleLeft, ToggleRight, ShieldAlert, Wand2, ImageUp, Film,
 } from 'lucide-react';
 import { adminDailyBossApi } from '../api/adminDailyBossApi';
 import type { DailyBossTemplateDto, DailyBossPayload } from '../types/adminDailyBoss.types';
+import DailyBossAnimationStudioModal from '../components/game/DailyBossAnimationStudioModal';
+
+/** icon field is either an emoji ("🐉") or a Supabase https:// URL uploaded via /icon. */
+const isIconUrl = (icon: string | null | undefined): icon is string => !!icon && /^https?:\/\//.test(icon);
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
-const inputCls = [
+// Exported so sibling pieces (e.g. DailyBossAnimationStudioModal) share the
+// exact same neo-brutalism dialect instead of redefining a near-duplicate.
+export const inputCls = [
   'w-full px-3 py-2 rounded-xl border-2 border-black bg-white dark:bg-gray-800',
   'text-gray-900 dark:text-gray-100 text-sm font-medium',
   'focus:outline-none focus:ring-2 focus:ring-orange-400',
   'dark:border-gray-600 dark:placeholder:text-gray-500',
 ].join(' ');
 
-const btnBase = [
+export const btnBase = [
   'inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black',
   'font-black text-sm transition-all shadow-[2px_2px_0_0_#1A1D20]',
   'hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5',
@@ -23,7 +29,7 @@ const btnBase = [
 ].join(' ');
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
-const Portal = ({ children }: { children: React.ReactNode }) =>
+export const Portal = ({ children }: { children: React.ReactNode }) =>
   createPortal(children, document.body);
 
 // ─── Flash alert ─────────────────────────────────────────────────────────────
@@ -69,10 +75,11 @@ function ConfirmDeleteModal({ boss, onConfirm, onCancel, loading }: {
 // ─── Boss form modal ──────────────────────────────────────────────────────────
 const EMPTY_FORM: DailyBossPayload = { name: '', description: '', icon: '', hpMin: 100, hpMax: 300 };
 
-function BossFormModal({ editing, onSave, onClose }: {
+function BossFormModal({ editing, onSave, onClose, onIconUploaded }: {
   editing: DailyBossTemplateDto | null;
   onSave(payload: DailyBossPayload): Promise<void>;
   onClose(): void;
+  onIconUploaded(updated: DailyBossTemplateDto): void;
 }) {
   const [form, setForm] = useState<DailyBossPayload>(
     editing
@@ -81,9 +88,30 @@ function BossFormModal({ editing, onSave, onClose }: {
   );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const iconFileRef = useRef<HTMLInputElement | null>(null);
 
   const set = <K extends keyof DailyBossPayload>(k: K, v: DailyBossPayload[K]) =>
     setForm(p => ({ ...p, [k]: v }));
+
+  const handleIconFile = async (file: File | null) => {
+    if (!file || !editing) return;
+    setUploadingIcon(true); setErr('');
+    try {
+      const res = await adminDailyBossApi.uploadIcon(editing.dailyBossTemplateId, file);
+      if (res.success && res.data) {
+        set('icon', res.data.icon ?? '');
+        onIconUploaded(res.data);
+      } else {
+        setErr(res.message ?? 'Upload icon thất bại.');
+      }
+    } catch (ex: any) {
+      setErr(ex?.response?.data?.message ?? 'Upload icon thất bại.');
+    } finally {
+      setUploadingIcon(false);
+      if (iconFileRef.current) iconFileRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,12 +166,33 @@ function BossFormModal({ editing, onSave, onClose }: {
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Icon</label>
-                <input
-                  value={form.icon ?? ''}
-                  onChange={e => set('icon', e.target.value)}
-                  className={inputCls}
-                  placeholder="🐉"
-                />
+                <div className="flex gap-1.5">
+                  <input
+                    value={form.icon ?? ''}
+                    onChange={e => set('icon', e.target.value)}
+                    className={inputCls}
+                    placeholder="🐉"
+                  />
+                  <input
+                    ref={iconFileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                    className="hidden"
+                    onChange={e => handleIconFile(e.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    type="button"
+                    title={editing ? 'Upload ảnh icon' : 'Lưu boss trước khi upload ảnh icon'}
+                    disabled={!editing || uploadingIcon}
+                    onClick={() => iconFileRef.current?.click()}
+                    className={`${btnBase} px-2.5 shrink-0 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200`}
+                  >
+                    {uploadingIcon ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageUp className="w-4 h-4" />}
+                  </button>
+                </div>
+                {isIconUrl(form.icon) && (
+                  <p className="text-[11px] text-gray-400 mt-1 truncate">Đang dùng ảnh upload — gõ đè để quay lại emoji.</p>
+                )}
               </div>
             </div>
 
@@ -194,13 +243,15 @@ function BossFormModal({ editing, onSave, onClose }: {
 }
 
 // ─── Boss card ────────────────────────────────────────────────────────────────
-function BossCard({ boss, onEdit, onToggle, onDelete, toggling }: {
+function BossCard({ boss, onEdit, onToggle, onDelete, onOpenAnimation, toggling }: {
   boss: DailyBossTemplateDto;
   onEdit(): void;
   onToggle(): void;
   onDelete(): void;
+  onOpenAnimation(): void;
   toggling: boolean;
 }) {
+  const hasAnimation = boss.totalFrames > 0;
   return (
     <div className={`relative border-4 rounded-3xl p-5 shadow-[4px_4px_0_0_#1A1D20] bg-white dark:bg-gray-800 transition-all ${boss.isActive ? 'border-orange-500' : 'border-black dark:border-gray-600'}`}>
       {/* Status badge */}
@@ -212,8 +263,12 @@ function BossCard({ boss, onEdit, onToggle, onDelete, toggling }: {
 
       {/* Boss identity */}
       <div className="flex items-center gap-3 mb-3 pr-20">
-        <div className="w-12 h-12 rounded-2xl border-2 border-black bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-2xl shrink-0 shadow-[2px_2px_0_0_#1A1D20]">
-          {boss.icon || <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-5 h-5 object-contain" />}
+        <div className="w-12 h-12 rounded-2xl border-2 border-black bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-2xl shrink-0 shadow-[2px_2px_0_0_#1A1D20] overflow-hidden">
+          {isIconUrl(boss.icon) ? (
+            <img src={boss.icon} alt={boss.name} className="w-full h-full object-cover" />
+          ) : (
+            boss.icon || <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
+          )}
         </div>
         <div className="min-w-0">
           <p className="font-black text-base text-gray-900 dark:text-gray-100 truncate">{boss.name}</p>
@@ -223,7 +278,7 @@ function BossCard({ boss, onEdit, onToggle, onDelete, toggling }: {
         </div>
       </div>
 
-      {/* HP range */}
+      {/* HP range + animation status */}
       <div className="flex items-center gap-2 mb-4">
         <div className="flex-1 bg-orange-50 dark:bg-orange-900/10 border-2 border-orange-200 dark:border-orange-800 rounded-xl px-3 py-2">
           <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 dark:text-orange-400 mb-0.5">HP Range</p>
@@ -231,6 +286,23 @@ function BossCard({ boss, onEdit, onToggle, onDelete, toggling }: {
             {boss.hpMin.toLocaleString()} – {boss.hpMax.toLocaleString()}
           </p>
         </div>
+        <button
+          onClick={onOpenAnimation}
+          title="Animation Studio"
+          className={[
+            'flex-1 h-full rounded-xl px-3 py-2 border-2 text-left transition-all',
+            hasAnimation
+              ? 'bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800 hover:shadow-[2px_2px_0_0_#1A1D20]'
+              : 'bg-amber-50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-700 hover:shadow-[2px_2px_0_0_#1A1D20]',
+          ].join(' ')}
+        >
+          <p className={`text-[10px] font-black uppercase tracking-wide mb-0.5 flex items-center gap-1 ${hasAnimation ? 'text-purple-600 dark:text-purple-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            <Film className="w-3 h-3" /> Animation
+          </p>
+          <p className="text-sm font-black text-gray-800 dark:text-gray-100">
+            {hasAnimation ? `${boss.totalFrames} frame` : 'Chưa có — upload'}
+          </p>
+        </button>
       </div>
 
       {/* Actions */}
@@ -252,6 +324,9 @@ function BossCard({ boss, onEdit, onToggle, onDelete, toggling }: {
         <button onClick={onEdit} className={`${btnBase} py-1.5 px-3 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200`}>
           <Pencil className="w-3.5 h-3.5" /> Edit
         </button>
+        <button onClick={onOpenAnimation} className={`${btnBase} py-1.5 px-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300`}>
+          <Wand2 className="w-3.5 h-3.5" /> Anim
+        </button>
         <button onClick={onDelete} className={`${btnBase} py-1.5 px-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 ml-auto`}>
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -269,6 +344,7 @@ export default function AdminDailyBossManagement() {
   const [delBoss, setDelBoss] = useState<DailyBossTemplateDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
   const [toggling, setToggling] = useState<number | null>(null);
+  const [animBoss, setAnimBoss] = useState<DailyBossTemplateDto | null>(null);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const flash = (type: 'success' | 'error', msg: string) => {
@@ -400,6 +476,7 @@ export default function AdminDailyBossManagement() {
               onEdit={() => setFormModal({ editing: boss })}
               onToggle={() => handleToggle(boss)}
               onDelete={() => setDelBoss(boss)}
+              onOpenAnimation={() => setAnimBoss(boss)}
               toggling={toggling === boss.dailyBossTemplateId}
             />
           ))}
@@ -412,6 +489,7 @@ export default function AdminDailyBossManagement() {
           editing={formModal.editing}
           onSave={handleSave}
           onClose={() => setFormModal(null)}
+          onIconUploaded={() => { flash('success', 'Icon updated.'); load(); }}
         />
       )}
       {delBoss && (
@@ -420,6 +498,13 @@ export default function AdminDailyBossManagement() {
           loading={delLoading}
           onConfirm={handleDelete}
           onCancel={() => setDelBoss(null)}
+        />
+      )}
+      {animBoss && (
+        <DailyBossAnimationStudioModal
+          boss={animBoss}
+          onChanged={load}
+          onClose={() => setAnimBoss(null)}
         />
       )}
     </div>

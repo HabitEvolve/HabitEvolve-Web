@@ -5,6 +5,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { useTheme } from "../context/ThemeContext";
 import UserDropdown from "../components/header/UserDropdown";
 import LanguageToggle from "../components/common/LanguageToggle";
+import AdminGlobalSearch from "../components/header/AdminGlobalSearch";
 
 const HamburgerIcon = () => (
   <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -17,13 +18,13 @@ const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
   const { theme, toggleTheme } = useTheme();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<{ focus: () => void }>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
-        inputRef.current?.focus();
+        searchRef.current?.focus();
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -68,23 +69,8 @@ const AppHeader: React.FC = () => {
             </Link>
 
             {/* Desktop search bar */}
-            <div className="hidden lg:block">
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <svg width="17" height="17" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z" fill="currentColor" />
-                  </svg>
-                </span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder={t("header.searchPlaceholder")}
-                  className="h-11 w-85 xl:w-107.5 rounded-full border-4 border-black bg-white dark:bg-gray-800 dark:text-white pl-12 pr-16 text-sm font-medium text-gray-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all"
-                />
-                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-lg border-2 border-black dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-2 py-1 text-xs font-black text-gray-700 dark:text-gray-300 shadow-[2px_2px_0_0_#1A1D20] select-none">
-                  ⌘K
-                </kbd>
-              </div>
+            <div className="hidden lg:block w-85 xl:w-107.5">
+              <AdminGlobalSearch ref={searchRef} shortcutHint="⌘K" />
             </div>
           </div>
 

@@ -70,10 +70,15 @@
       "systemConfig": "Cấu Hình Hệ Thống",
       "systemOps": "Vận Hành Hệ Thống",
       "systemJobs": "Tác Vụ Hệ Thống",
+      "appeals": "Hàng Đợi Kháng Cáo",
+      "jobs": "Giám Sát Tác Vụ",
+      "auditLog": "Nhật Ký Kiểm Tra",
       "subscriptions": "Gói Đăng Ký",
       "itemCatalog": "Danh Mục Vật Phẩm",
       "lootTables": "Bảng Rơi Đồ",
-      "shopManagement": "Quản Lý Cửa Hàng"
+      "shopManagement": "Quản Lý Cửa Hàng",
+      "economyHub": "Trung Tâm Kinh Tế",
+      "notificationBroadcast": "Gửi Thông Báo"
     },
     "sections": {
       "GAMEPLAY": "THỬ THÁCH",

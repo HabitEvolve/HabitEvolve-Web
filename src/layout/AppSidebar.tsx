@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { Scale, Coins, Megaphone, Cpu, FileClock } from "lucide-react";
 
 const GI = ({ src, alt = "" }: { src: string; alt?: string }) => (
   <img src={src} alt={alt} className="w-5 h-5 object-contain shrink-0" />
@@ -83,6 +84,21 @@ const navItems: NavItem[] = [
     path: "/system-jobs",
   },
   {
+    icon: <Scale className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.appeals",
+    path: "/admin/appeals",
+  },
+  {
+    icon: <Cpu className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.jobs",
+    path: "/admin/jobs",
+  },
+  {
+    icon: <FileClock className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.auditLog",
+    path: "/admin/audit-log",
+  },
+  {
     icon: <GI src="/icon/Currency/Premium/64px/Premium 1st 64px.png" alt="Subscriptions" />,
     nameKey: "nav.admin.subscriptions",
     path: "/subscription-packages",
@@ -102,6 +118,16 @@ const navItems: NavItem[] = [
     icon: <GI src="/icon/Main/Shopping Bag/64px/Golden Shopping Bag 1st 64px.png" alt="Shop Management" />,
     nameKey: "nav.admin.shopManagement",
     path: "/shop-management",
+  },
+  {
+    icon: <Coins className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.economyHub",
+    path: "/admin/economy",
+  },
+  {
+    icon: <Megaphone className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.notificationBroadcast",
+    path: "/admin/notifications/broadcast",
   },
 ];
 

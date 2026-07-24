@@ -26,6 +26,12 @@ const authApi = {
         }
         return apiResponse as ApiResponse<AuthUser>;
     },
+
+    // POST /api/user/reset-password — BE generates a temporary password and emails it.
+    resetPassword: async (email: string): Promise<ApiResponse<{ email: string; message: string }>> => {
+        const response = await axiosClient.post('/User/reset-password', { email });
+        return response.data as ApiResponse<{ email: string; message: string }>;
+    },
 };
 
 export default authApi;

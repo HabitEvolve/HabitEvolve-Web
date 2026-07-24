@@ -4,7 +4,7 @@ import {
     GoalCategoryDto, GoalCategoryPayload,
     GoalDto, GoalPayload,
     QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
-    QuestionDto, QuestionOptionDto, GoalQuestionnaireDto
+    QuestionDto, GoalQuestionnaireDto
 } from '../types/adminGoal.types';
 
 const ADMIN_URL = '/admin';

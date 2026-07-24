@@ -138,7 +138,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
   const [form, setForm] = useState<BossTemplatePayload>(() =>
     isEdit ? {
       themeName: template.themeName,
-      description: template.description,
+      description: template.description ?? "",
       activeWeekStart: template.activeWeekStart,
       activeWeekEnd: template.activeWeekEnd,
       startTime: template.startTime,
@@ -398,6 +398,10 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                         <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Item/Calendar/64px/Calendar 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Quests/Wk</span>
                         <span className="font-black text-gray-800">{m.maxPartyQuestPerWeek}</span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1 text-gray-500 font-medium"><img src="/icon/Item/Clock/64px/Clock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Deadline</span>
+                        <span className="font-black text-gray-800 text-[10px]">—</span>
+                      </div>
                     </div>
 
                     {/* Footer */}
@@ -643,8 +647,6 @@ export default function AdminBossManagement() {
     try {
       const res = await adminBossApi.getTemplates({
         status: statusFilter || undefined,
-        page,
-        pageSize: PAGE_SIZE,
       });
       if (res.success && res.data) setTemplates(res.data);
       else setError("Failed to load templates.");

@@ -232,3 +232,18 @@ export interface UpdateRulePayload {
     description: string;
     example?: string;
 }
+
+// Payload for POST /admin/target-calculation-rules — matches BE CreateRuleRequest.
+// Also reused as the form state shape (superset of UpdateRulePayload) in TargetRuleManagement.
+export interface TargetCalculationRulePayload {
+    measurementType: MeasurementType;
+    difficulty: RuleDifficulty;
+    calculationMethod: CalculationMethod;
+    changeValue: number;
+    minValue: number | null;
+    maxValue: number | null;
+    description: string;
+    example?: string;
+    isActive?: boolean;
+    goalId?: number | null;
+}

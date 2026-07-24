@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router";
 import LanguageToggle from "../../components/common/LanguageToggle";
 
 export default function AuthLayout({

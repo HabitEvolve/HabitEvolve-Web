@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import OAuthCallback from "./pages/AuthPages/OAuthCallback";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import NotFound from "./pages/OtherPage/NotFound";
 import Unauthorized from "./pages/OtherPage/Unauthorized";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -45,6 +46,11 @@ import AdminSystemJobsPage from "./pages/AdminSystemJobsPage";
 import AdminLootTableManagement from "./pages/AdminLootTableManagement";
 import AdminShopManagement from "./pages/AdminShopManagement";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
+import AdminEconomyHub from "./pages/AdminEconomyHub";
+import AdminNotificationBroadcast from "./pages/AdminNotificationBroadcast";
+import AdminJobsMonitor from "./pages/AdminJobsMonitor";
+import AdminAuditLog from "./pages/AdminAuditLog";
+import AdminAppealQueue from "./pages/AdminAppealQueue";
 import MentorDashboard from "./pages/Mentor/MentorDashboard";
 import SubscriptionWallet from "./pages/Mentor/SubscriptionWallet";
 import PartyList from "./pages/Mentor/PartyList";
@@ -65,6 +71,7 @@ export default function App() {
           <Route path="/" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
+          <Route path="/reset-password" element={<ForgotPassword />} />
           {/* Shared profile routes — accessible by ADMIN and MENTOR, layout auto-selected */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MENTOR']} />}>
             <Route element={<RoleLayout />}>
@@ -87,6 +94,11 @@ export default function App() {
               <Route path="/boss-management" element={<AdminBossManagement />} />
               <Route path="/daily-boss" element={<AdminDailyBossManagement />} />
               <Route path="/quest-library" element={<AdminQuestLibraryManagement />} />
+              <Route path="/admin/economy" element={<AdminEconomyHub />} />
+              <Route path="/admin/notifications/broadcast" element={<AdminNotificationBroadcast />} />
+              <Route path="/admin/jobs" element={<AdminJobsMonitor />} />
+              <Route path="/admin/audit-log" element={<AdminAuditLog />} />
+              <Route path="/admin/appeals" element={<AdminAppealQueue />} />
               <Route path="/subscription-packages" element={<AdminSubscriptionPage />} />
               <Route path="/system-config" element={<AdminConfigPage />} />
               <Route path="/system-ops" element={<AdminSystemOpsPage />} />

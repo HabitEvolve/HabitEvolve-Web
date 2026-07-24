@@ -15,7 +15,7 @@ export const uploadApi = {
             const filePath = `public/${fileName}`; // Lưu vào thư mục public bên trong bucket
 
             // 2. Gọi API Upload của Supabase
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
                 .from(bucketName)
                 .upload(filePath, file, {
                     cacheControl: '3600',

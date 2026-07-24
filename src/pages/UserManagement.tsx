@@ -372,7 +372,7 @@ const UpdateUserForm = ({
       onClose();
       return;
     }
-    if (statusChanged && !statusForm.reason.trim()) {
+    if (statusChanged && !statusForm.reason?.trim()) {
       setApiError(t("admin.userManagement.errors.reasonRequired"));
       return;
     }
@@ -555,7 +555,7 @@ const ManageUserRolesModal = ({
   // Roles not yet assigned to this user
   const availableRoles = ALL_ROLES.filter((r) => !localRoles.includes(r));
   // Keep the dropdown pointing at a valid option after each change
-  const dropdownValue = availableRoles.includes(selectedNewRole)
+  const dropdownValue = availableRoles.includes(selectedNewRole as (typeof ALL_ROLES)[number])
     ? selectedNewRole
     : availableRoles[0] ?? "";
 

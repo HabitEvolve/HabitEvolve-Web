@@ -1,76 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router";
+import { notificationApi, type NotificationDto } from "../../api/notificationApi";
 
-const NOTIFICATIONS = [
-  {
-    id: 1,
-    img: "/images/user/user-02.jpg",
-    name: "Terry Franci",
-    action: "requests permission to change",
-    target: "Project - Nganter App",
-    time: "5 min ago",
-    online: true,
-  },
-  {
-    id: 2,
-    img: "/images/user/user-03.jpg",
-    name: "Alena Franci",
-    action: "requests permission to change",
-    target: "Project - Nganter App",
-    time: "8 min ago",
-    online: true,
-  },
-  {
-    id: 3,
-    img: "/images/user/user-04.jpg",
-    name: "Jocelyn Kenter",
-    action: "requests permission to change",
-    target: "Project - Nganter App",
-    time: "15 min ago",
-    online: true,
-  },
-  {
-    id: 4,
-    img: "/images/user/user-05.jpg",
-    name: "Brandon Philips",
-    action: "requests permission to change",
-    target: "Project - Nganter App",
-    time: "1 hr ago",
-    online: false,
-  },
-  {
-    id: 5,
-    img: "/images/user/user-02.jpg",
-    name: "Terry Franci",
-    action: "requests permission to change",
-    target: "Project - Nganter App",
-    time: "5 min ago",
-    online: true,
-  },
-  {
-    id: 6,
-    img: "/images/user/user-03.jpg",
-    name: "Alena Franci",
-    action: "requests permission to change",
-    target: "Project - Nganter App",
-    time: "8 min ago",
-    online: true,
-  },
-];
+const POLL_MS = 30_000;
+
+const fmtRelative = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+};
 
 export default function NotificationDropdown() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifying, setNotifying] = useState(true);
+  const [items, setItems] = useState<NotificationDto[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const refreshUnreadCount = useCallback(async () => {
+    try {
+      const res = await notificationApi.getUnreadCount();
+      if (res.success && typeof res.data === "number") setUnreadCount(res.data);
+    } catch { /* silent — bell just shows no badge */ }
+  }, []);
+
+  const fetchList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await notificationApi.getNotifications({ pageSize: 10 });
+      setItems(res.data ?? []);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    refreshUnreadCount();
+    const tick = setInterval(refreshUnreadCount, POLL_MS);
+    return () => clearInterval(tick);
+  }, [refreshUnreadCount]);
 
   const handleClick = () => {
-    setIsOpen(!isOpen);
-    setNotifying(false);
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next) fetchList();
   };
 
   const closeDropdown = () => setIsOpen(false);
+
+  const handleItemClick = async (n: NotificationDto) => {
+    if (!n.isRead) {
+      try {
+        await notificationApi.markAsRead(n.notificationId);
+        setItems(prev => prev.map(x => x.notificationId === n.notificationId ? { ...x, isRead: true } : x));
+        setUnreadCount(c => Math.max(0, c - 1));
+      } catch { /* silent */ }
+    }
+    closeDropdown();
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      setItems(prev => prev.map(x => ({ ...x, isRead: true })));
+      setUnreadCount(0);
+    } catch { /* silent */ }
+  };
 
   return (
     <div className="relative">
@@ -80,8 +80,7 @@ export default function NotificationDropdown() {
         aria-label={t("notifications.title")}
         className="relative flex items-center justify-center w-11 h-11 bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-full shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all text-gray-800 dark:text-gray-200"
       >
-        {/* Ping badge */}
-        {notifying && (
+        {unreadCount > 0 && (
           <span className="absolute top-0.5 right-0.5 z-10 flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75 animate-ping" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-orange-500 border-[1.5px] border-white" />
@@ -102,9 +101,11 @@ export default function NotificationDropdown() {
         <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-700 dark:to-gray-700 border-b-2 border-black dark:border-gray-600 flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <h5 className="text-base font-black text-gray-900 dark:text-white">{t("notifications.title")}</h5>
-            <span className="flex items-center justify-center h-5 min-w-[22px] px-1.5 bg-orange-400 border-2 border-black rounded-full text-[10px] font-black text-white shadow-[1px_1px_0_0_#1A1D20]">
-              {NOTIFICATIONS.length}
-            </span>
+            {unreadCount > 0 && (
+              <span className="flex items-center justify-center h-5 min-w-[22px] px-1.5 bg-orange-400 border-2 border-black rounded-full text-[10px] font-black text-white shadow-[1px_1px_0_0_#1A1D20]">
+                {unreadCount}
+              </span>
+            )}
           </div>
           <button
             onClick={closeDropdown}
@@ -120,56 +121,44 @@ export default function NotificationDropdown() {
 
         {/* Notification list */}
         <ul className="flex flex-col overflow-y-auto max-h-[380px] divide-y-2 divide-gray-100 dark:divide-gray-700">
-          {NOTIFICATIONS.map((n) => (
-            <li key={n.id}>
-              <button
-                onClick={closeDropdown}
-                className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-orange-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                {/* Avatar with online dot */}
-                <span className="relative flex-shrink-0 mt-0.5">
-                  <img
-                    src={n.img}
-                    alt={n.name}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-full border-2 border-black object-cover"
-                  />
-                  <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[1.5px] border-white ${
-                      n.online ? "bg-emerald-400" : "bg-red-400"
-                    }`}
-                  />
-                </span>
-
-                {/* Text */}
-                <span className="block flex-1 min-w-0">
-                  <span className="block text-sm text-gray-600 dark:text-gray-400 font-medium leading-snug">
-                    <span className="font-black text-gray-900 dark:text-white">{n.name}</span>
-                    {" "}{n.action}{" "}
-                    <span className="font-black text-gray-900 dark:text-white">{n.target}</span>
+          {loading ? (
+            <li className="px-4 py-8 text-center text-sm text-gray-400 font-semibold">Loading…</li>
+          ) : items.length === 0 ? (
+            <li className="px-4 py-8 text-center text-sm text-gray-400 font-semibold">No notifications yet.</li>
+          ) : (
+            items.map((n) => (
+              <li key={n.notificationId}>
+                <button
+                  onClick={() => handleItemClick(n)}
+                  className={`w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-orange-50 dark:hover:bg-gray-700 transition-colors ${!n.isRead ? "bg-orange-50/50 dark:bg-gray-700/50" : ""}`}
+                >
+                  <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${n.isRead ? "bg-gray-300" : "bg-orange-500"}`} />
+                  <span className="block flex-1 min-w-0">
+                    <span className="block text-sm text-gray-700 dark:text-gray-300 font-black leading-snug">
+                      {n.title}
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5 line-clamp-2">
+                      {n.body}
+                    </span>
+                    <span className="flex items-center gap-1.5 mt-1 text-xs text-gray-400 font-semibold">
+                      {fmtRelative(n.createdAt)}
+                    </span>
                   </span>
-                  <span className="flex items-center gap-1.5 mt-1 text-xs text-gray-400 font-semibold">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    {n.time}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
+                </button>
+              </li>
+            ))
+          )}
         </ul>
 
         {/* Footer CTA */}
         <div className="p-3 border-t-2 border-black dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
-          <Link
-            to="/"
-            onClick={closeDropdown}
-            className="flex items-center justify-center w-full py-2.5 border-2 border-black dark:border-gray-500 rounded-full bg-white dark:bg-gray-800 font-black text-sm text-gray-800 dark:text-gray-200 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+          <button
+            onClick={handleMarkAllRead}
+            disabled={unreadCount === 0}
+            className="flex items-center justify-center w-full py-2.5 border-2 border-black dark:border-gray-500 rounded-full bg-white dark:bg-gray-800 font-black text-sm text-gray-800 dark:text-gray-200 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("notifications.viewAll")}
-          </Link>
+            Mark all as read
+          </button>
         </div>
       </Dropdown>
     </div>

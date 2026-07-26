@@ -1,6 +1,6 @@
 import { NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Video } from "lucide-react";
 
 // ── DESIGN TOKENS ───────────────────────────────────────────────────────────────
 // Same "Guild Command Center" neo-brutalism system as every other Mentor page:
@@ -15,6 +15,7 @@ const TABS = [
   { to: "proofs",    iconSrc: "/icon/Main/Magnifying Glass/64w/Magnifying Glass 1st 64px.png", labelKey: "mentor.workspace.tabs.proofs" },
   { to: "boss-raid", iconSrc: "/icon/Player/Skull/64px/Skull 1st 64px.png",              labelKey: "mentor.workspace.tabs.bossRaid" },
   { to: "rally",     iconSrc: null,                                                       labelKey: "mentor.workspace.tabs.rally" },
+  { to: "live-arena", iconSrc: null,                                                      labelKey: "mentor.workspace.tabs.liveArena" },
 ] as const;
 
 export default function TabBar() {
@@ -40,6 +41,8 @@ export default function TabBar() {
         >
           {tab.iconSrc ? (
             <img src={tab.iconSrc} alt="" className="w-4 h-4 object-contain" />
+          ) : tab.to === "live-arena" ? (
+            <Video className="w-4 h-4" aria-hidden="true" />
           ) : (
             <Megaphone className="w-4 h-4" aria-hidden="true" />
           )}

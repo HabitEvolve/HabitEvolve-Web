@@ -8,9 +8,19 @@ import { connectPartyCall, type PartyCallConnection } from '../services/partyCal
  * chờ nhận offer và trả answer, không bao giờ tự khởi tạo trước.
  */
 
-const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
+// TURN (Open Relay Project, free public relay) as a fallback when STUN-only P2P fails —
+// e.g. an Android emulator's virtual NAT often can't establish a direct media path.
+// ⚠️ Free/shared — fine for testing, swap for a real TURN account before production.
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+];
 
 export interface PartyCallGameHandlers {
+  onParticipantJoined?: (userId: number) => void;
+  onParticipantLeft?: (userId: number) => void;
   onChallengePosed?: (challenge: unknown) => void;
   onChallengeResponded?: (challenge: unknown) => void;
   onChallengeJudged?: (challenge: unknown) => void;
@@ -27,6 +37,8 @@ export function usePartyCallMesh(
   const [remoteStreams, setRemoteStreams] = useState<Record<number, MediaStream>>({});
   const [connectedUserIds, setConnectedUserIds] = useState<number[]>([]);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
 
   const peersRef = useRef<Record<number, RTCPeerConnection>>({});
   const hubRef = useRef<PartyCallConnection | null>(null);
@@ -100,8 +112,12 @@ export function usePartyCallMesh(
           if (userId === myUserId) return;
           setConnectedUserIds((prev) => (prev.includes(userId) ? prev : [...prev, userId]));
           createPeer(userId, true);
+          gameHandlers.onParticipantJoined?.(userId);
         },
-        onParticipantLeft: ({ userId }) => removePeer(userId),
+        onParticipantLeft: ({ userId }) => {
+          removePeer(userId);
+          gameHandlers.onParticipantLeft?.(userId);
+        },
         onOffer: async ({ fromUserId, payload }) => {
           if (fromUserId == null) return;
           const pc = createPeer(fromUserId, false);
@@ -112,6 +128,7 @@ export function usePartyCallMesh(
             await hub.sendAnswer(sessionIdRef.current, fromUserId, pc.localDescription.toJSON());
           }
           setConnectedUserIds((prev) => (prev.includes(fromUserId) ? prev : [...prev, fromUserId]));
+          gameHandlers.onParticipantJoined?.(fromUserId);
         },
         onAnswer: async ({ fromUserId, payload }) => {
           if (fromUserId == null) return;
@@ -150,5 +167,21 @@ export function usePartyCallMesh(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, myUserId]);
 
-  return { localStream, remoteStreams, connectedUserIds, mediaError };
+  const toggleMic = useCallback(() => {
+    setMicEnabled((prev) => {
+      const next = !prev;
+      localStreamRef.current?.getAudioTracks().forEach((t) => (t.enabled = next));
+      return next;
+    });
+  }, []);
+
+  const toggleCamera = useCallback(() => {
+    setCameraEnabled((prev) => {
+      const next = !prev;
+      localStreamRef.current?.getVideoTracks().forEach((t) => (t.enabled = next));
+      return next;
+    });
+  }, []);
+
+  return { localStream, remoteStreams, connectedUserIds, mediaError, micEnabled, cameraEnabled, toggleMic, toggleCamera };
 }

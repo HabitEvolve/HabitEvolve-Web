@@ -38,7 +38,9 @@ export function connectPartyChat(
   handlers: PartyChatHandlers
 ): PartyChatConnection {
   const connection = new HubConnectionBuilder()
-    .withUrl(HUB_URL)
+    // Same CORS fix as partyCallHub.ts — avoids the browser's
+    // "wildcard origin + credentials" rejection against the BE's AllowAny CORS policy.
+    .withUrl(HUB_URL, { withCredentials: false })
     .withAutomaticReconnect()
     .configureLogging(LogLevel.None)
     .build();

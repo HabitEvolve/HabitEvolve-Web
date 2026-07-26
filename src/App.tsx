@@ -148,6 +148,7 @@ export default function App() {
                 <Route path="proofs" element={<ProofsTab />} />
                 <Route path="boss-raid" element={<BossRaidTab />} />
                 <Route path="rally" element={<RallyTab />} />
+                <Route path="live-arena" element={<LiveChallengeSession />} />
               </Route>
               <Route path="/mentor/live-arena" element={<LiveChallengeSession />} />
               <Route path="/mentor/question-bank" element={<QuestionBank />} />

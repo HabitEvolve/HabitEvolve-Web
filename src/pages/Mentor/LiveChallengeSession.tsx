@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useOutletContext } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import partyCallApi from "../../api/partyCallApi";
@@ -6,6 +7,7 @@ import partyMentorApi from "../../api/mentorPartyApi";
 import { usePartyCallMesh } from "../../hooks/usePartyCallMesh";
 import type { PartyItem } from "../../types/api.types";
 import type { ChallengeMode, LiveChallengeBankItemDto, LiveChallengeSessionDto } from "../../types/partyCall.types";
+import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
 
 const getMentorId = () => {
     const id = localStorage.getItem("user_id");
@@ -31,9 +33,12 @@ function VideoTile({ stream, label, muted = false }: { stream: MediaStream | nul
 
 export default function LiveChallengeSession() {
     const mentorUserId = getMentorId();
+    // When rendered as a tab inside a party's workspace (`/mentor/parties/:partyId/live-arena`),
+    // the party is already scoped by the route — skip the standalone party picker.
+    const workspace = useOutletContext<PartyWorkspaceContext | undefined>();
 
     const [parties, setParties] = useState<PartyItem[]>([]);
-    const [selectedPartyId, setSelectedPartyId] = useState<number | "">("");
+    const [selectedPartyId, setSelectedPartyId] = useState<number | "">(workspace?.partyId ?? "");
     const [session, setSession] = useState<LiveChallengeSessionDto | null>(null);
     const [starting, setStarting] = useState(false);
     const [ending, setEnding] = useState(false);
@@ -47,14 +52,18 @@ export default function LiveChallengeSession() {
     const [assignedToUserId, setAssignedToUserId] = useState<number | "">("");
     const [rivalUserId, setRivalUserId] = useState<number | "">("");
     const [sending, setSending] = useState(false);
+    const [judgingId, setJudgingId] = useState<number | null>(null);
 
     useEffect(() => {
-        partyMentorApi.getMentorParties().then((r) => {
-            if (r.success) setParties(r.data ?? []);
-        });
+        if (!workspace) {
+            partyMentorApi.getMentorParties().then((r) => {
+                if (r.success) setParties(r.data ?? []);
+            });
+        }
         partyCallApi.getBankItems().then((r) => {
             if (r.success) setBankItems(r.data ?? []);
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const refreshSession = useCallback(async () => {
@@ -65,6 +74,8 @@ export default function LiveChallengeSession() {
     }, [session?.sessionId]);
 
     const mesh = usePartyCallMesh(session && session.status === "Active" ? session.sessionId : null, mentorUserId, {
+        onParticipantJoined: refreshSession,
+        onParticipantLeft: refreshSession,
         onChallengePosed: refreshSession,
         onChallengeResponded: refreshSession,
         onChallengeJudged: refreshSession,
@@ -146,11 +157,15 @@ export default function LiveChallengeSession() {
     };
 
     const handleJudge = async (challengeId: number, approve: boolean) => {
+        if (judgingId !== null) return;
+        setJudgingId(challengeId);
         try {
             await partyCallApi.judgeChallenge(challengeId, approve);
             await refreshSession();
         } catch (e: any) {
             setError(e?.response?.data?.message || "Could not judge the challenge");
+        } finally {
+            setJudgingId(null);
         }
     };
 
@@ -200,17 +215,25 @@ export default function LiveChallengeSession() {
                         </div>
                     )}
 
-                    <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Party</label>
-                    <select
-                        value={selectedPartyId}
-                        onChange={(e) => setSelectedPartyId(e.target.value ? parseInt(e.target.value) : "")}
-                        className="w-full px-3 py-2.5 border-2 border-black rounded-xl text-sm font-medium bg-white mb-4"
-                    >
-                        <option value="">Choose a party…</option>
-                        {parties.map((p) => (
-                            <option key={p.partyId} value={p.partyId}>{p.name} ({p.memberCount} members)</option>
-                        ))}
-                    </select>
+                    {workspace ? (
+                        <p className="mb-4 text-sm font-bold">
+                            Party: <span className="text-violet-700">{workspace.party.name}</span>
+                        </p>
+                    ) : (
+                        <>
+                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Party</label>
+                            <select
+                                value={selectedPartyId}
+                                onChange={(e) => setSelectedPartyId(e.target.value ? parseInt(e.target.value) : "")}
+                                className="w-full px-3 py-2.5 border-2 border-black rounded-xl text-sm font-medium bg-white mb-4"
+                            >
+                                <option value="">Choose a party…</option>
+                                {parties.map((p) => (
+                                    <option key={p.partyId} value={p.partyId}>{p.name} ({p.memberCount} members)</option>
+                                ))}
+                            </select>
+                        </>
+                    )}
 
                     <button
                         onClick={handleStart}
@@ -225,7 +248,25 @@ export default function LiveChallengeSession() {
                     {/* Video grid */}
                     <div className="xl:col-span-2 space-y-4">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <VideoTile stream={mesh.localStream} label="You (Mentor)" muted />
+                            <div className="relative">
+                                <VideoTile stream={mesh.localStream} label="You (Mentor)" muted />
+                                <div className="absolute top-1 right-1 flex gap-1">
+                                    <button
+                                        onClick={mesh.toggleMic}
+                                        title={mesh.micEnabled ? "Mute mic" : "Unmute mic"}
+                                        className={`w-7 h-7 rounded-full border-2 border-black text-xs font-black ${mesh.micEnabled ? "bg-white" : "bg-red-400 text-white"}`}
+                                    >
+                                        {mesh.micEnabled ? "🎤" : "🔇"}
+                                    </button>
+                                    <button
+                                        onClick={mesh.toggleCamera}
+                                        title={mesh.cameraEnabled ? "Turn camera off" : "Turn camera on"}
+                                        className={`w-7 h-7 rounded-full border-2 border-black text-xs font-black ${mesh.cameraEnabled ? "bg-white" : "bg-red-400 text-white"}`}
+                                    >
+                                        {mesh.cameraEnabled ? "📷" : "🚫"}
+                                    </button>
+                                </div>
+                            </div>
                             {mesh.connectedUserIds.map((uid) => (
                                 <VideoTile key={uid} stream={mesh.remoteStreams[uid] ?? null} label={usernameFor(uid) ?? `User ${uid}`} />
                             ))}
@@ -349,8 +390,20 @@ export default function LiveChallengeSession() {
                                             </div>
                                             {c.status === "Responded" && (
                                                 <div className="flex gap-2 shrink-0">
-                                                    <button onClick={() => handleJudge(c.challengeId, true)} className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-emerald-300 hover:bg-emerald-400">Approve</button>
-                                                    <button onClick={() => handleJudge(c.challengeId, false)} className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-red-200 hover:bg-red-300">Reject</button>
+                                                    <button
+                                                        onClick={() => handleJudge(c.challengeId, true)}
+                                                        disabled={judgingId !== null}
+                                                        className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-emerald-300 hover:bg-emerald-400 disabled:opacity-50"
+                                                    >
+                                                        {judgingId === c.challengeId ? "…" : "Approve"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleJudge(c.challengeId, false)}
+                                                        disabled={judgingId !== null}
+                                                        className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-red-200 hover:bg-red-300 disabled:opacity-50"
+                                                    >
+                                                        {judgingId === c.challengeId ? "…" : "Reject"}
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>

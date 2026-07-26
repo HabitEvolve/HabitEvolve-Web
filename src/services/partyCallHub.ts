@@ -47,7 +47,10 @@ export interface PartyCallConnection {
 
 export function connectPartyCall(handlers: PartyCallHandlers): PartyCallConnection {
   const connection: HubConnection = new HubConnectionBuilder()
-    .withUrl(HUB_URL)
+    // withCredentials: false — the BE's CORS policy allows any origin without
+    // AllowCredentials(), and this hub doesn't rely on cookies (userId is passed
+    // explicitly), so the browser's "wildcard origin + credentials" rejection is avoided.
+    .withUrl(HUB_URL, { withCredentials: false })
     .withAutomaticReconnect()
     .configureLogging(LogLevel.None)
     .build();

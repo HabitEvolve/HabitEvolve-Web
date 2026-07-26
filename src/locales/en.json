@@ -572,7 +572,8 @@
         "quests": "Quests",
         "proofs": "Proofs",
         "bossRaid": "Boss Raid",
-        "rally": "Rally"
+        "rally": "Rally",
+        "liveArena": "Live Arena"
       }
     }
   },

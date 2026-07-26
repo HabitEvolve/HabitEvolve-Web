@@ -86,7 +86,8 @@
       "CONFIGURATION": "CẤU HÌNH",
       "MONETIZATION": "THANH TOÁN",
       "GUILD": "GUILD",
-      "COMMAND": "CHỈ HUY"
+      "COMMAND": "CHỈ HUY",
+      "ARENA": "ĐẤU TRƯỜNG TRỰC TIẾP"
     },
     "mentor": {
       "dashboard": "Bảng Điều Khiển",
@@ -96,7 +97,9 @@
       "questCommand": "Trung Tâm Nhiệm Vụ",
       "proofQueue": "Hàng Đợi Bằng Chứng",
       "bossRaid": "Đột Kích Trùm",
-      "partyReminder": "Nhắc Nhở Party"
+      "partyReminder": "Nhắc Nhở Party",
+      "liveArena": "Đấu Trường Trực Tiếp",
+      "questionBank": "Ngân Hàng Câu Hỏi"
     }
   },
   "header": {

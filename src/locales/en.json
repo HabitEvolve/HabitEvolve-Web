@@ -86,7 +86,8 @@
       "CONFIGURATION": "CONFIGURATION",
       "MONETIZATION": "MONETIZATION",
       "GUILD": "GUILD",
-      "COMMAND": "COMMAND"
+      "COMMAND": "COMMAND",
+      "ARENA": "LIVE ARENA"
     },
     "mentor": {
       "dashboard": "Dashboard",
@@ -96,7 +97,9 @@
       "questCommand": "Quest Command",
       "proofQueue": "Proof Queue",
       "bossRaid": "Boss Raid",
-      "partyReminder": "Party Reminder"
+      "partyReminder": "Party Reminder",
+      "liveArena": "Live Challenge Arena",
+      "questionBank": "Question Bank"
     }
   },
   "header": {

@@ -60,6 +60,8 @@ import QuestForgeTab from "./pages/Mentor/PartyWorkspace/QuestForgeTab";
 import ProofsTab from "./pages/Mentor/PartyWorkspace/ProofsTab";
 import BossRaidTab from "./pages/Mentor/PartyWorkspace/BossRaidTab";
 import RallyTab from "./pages/Mentor/PartyWorkspace/RallyTab";
+import LiveChallengeSession from "./pages/Mentor/LiveChallengeSession";
+import QuestionBank from "./pages/Mentor/QuestionBank";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 
 export default function App() {
@@ -147,6 +149,8 @@ export default function App() {
                 <Route path="boss-raid" element={<BossRaidTab />} />
                 <Route path="rally" element={<RallyTab />} />
               </Route>
+              <Route path="/mentor/live-arena" element={<LiveChallengeSession />} />
+              <Route path="/mentor/question-bank" element={<QuestionBank />} />
             </Route>
           </Route>
 

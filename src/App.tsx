@@ -120,11 +120,11 @@ export default function App() {
               {/* Charts */}
               <Route path="/line-chart" element={<LineChart />} />
               <Route path="/bar-chart" element={<BarChart />} />
-            </Route>
-          </Route>
+            </Route >
+          </Route >
 
           {/* ── MENTOR PORTAL — protected: MENTOR role required ── */}
-          <Route element={<ProtectedRoute allowedRoles={['MENTOR']} />}>
+          < Route element={< ProtectedRoute allowedRoles={['MENTOR']} />}>
             <Route element={<MentorLayout />}>
               <Route path="/mentor/dashboard" element={<MentorDashboard />} />
               <Route path="/mentor/wallet" element={<SubscriptionWallet />} />
@@ -145,7 +145,7 @@ export default function App() {
               <Route path="/mentor/live-arena" element={<LiveChallengeSession />} />
               <Route path="/mentor/question-bank" element={<QuestionBank />} />
             </Route>
-          </Route>
+          </ >
 
           <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -159,8 +159,8 @@ export default function App() {
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+        </Routes >
+      </Router >
     </>
   );
 }

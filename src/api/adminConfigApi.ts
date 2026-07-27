@@ -28,9 +28,10 @@ export const adminConfigApi = {
     return res.data;
   },
 
-  // POST /api/admin/config/reload  — invalidates cache, returns count of active configs
-  reloadCache: async (): Promise<ApiResponse<{ count: number }>> => {
-    const res = await axiosClient.post<ApiResponse<{ count: number }>>(`${BASE}/reload`);
+  // POST /api/admin/config/reload — invalidates cache; Data is the raw count of active configs
+  // in the DB (AdminConfigController.Reload returns ApiResponse<int>, not a wrapped object).
+  reloadCache: async (): Promise<ApiResponse<number>> => {
+    const res = await axiosClient.post<ApiResponse<number>>(`${BASE}/reload`);
     return res.data;
   },
 };

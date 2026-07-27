@@ -105,7 +105,7 @@ const TIER_CFG: Record<PackageTier, { bg: string; border: string; text: string; 
   Premium: { bg: "bg-purple-100", border: "border-purple-400", text: "text-purple-800", icon: SI("/icon/Item/Crown/64px/Crown 1st 64px.png") },
 };
 const TierBadge = ({ tier }: { tier: PackageTier }) => {
-  const c = TIER_CFG[tier] ?? TIER_CFG.FREE;
+  const c = TIER_CFG[tier] ?? TIER_CFG.Free;
   return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {tier}</span>;
 };
 

@@ -1,50 +1,52 @@
 // ==========================================
 // ADMIN SHOP LISTINGS
-// Field names are inferred from the endpoint list — confirm against the real
-// BE DTOs (ShopListingDto) once available and adjust if they drift.
+// Matches BE ShopListingDto (HabitEvolve.Application/Common/DTOs/ShopDtos.cs) and
+// CreateShopListingCommand / UpdateShopListingBody
+// (HabitEvolve.Application/Features/Shops/AdminShopFeature.cs,
+//  HabitEvolve.API/Controllers/AdminShopController.cs).
 // ==========================================
 
 export type ShopCurrency = "GOLD" | "GEMS" | "MGOLD" | string;
+export type ShopType = "SYSTEM" | "MENTOR" | string;
 
-// GET /api/admin/shop/listings — one row
+// GET /api/admin/shop/listings — one row. Matches BE ShopListingDto exactly.
+// NOTE: the BE has no "rotationGroup" concept — rotation is just availableFrom/availableTo.
 export interface ShopListingDto {
-    listingId: number;
-    itemId: number;
-    itemName: string | null;
-    price: number;
+    shopListingId: number;
+    itemDefinitionId: number;
+    itemCode: string;
+    itemName: string;
+    itemDescription: string | null;
+    itemIconUrl: string | null;
+    itemType: string;
+    rarity: string;
+    categoryCode: string | null;
+    shopType: string;
     currency: ShopCurrency;
-    stock: number | null;       // null = unlimited
-    rotationGroup: string | null;
-    startsAt: string | null;
-    endsAt: string | null;
+    price: number;
+    stockLimit: number | null;
+    stockSold: number;
     isActive: boolean;
-    createdAt: string;
+    availableFrom: string | null;
+    availableTo: string | null;
 }
 
-// GET /api/admin/shop/listings?pageNumber=&pageSize=
-// pageNumber/pageSize match the convention already confirmed working for
-// GET /admin/users (see GetUsersQueryParams) — reused here for consistency.
-export interface GetShopListingsQueryParams {
-    pageNumber?: number;
-    pageSize?: number;
-}
-
-// POST /api/admin/shop/listings
+// POST /api/admin/shop/listings (CreateShopListingCommand)
 export interface CreateShopListingPayload {
-    itemId: number;
-    price: number;
+    itemDefinitionId: number;
+    shopType: ShopType;
     currency: ShopCurrency;
-    stock?: number | null;
-    rotationGroup?: string;
-    startsAt?: string;
-    endsAt?: string;
+    price: number;
+    stockLimit?: number | null;
+    availableFrom?: string | null;
+    availableTo?: string | null;
 }
 
-// PUT /api/admin/shop/listings/{id} — price/stock/rotation
+// PUT /api/admin/shop/listings/{id} (UpdateShopListingBody) — shopType/currency/item are
+// immutable after creation, so only pricing/stock/rotation-window fields are accepted.
 export interface UpdateShopListingPayload {
-    price?: number;
-    stock?: number | null;
-    rotationGroup?: string;
-    startsAt?: string;
-    endsAt?: string;
+    price: number;
+    stockLimit?: number | null;
+    availableFrom?: string | null;
+    availableTo?: string | null;
 }

@@ -61,12 +61,14 @@ export interface PaginatedApiResponse<T> {
 export type UserRole = "ADMIN" | "MENTOR" | "PLAYER" | string;
 export type UserStatus = "Active" | "Inactive" | "Banned" | "Deleted" | string;
 
+// BE UserDto (HabitEvolve.Application/Common/DTOs/UserDto.cs) has NO AvatarUrl field —
+// admin/users list responses never include it. (Player-facing avatar lives on
+// PlayerProfileDetailDto, surfaced separately via PlayerProfile below.)
 export interface UserItem {
     userId: number;
     username: string;
     email: string;
     emailVerified: boolean;
-    avatarUrl?: string | null;
     status: UserStatus;
     createdAt: string;
     updatedAt: string | null;
@@ -97,6 +99,7 @@ export interface AssignRolePayload {
 }
 
 // PLAYER PROFILE TYPES
+// Matches BE PlayerProfileDetailDto (HabitEvolve.Application/Common/DTOs/PlayerProfileDto.cs)
 export interface PlayerProfile {
     userId: number;
     username: string;
@@ -105,6 +108,9 @@ export interface PlayerProfile {
     avatarUrl: string | null;
     dailyScheduleTime: string | null;
     reminderPreference: string | null;
+    // Portrait verification (CV service "chính chủ" check) — added alongside ProfileController.VerifyPortrait.
+    portraitUrl: string | null;
+    hasVerifiedPortrait: boolean;
 
     isProfileCreated: boolean;
     hasAvatar: boolean;

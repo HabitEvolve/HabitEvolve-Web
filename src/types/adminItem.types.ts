@@ -1,49 +1,50 @@
 // ==========================================
 // ADMIN ITEM CATALOG (cosmetic-only)
-// Field names are inferred from the endpoint list — confirm against the real
-// BE DTOs (ItemDto / CreateItemRequest) once available and adjust if they drift.
+// Matches BE ItemDefinitionDto (HabitEvolve.Application/Common/DTOs/InventoryDtos.cs)
+// and CreateItemDefinitionCommand / UpdateItemBody
+// (HabitEvolve.Application/Features/ItemCatalog/ItemDefinitionFeature.cs,
+//  HabitEvolve.API/Controllers/AdminItemController.cs).
 // ==========================================
 
-export type ItemType = "AVATAR_FRAME" | "BADGE" | "TITLE" | "PET_SKIN" | "THEME" | string;
+export type ItemType = "SKIN" | "SCENE" | "BADGE" | "TITLE" | "FRAME" | "EMOTE" | "CONSUMABLE" | string;
 export type ItemRarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | string;
 
-// GET /api/admin/items — one row
-export interface ItemDto {
-    itemId: number;
+// GET /api/admin/items — one row. Matches BE ItemDefinitionDto exactly.
+export interface ItemDefinitionDto {
+    itemDefinitionId: number;
+    code: string;
     name: string;
     description: string | null;
+    iconUrl: string | null;
     itemType: ItemType;
     rarity: ItemRarity;
-    iconUrl: string | null;
+    categoryCode: string | null;
+    isMentorExclusive: boolean;
+    isStackable: boolean;
     isActive: boolean;
-    createdAt: string;
-    updatedAt: string | null;
 }
 
-// GET /api/admin/items?itemType=&pageNumber=&pageSize=
-// pageNumber/pageSize match the convention already confirmed working for
-// GET /admin/users (see GetUsersQueryParams) — reused here for consistency
-// rather than inventing a third page/limit naming scheme.
-export interface GetItemsQueryParams {
-    itemType?: ItemType;
-    pageNumber?: number;
-    pageSize?: number;
-}
-
-// POST /api/admin/items
+// POST /api/admin/items (CreateItemDefinitionCommand)
 export interface CreateItemPayload {
+    code: string;
     name: string;
     description?: string;
+    iconUrl?: string;
     itemType: ItemType;
     rarity: ItemRarity;
-    iconUrl?: string;
+    categoryCode?: string | null;
+    isMentorExclusive: boolean;
+    isStackable: boolean;
 }
 
-// PUT /api/admin/items/{id}
+// PUT /api/admin/items/{id} (UpdateItemBody) — Code and ItemType are immutable after
+// creation, so they're intentionally absent here (BE doesn't accept them on update).
 export interface UpdateItemPayload {
-    name?: string;
+    name: string;
     description?: string;
-    itemType?: ItemType;
-    rarity?: ItemRarity;
     iconUrl?: string;
+    rarity: ItemRarity;
+    categoryCode?: string | null;
+    isMentorExclusive: boolean;
+    isStackable: boolean;
 }

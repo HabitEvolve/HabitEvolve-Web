@@ -8,19 +8,23 @@ import Pagination from "../components/common/Pagination";
 import { TableFilterBar } from "../components/common/TableFilterBar";
 import { useTableFilters, type FilterField } from "../hooks/useTableFilters";
 import { adminItemApi } from "../api/adminItemApi";
-import type { ItemDto, CreateItemPayload, ItemType, ItemRarity } from "../types/adminItem.types";
+import type { ItemDefinitionDto, CreateItemPayload, ItemType, ItemRarity } from "../types/adminItem.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 10;
-const ITEM_TYPES: ItemType[] = ["AVATAR_FRAME", "BADGE", "TITLE", "PET_SKIN", "THEME"];
+// Matches BE ItemType values (InventoryController doc comment): SKIN|SCENE|BADGE|TITLE|FRAME|EMOTE|CONSUMABLE
+const ITEM_TYPES: ItemType[] = ["SKIN", "SCENE", "BADGE", "TITLE", "FRAME", "EMOTE", "CONSUMABLE"];
 const ITEM_RARITIES: ItemRarity[] = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
 
 const EMPTY_ITEM: CreateItemPayload = {
+    code: "",
     name: "",
     description: "",
-    itemType: "AVATAR_FRAME",
+    itemType: "SKIN",
     rarity: "COMMON",
     iconUrl: "",
+    categoryCode: "",
+    isMentorExclusive: false,
+    isStackable: false,
 };
 
 const FILTER_FIELDS: FilterField[] = [
@@ -68,7 +72,7 @@ const RarityBadge = ({ rarity }: { rarity: ItemRarity }) => {
 
 // ── ITEM FORM MODAL ───────────────────────────────────────────────────────────
 interface ItemFormModalProps {
-    item: ItemDto | null;
+    item: ItemDefinitionDto | null;
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -79,11 +83,15 @@ const ItemFormModal = ({ item, onClose, onSuccess }: ItemFormModalProps) => {
     const [form, setForm] = useState<CreateItemPayload>(() =>
         isEdit
             ? {
+                code: item.code,
                 name: item.name,
                 description: item.description ?? "",
                 itemType: item.itemType,
                 rarity: item.rarity,
                 iconUrl: item.iconUrl ?? "",
+                categoryCode: item.categoryCode ?? "",
+                isMentorExclusive: item.isMentorExclusive,
+                isStackable: item.isStackable,
             }
             : { ...EMPTY_ITEM }
     );
@@ -95,11 +103,18 @@ const ItemFormModal = ({ item, onClose, onSuccess }: ItemFormModalProps) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!form.code.trim() || !form.name.trim()) {
+            setFormError("Code and name are required.");
+            return;
+        }
         setSaving(true);
         setFormError(null);
         try {
             if (isEdit) {
-                await adminItemApi.updateItem(item.itemId, form);
+                // Code and ItemType are immutable after creation — BE's update endpoint
+                // (UpdateItemBody) doesn't accept them.
+                const { code: _code, itemType: _itemType, ...updatePayload } = form;
+                await adminItemApi.updateItem(item.itemDefinitionId, updatePayload);
                 alert.success(`"${form.name}" updated!`);
             } else {
                 await adminItemApi.createItem(form);
@@ -136,10 +151,18 @@ const ItemFormModal = ({ item, onClose, onSuccess }: ItemFormModalProps) => {
                 {/* Form */}
                 <div className="flex-1 overflow-y-auto p-6">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <Label>Name</Label>
-                            <input required type="text" value={form.name} onChange={e => set("name", e.target.value)}
-                                placeholder="Golden Frame" className={inputCls} />
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label>Code</Label>
+                                <input required disabled={isEdit} type="text" value={form.code}
+                                    onChange={e => set("code", e.target.value.toUpperCase())}
+                                    placeholder="SKIN_NINJA" className={`${inputCls} disabled:opacity-60`} />
+                            </div>
+                            <div>
+                                <Label>Name</Label>
+                                <input required type="text" value={form.name} onChange={e => set("name", e.target.value)}
+                                    placeholder="Golden Frame" className={inputCls} />
+                            </div>
                         </div>
                         <div>
                             <Label>Description</Label>
@@ -149,7 +172,7 @@ const ItemFormModal = ({ item, onClose, onSuccess }: ItemFormModalProps) => {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <Label>Item Type</Label>
-                                <select value={form.itemType} onChange={e => set("itemType", e.target.value)} className={inputCls}>
+                                <select disabled={isEdit} value={form.itemType} onChange={e => set("itemType", e.target.value)} className={`${inputCls} disabled:opacity-60`}>
                                     {ITEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
                             </div>
@@ -173,6 +196,18 @@ const ItemFormModal = ({ item, onClose, onSuccess }: ItemFormModalProps) => {
                                 <input type="text" value={form.iconUrl} onChange={e => set("iconUrl", e.target.value)}
                                     placeholder="https://…" className={inputCls} />
                             </div>
+                        </div>
+                        <div>
+                            <Label>Category Code (optional)</Label>
+                            <input type="text" value={form.categoryCode ?? ""} onChange={e => set("categoryCode", e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="flex gap-6">
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
+                                <input type="checkbox" checked={form.isMentorExclusive} onChange={e => set("isMentorExclusive", e.target.checked)} className="w-4 h-4" /> Mentor exclusive
+                            </label>
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
+                                <input type="checkbox" checked={form.isStackable} onChange={e => set("isStackable", e.target.checked)} className="w-4 h-4" /> Stackable
+                            </label>
                         </div>
 
                         {formError && (
@@ -198,18 +233,15 @@ const ItemFormModal = ({ item, onClose, onSuccess }: ItemFormModalProps) => {
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function AdminItemManagement() {
     const alert = useAlert();
-    const [items, setItems] = useState<ItemDto[]>([]);
+    const [items, setItems] = useState<ItemDefinitionDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Tracked by array index, not itemId — the BE's actual primary-key field name for
-    // this endpoint hasn't been confirmed, and matching by a possibly-undefined ID would
-    // make every row compare equal (undefined === undefined) and update together.
-    const [togglingIndex, setTogglingIndex] = useState<number | null>(null);
-    const [editingItem, setEditingItem] = useState<ItemDto | null | "new">(null);
-    const [totalPages, setTotalPages] = useState(1);
+    const [togglingId, setTogglingId] = useState<number | null>(null);
+    const [editingItem, setEditingItem] = useState<ItemDefinitionDto | null | "new">(null);
+    // BE (GetItemDefinitionsQuery) returns a plain list — no pagination on this endpoint —
+    // so this always resolves to a single page. Pagination control kept for layout parity.
+    const totalPages = 1;
 
-    // `page` resets to 1 automatically whenever a filter changes (built into the hook) —
-    // that's the "reset page on filter change" requirement, for free.
     const { filters, debouncedFilters, setFilter, clearFilters, hasActiveFilters, page, setPage } =
         useTableFilters({ itemType: "" });
 
@@ -217,14 +249,9 @@ export default function AdminItemManagement() {
         setLoading(true);
         setError(null);
         try {
-            const res = await adminItemApi.getItems({
-                itemType: debouncedFilters.itemType || undefined,
-                pageNumber: page,
-                pageSize: PAGE_SIZE,
-            });
+            const res = await adminItemApi.getItems(debouncedFilters.itemType || undefined);
             if (res.success) {
                 setItems(res.data ?? []);
-                setTotalPages(res.totalPages ?? 1);
             } else {
                 setError(res.message || "Failed to load items.");
             }
@@ -233,34 +260,31 @@ export default function AdminItemManagement() {
         } finally {
             setLoading(false);
         }
-    }, [debouncedFilters.itemType, page]);
+    }, [debouncedFilters.itemType]);
 
     useEffect(() => { fetchItems(); }, [fetchItems]);
 
-    const handleToggleActive = async (item: ItemDto, index: number) => {
+    const handleToggleActive = async (item: ItemDefinitionDto) => {
         const nextActive = !item.isActive;
-        setTogglingIndex(index);
-        // Optimistic flip, matched by index — the toggle endpoint's response isn't
-        // guaranteed to be the full entity, so local state is the source of truth for
-        // isActive, not res.data. Index matching (not itemId) avoids updating every row
-        // at once if the BE's real ID field is named differently than expected.
-        setItems(prev => prev.map((i, idx) => idx === index ? { ...i, isActive: nextActive } : i));
+        const id = item.itemDefinitionId;
+        setTogglingId(id);
+        // Optimistic flip — BE returns the full updated ItemDefinitionDto, so it's safe to
+        // merge the response back in below.
+        setItems(prev => prev.map(i => i.itemDefinitionId === id ? { ...i, isActive: nextActive } : i));
         try {
-            const res = await adminItemApi.toggleActive(item.itemId, nextActive);
+            const res = await adminItemApi.setActive(id, nextActive);
             if (res.success) {
-                // Merge in whatever the BE did return (partial or full) — never replace,
-                // so a partial response can't wipe out fields like name/description.
-                if (res.data) setItems(prev => prev.map((i, idx) => idx === index ? { ...i, ...res.data } : i));
+                if (res.data) setItems(prev => prev.map(i => i.itemDefinitionId === id ? res.data! : i));
                 alert.success(`"${item.name}" is now ${nextActive ? "active" : "inactive"}.`);
             } else {
-                setItems(prev => prev.map((i, idx) => idx === index ? { ...i, isActive: item.isActive } : i));
+                setItems(prev => prev.map(i => i.itemDefinitionId === id ? { ...i, isActive: item.isActive } : i));
                 alert.error(res.message || "Failed to toggle item.");
             }
         } catch (err) {
-            setItems(prev => prev.map((i, idx) => idx === index ? { ...i, isActive: item.isActive } : i));
+            setItems(prev => prev.map(i => i.itemDefinitionId === id ? { ...i, isActive: item.isActive } : i));
             alert.error(errMsg(err) ?? "Failed to toggle item.");
         } finally {
-            setTogglingIndex(null);
+            setTogglingId(null);
         }
     };
 
@@ -313,18 +337,21 @@ export default function AdminItemManagement() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b-2 border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60">
-                                        {["Icon", "Name", "Type", "Rarity", "Active", "Actions"].map(h => (
+                                        {["Icon", "Code", "Name", "Type", "Rarity", "Active", "Actions"].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                    {items.map((item, index) => (
-                                        <tr key={item.itemId ?? index} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-colors">
+                                    {items.map((item) => (
+                                        <tr key={item.itemDefinitionId} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-colors">
                                             <td className="px-4 py-3">
                                                 <div className="w-9 h-9 rounded-xl border-2 border-black bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
                                                     {item.iconUrl ? <img src={item.iconUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
                                                 </div>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <span className="font-mono text-xs font-bold text-gray-600 dark:text-gray-300">{item.code}</span>
                                             </td>
                                             <td className="px-4 py-4 max-w-60">
                                                 <p className="font-black text-gray-900 dark:text-gray-100 truncate">{item.name}</p>
@@ -336,8 +363,8 @@ export default function AdminItemManagement() {
                                             <td className="px-4 py-4"><RarityBadge rarity={item.rarity} /></td>
                                             <td className="px-4 py-4">
                                                 <button
-                                                    onClick={() => handleToggleActive(item, index)}
-                                                    disabled={togglingIndex === index}
+                                                    onClick={() => handleToggleActive(item)}
+                                                    disabled={togglingId === item.itemDefinitionId}
                                                     aria-label={item.isActive ? "Deactivate item" : "Activate item"}
                                                     className={`relative w-11 h-6 shrink-0 rounded-full border-2 border-black transition-colors disabled:opacity-50 ${item.isActive ? "bg-emerald-400" : "bg-gray-200 dark:bg-gray-700"}`}
                                                 >

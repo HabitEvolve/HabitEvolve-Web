@@ -112,6 +112,14 @@ export const adminGoalApi = {
         const res = await axiosClient.put(`${ADMIN_URL}/questions/${questionId}`, payload);
         return res.data;
     },
+    // PUT /admin/questions/{questionId}/field-key — BE: SetQuestionFieldKeyCommand (QuestionController.SetFieldKey)
+    // Sets the semantic FieldKey used by ProgressionPlanService.ResolveAllBindings to pull answer values
+    // into ComputedVariables (e.g. "baseline_count"). Omit/empty fieldKey clears it.
+    // NOTE: BE's QuestionDto does not serialize FieldKey back — the current value can't be read from responses.
+    setQuestionFieldKey: async (questionId: number, fieldKey?: string | null): Promise<ApiResponse<QuestionDto>> => {
+        const res = await axiosClient.put(`${ADMIN_URL}/questions/${questionId}/field-key`, { fieldKey });
+        return res.data;
+    },
     deleteQuestion: async (questionId: number): Promise<ApiResponse<any>> => {
         const res = await axiosClient.delete(`${ADMIN_URL}/questions/${questionId}`);
         return res.data;

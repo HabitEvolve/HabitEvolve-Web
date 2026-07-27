@@ -4,12 +4,13 @@
 export type ItemType = "SKIN" | "SCENE" | "BADGE" | "TITLE" | "FRAME" | "EMOTE" | "CONSUMABLE" | string;
 export type ItemRarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | string;
 
+// Matches BE ItemDefinitionDto (Description/IconUrl are `string?` on the BE).
 export interface ItemDefinitionDto {
   itemDefinitionId: number;
   code: string;
   name: string;
-  description: string;
-  iconUrl: string;
+  description: string | null;
+  iconUrl: string | null;
   itemType: ItemType;
   rarity: ItemRarity;
   categoryCode: string | null;
@@ -30,6 +31,8 @@ export interface CreateItemPayload {
   isStackable: boolean;
 }
 
+// PUT /api/admin/items/{id} (UpdateItemBody) — Code and ItemType are immutable after
+// creation, so they're intentionally absent (BE doesn't accept them on update).
 export interface UpdateItemPayload {
   name: string;
   description: string;
@@ -46,8 +49,8 @@ export interface ShopListingDto {
   itemDefinitionId: number;
   itemCode: string;
   itemName: string;
-  itemDescription: string;
-  itemIconUrl: string;
+  itemDescription: string | null;
+  itemIconUrl: string | null;
   itemType: string;
   rarity: string;
   categoryCode: string | null;
@@ -71,9 +74,9 @@ export interface CreateShopListingPayload {
   availableTo?: string | null;
 }
 
+// PUT /api/admin/shop/listings/{id} (UpdateShopListingBody) — shopType/currency/item are
+// immutable after creation; the BE update command only accepts price/stock/rotation window.
 export interface UpdateShopListingPayload {
-  shopType: string;
-  currency: string;
   price: number;
   stockLimit?: number | null;
   availableFrom?: string | null;
@@ -81,11 +84,13 @@ export interface UpdateShopListingPayload {
 }
 
 // ── Loot Tables ───────────────────────────────────────────────────────────────
+// Matches BE LootTableEntryDto exactly — no lootTableId on the entry (only on the parent
+// table); itemName is included so item-kind entries can render without a lookup.
 export interface LootTableEntryDto {
   lootTableEntryId: number;
-  lootTableId: number;
   rewardKind: string;
   itemDefinitionId: number | null;
+  itemName: string | null;
   amountMin: number;
   amountMax: number;
   weight: number;

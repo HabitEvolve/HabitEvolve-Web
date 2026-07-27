@@ -41,9 +41,10 @@ const adminUserApi = {
         return { ...res, data: res.data ? normalizeUserRoles(res.data) : res.data };
     },
 
-    // PATCH /admin/users/{userId}  (update profile fields: username, email)
+    // PUT /admin/users/{userId}  (update profile fields: username, email)
+    // BE: [HttpPut("{userId:long}")] on AdminUserController.Update — NOT PATCH.
     updateUser: async (userId: number, payload: { username?: string; email?: string }): Promise<ApiResponse<UserItem>> => {
-        const response = await axiosClient.patch<ApiResponse<any>>(`${ADMIN_USER_URL}/${userId}`, payload);
+        const response = await axiosClient.put<ApiResponse<any>>(`${ADMIN_USER_URL}/${userId}`, payload);
         const res = response.data;
         return { ...res, data: res.data ? normalizeUserRoles(res.data) : res.data };
     },

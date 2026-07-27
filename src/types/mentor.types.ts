@@ -67,6 +67,7 @@ export interface PurchaseSubscriptionResultDto {
     subscription: MentorSubscriptionDto;
     requiresPayment: boolean;
     checkoutUrl?: string;
+    paymentFormFields?: Record<string, string>;
     orderInvoiceNumber?: string;
 }
 

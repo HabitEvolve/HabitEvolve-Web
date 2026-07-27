@@ -6,19 +6,21 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import Pagination from "../components/common/Pagination";
 import { adminShopApi } from "../api/adminShopApi";
-import type { ShopListingDto, CreateShopListingPayload, ShopCurrency } from "../types/adminShop.types";
+import type { ShopListingDto, CreateShopListingPayload, ShopCurrency, ShopType } from "../types/adminShop.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 10;
 const CURRENCIES: ShopCurrency[] = ["GOLD", "GEMS", "MGOLD"];
+const SHOP_TYPES: ShopType[] = ["SYSTEM", "MENTOR"];
+// NOTE: itemDefinitionId defaults to 0 here (placeholder) — a real item must be picked in the
+// form before submit; there is no "rotation group" concept on the BE, only an availability window.
 const EMPTY_LISTING: CreateShopListingPayload = {
-    itemId: 0,
+    itemDefinitionId: 0,
+    shopType: "SYSTEM",
     price: 0,
     currency: "GOLD",
-    stock: null,
-    rotationGroup: "",
-    startsAt: "",
-    endsAt: "",
+    stockLimit: null,
+    availableFrom: "",
+    availableTo: "",
 };
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
@@ -66,17 +68,17 @@ const ListingFormModal = ({ listing, onClose, onSuccess }: ListingFormModalProps
     const [form, setForm] = useState<CreateShopListingPayload>(() =>
         isEdit
             ? {
-                itemId: listing.itemId,
+                itemDefinitionId: listing.itemDefinitionId,
+                shopType: listing.shopType,
                 price: listing.price,
                 currency: listing.currency,
-                stock: listing.stock,
-                rotationGroup: listing.rotationGroup ?? "",
-                startsAt: listing.startsAt ?? "",
-                endsAt: listing.endsAt ?? "",
+                stockLimit: listing.stockLimit,
+                availableFrom: listing.availableFrom ?? "",
+                availableTo: listing.availableTo ?? "",
             }
             : { ...EMPTY_LISTING }
     );
-    const [unlimitedStock, setUnlimitedStock] = useState(isEdit ? listing.stock === null : true);
+    const [unlimitedStock, setUnlimitedStock] = useState(isEdit ? listing.stockLimit === null : true);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
@@ -85,18 +87,19 @@ const ListingFormModal = ({ listing, onClose, onSuccess }: ListingFormModalProps
         setSaving(true);
         setFormError(null);
         try {
-            const stock = unlimitedStock ? null : form.stock;
+            const stockLimit = unlimitedStock ? null : form.stockLimit;
             if (isEdit) {
-                await adminShopApi.updateListing(listing.listingId, {
+                // itemDefinitionId/shopType/currency are immutable after creation — BE's
+                // update endpoint (UpdateShopListingBody) only accepts price/stock/window.
+                await adminShopApi.updateListing(listing.shopListingId, {
                     price: form.price,
-                    stock,
-                    rotationGroup: form.rotationGroup || undefined,
-                    startsAt: form.startsAt || undefined,
-                    endsAt: form.endsAt || undefined,
+                    stockLimit,
+                    availableFrom: form.availableFrom || undefined,
+                    availableTo: form.availableTo || undefined,
                 });
-                alert.success(`Listing #${listing.listingId} updated!`);
+                alert.success(`Listing #${listing.shopListingId} updated!`);
             } else {
-                await adminShopApi.createListing({ ...form, stock });
+                await adminShopApi.createListing({ ...form, stockLimit });
                 alert.success("Listing created!");
             }
             onSuccess();
@@ -119,7 +122,7 @@ const ListingFormModal = ({ listing, onClose, onSuccess }: ListingFormModalProps
                         </div>
                         <div>
                             <h2 className="text-base font-black text-gray-900 dark:text-gray-100">{isEdit ? "Edit Listing" : "New Listing"}</h2>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{isEdit ? `#${listing.listingId}` : "Shop listing"}</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{isEdit ? `#${listing.shopListingId}` : "Shop listing"}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
@@ -132,19 +135,27 @@ const ListingFormModal = ({ listing, onClose, onSuccess }: ListingFormModalProps
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <Label>Item ID</Label>
-                                <input required type="number" min={1} disabled={isEdit} value={form.itemId || ""}
-                                    onChange={e => setForm(f => ({ ...f, itemId: Number(e.target.value) }))}
+                                <Label>Item Definition ID</Label>
+                                <input required type="number" min={1} disabled={isEdit} value={form.itemDefinitionId || ""}
+                                    onChange={e => setForm(f => ({ ...f, itemDefinitionId: Number(e.target.value) }))}
                                     placeholder="123" className={`${inputCls} disabled:opacity-60`} />
                             </div>
                             <div>
-                                <Label>Currency</Label>
-                                <select disabled={isEdit} value={form.currency}
-                                    onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
+                                <Label>Shop Type</Label>
+                                <select disabled={isEdit} value={form.shopType}
+                                    onChange={e => setForm(f => ({ ...f, shopType: e.target.value }))}
                                     className={`${inputCls} disabled:opacity-60`}>
-                                    {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                    {SHOP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
                             </div>
+                        </div>
+                        <div>
+                            <Label>Currency</Label>
+                            <select disabled={isEdit} value={form.currency}
+                                onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
+                                className={`${inputCls} disabled:opacity-60`}>
+                                {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
                         </div>
                         <div>
                             <Label>Price</Label>
@@ -153,31 +164,26 @@ const ListingFormModal = ({ listing, onClose, onSuccess }: ListingFormModalProps
                         </div>
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
-                                <Label>Stock</Label>
+                                <Label>Stock Limit</Label>
                                 <label className="flex items-center gap-1.5 text-xs font-bold text-gray-600 dark:text-gray-300 cursor-pointer select-none">
                                     <input type="checkbox" checked={unlimitedStock} onChange={e => setUnlimitedStock(e.target.checked)} />
                                     Unlimited
                                 </label>
                             </div>
                             {!unlimitedStock && (
-                                <input type="number" min={0} value={form.stock ?? ""}
-                                    onChange={e => setForm(f => ({ ...f, stock: Number(e.target.value) }))}
+                                <input type="number" min={0} value={form.stockLimit ?? ""}
+                                    onChange={e => setForm(f => ({ ...f, stockLimit: Number(e.target.value) }))}
                                     placeholder="e.g. 50" className={inputCls} />
                             )}
                         </div>
-                        <div>
-                            <Label>Rotation Group (optional)</Label>
-                            <input type="text" value={form.rotationGroup} onChange={e => setForm(f => ({ ...f, rotationGroup: e.target.value }))}
-                                placeholder="weekly-rotation-a" className={inputCls} />
-                        </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <Label>Starts At (optional)</Label>
-                                <input type="date" value={form.startsAt?.slice(0, 10) ?? ""} onChange={e => setForm(f => ({ ...f, startsAt: e.target.value }))} className={inputCls} />
+                                <Label>Available From (optional)</Label>
+                                <input type="date" value={form.availableFrom?.slice(0, 10) ?? ""} onChange={e => setForm(f => ({ ...f, availableFrom: e.target.value }))} className={inputCls} />
                             </div>
                             <div>
-                                <Label>Ends At (optional)</Label>
-                                <input type="date" value={form.endsAt?.slice(0, 10) ?? ""} onChange={e => setForm(f => ({ ...f, endsAt: e.target.value }))} className={inputCls} />
+                                <Label>Available To (optional)</Label>
+                                <input type="date" value={form.availableTo?.slice(0, 10) ?? ""} onChange={e => setForm(f => ({ ...f, availableTo: e.target.value }))} className={inputCls} />
                             </div>
                         </div>
 
@@ -207,22 +213,20 @@ export default function AdminShopManagement() {
     const [listings, setListings] = useState<ShopListingDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Tracked by array index, not listingId — the BE's actual primary-key field name
-    // for this endpoint hasn't been confirmed, and matching by a possibly-undefined ID
-    // would make every row compare equal (undefined === undefined) and update together.
-    const [togglingIndex, setTogglingIndex] = useState<number | null>(null);
+    const [togglingId, setTogglingId] = useState<number | null>(null);
     const [editingListing, setEditingListing] = useState<ShopListingDto | null | "new">(null);
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    // BE (GetShopCatalogQuery) returns a plain list — no pagination on this endpoint — so
+    // this always resolves to a single page. Pagination control kept for layout parity.
+    const totalPages = 1;
 
     const fetchListings = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await adminShopApi.getListings({ pageNumber: page, pageSize: PAGE_SIZE });
+            const res = await adminShopApi.getListings();
             if (res.success) {
                 setListings(res.data ?? []);
-                setTotalPages(res.totalPages ?? 1);
             } else {
                 setError(res.message || "Failed to load listings.");
             }
@@ -231,34 +235,30 @@ export default function AdminShopManagement() {
         } finally {
             setLoading(false);
         }
-    }, [page]);
+    }, []);
 
     useEffect(() => { fetchListings(); }, [fetchListings]);
 
-    const handleToggleActive = async (listing: ShopListingDto, index: number) => {
+    const handleToggleActive = async (listing: ShopListingDto) => {
         const nextActive = !listing.isActive;
-        setTogglingIndex(index);
-        // Optimistic flip, matched by index — the toggle endpoint's response isn't
-        // guaranteed to be the full entity, so local state is the source of truth for
-        // isActive, not res.data. Index matching (not listingId) avoids updating every
-        // row at once if the BE's real ID field is named differently than expected.
-        setListings(prev => prev.map((l, i) => i === index ? { ...l, isActive: nextActive } : l));
+        const id = listing.shopListingId;
+        setTogglingId(id);
+        // Optimistic flip — BE's setActive endpoint (SetShopListingActiveCommand) returns a
+        // bare boolean, not the updated listing, so local state stays the source of truth.
+        setListings(prev => prev.map(l => l.shopListingId === id ? { ...l, isActive: nextActive } : l));
         try {
-            const res = await adminShopApi.toggleActive(listing.listingId, nextActive);
+            const res = await adminShopApi.setActive(id, nextActive);
             if (res.success) {
-                // Merge in whatever the BE did return — never replace, so a partial
-                // response can't wipe out fields like price/stock/rotationGroup.
-                if (res.data) setListings(prev => prev.map((l, i) => i === index ? { ...l, ...res.data } : l));
-                alert.success(`Listing #${listing.listingId} is now ${nextActive ? "active" : "inactive"}.`);
+                alert.success(`Listing #${id} is now ${nextActive ? "active" : "inactive"}.`);
             } else {
-                setListings(prev => prev.map((l, i) => i === index ? { ...l, isActive: listing.isActive } : l));
+                setListings(prev => prev.map(l => l.shopListingId === id ? { ...l, isActive: listing.isActive } : l));
                 alert.error(res.message || "Failed to toggle listing.");
             }
         } catch (err) {
-            setListings(prev => prev.map((l, i) => i === index ? { ...l, isActive: listing.isActive } : l));
+            setListings(prev => prev.map(l => l.shopListingId === id ? { ...l, isActive: listing.isActive } : l));
             alert.error(errMsg(err) ?? "Failed to toggle listing.");
         } finally {
-            setTogglingIndex(null);
+            setTogglingId(null);
         }
     };
 
@@ -309,29 +309,29 @@ export default function AdminShopManagement() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b-2 border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60">
-                                        {["Item", "Price", "Stock", "Rotation", "Active", "Actions"].map(h => (
+                                        {["Item", "Price", "Stock", "Shop Type", "Active", "Actions"].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                    {listings.map((listing, index) => (
-                                        <tr key={listing.listingId ?? index} className="hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-colors">
+                                    {listings.map((listing) => (
+                                        <tr key={listing.shopListingId} className="hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-colors">
                                             <td className="px-4 py-4">
-                                                <p className="font-black text-gray-900 dark:text-gray-100">{listing.itemName ?? `Item #${listing.itemId}`}</p>
+                                                <p className="font-black text-gray-900 dark:text-gray-100">{listing.itemName ?? `Item #${listing.itemDefinitionId}`}</p>
                                             </td>
                                             <td className="px-4 py-4">
                                                 <span className="font-black text-gray-800 dark:text-gray-200">{(listing.price ?? 0).toLocaleString()}</span>{" "}
                                                 <CurrencyBadge currency={listing.currency ?? "GOLD"} />
                                             </td>
                                             <td className="px-4 py-4 text-gray-600 dark:text-gray-300 font-bold">
-                                                {listing.stock === null || listing.stock === undefined ? "Unlimited" : listing.stock}
+                                                {listing.stockLimit === null || listing.stockLimit === undefined ? "Unlimited" : `${listing.stockSold}/${listing.stockLimit}`}
                                             </td>
-                                            <td className="px-4 py-4 text-xs text-gray-500 dark:text-gray-400 font-medium">{listing.rotationGroup ?? "—"}</td>
+                                            <td className="px-4 py-4 text-xs text-gray-500 dark:text-gray-400 font-medium">{listing.shopType}</td>
                                             <td className="px-4 py-4">
                                                 <button
-                                                    onClick={() => handleToggleActive(listing, index)}
-                                                    disabled={togglingIndex === index}
+                                                    onClick={() => handleToggleActive(listing)}
+                                                    disabled={togglingId === listing.shopListingId}
                                                     aria-label={listing.isActive ? "Deactivate listing" : "Activate listing"}
                                                     className={`relative w-11 h-6 shrink-0 rounded-full border-2 border-black transition-colors disabled:opacity-50 ${listing.isActive ? "bg-orange-400" : "bg-gray-200 dark:bg-gray-700"}`}
                                                 >

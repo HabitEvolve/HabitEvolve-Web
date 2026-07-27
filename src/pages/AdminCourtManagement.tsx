@@ -22,17 +22,15 @@ const SI = (src: string) => (
 const STATUS_CONFIG: Record<string, {
   label: string; bg: string; border: string; text: string; icon: ReactNode;
 }> = {
-  "":            { label: "All",            bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-700",    icon: <Filter className="w-3.5 h-3.5 shrink-0" /> },
-  Pending:       { label: "Pending",        bg: "bg-amber-100",   border: "border-amber-400",   text: "text-amber-800",   icon: SI("/icon/UI/Exclamation Mark/64px/Exclamation Mark 1st 64px.png") },
-  Approved:      { label: "Approved",       bg: "bg-green-100",   border: "border-green-400",   text: "text-green-800",   icon: SI("/icon/UI/Checkmark/64px/Checkmark 1st 64px.png") },
-  Rejected:      { label: "Rejected",       bg: "bg-red-100",     border: "border-red-400",     text: "text-red-800",     icon: SI("/icon/UI/X/64px/X 1st 64px.png") },
-  ValidApprove:  { label: "Valid Approve",  bg: "bg-emerald-100", border: "border-emerald-400", text: "text-emerald-800", icon: SI("/icon/Main/Verify/64px/Verify 1st 64px.png") },
-  FraudReject:   { label: "Fraud Reject",   bg: "bg-orange-100",  border: "border-orange-400",  text: "text-orange-800",  icon: SI("/icon/UI/Warning/64px/Warning 1st 64px.png") },
-  AdminOverride: { label: "Admin Override", bg: "bg-blue-100",    border: "border-blue-400",    text: "text-blue-800",    icon: <img src="/icon/Item/Hammer/64px/Hammer 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> },
-  Expired:       { label: "Expired",        bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-600",    icon: SI("/icon/UI/Skip/64w/Skip 1st 64px.png") },
+  "": { label: "All", bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-700", icon: <Filter className="w-3.5 h-3.5 shrink-0" /> },
+  Pending: { label: "Pending", bg: "bg-amber-100", border: "border-amber-400", text: "text-amber-800", icon: SI("/icon/UI/Exclamation Mark/64px/Exclamation Mark 1st 64px.png") },
+  Approved: { label: "Approved", bg: "bg-green-100", border: "border-green-400", text: "text-green-800", icon: SI("/icon/UI/Checkmark/64px/Checkmark 1st 64px.png") },
+  Rejected: { label: "Rejected", bg: "bg-red-100", border: "border-red-400", text: "text-red-800", icon: SI("/icon/UI/X/64px/X 1st 64px.png") },
+  AdminResolved: { label: "Admin Resolved", bg: "bg-blue-100", border: "border-blue-400", text: "text-blue-800", icon: <img src="/icon/Item/Hammer/64px/Hammer 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> },
+  ExpiredAutoApproved: { label: "Expired (Auto-Approved)", bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-600", icon: SI("/icon/UI/Skip/64w/Skip 1st 64px.png") },
 };
 
-const STATUS_KEYS = ["", "Pending", "Approved", "Rejected", "ValidApprove", "FraudReject", "AdminOverride", "Expired"] as const;
+const STATUS_KEYS = ["", "Pending", "Approved", "Rejected", "AdminResolved", "ExpiredAutoApproved"] as const;
 
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
 const btnBase =
@@ -85,11 +83,11 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 // ── PROOF TYPE BADGE ──────────────────────────────────────────────────────────
 const PROOF_CFG: Record<string, { bg: string; border: string; text: string; icon: ReactNode }> = {
-  PHOTO:      { bg: "bg-violet-100", border: "border-violet-400", text: "text-violet-800", icon: <Camera className="w-3 h-3 shrink-0" /> },
-  VIDEO:      { bg: "bg-pink-100",   border: "border-pink-400",   text: "text-pink-800",   icon: <Video className="w-3 h-3 shrink-0" /> },
-  SCREENSHOT: { bg: "bg-cyan-100",   border: "border-cyan-400",   text: "text-cyan-800",   icon: <Monitor className="w-3 h-3 shrink-0" /> },
-  GPS:        { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  icon: SI("/icon/Item/Location Pin/64px/Location Pin 1st 64px.png") },
-  TEXT:       { bg: "bg-gray-100",   border: "border-gray-400",   text: "text-gray-700",   icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
+  PHOTO: { bg: "bg-violet-100", border: "border-violet-400", text: "text-violet-800", icon: <Camera className="w-3 h-3 shrink-0" /> },
+  VIDEO: { bg: "bg-pink-100", border: "border-pink-400", text: "text-pink-800", icon: <Video className="w-3 h-3 shrink-0" /> },
+  SCREENSHOT: { bg: "bg-cyan-100", border: "border-cyan-400", text: "text-cyan-800", icon: <Monitor className="w-3 h-3 shrink-0" /> },
+  GPS: { bg: "bg-green-100", border: "border-green-400", text: "text-green-800", icon: SI("/icon/Item/Location Pin/64px/Location Pin 1st 64px.png") },
+  TEXT: { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-700", icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
 };
 
 const ProofTypeBadge = ({ type }: { type: string }) => {
@@ -98,6 +96,51 @@ const ProofTypeBadge = ({ type }: { type: string }) => {
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${cfg.bg} ${cfg.border} ${cfg.text}`}>
       {cfg.icon} {type}
     </span>
+  );
+};
+
+// ── AI VERDICT BADGE ──────────────────────────────────────────────────────────
+const AI_VERDICT_CFG: Record<string, { bg: string; border: string; text: string; label: string }> = {
+  approve:    { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  label: "AI: Approve" },
+  reject:     { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    label: "AI: Reject" },
+  suspicious: { bg: "bg-amber-100",  border: "border-amber-400",  text: "text-amber-800",  label: "AI: Suspicious" },
+};
+
+const AiVerdictPanel = ({ data }: { data: CourtCaseDto }) => {
+  const { t } = useTranslation();
+  if (!data.aiVerdict) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800/40 border-2 border-gray-200 dark:border-gray-700 rounded-2xl">
+        <span className="text-lg">🤖</span>
+        <p className="text-xs font-semibold text-gray-500">{t("admin.courtManagement.reviewModal.aiNotUsed")}</p>
+      </div>
+    );
+  }
+  const cfg = AI_VERDICT_CFG[data.aiVerdict] ?? AI_VERDICT_CFG.suspicious;
+  const confidencePct = data.aiConfidence !== null ? Math.round(data.aiConfidence * 100) : null;
+  return (
+    <div className={`px-4 py-3 border-2 rounded-2xl ${cfg.bg} ${cfg.border}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className={`inline-flex items-center gap-1.5 text-xs font-black ${cfg.text}`}>
+          🤖 {cfg.label}
+        </span>
+        {confidencePct !== null && (
+          <span className={`text-sm font-black ${cfg.text}`}>{confidencePct}%</span>
+        )}
+      </div>
+      {confidencePct !== null && (
+        <div className="mt-2 h-1.5 bg-white/60 dark:bg-black/20 rounded-full overflow-hidden border border-black/10">
+          <div className={`h-full rounded-full ${cfg.text.replace("text-", "bg-")}`} style={{ width: `${confidencePct}%` }} />
+        </div>
+      )}
+      {(data.aiVerdictRaw || data.aiVerdictFinal) && (
+        <p className={`text-[10px] font-semibold mt-2 ${cfg.text} opacity-80`}>
+          {data.aiVerdictRaw && `CV: ${data.aiVerdictRaw}`}
+          {data.aiVerdictRaw && data.aiVerdictFinal && " · "}
+          {data.aiVerdictFinal && `Result: ${data.aiVerdictFinal}`}
+        </p>
+      )}
+    </div>
   );
 };
 
@@ -149,7 +192,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
   };
 
   const isMedia = ["PHOTO", "VIDEO", "SCREENSHOT", "GPS"].includes(data.proofType);
-  const alreadyResolved = ["Approved", "Rejected", "ValidApprove", "FraudReject", "AdminOverride"].includes(data.status);
+  const alreadyResolved = ["Approved", "Rejected", "AdminResolved", "ExpiredAutoApproved"].includes(data.status);
 
   const overlay = (
     <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
@@ -164,7 +207,9 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
             <div>
               <h2 className="text-base font-black text-gray-900">{t("admin.courtManagement.reviewModal.title")}</h2>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs font-medium text-gray-500">Case #{caseItem.caseId}</p>
+                <p className="text-xs font-medium text-gray-500">
+                  {t("admin.courtManagement.reviewModal.submittedBy", "Submitted by")} <span className="font-bold text-gray-700">{data.proofOwnerUsername}</span>
+                </p>
                 <StatusBadge status={data.status} />
               </div>
             </div>
@@ -193,7 +238,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                 {/* Quest info */}
                 <div>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("admin.courtManagement.reviewModal.questTask")}</p>
-                  <p className="text-sm font-black text-gray-900 leading-snug">{data.questTitleMasked}</p>
+                  <p className="text-sm font-black text-gray-900 leading-snug">{data.questTitle ?? data.questTitleMasked}</p>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <ProofTypeBadge type={data.proofType} />
                     <span className="text-xs font-medium text-gray-400">
@@ -206,6 +251,9 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     )}
                   </div>
                 </div>
+
+                {/* AI assessment — why this proof was routed to Court */}
+                <AiVerdictPanel data={data} />
 
                 {/* Media gallery */}
                 {isMedia && data.mediaUrls.length > 0 && (
@@ -287,7 +335,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                           >
                             <span className="text-base shrink-0">{isValid ? "👍" : "👎"}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-black text-gray-700">User #{v.reviewerUserId}</p>
+                              <p className="text-xs font-black text-gray-700">{v.reviewerUsername}</p>
                               {v.reasonCode && (
                                 <p className="text-[10px] text-gray-400 font-medium truncate">{v.reasonCode}</p>
                               )}
@@ -295,8 +343,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                             <div className="flex items-center gap-1.5 shrink-0">
                               {v.wasCorrect !== null && (
                                 <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${v.wasCorrect
-                                    ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
-                                    : "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
+                                  ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                                  : "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
                                   }`}>
                                   {v.wasCorrect ? t("admin.courtManagement.voteCorrect") : t("admin.courtManagement.voteWrong")}
                                 </span>
@@ -356,13 +404,12 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                             key={v}
                             type="button"
                             onClick={() => setVerdict(active ? "" : v)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 rounded-2xl font-black text-sm transition-all ${
-                              active
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 rounded-2xl font-black text-sm transition-all ${active
                                 ? isApproved
                                   ? "bg-green-200 border-green-600 text-green-900 shadow-none translate-x-0.5 translate-y-0.5"
                                   : "bg-red-200 border-red-600 text-red-900 shadow-none translate-x-0.5 translate-y-0.5"
                                 : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
-                            }`}
+                              }`}
                           >
                             <img
                               src={isApproved ? "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" : "/icon/UI/X/64px/X 1st 64px.png"}
@@ -376,8 +423,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     </div>
                     {verdict && (
                       <div className={`mt-2 px-3 py-2 rounded-xl text-xs font-bold border-2 flex items-center gap-2 ${verdict === "Approved"
-                          ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
-                          : "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
+                        ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                        : "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
                         }`}>
                         <img
                           src={verdict === "Approved" ? "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" : "/icon/UI/X/64px/X 1st 64px.png"}
@@ -419,8 +466,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                       type="submit"
                       disabled={submitting || !verdict}
                       className={`${btnBase} flex-1 justify-center ${verdict === "Approved" ? "bg-green-300 text-green-900" :
-                          verdict === "Rejected" ? "bg-red-300 text-red-900" :
-                            "bg-amber-200 text-amber-900"
+                        verdict === "Rejected" ? "bg-red-300 text-red-900" :
+                          "bg-amber-200 text-amber-900"
                         }`}
                     >
                       {submitting
@@ -580,8 +627,8 @@ export default function CourtManagement() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`px-5 py-2.5 font-black text-sm rounded-t-2xl border-2 transition-all ${activeTab === tab.id
-                  ? "bg-amber-300 border-black text-gray-900 shadow-[3px_0_0_0_#1A1D20,0_3px_0_0_#1A1D20] -mb-0.5 relative z-10"
-                  : "bg-white dark:bg-gray-800 border-black/20 dark:border-white/20 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-black/40"
+                ? "bg-amber-300 border-black text-gray-900 shadow-[3px_0_0_0_#1A1D20,0_3px_0_0_#1A1D20] -mb-0.5 relative z-10"
+                : "bg-white dark:bg-gray-800 border-black/20 dark:border-white/20 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-black/40"
                 }`}
             >
               {tab.icon} {tab.label}
@@ -683,8 +730,10 @@ export default function CourtManagement() {
                             {(page - 1) * PAGE_SIZE + idx + 1}
                           </td>
                           <td className="px-4 py-3 max-w-55">
-                            <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{c.questTitleMasked}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5">ID #{c.caseId}</p>
+                            <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{c.questTitle ?? c.questTitleMasked}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5 truncate">
+                              {t("admin.courtManagement.table.by", "by")} {c.proofOwnerUsername}
+                            </p>
                           </td>
                           <td className="px-4 py-3">
                             <ProofTypeBadge type={c.proofType} />

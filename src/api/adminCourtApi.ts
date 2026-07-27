@@ -18,8 +18,8 @@ export const adminCourtApi = {
     },
 
     // 3. Can thiệp khẩn / Ghi đè phán quyết
-    resolveCase: async (id: number, payload: ResolveVerdictPayload): Promise<ApiResponse<any>> => {
-        const res = await axiosClient.post<ApiResponse<any>>(`${COURT_URL}/${id}/resolve`, payload);
+    resolveCase: async (id: number, payload: ResolveVerdictPayload): Promise<ApiResponse<CourtCaseDto>> => {
+        const res = await axiosClient.post<ApiResponse<CourtCaseDto>>(`${COURT_URL}/${id}/resolve`, payload);
         return res.data;
     },
 

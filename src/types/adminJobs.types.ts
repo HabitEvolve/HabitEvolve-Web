@@ -1,37 +1,23 @@
 // ==========================================
 // ADMIN SYSTEM JOBS (background job execution log + manual triggers)
-// Field names are inferred from the endpoint list — confirm against the real
-// BE DTOs (JobExecutionLogDto) once available and adjust if they drift.
+// Synced against BE: HabitEvolve.Application.Common.DTOs.JobExecutionLogDto,
+// HabitEvolve.API.Controllers.AdminJobsController (api/admin/jobs).
 // ==========================================
 
-export type JobRunStatus = "Success" | "Failed" | "Running" | string;
-
-// GET /api/admin/jobs/recent?pageNumber=&pageSize=
-// pageNumber/pageSize match the convention already confirmed working for
-// GET /admin/users (see GetUsersQueryParams) — reused here for consistency.
+// GET /api/admin/jobs/recent?count=
+// AdminJobsController.GetRecent takes a single "count" query param (default 20 when <= 0),
+// NOT pageNumber/pageSize — the endpoint isn't paginated, it just returns the N most recent rows.
 export interface GetJobLogsQueryParams {
-    pageNumber?: number;
-    pageSize?: number;
+    count?: number;
 }
 
-// GET /api/admin/jobs/recent — one row
-export interface JobLogDto {
-    jobLogId: number;
+// GET /api/admin/jobs/recent — one row (JobExecutionLogDto)
+export interface JobExecutionLogDto {
+    jobExecutionLogId: number;
     jobName: string;
-    status: JobRunStatus;
-    recordsAffected: number | null;
-    message: string | null;
     startedAt: string;
     finishedAt: string | null;
-    durationMs: number | null;
-}
-
-// Response for POST /api/admin/jobs/run-all and POST /api/admin/jobs/run/{jobName}
-export interface RunJobResultDto {
-    jobName: string;
-    status: JobRunStatus;
-    recordsAffected: number | null;
-    message: string | null;
-    startedAt: string;
-    finishedAt: string | null;
+    success: boolean;
+    resultSummary: string | null;
+    errorMessage: string | null;
 }

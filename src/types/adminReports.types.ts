@@ -1,62 +1,54 @@
 // ==========================================
 // ADMIN REPORTING & ANALYTICS
-// Field names are inferred from the endpoint list — confirm against the real
-// BE DTOs once available and adjust if they drift.
+// Synced against BE: HabitEvolve.Application.Features.Reporting.ReportingFeature +
+// HabitEvolve.API.Controllers.AdminReportingController (api/admin/reports).
+//
+// NOTE: these reports are aggregate-over-range only — the BE does NOT return a
+// per-day time series (no "entries"/"date" breakdown). Economy is one row per
+// currency for the whole range; quest completion is one row per QuestType;
+// user activity is a single pair of numbers for the whole range.
 // ==========================================
 
-// Shared query params — GET /api/admin/reports/*?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+// GET /api/admin/reports/*?from=&to= (DateTime query params, ISO date strings accepted)
 export interface DateRangeQueryParams {
-    startDate: string; // YYYY-MM-DD
-    endDate: string;   // YYYY-MM-DD
+    from: string;
+    to: string;
 }
 
-// GET /api/admin/reports/economy — one row per day
-export interface EconomyReportEntryDto {
-    date: string;
-    goldInflow: number;
-    goldOutflow: number;
-    gemsInflow: number;
-    gemsOutflow: number;
-    mGoldInflow: number;
-    mGoldOutflow: number;
+// ── Economy ──
+export interface EconomyCurrencyStatDto {
+    currency: string; // "GOLD" | "GEMS" | "MGOLD"
+    earned: number;
+    spent: number;
+    net: number; // BE-computed: earned - spent
 }
 
 export interface EconomyReportDto {
-    startDate: string;
-    endDate: string;
-    entries: EconomyReportEntryDto[];
-    totalGoldInflow: number;
-    totalGoldOutflow: number;
-    totalGemsInflow: number;
-    totalGemsOutflow: number;
-    totalMGoldInflow: number;
-    totalMGoldOutflow: number;
+    from: string;
+    to: string;
+    byCurrency: EconomyCurrencyStatDto[];
 }
 
-// GET /api/admin/reports/quest-completion — one row per QuestType
-export interface QuestCompletionReportEntryDto {
+// ── Quest completion ──
+export interface QuestTypeStatDto {
     questType: string;
-    totalAssigned: number;
-    totalCompleted: number;
-    completionRate: number; // 0–100
+    total: number;
+    approved: number;
+    rejected: number;
+    failed: number;
+    completionRate: number; // 0–1 fraction (BE: Math.Round(Approved / Total, 4))
 }
 
 export interface QuestCompletionReportDto {
-    startDate: string;
-    endDate: string;
-    entries: QuestCompletionReportEntryDto[];
+    from: string;
+    to: string;
+    byQuestType: QuestTypeStatDto[];
 }
 
-// GET /api/admin/reports/user-activity — one row per day
-export interface UserActivityReportEntryDto {
-    date: string;
-    newSignups: number;
-    activeUsers: number;
-}
-
+// ── User activity ──
 export interface UserActivityReportDto {
-    startDate: string;
-    endDate: string;
-    entries: UserActivityReportEntryDto[];
-    totalNewSignups: number;
+    from: string;
+    to: string;
+    newUsers: number;
+    activeUsers: number; // proxy: users with >= 1 quest created in range
 }

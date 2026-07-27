@@ -1,48 +1,44 @@
 // ==========================================
 // ADMIN LOOT TABLES (gacha / chest drop rates)
-// Field names are inferred from the endpoint list — confirm against the real
-// BE DTOs (LootTableDto / LootTableEntryDto) once available and adjust if they drift.
+// Matches BE LootTableDto/LootTableEntryDto (HabitEvolve.Application/Common/DTOs/LootTableDtos.cs)
+// and CreateLootTableCommand / AddLootTableEntryCommand
+// (HabitEvolve.Application/Features/LootTables/LootTableFeature.cs,
+//  HabitEvolve.API/Controllers/AdminLootTableController.cs).
+// NOTE: a loot table has NO name/description on the BE — only a unique `code`
+// (e.g. DAILY_CHEST, WEEKLY_CHEST_EASY, GACHA_STANDARD).
 // ==========================================
 
-// One weighted entry inside a loot table
+export type RewardKind = "GOLD" | "GEMS" | "MGOLD" | "ITEM" | string;
+
+// One weighted entry inside a loot table. Matches BE LootTableEntryDto exactly.
 export interface LootTableEntryDto {
-    entryId: number;
-    itemId: number;
+    lootTableEntryId: number;
+    rewardKind: RewardKind;
+    itemDefinitionId: number | null;
     itemName: string | null;
+    amountMin: number;
+    amountMax: number;
     weight: number;        // relative drop weight — chance = weight / sum(all weights)
-    minQuantity: number;
-    maxQuantity: number;
 }
 
-// GET /api/admin/loot-tables — one row, entries included
+// GET /api/admin/loot-tables — one row, entries included. Matches BE LootTableDto exactly.
 export interface LootTableDto {
     lootTableId: number;
-    name: string;
-    description: string | null;
+    code: string;
     isActive: boolean;
     entries: LootTableEntryDto[];
-    createdAt: string;
-    updatedAt: string | null;
 }
 
-// GET /api/admin/loot-tables?pageNumber=&pageSize=
-// pageNumber/pageSize match the convention already confirmed working for
-// GET /admin/users (see GetUsersQueryParams) — reused here for consistency.
-export interface GetLootTablesQueryParams {
-    pageNumber?: number;
-    pageSize?: number;
-}
-
-// POST /api/admin/loot-tables
+// POST /api/admin/loot-tables (CreateLootTableCommand) — Code only.
 export interface CreateLootTablePayload {
-    name: string;
-    description?: string;
+    code: string;
 }
 
-// POST /api/admin/loot-tables/{id}/entries
+// POST /api/admin/loot-tables/{id}/entries (AddLootTableEntryCommand)
 export interface AddLootTableEntryPayload {
-    itemId: number;
+    rewardKind: RewardKind;
+    itemDefinitionId?: number | null;
+    amountMin: number;
+    amountMax: number;
     weight: number;
-    minQuantity: number;
-    maxQuantity: number;
 }

@@ -30,8 +30,6 @@ const defaultRange = () => {
     return { startDate: toIso(start), endDate: toIso(end) };
 };
 
-const average = (nums: number[]) => (nums.length === 0 ? 0 : Math.round(nums.reduce((a, b) => a + b, 0) / nums.length));
-
 // ── SKELETONS ─────────────────────────────────────────────────────────────────
 const SkeletonLine = ({ className = "" }: { className?: string }) => (
     <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-md ${className}`} />
@@ -94,10 +92,13 @@ export default function Home() {
         setLoading(true);
         setError(null);
         try {
+            // BE query params are "from"/"to" (AdminReportingController), not startDate/endDate —
+            // keep the local range state named for the DatePicker and translate at the call site.
+            const params = { from: range.startDate, to: range.endDate };
             const [econRes, questRes, activityRes] = await Promise.all([
-                adminReportsApi.getEconomyReport(range),
-                adminReportsApi.getQuestCompletionReport(range),
-                adminReportsApi.getUserActivityReport(range),
+                adminReportsApi.getEconomyReport(params),
+                adminReportsApi.getQuestCompletionReport(params),
+                adminReportsApi.getUserActivityReport(params),
             ]);
             if (econRes.success) setEconomy(econRes.data ?? null);
             if (questRes.success) setQuestCompletion(questRes.data ?? null);
@@ -115,37 +116,33 @@ export default function Home() {
     useEffect(() => { fetchReports(); }, [fetchReports]);
 
     // ── Safe, guaranteed-array views of each report ──────────────────────────
-    // The BE contract for these 3 endpoints is inferred, not confirmed — if the real
-    // response omits `entries` (e.g. totals-only, no day-by-day breakdown) or renames
-    // it, `foo?.entries` alone still crashes downstream because optional chaining only
-    // guards `foo`, not the property read after it. Normalize to arrays once, here,
-    // and never touch `.entries` directly anywhere else in this component.
-    const economyEntries = economy?.entries ?? [];
-    const questEntries = questCompletion?.entries ?? [];
-    const activityEntries = userActivity?.entries ?? [];
+    // BE reports are aggregate-over-range, not a day-by-day time series: economy is one row
+    // per currency (byCurrency), quest completion is one row per QuestType (byQuestType), and
+    // user activity is just two totals for the whole range (no array at all). Normalize the
+    // array-shaped ones once, here, and read the scalar ones straight off `userActivity`.
+    const economyByCurrency = economy?.byCurrency ?? [];
+    const questByType = questCompletion?.byQuestType ?? [];
 
     // ── Derived metrics ──────────────────────────────────────────────────────
-    const avgActiveUsers = average(activityEntries.map(e => e?.activeUsers ?? 0));
-    const netGold = (economy?.totalGoldInflow ?? 0) - (economy?.totalGoldOutflow ?? 0);
-    const netGems = (economy?.totalGemsInflow ?? 0) - (economy?.totalGemsOutflow ?? 0);
-    const netMGold = (economy?.totalMGoldInflow ?? 0) - (economy?.totalMGoldOutflow ?? 0);
+    const findCurrency = (code: string) => economyByCurrency.find(c => c?.currency === code);
+    const netGold = findCurrency("GOLD")?.net ?? 0;
+    const netGems = findCurrency("GEMS")?.net ?? 0;
+    const netMGold = findCurrency("MGOLD")?.net ?? 0;
 
-    // ── Economy chart ────────────────────────────────────────────────────────
+    // ── Economy chart — Earned vs Spent per currency (BE gives range totals, not daily) ──────
     const economyOptions: ApexOptions = {
-        chart: { ...chartFont, height: 280, type: "area", toolbar: { show: false } },
+        chart: { ...chartFont, height: 280, type: "bar", toolbar: { show: false } },
         colors: ["#12b76a", "#f04438"],
-        stroke: { curve: "smooth", width: 2 },
-        fill: { type: "gradient", gradient: { opacityFrom: 0.45, opacityTo: 0 } },
+        plotOptions: { bar: { borderRadius: 6, columnWidth: "45%" } },
         dataLabels: { enabled: false },
         legend: { position: "top", horizontalAlign: "left" },
-        xaxis: { categories: economyEntries.map(e => e?.date ?? ""), labels: { style: { fontSize: "11px" } } },
+        xaxis: { categories: economyByCurrency.map(c => c?.currency ?? ""), labels: { style: { fontSize: "11px" } } },
         yaxis: { labels: { style: { fontSize: "11px" } } },
         grid: { xaxis: { lines: { show: false } }, borderColor: "rgba(148,163,184,0.2)" },
-        tooltip: { x: { format: "dd MMM yyyy" } },
     };
     const economySeries = [
-        { name: "Gold Inflow", data: economyEntries.map(e => e?.goldInflow ?? 0) },
-        { name: "Gold Outflow", data: economyEntries.map(e => e?.goldOutflow ?? 0) },
+        { name: "Earned", data: economyByCurrency.map(c => c?.earned ?? 0) },
+        { name: "Spent", data: economyByCurrency.map(c => c?.spent ?? 0) },
     ];
 
     // ── Quest completion chart ───────────────────────────────────────────────
@@ -154,11 +151,12 @@ export default function Home() {
         colors: ["#7C3AED"],
         plotOptions: { bar: { borderRadius: 6, columnWidth: "45%" } },
         dataLabels: { enabled: true, formatter: (v: number) => `${(v ?? 0).toFixed(0)}%` },
-        xaxis: { categories: questEntries.map(e => e?.questType ?? "Unknown"), labels: { style: { fontSize: "11px" } } },
+        xaxis: { categories: questByType.map(e => e?.questType ?? "Unknown"), labels: { style: { fontSize: "11px" } } },
         yaxis: { max: 100, labels: { formatter: (v: number) => `${v ?? 0}%`, style: { fontSize: "11px" } } },
         grid: { xaxis: { lines: { show: false } }, borderColor: "rgba(148,163,184,0.2)" },
     };
-    const questSeries = [{ name: "Completion Rate", data: questEntries.map(e => e?.completionRate ?? 0) }];
+    // BE completionRate is a 0–1 fraction (Math.Round(Approved/Total, 4)) — scale to a percentage.
+    const questSeries = [{ name: "Completion Rate", data: questByType.map(e => Math.round((e?.completionRate ?? 0) * 100)) }];
 
     // Nothing has loaded yet on this mount/range change — show a full-page skeleton
     // instead of partially-empty cards flashing in.
@@ -228,22 +226,22 @@ export default function Home() {
             <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                 {loading && !userActivity ? <MetricSkeleton /> : (
                     <MetricCard
-                        label="Avg Active Users / Day"
-                        value={avgActiveUsers.toLocaleString()}
+                        label="Active Users"
+                        value={(userActivity?.activeUsers ?? 0).toLocaleString()}
                         iconBg="bg-blue-100 dark:bg-blue-900/30"
                         icon={
                             <svg className="w-6 h-6 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                             </svg>
                         }
-                        sub={<span className="text-gray-400">Averaged across {activityEntries.length} day(s)</span>}
+                        sub={<span className="text-gray-400">In selected range</span>}
                     />
                 )}
 
                 {loading && !userActivity ? <MetricSkeleton /> : (
                     <MetricCard
                         label="New Signups"
-                        value={(userActivity?.totalNewSignups ?? 0).toLocaleString()}
+                        value={(userActivity?.newUsers ?? 0).toLocaleString()}
                         iconBg="bg-orange-100 dark:bg-orange-900/30"
                         icon={
                             <svg className="w-6 h-6 text-orange-500 dark:text-orange-400" fill="currentColor" viewBox="0 0 20 20">
@@ -278,13 +276,13 @@ export default function Home() {
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div className={CARD}>
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Economy Trend — Gold</h3>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Economy — Earned vs Spent</h3>
                         <div className="text-sm text-gray-500 dark:text-gray-400">{range.startDate} → {range.endDate}</div>
                     </div>
-                    {loading && !economy ? <ChartSkeleton /> : economyEntries.length > 0 ? (
+                    {loading && !economy ? <ChartSkeleton /> : economyByCurrency.length > 0 ? (
                         <div className="max-w-full overflow-x-auto">
                             <div className="min-w-100">
-                                <Chart options={economyOptions} series={economySeries} type="area" height={280} />
+                                <Chart options={economyOptions} series={economySeries} type="bar" height={280} />
                             </div>
                         </div>
                     ) : (
@@ -297,7 +295,7 @@ export default function Home() {
                         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Quest Completion Rate</h3>
                         <div className="text-sm text-gray-500 dark:text-gray-400">by Quest Type</div>
                     </div>
-                    {loading && !questCompletion ? <ChartSkeleton /> : questEntries.length > 0 ? (
+                    {loading && !questCompletion ? <ChartSkeleton /> : questByType.length > 0 ? (
                         <div className="max-w-full overflow-x-auto">
                             <div className="min-w-100">
                                 <Chart options={questOptions} series={questSeries} type="bar" height={280} />

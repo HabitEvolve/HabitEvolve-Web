@@ -420,7 +420,7 @@ export default function AdminConfigPage() {
     try {
       const res = await adminConfigApi.reloadCache();
       if (res.success) {
-        alert.success(`Cache reloaded — ${res.data?.count ?? 0} active configs loaded.`);
+        alert.success(`Cache reloaded — ${res.data ?? 0} active configs loaded.`);
         await fetchAll(); // Re-fetch to see fresh data
       } else {
         alert.error(res.message || "Failed to reload cache.");

@@ -13,12 +13,14 @@ export const adminShopListingApi = {
     const res = await axiosClient.post<ApiResponse<ShopListingDto>>(BASE, payload);
     return res.data;
   },
-  updateListing: async (id: number, payload: UpdateShopListingPayload): Promise<ApiResponse<ShopListingDto>> => {
-    const res = await axiosClient.put<ApiResponse<ShopListingDto>>(`${BASE}/${id}`, payload);
+  // BE (UpdateShopListingCommand) returns a bare boolean, not the updated listing.
+  updateListing: async (id: number, payload: UpdateShopListingPayload): Promise<ApiResponse<boolean>> => {
+    const res = await axiosClient.put<ApiResponse<boolean>>(`${BASE}/${id}`, payload);
     return res.data;
   },
-  setActive: async (id: number, isActive: boolean): Promise<ApiResponse<ShopListingDto>> => {
-    const res = await axiosClient.post<ApiResponse<ShopListingDto>>(`${BASE}/${id}/active`, null, { params: { isActive } });
+  // BE (SetShopListingActiveCommand) returns a bare boolean, not the updated listing.
+  setActive: async (id: number, isActive: boolean): Promise<ApiResponse<boolean>> => {
+    const res = await axiosClient.post<ApiResponse<boolean>>(`${BASE}/${id}/active`, null, { params: { isActive } });
     return res.data;
   },
 };

@@ -262,8 +262,10 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
 
   const handleSave = async (payload: CreateShopListingPayload) => {
     if (modal?.editing) {
-      const { itemDefinitionId: _i, ...updatePayload } = payload;
-      await adminShopListingApi.updateListing(modal.editing.shopListingId, updatePayload);
+      // shopType/currency/item are immutable after creation — BE's update command only
+      // accepts price/stock/rotation window (UpdateShopListingBody).
+      const { price, stockLimit, availableFrom, availableTo } = payload;
+      await adminShopListingApi.updateListing(modal.editing.shopListingId, { price, stockLimit, availableFrom, availableTo });
       onAlert({ type: "success", message: "Listing updated." });
     } else {
       await adminShopListingApi.createListing(payload);

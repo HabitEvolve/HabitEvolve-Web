@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { Coins, Flame, ImageOff, Loader2 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import Pagination from "../components/common/Pagination";
 import adminUserApi from "../api/adminUserApi";
+import playerDataApi from "../api/playerDataApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
+import { WalletDto, DailyStreakDto, UserProofDto } from "../types/userDetail.types";
 import { useAlert } from "../context/AlertContext";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
-type ModalType = "create" | "view" | "update" | "delete" | "roles" | null;
+type ModalType = "create" | "view" | "update" | "delete" | null;
 const PAGE_SIZE = 10;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -106,11 +108,6 @@ const UserGroupIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
     <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-const ShieldIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
 // ── ROLE BADGE ────────────────────────────────────────────────────────────────
@@ -211,19 +208,56 @@ const FormField = ({
 const inputCls = (accent = "orange") =>
   `w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-${accent}-300 bg-white placeholder:text-gray-400`;
 
+// ── PROOF STATUS BADGE (small, for the proof gallery) ───────────────────────
+const PROOF_STATUS_STYLES: Record<string, string> = {
+  Approved: "bg-green-100 border-green-400 text-green-800",
+  Rejected: "bg-red-100 border-red-400 text-red-800",
+  Pending: "bg-amber-100 border-amber-400 text-amber-800",
+  Suspicious: "bg-orange-100 border-orange-400 text-orange-800",
+  AiChecking: "bg-sky-100 border-sky-400 text-sky-800",
+};
+const ProofStatusBadge = ({ status }: { status: string }) => (
+  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${PROOF_STATUS_STYLES[status] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>
+    {status}
+  </span>
+);
+
 // ── MODAL: VIEW ───────────────────────────────────────────────────────────────
 const ViewUserContent = ({ user }: { user: UserItem }) => {
   const { t } = useTranslation();
+
+  const [wallet, setWallet] = useState<WalletDto | null>(null);
+  const [streak, setStreak] = useState<DailyStreakDto | null>(null);
+  const [proofs, setProofs] = useState<UserProofDto[]>([]);
+  const [detailLoading, setDetailLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDetailLoading(true);
+    Promise.allSettled([
+      playerDataApi.getWallet(user.userId),
+      playerDataApi.getDailyStreak(user.userId),
+      playerDataApi.getProofs(user.userId),
+    ]).then(([walletRes, streakRes, proofsRes]) => {
+      if (cancelled) return;
+      if (walletRes.status === "fulfilled" && walletRes.value.success) setWallet(walletRes.value.data ?? null);
+      if (streakRes.status === "fulfilled" && streakRes.value.success) setStreak(streakRes.value.data ?? null);
+      if (proofsRes.status === "fulfilled" && proofsRes.value.success) setProofs(proofsRes.value.data ?? []);
+    }).finally(() => { if (!cancelled) setDetailLoading(false); });
+    return () => { cancelled = true; };
+  }, [user.userId]);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-4">
-        <UserAvatar username={user.username} userId={user.userId} avatarUrl={user.avatarUrl} size="lg" />
+        <UserAvatar username={user.username} userId={user.userId} size="lg" />
         <div>
           <p className="text-xl font-black text-gray-900">{user.username}</p>
           <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
           <div className="mt-2"><StatusBadge status={user.status} /></div>
         </div>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: t("admin.userManagement.profileModal.userId"),        value: `#${user.userId}` },
@@ -237,11 +271,100 @@ const ViewUserContent = ({ user }: { user: UserItem }) => {
           </div>
         ))}
       </div>
+
       <div>
         <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">{t("admin.userManagement.profileModal.roles")}</p>
         <div className="flex flex-wrap gap-2">
           {user.roles.map((r) => <RoleBadge key={r} role={r} />)}
         </div>
+      </div>
+
+      {/* ── Wallet + Streak ──────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">
+          {t("admin.userManagement.profileModal.walletStreak", "Wallet & Streak")}
+        </p>
+        {detailLoading ? (
+          <div className="flex items-center gap-2 text-gray-400 text-sm font-semibold py-3">
+            <Loader2 className="w-4 h-4 animate-spin" /> {t("admin.userManagement.loading")}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 flex items-center gap-2.5">
+              <Coins className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-wide">Gold</p>
+                <p className="text-sm font-black text-amber-800">{wallet ? wallet.totalGold.toLocaleString() : "—"}</p>
+              </div>
+            </div>
+            <div className="bg-fuchsia-50 border-2 border-fuchsia-200 rounded-2xl p-3">
+              <p className="text-[10px] font-black text-fuchsia-500 uppercase tracking-wide">Gems</p>
+              <p className="text-sm font-black text-fuchsia-800">{wallet ? wallet.gemsBalance.toLocaleString() : "—"}</p>
+            </div>
+            <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3">
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-wide">M-Gold</p>
+              <p className="text-sm font-black text-indigo-800">{wallet ? wallet.mentorGoldBalance.toLocaleString() : "—"}</p>
+            </div>
+            <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 flex items-center gap-2.5 col-span-2 sm:col-span-1">
+              <Flame className="w-5 h-5 text-orange-600 shrink-0" />
+              <div>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-wide">
+                  {t("admin.userManagement.profileModal.currentStreak", "Current Streak")}
+                </p>
+                <p className="text-sm font-black text-orange-800">{streak ? `${streak.currentStreak}d` : "—"}</p>
+              </div>
+            </div>
+            <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-3">
+              <p className="text-[10px] font-black text-rose-500 uppercase tracking-wide">
+                {t("admin.userManagement.profileModal.bestStreak", "Best Streak")}
+              </p>
+              <p className="text-sm font-black text-rose-800">{streak ? `${streak.bestStreak}d` : "—"}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Proof Gallery ────────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">
+          {t("admin.userManagement.profileModal.recentProofs", "Recent Proofs")} {!detailLoading && `(${proofs.length})`}
+        </p>
+        {detailLoading ? (
+          <div className="flex items-center gap-2 text-gray-400 text-sm font-semibold py-3">
+            <Loader2 className="w-4 h-4 animate-spin" /> {t("admin.userManagement.loading")}
+          </div>
+        ) : proofs.length === 0 ? (
+          <div className="flex items-center gap-2 text-gray-400 text-sm font-medium py-3">
+            <ImageOff className="w-4 h-4" /> {t("admin.userManagement.profileModal.noProofs", "No proofs submitted yet.")}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1">
+            {proofs.slice(0, 12).map((p) => {
+              const thumb = p.mediaUrls?.[0];
+              return (
+                <a
+                  key={p.proofId}
+                  href={thumb ?? undefined}
+                  target={thumb ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className="relative aspect-square rounded-xl border-2 border-black overflow-hidden bg-gray-100 shadow-[2px_2px_0_0_#1A1D20] group"
+                  title={p.questTitle ?? p.proofType}
+                >
+                  {thumb ? (
+                    <img src={thumb} alt={p.questTitle ?? "proof"} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                      <ImageOff className="w-5 h-5 text-gray-300" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-1 left-1 right-1">
+                    <ProofStatusBadge status={p.status} />
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -405,7 +528,7 @@ const UpdateUserForm = ({
       )}
 
       <div className={`flex items-center gap-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-2xl`}>
-        <UserAvatar username={user.username} userId={user.userId} avatarUrl={user.avatarUrl} size="md" />
+        <UserAvatar username={user.username} userId={user.userId} size="md" />
         <div>
           <p className="font-black text-gray-800 text-sm">{user.username}</p>
           <p className="text-xs text-gray-500">ID: #{user.userId}</p>
@@ -439,7 +562,6 @@ const UpdateUserForm = ({
         >
           <option value="Active">{t("admin.userManagement.form.statusActive")}</option>
           <option value="Banned">{t("admin.userManagement.form.statusBanned")}</option>
-          <option value="Deleted">{t("admin.userManagement.form.statusDeleted")}</option>
         </select>
         {statusForm.status !== user.status && (
           <input
@@ -450,6 +572,8 @@ const UpdateUserForm = ({
           />
         )}
       </div>
+
+      <RolesEditor user={user} onRefresh={onSuccess} />
 
       <div className="flex gap-3 pt-1">
         <button
@@ -533,16 +657,14 @@ const DeleteConfirm = ({
   );
 };
 
-// ── MANAGE ROLES MODAL ───────────────────────────────────────────────────────
+// ── ROLES EDITOR (embedded inline in the Edit User modal) ──────────────────
 const ALL_ROLES = ["PLAYER", "MENTOR", "ADMIN"] as const;
 
-const ManageUserRolesModal = ({
+const RolesEditor = ({
   user,
-  onClose,
   onRefresh,
 }: {
   user: UserItem;
-  onClose: () => void;
   onRefresh: () => void;
 }) => {
   const { t } = useTranslation();
@@ -578,8 +700,7 @@ const ManageUserRolesModal = ({
     }
   };
 
-  const handleAssign = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAssign = async () => {
     if (!dropdownValue) return;
     setAssigning(true);
     try {
@@ -600,110 +721,71 @@ const ManageUserRolesModal = ({
     }
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-md bg-white border-4 border-black rounded-2xl shadow-[8px_8px_0_0_#1A1D20]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b-2 border-gray-200">
-          <div>
-            <h2 className="text-base font-black text-gray-900">{t("admin.userManagement.rolesModal.title")}</h2>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">
-              {user.username} · #{user.userId}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-black bg-gray-100 hover:bg-red-200 active:translate-x-0.5 active:translate-y-0.5 transition-all font-bold text-gray-700 text-sm leading-none"
+  return (
+    <div className="border-t-2 border-dashed border-gray-200 pt-4 space-y-3">
+      <p className="text-xs font-black text-gray-400 uppercase tracking-wide">
+        {t("admin.userManagement.rolesModal.title")}
+      </p>
+
+      {localRoles.length === 0 ? (
+        <p className="text-sm text-gray-400 italic">{t("admin.userManagement.rolesModal.noRoles")}</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {localRoles.map((role) => {
+            const style = ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700";
+            const isRemoving = removingRole === role;
+            return (
+              <span
+                key={role}
+                className={`inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-xl border-2 font-black text-xs ${style}`}
+              >
+                {isRemoving && (
+                  <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                )}
+                {role}
+                <button
+                  type="button"
+                  onClick={() => handleRemove(role)}
+                  disabled={!!removingRole}
+                  title={`Remove ${role}`}
+                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/15 disabled:cursor-not-allowed transition-colors leading-none font-black text-sm shrink-0"
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {availableRoles.length === 0 ? (
+        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-2.5 text-xs text-green-700 font-semibold text-center">
+          {t("admin.userManagement.rolesModal.allRolesAssigned")}
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <select
+            value={dropdownValue}
+            onChange={(e) => setSelectedNewRole(e.target.value)}
+            className="flex-1 px-3 py-2 border-2 border-black rounded-xl text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
           >
-            ✕
+            {availableRoles.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleAssign}
+            disabled={assigning || !dropdownValue}
+            className="px-4 py-2 bg-violet-300 border-2 border-black rounded-xl font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all whitespace-nowrap"
+          >
+            {assigning ? t("admin.userManagement.rolesModal.adding") : t("admin.userManagement.rolesModal.assign")}
           </button>
         </div>
-
-        <div className="px-6 pb-6 pt-5 space-y-6">
-          {/* ── Current Roles ─────────────────────────────────────────── */}
-          <div>
-            <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-3">
-              {t("admin.userManagement.rolesModal.currentRoles")}
-            </p>
-
-            {localRoles.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">{t("admin.userManagement.rolesModal.noRoles")}</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {localRoles.map((role) => {
-                  const style = ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700";
-                  const isRemoving = removingRole === role;
-                  return (
-                    <span
-                      key={role}
-                      className={`inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-xl border-2 font-black text-xs ${style}`}
-                    >
-                      {isRemoving && (
-                        <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
-                      )}
-                      {role}
-                      <button
-                        onClick={() => handleRemove(role)}
-                        disabled={!!removingRole}
-                        title={`Remove ${role}`}
-                        className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/15 disabled:cursor-not-allowed transition-colors leading-none font-black text-sm shrink-0"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-
-          </div>
-
-          <div className="border-t-2 border-dashed border-gray-200" />
-
-          {/* ── Add Role ──────────────────────────────────────────────── */}
-          <div>
-            <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-3">
-              {t("admin.userManagement.rolesModal.addRole")}
-            </p>
-
-            {availableRoles.length === 0 ? (
-              <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3 text-xs text-green-700 font-semibold text-center">
-                {t("admin.userManagement.rolesModal.allRolesAssigned")}
-              </div>
-            ) : (
-              <form onSubmit={handleAssign} className="flex gap-2">
-                <select
-                  value={dropdownValue}
-                  onChange={(e) => setSelectedNewRole(e.target.value)}
-                  className="flex-1 px-3 py-2.5 border-2 border-black rounded-xl text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
-                >
-                  {availableRoles.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={assigning || !dropdownValue}
-                  className="px-5 py-2.5 bg-violet-300 border-2 border-black rounded-xl font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all whitespace-nowrap"
-                >
-                  {assigning ? t("admin.userManagement.rolesModal.adding") : t("admin.userManagement.rolesModal.assign")}
-                </button>
-              </form>
-            )}
-
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
+      )}
+    </div>
   );
 };
 
@@ -912,7 +994,7 @@ export default function UserManagement() {
                       {/* User */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <UserAvatar username={user.username} userId={user.userId} avatarUrl={user.avatarUrl} />
+                          <UserAvatar username={user.username} userId={user.userId} />
                           <span className="font-bold text-gray-800 dark:text-white/90 text-sm">
                             {user.username}
                           </span>
@@ -961,13 +1043,6 @@ export default function UserManagement() {
                             icon={<PencilIcon />}
                           />
                           <ActionButton
-                            title="Manage Roles"
-                            bgColor="bg-violet-200"
-                            hoverColor="hover:bg-violet-300"
-                            onClick={() => openModal("roles", user)}
-                            icon={<ShieldIcon />}
-                          />
-                          <ActionButton
                             title="Delete User"
                             bgColor="bg-red-200"
                             hoverColor="hover:bg-red-300"
@@ -1001,7 +1076,7 @@ export default function UserManagement() {
       </div>
 
       {/* ── MODALS ────────────────────────────────────────────────────────────── */}
-      <GameModal isOpen={activeModal === "view"} onClose={closeModal} title={t("admin.userManagement.profileModal.title")}>
+      <GameModal isOpen={activeModal === "view"} onClose={closeModal} title={t("admin.userManagement.profileModal.title")} maxWidth="max-w-2xl">
         {selectedUser && <ViewUserContent user={selectedUser} />}
       </GameModal>
 
@@ -1033,15 +1108,6 @@ export default function UserManagement() {
           />
         )}
       </GameModal>
-
-      {/* Manage Roles — portal-rendered so it escapes any stacking-context */}
-      {activeModal === "roles" && selectedUser && (
-        <ManageUserRolesModal
-          user={selectedUser}
-          onClose={closeModal}
-          onRefresh={handleMutationSuccess}
-        />
-      )}
     </>
   );
 }

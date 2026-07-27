@@ -5,7 +5,7 @@ export interface NotificationDto {
   userId: number;
   type: string;
   title: string;
-  body: string;
+  body: string | null; // BE: Body is nullable (string?) on NotificationDto
   sourceType: string | null;
   sourceId: number | null;
   isRead: boolean;

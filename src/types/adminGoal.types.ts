@@ -92,6 +92,9 @@ export interface QuestionDto {
     isRequired: boolean;
     displayOrder: number;
     isActive: boolean;
+    // BE: QuestionDto.AnswerGuidance — optional hint shown to the player next to the
+    // question (display-only, not a proof/evidence upload). New field, no FE consumer yet.
+    answerGuidance: string | null;
     options: QuestionOptionDto[];
 }
 

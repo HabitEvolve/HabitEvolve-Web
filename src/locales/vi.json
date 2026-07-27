@@ -684,7 +684,12 @@
         "updatedAt": "Cập Nhật Lần Cuối",
         "roles": "Vai Trò",
         "verified": "✅ Đã xác minh",
-        "unverified": "❌ Chưa xác minh"
+        "unverified": "❌ Chưa xác minh",
+        "walletStreak": "Ví & Chuỗi Ngày",
+        "currentStreak": "Chuỗi Hiện Tại",
+        "bestStreak": "Chuỗi Dài Nhất",
+        "recentProofs": "Bằng Chứng Gần Đây",
+        "noProofs": "Chưa nộp bằng chứng nào."
       },
       "form": {
         "createTitle": "Tạo Người Dùng Mới",
@@ -1038,7 +1043,8 @@
         "rank": "Hạng",
         "userId": "ID Người Dùng",
         "karma": "Điểm Karma",
-        "badge": "Huy Hiệu"
+        "badge": "Huy Hiệu",
+        "by": "bởi"
       },
       "karma": {
         "title": "Karma Champions",
@@ -1075,7 +1081,9 @@
         "reasonPlaceholder": "Lý do cho phán quyết ghi đè này…",
         "cancel": "Hủy",
         "resolving": "Đang giải quyết…",
-        "resolve": "Giải Quyết Vụ Kiện"
+        "resolve": "Giải Quyết Vụ Kiện",
+        "aiNotUsed": "AI chưa được dùng để đánh giá bằng chứng này.",
+        "submittedBy": "Người nộp"
       }
     },
     "questionnaire": {

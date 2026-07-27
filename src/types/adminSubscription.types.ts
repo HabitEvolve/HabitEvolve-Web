@@ -38,7 +38,7 @@ export interface SubscriptionPackageDto {
   aiVerificationBossModes: string; // CSV — boss modes that support AI proof verification
   isActive: boolean;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null; // BE: DateTime? — null until first edit
 }
 
 // Payload for POST /api/admin/packages  (BE: CreatePackageCommand)

@@ -6,10 +6,11 @@ import type {
     BroadcastPayload,
     BroadcastResultDto,
     SingleNotificationPayload,
+    NotificationDto,
     ProofOverridePayload,
-    DailyMonsterSpawnResultDto,
-    DailyStreakFinalizeResultDto,
     ExpireOverdueQuestsResultDto,
+    SharedHpChangePayload,
+    SharedHpDto,
 } from '../types/adminOperations.types';
 import type { ProofDto } from '../types/mentor.types';
 
@@ -28,9 +29,9 @@ const adminOperationsApi = {
 
     // ── SCREEN 19: NOTIFICATIONS ──────────────────────────────────────────────
 
-    // POST /api/notifications/in-app — single user notification
-    sendNotification: async (payload: SingleNotificationPayload): Promise<ApiResponse<void>> => {
-        const res = await axiosClient.post<ApiResponse<void>>('/notifications/in-app', payload);
+    // POST /api/notifications/in-app — single user notification; BE returns the created NotificationDto (201)
+    sendNotification: async (payload: SingleNotificationPayload): Promise<ApiResponse<NotificationDto>> => {
+        const res = await axiosClient.post<ApiResponse<NotificationDto>>('/notifications/in-app', payload);
         return res.data;
     },
 
@@ -56,9 +57,9 @@ const adminOperationsApi = {
 
     // ── SCREEN 20: MANUAL JOB TRIGGERS ───────────────────────────────────────
 
-    // POST /api/admin/daily-monsters/spawn?date=YYYY-MM-DD
-    spawnDailyMonsters: async (date?: string): Promise<ApiResponse<DailyMonsterSpawnResultDto>> => {
-        const res = await axiosClient.post<ApiResponse<DailyMonsterSpawnResultDto>>(
+    // POST /api/admin/daily-monsters/spawn?date=YYYY-MM-DD — Data = count of monsters created (int)
+    spawnDailyMonsters: async (date?: string): Promise<ApiResponse<number>> => {
+        const res = await axiosClient.post<ApiResponse<number>>(
             '/admin/daily-monsters/spawn',
             null,
             { params: date ? { date } : undefined }
@@ -66,9 +67,9 @@ const adminOperationsApi = {
         return res.data;
     },
 
-    // POST /api/admin/daily-streak/finalize?date=YYYY-MM-DD
-    finalizeDailyStreak: async (date?: string): Promise<ApiResponse<DailyStreakFinalizeResultDto>> => {
-        const res = await axiosClient.post<ApiResponse<DailyStreakFinalizeResultDto>>(
+    // POST /api/admin/daily-streak/finalize?date=YYYY-MM-DD — Data = count of streaks reset (int)
+    finalizeDailyStreak: async (date?: string): Promise<ApiResponse<number>> => {
+        const res = await axiosClient.post<ApiResponse<number>>(
             '/admin/daily-streak/finalize',
             null,
             { params: date ? { date } : undefined }
@@ -84,20 +85,20 @@ const adminOperationsApi = {
         return res.data;
     },
 
-    // POST /api/raids/{raidId}/shared-hp/penalty — manually deduct Shared HP
-    applySharedHpPenalty: async (raidId: number, amount: number): Promise<ApiResponse<void>> => {
-        const res = await axiosClient.post<ApiResponse<void>>(
+    // POST /api/raids/{raidId}/shared-hp/penalty — manually deduct Shared HP; BE returns the updated SharedHpDto
+    applySharedHpPenalty: async (raidId: number, payload?: SharedHpChangePayload): Promise<ApiResponse<SharedHpDto>> => {
+        const res = await axiosClient.post<ApiResponse<SharedHpDto>>(
             `/raids/${raidId}/shared-hp/penalty`,
-            { amount }
+            payload ?? {}
         );
         return res.data;
     },
 
-    // POST /api/raids/{raidId}/shared-hp/restore — manually restore Shared HP
-    restoreSharedHp: async (raidId: number, amount: number): Promise<ApiResponse<void>> => {
-        const res = await axiosClient.post<ApiResponse<void>>(
+    // POST /api/raids/{raidId}/shared-hp/restore — manually restore Shared HP; BE returns the updated SharedHpDto
+    restoreSharedHp: async (raidId: number, payload?: SharedHpChangePayload): Promise<ApiResponse<SharedHpDto>> => {
+        const res = await axiosClient.post<ApiResponse<SharedHpDto>>(
             `/raids/${raidId}/shared-hp/restore`,
-            { amount }
+            payload ?? {}
         );
         return res.data;
     },

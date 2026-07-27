@@ -6,12 +6,13 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import Pagination from "../components/common/Pagination";
 import { adminLootTableApi } from "../api/adminLootTableApi";
-import type { LootTableDto, CreateLootTablePayload, AddLootTableEntryPayload } from "../types/adminLootTable.types";
+import type { LootTableDto, AddLootTableEntryPayload, RewardKind } from "../types/adminLootTable.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 10;
-const EMPTY_TABLE: CreateLootTablePayload = { name: "", description: "" };
-const EMPTY_ENTRY: AddLootTableEntryPayload = { itemId: 0, weight: 1, minQuantity: 1, maxQuantity: 1 };
+// A loot table has no name/description on the BE — only a unique code
+// (e.g. DAILY_CHEST, WEEKLY_CHEST_EASY, GACHA_STANDARD).
+const REWARD_KINDS: RewardKind[] = ["ITEM", "GOLD", "GEMS", "MGOLD"];
+const EMPTY_ENTRY: AddLootTableEntryPayload = { rewardKind: "ITEM", itemDefinitionId: 0, weight: 1, amountMin: 1, amountMax: 1 };
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
 const btnBase =
@@ -43,17 +44,18 @@ interface CreateTableModalProps {
 
 const CreateTableModal = ({ onClose, onSuccess }: CreateTableModalProps) => {
     const alert = useAlert();
-    const [form, setForm] = useState<CreateLootTablePayload>({ ...EMPTY_TABLE });
+    const [code, setCode] = useState("");
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!code.trim()) { setFormError("Code is required."); return; }
         setSaving(true);
         setFormError(null);
         try {
-            await adminLootTableApi.createLootTable(form);
-            alert.success(`"${form.name}" created!`);
+            await adminLootTableApi.createLootTable(code.trim().toUpperCase());
+            alert.success(`"${code}" created!`);
             onSuccess();
             onClose();
         } catch (err) {
@@ -79,14 +81,9 @@ const CreateTableModal = ({ onClose, onSuccess }: CreateTableModalProps) => {
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <Label>Name</Label>
-                        <input required type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                            placeholder="Weekly Boss Chest" className={inputCls} />
-                    </div>
-                    <div>
-                        <Label>Description</Label>
-                        <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                            rows={2} placeholder="Drops awarded after Hard mode clear" className={`${inputCls} resize-none`} />
+                        <Label>Code</Label>
+                        <input required type="text" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
+                            placeholder="WEEKLY_CHEST_HARD" className={inputCls} />
                     </div>
                     {formError && (
                         <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{formError}</p>
@@ -149,7 +146,7 @@ const EntriesModal = ({ table, onClose, onChanged }: EntriesModalProps) => {
         setDeletingId(entryId);
         try {
             await adminLootTableApi.deleteEntry(table.lootTableId, entryId);
-            onChanged({ ...table, entries: entries.filter(e => e.entryId !== entryId) });
+            onChanged({ ...table, entries: entries.filter(e => e.lootTableEntryId !== entryId) });
             alert.success("Entry removed.");
         } catch (err) {
             alert.error(errMsg(err) ?? "Failed to delete entry.");
@@ -169,7 +166,7 @@ const EntriesModal = ({ table, onClose, onChanged }: EntriesModalProps) => {
                         </div>
                         <div>
                             <h2 className="text-base font-black text-gray-900 dark:text-gray-100">Manage Entries</h2>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{table.name}</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 font-mono">{table.code}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
@@ -194,20 +191,22 @@ const EntriesModal = ({ table, onClose, onChanged }: EntriesModalProps) => {
                                 const weight = entry?.weight ?? 0;
                                 const chance = totalWeight > 0 ? (weight / totalWeight) * 100 : 0;
                                 return (
-                                    <div key={entry.entryId} className="flex items-center justify-between gap-3 border-2 border-black/10 dark:border-white/10 rounded-2xl p-3 bg-gray-50/60 dark:bg-gray-800/40">
+                                    <div key={entry.lootTableEntryId} className="flex items-center justify-between gap-3 border-2 border-black/10 dark:border-white/10 rounded-2xl p-3 bg-gray-50/60 dark:bg-gray-800/40">
                                         <div className="min-w-0">
-                                            <p className="font-black text-gray-900 dark:text-gray-100 truncate">{entry.itemName ?? `Item #${entry.itemId}`}</p>
+                                            <p className="font-black text-gray-900 dark:text-gray-100 truncate">
+                                                {entry.rewardKind === "ITEM" ? (entry.itemName ?? `Item #${entry.itemDefinitionId}`) : entry.rewardKind}
+                                            </p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                                Weight {weight} · {chance.toFixed(1)}% · Qty {entry.minQuantity ?? 0}–{entry.maxQuantity ?? 0}
+                                                Weight {weight} · {chance.toFixed(1)}% · Amount {entry.amountMin ?? 0}–{entry.amountMax ?? 0}
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => handleDeleteEntry(entry.entryId)}
-                                            disabled={deletingId === entry.entryId}
+                                            onClick={() => handleDeleteEntry(entry.lootTableEntryId)}
+                                            disabled={deletingId === entry.lootTableEntryId}
                                             title="Delete entry"
                                             className="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl border-2 border-black bg-red-100 hover:bg-red-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-red-800 disabled:opacity-50"
                                         >
-                                            {deletingId === entry.entryId ? <Spinner size={13} /> : <Trash2 className="w-3.5 h-3.5" />}
+                                            {deletingId === entry.lootTableEntryId ? <Spinner size={13} /> : <Trash2 className="w-3.5 h-3.5" />}
                                         </button>
                                     </div>
                                 );
@@ -220,11 +219,21 @@ const EntriesModal = ({ table, onClose, onChanged }: EntriesModalProps) => {
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Add Entry</p>
                         <form onSubmit={handleAddEntry} className="space-y-3">
                             <div>
-                                <Label>Item ID</Label>
-                                <input required type="number" min={1} value={form.itemId || ""}
-                                    onChange={e => setForm(f => ({ ...f, itemId: Number(e.target.value) }))}
-                                    placeholder="123" className={inputCls} />
+                                <Label>Reward Kind</Label>
+                                <select value={form.rewardKind}
+                                    onChange={e => setForm(f => ({ ...f, rewardKind: e.target.value, itemDefinitionId: e.target.value === "ITEM" ? f.itemDefinitionId : null }))}
+                                    className={inputCls}>
+                                    {REWARD_KINDS.map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
                             </div>
+                            {form.rewardKind === "ITEM" && (
+                                <div>
+                                    <Label>Item Definition ID</Label>
+                                    <input required type="number" min={1} value={form.itemDefinitionId || ""}
+                                        onChange={e => setForm(f => ({ ...f, itemDefinitionId: Number(e.target.value) }))}
+                                        placeholder="123" className={inputCls} />
+                                </div>
+                            )}
                             <div>
                                 <Label>Weight</Label>
                                 <input required type="number" min={1} value={form.weight}
@@ -232,14 +241,14 @@ const EntriesModal = ({ table, onClose, onChanged }: EntriesModalProps) => {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <Label>Min Qty</Label>
-                                    <input required type="number" min={1} value={form.minQuantity}
-                                        onChange={e => setForm(f => ({ ...f, minQuantity: Number(e.target.value) }))} className={inputCls} />
+                                    <Label>Amount Min</Label>
+                                    <input required type="number" min={1} value={form.amountMin}
+                                        onChange={e => setForm(f => ({ ...f, amountMin: Number(e.target.value) }))} className={inputCls} />
                                 </div>
                                 <div>
-                                    <Label>Max Qty</Label>
-                                    <input required type="number" min={1} value={form.maxQuantity}
-                                        onChange={e => setForm(f => ({ ...f, maxQuantity: Number(e.target.value) }))} className={inputCls} />
+                                    <Label>Amount Max</Label>
+                                    <input required type="number" min={1} value={form.amountMax}
+                                        onChange={e => setForm(f => ({ ...f, amountMax: Number(e.target.value) }))} className={inputCls} />
                                 </div>
                             </div>
                             {formError && (
@@ -264,24 +273,21 @@ export default function AdminLootTableManagement() {
     const [tables, setTables] = useState<LootTableDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Tracked by array index, not lootTableId — the BE's actual primary-key field name
-    // for this endpoint hasn't been confirmed, and matching by a possibly-undefined ID
-    // would make every row compare equal (undefined === undefined) and update together.
-    const [togglingIndex, setTogglingIndex] = useState<number | null>(null);
+    const [togglingId, setTogglingId] = useState<number | null>(null);
     const [showCreate, setShowCreate] = useState(false);
     const [managingTable, setManagingTable] = useState<LootTableDto | null>(null);
-    const [managingIndex, setManagingIndex] = useState<number | null>(null);
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    // BE (GetLootTablesQuery) takes no params and returns a plain list — no pagination on
+    // this endpoint — so this always resolves to a single page. Kept for layout parity.
+    const totalPages = 1;
 
     const fetchTables = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await adminLootTableApi.getLootTables({ pageNumber: page, pageSize: PAGE_SIZE });
+            const res = await adminLootTableApi.getLootTables();
             if (res.success) {
                 setTables(res.data ?? []);
-                setTotalPages(res.totalPages ?? 1);
             } else {
                 setError(res.message || "Failed to load loot tables.");
             }
@@ -290,41 +296,35 @@ export default function AdminLootTableManagement() {
         } finally {
             setLoading(false);
         }
-    }, [page]);
+    }, []);
 
     useEffect(() => { fetchTables(); }, [fetchTables]);
 
-    const handleToggleActive = async (table: LootTableDto, index: number) => {
+    const handleToggleActive = async (table: LootTableDto) => {
         const nextActive = !table.isActive;
-        setTogglingIndex(index);
-        // Optimistic flip, matched by index — the toggle endpoint's response isn't
-        // guaranteed to be the full entity (may omit `entries`), so local state is the
-        // source of truth for isActive, not res.data. Index matching (not lootTableId)
-        // avoids updating every row at once if the BE's real ID field differs.
-        setTables(prev => prev.map((t, i) => i === index ? { ...t, isActive: nextActive } : t));
+        const id = table.lootTableId;
+        setTogglingId(id);
+        // Optimistic flip — BE's setActive endpoint (SetLootTableActiveCommand) returns a
+        // bare boolean, not the updated table, so local state stays the source of truth.
+        setTables(prev => prev.map(t => t.lootTableId === id ? { ...t, isActive: nextActive } : t));
         try {
-            const res = await adminLootTableApi.toggleActive(table.lootTableId, nextActive);
+            const res = await adminLootTableApi.setActive(id, nextActive);
             if (res.success) {
-                // Merge in whatever the BE did return — never replace, so a partial
-                // response (e.g. missing `entries`) can't wipe out existing entries.
-                if (res.data) setTables(prev => prev.map((t, i) => i === index ? { ...t, ...res.data } : t));
-                alert.success(`"${table.name}" is now ${nextActive ? "active" : "inactive"}.`);
+                alert.success(`"${table.code}" is now ${nextActive ? "active" : "inactive"}.`);
             } else {
-                setTables(prev => prev.map((t, i) => i === index ? { ...t, isActive: table.isActive } : t));
+                setTables(prev => prev.map(t => t.lootTableId === id ? { ...t, isActive: table.isActive } : t));
                 alert.error(res.message || "Failed to toggle table.");
             }
         } catch (err) {
-            setTables(prev => prev.map((t, i) => i === index ? { ...t, isActive: table.isActive } : t));
+            setTables(prev => prev.map(t => t.lootTableId === id ? { ...t, isActive: table.isActive } : t));
             alert.error(errMsg(err) ?? "Failed to toggle table.");
         } finally {
-            setTogglingIndex(null);
+            setTogglingId(null);
         }
     };
 
     const handleEntriesChanged = (updated: LootTableDto) => {
-        if (managingIndex !== null) {
-            setTables(prev => prev.map((t, i) => i === managingIndex ? updated : t));
-        }
+        setTables(prev => prev.map(t => t.lootTableId === updated.lootTableId ? updated : t));
         setManagingTable(updated);
     };
 
@@ -375,23 +375,22 @@ export default function AdminLootTableManagement() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b-2 border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60">
-                                        {["Name", "Entries", "Active", "Actions"].map(h => (
+                                        {["Code", "Entries", "Active", "Actions"].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                    {tables.map((table, index) => (
-                                        <tr key={table.lootTableId ?? index} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
+                                    {tables.map((table) => (
+                                        <tr key={table.lootTableId} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
                                             <td className="px-4 py-4 max-w-70">
-                                                <p className="font-black text-gray-900 dark:text-gray-100 truncate">{table.name}</p>
-                                                <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">{table.description || "No description"}</p>
+                                                <p className="font-black text-gray-900 dark:text-gray-100 font-mono truncate">{table.code}</p>
                                             </td>
                                             <td className="px-4 py-4 text-gray-600 dark:text-gray-300 font-bold">{(table.entries ?? []).length}</td>
                                             <td className="px-4 py-4">
                                                 <button
-                                                    onClick={() => handleToggleActive(table, index)}
-                                                    disabled={togglingIndex === index}
+                                                    onClick={() => handleToggleActive(table)}
+                                                    disabled={togglingId === table.lootTableId}
                                                     aria-label={table.isActive ? "Deactivate table" : "Activate table"}
                                                     className={`relative w-11 h-6 shrink-0 rounded-full border-2 border-black transition-colors disabled:opacity-50 ${table.isActive ? "bg-purple-400" : "bg-gray-200 dark:bg-gray-700"}`}
                                                 >
@@ -399,7 +398,7 @@ export default function AdminLootTableManagement() {
                                                 </button>
                                             </td>
                                             <td className="px-4 py-4">
-                                                <button title="Manage entries" onClick={() => { setManagingTable(table); setManagingIndex(index); }}
+                                                <button title="Manage entries" onClick={() => setManagingTable(table)}
                                                     className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-orange-100 hover:bg-orange-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-orange-800">
                                                     <Settings2 className="w-3.5 h-3.5" />
                                                 </button>
@@ -421,7 +420,7 @@ export default function AdminLootTableManagement() {
             {managingTable && (
                 <EntriesModal
                     table={managingTable}
-                    onClose={() => { setManagingTable(null); setManagingIndex(null); }}
+                    onClose={() => setManagingTable(null)}
                     onChanged={handleEntriesChanged}
                 />
             )}

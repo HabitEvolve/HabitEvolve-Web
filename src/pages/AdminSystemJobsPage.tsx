@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Cog, Play, Zap, Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
@@ -6,7 +6,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import Pagination from "../components/common/Pagination";
 import { adminJobsApi } from "../api/adminJobsApi";
-import type { JobLogDto, JobRunStatus } from "../types/adminJobs.types";
+import type { JobExecutionLogDto } from "../types/adminJobs.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
@@ -29,13 +29,15 @@ const errMsg = (e: unknown) =>
 
 const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
 
+// BE JobExecutionLogDto only exposes a `success` boolean (no "Running" state — the log row is
+// written after the job finishes), so the badge collapses to Success/Failed.
 const STATUS_CFG: Record<string, { bg: string; border: string; text: string; icon: React.ReactNode }> = {
     Success: { bg: "bg-green-100 dark:bg-green-900/30", border: "border-green-400", text: "text-green-800 dark:text-green-300", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
     Failed: { bg: "bg-red-100 dark:bg-red-900/30", border: "border-red-400", text: "text-red-800 dark:text-red-300", icon: <XCircle className="w-3.5 h-3.5" /> },
-    Running: { bg: "bg-amber-100 dark:bg-amber-900/30", border: "border-amber-400", text: "text-amber-800 dark:text-amber-300", icon: <Spinner size={13} /> },
 };
-const StatusBadge = ({ status }: { status: JobRunStatus }) => {
-    const c = STATUS_CFG[status] ?? { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-700", icon: null };
+const StatusBadge = ({ success }: { success: boolean }) => {
+    const status = success ? "Success" : "Failed";
+    const c = STATUS_CFG[status];
     return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {status}</span>;
 };
 
@@ -79,7 +81,7 @@ const ConfirmModal = ({ title, message, confirmLabel, loading, onConfirm, onClos
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function AdminSystemJobsPage() {
     const alert = useAlert();
-    const [logs, setLogs] = useState<JobLogDto[]>([]);
+    const [logs, setLogs] = useState<JobExecutionLogDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [jobName, setJobName] = useState("");
@@ -88,16 +90,16 @@ export default function AdminSystemJobsPage() {
     const [confirmRunOne, setConfirmRunOne] = useState<string | null>(null);
     const [running, setRunning] = useState(false);
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
 
+    // BE GET /admin/jobs/recent?count= has no pageNumber/pageSize concept — it just returns the
+    // N most recent rows. Fetch a generous batch once and paginate client-side.
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await adminJobsApi.getRecentLogs({ pageNumber: page, pageSize: PAGE_SIZE });
+            const res = await adminJobsApi.getRecent(200);
             if (res.success) {
                 setLogs(res.data ?? []);
-                setTotalPages(res.totalPages ?? 1);
             } else {
                 setError(res.message || "Failed to load job logs.");
             }
@@ -106,9 +108,15 @@ export default function AdminSystemJobsPage() {
         } finally {
             setLoading(false);
         }
-    }, [page]);
+    }, []);
 
     useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+    const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
+    const pagedLogs = useMemo(
+        () => logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+        [logs, page]
+    );
 
     // Distinct job names seen in recent logs — quick-trigger chips
     const knownJobNames = Array.from(new Set(logs.map(l => l.jobName))).sort();
@@ -135,9 +143,11 @@ export default function AdminSystemJobsPage() {
     const handleRunOne = async (name: string) => {
         setRunning(true);
         try {
-            const res = await adminJobsApi.runOne(name);
-            if (res.success && res.data) {
-                alert.success(`"${name}" finished — ${res.data.status}.`);
+            // POST /admin/jobs/run/{jobName} is fire-and-forget — BE returns no Data payload,
+            // just success + a message. Actual result shows up in the log table after refresh.
+            const res = await adminJobsApi.runJob(name);
+            if (res.success) {
+                alert.success(res.message || `"${name}" triggered.`);
                 fetchLogs();
             } else {
                 alert.error(res.message || `Failed to run "${name}".`);
@@ -233,20 +243,19 @@ export default function AdminSystemJobsPage() {
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10">
                                     <tr className="border-b-2 border-gray-200 dark:border-gray-700">
-                                        {["Job", "Status", "Records", "Started", "Finished", "Message"].map(h => (
+                                        {["Job", "Status", "Started", "Finished", "Message"].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                    {logs.map((log, index) => (
-                                        <tr key={log.jobLogId ?? index} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-colors">
+                                    {pagedLogs.map((log, index) => (
+                                        <tr key={log.jobExecutionLogId ?? index} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-colors">
                                             <td className="px-4 py-3 font-black text-gray-900 dark:text-gray-100 whitespace-nowrap">{log.jobName}</td>
-                                            <td className="px-4 py-3"><StatusBadge status={log.status} /></td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{log.recordsAffected ?? "—"}</td>
+                                            <td className="px-4 py-3"><StatusBadge success={log.success} /></td>
                                             <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDateTime(log.startedAt)}</td>
                                             <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDateTime(log.finishedAt)}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-70 truncate">{log.message || "—"}</td>
+                                            <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-70 truncate" title={log.resultSummary ?? log.errorMessage ?? ""}>{log.resultSummary ?? log.errorMessage ?? "—"}</td>
                                         </tr>
                                     ))}
                                 </tbody>

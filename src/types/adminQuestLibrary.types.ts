@@ -34,7 +34,7 @@ export interface CreateQuestLibraryItemPayload {
     title: string;
     description?: string;
     difficulty: QuestLibraryDifficulty;
-    damage?: number;
+    damage: number; // BE: CreateQuestTemplateCommand.Damage is required (int, no default)
     proofType: string;
     repeatRule: RepeatRule;
     rewardGold: number;
@@ -53,7 +53,7 @@ export interface UpdateQuestLibraryItemPayload {
     title: string;
     description?: string;
     difficulty: QuestLibraryDifficulty;
-    damage?: number;
+    damage: number; // BE: UpdateQuestTemplateCommand.Damage is required (int, no default)
     proofType: string;
     repeatRule: RepeatRule;
     verificationPolicyId?: number;

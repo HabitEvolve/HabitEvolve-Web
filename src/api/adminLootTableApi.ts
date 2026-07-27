@@ -1,33 +1,34 @@
 import axiosClient from './axiosClient';
-import { ApiResponse, PaginatedApiResponse } from '../types/api.types';
+import { ApiResponse } from '../types/api.types';
 import type {
     LootTableDto,
-    GetLootTablesQueryParams,
-    CreateLootTablePayload,
     AddLootTableEntryPayload,
 } from '../types/adminLootTable.types';
 
 const LOOT_TABLES_URL = '/admin/loot-tables';
 
 export const adminLootTableApi = {
-    // GET /api/admin/loot-tables?pageNumber=&pageSize= — tables with their entries
-    getLootTables: async (params?: GetLootTablesQueryParams): Promise<PaginatedApiResponse<LootTableDto>> => {
-        const res = await axiosClient.get<PaginatedApiResponse<LootTableDto>>(LOOT_TABLES_URL, { params });
+    // GET /api/admin/loot-tables — tables with their entries. BE (GetLootTablesQuery) takes
+    // no params at all and returns a plain list, no pagination.
+    getLootTables: async (): Promise<ApiResponse<LootTableDto[]>> => {
+        const res = await axiosClient.get<ApiResponse<LootTableDto[]>>(LOOT_TABLES_URL);
         return res.data;
     },
 
-    // POST /api/admin/loot-tables
-    createLootTable: async (payload: CreateLootTablePayload): Promise<ApiResponse<LootTableDto>> => {
-        const res = await axiosClient.post<ApiResponse<LootTableDto>>(LOOT_TABLES_URL, payload);
+    // POST /api/admin/loot-tables — Code only (CreateLootTableCommand has no name/description).
+    createLootTable: async (code: string): Promise<ApiResponse<LootTableDto>> => {
+        const res = await axiosClient.post<ApiResponse<LootTableDto>>(LOOT_TABLES_URL, { code });
         return res.data;
     },
 
-    // POST /api/admin/loot-tables/{id}/active — body sends the explicit target state so
-    // the call is unambiguous/idempotent regardless of whether the BE reads it or just
-    // flips. Response shape isn't guaranteed to be the full entity (may omit `entries`)
-    // — callers must not replace local state with it wholesale, only merge.
-    toggleActive: async (id: number, isActive: boolean): Promise<ApiResponse<Partial<LootTableDto>>> => {
-        const res = await axiosClient.post<ApiResponse<Partial<LootTableDto>>>(`${LOOT_TABLES_URL}/${id}/active`, { isActive });
+    // POST /api/admin/loot-tables/{id}/active?isActive= — BE reads isActive from the query
+    // string ([FromQuery]), NOT the request body. Returns a bare boolean, not the full table.
+    setActive: async (id: number, isActive: boolean): Promise<ApiResponse<boolean>> => {
+        const res = await axiosClient.post<ApiResponse<boolean>>(
+            `${LOOT_TABLES_URL}/${id}/active`,
+            null,
+            { params: { isActive } },
+        );
         return res.data;
     },
 
@@ -38,8 +39,8 @@ export const adminLootTableApi = {
     },
 
     // DELETE /api/admin/loot-tables/{id}/entries/{entryId}
-    deleteEntry: async (id: number, entryId: number): Promise<ApiResponse<void>> => {
-        const res = await axiosClient.delete<ApiResponse<void>>(`${LOOT_TABLES_URL}/${id}/entries/${entryId}`);
+    deleteEntry: async (id: number, entryId: number): Promise<ApiResponse<boolean>> => {
+        const res = await axiosClient.delete<ApiResponse<boolean>>(`${LOOT_TABLES_URL}/${id}/entries/${entryId}`);
         return res.data;
     },
 };

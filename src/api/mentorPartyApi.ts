@@ -96,8 +96,11 @@ const partyMentorApi = {
     },
 
     // 9. Đuổi/Xóa một Player khỏi Party
+    // BE route: DELETE /api/Party/{id}/members/{userId}/mentor?mentorUserId= (RemoveMember, requires mentorUserId to authorize)
     removePlayerFromParty: async (partyId: number, userId: number): Promise<ApiResponse<any>> => {
-        const url = `${PARTY_URL}/${partyId}/members/${userId}`;
+        const storedId = localStorage.getItem('user_id');
+        const mentorId = storedId ? parseInt(storedId) : 0;
+        const url = `${PARTY_URL}/${partyId}/members/${userId}/mentor?mentorUserId=${mentorId}`;
         const response = await axiosClient.delete<ApiResponse<any>>(url);
         return response.data;
     },

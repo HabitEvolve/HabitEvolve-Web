@@ -684,7 +684,12 @@
         "updatedAt": "Updated At",
         "roles": "Roles",
         "verified": "✅ Verified",
-        "unverified": "❌ Unverified"
+        "unverified": "❌ Unverified",
+        "walletStreak": "Wallet & Streak",
+        "currentStreak": "Current Streak",
+        "bestStreak": "Best Streak",
+        "recentProofs": "Recent Proofs",
+        "noProofs": "No proofs submitted yet."
       },
       "form": {
         "createTitle": "Create New User",
@@ -1038,7 +1043,8 @@
         "rank": "Rank",
         "userId": "User ID",
         "karma": "Karma Points",
-        "badge": "Badge"
+        "badge": "Badge",
+        "by": "by"
       },
       "karma": {
         "title": "Karma Champions",
@@ -1075,7 +1081,9 @@
         "reasonPlaceholder": "Reason for this verdict override…",
         "cancel": "Cancel",
         "resolving": "Resolving…",
-        "resolve": "Resolve Case"
+        "resolve": "Resolve Case",
+        "aiNotUsed": "AI was not used to assess this proof.",
+        "submittedBy": "Submitted by"
       }
     },
     "questionnaire": {

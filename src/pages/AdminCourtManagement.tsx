@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { X, ChevronLeft, ChevronRight, Loader2, ImageOff, Filter, Camera, Video, Monitor } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Loader2, ImageOff, Filter, Camera, Video, Monitor, Timer, Footprints, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -86,12 +86,15 @@ const PROOF_CFG: Record<string, { bg: string; border: string; text: string; icon
   PHOTO: { bg: "bg-violet-100", border: "border-violet-400", text: "text-violet-800", icon: <Camera className="w-3 h-3 shrink-0" /> },
   VIDEO: { bg: "bg-pink-100", border: "border-pink-400", text: "text-pink-800", icon: <Video className="w-3 h-3 shrink-0" /> },
   SCREENSHOT: { bg: "bg-cyan-100", border: "border-cyan-400", text: "text-cyan-800", icon: <Monitor className="w-3 h-3 shrink-0" /> },
+  TIMER: { bg: "bg-sky-100", border: "border-sky-400", text: "text-sky-800", icon: <Timer className="w-3 h-3 shrink-0" /> },
   GPS: { bg: "bg-green-100", border: "border-green-400", text: "text-green-800", icon: SI("/icon/Item/Location Pin/64px/Location Pin 1st 64px.png") },
-  TEXT: { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-700", icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
+  STEP_COUNTER: { bg: "bg-lime-100", border: "border-lime-400", text: "text-lime-800", icon: <Footprints className="w-3 h-3 shrink-0" /> },
+  TEXT_LOG: { bg: "bg-gray-100", border: "border-gray-400", text: "text-gray-700", icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
+  SELF_CHECK: { bg: "bg-teal-100", border: "border-teal-400", text: "text-teal-800", icon: <CheckCircle2 className="w-3 h-3 shrink-0" /> },
 };
 
 const ProofTypeBadge = ({ type }: { type: string }) => {
-  const cfg = PROOF_CFG[type] ?? PROOF_CFG.TEXT;
+  const cfg = PROOF_CFG[type] ?? PROOF_CFG.TEXT_LOG;
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${cfg.bg} ${cfg.border} ${cfg.text}`}>
       {cfg.icon} {type}
@@ -101,9 +104,9 @@ const ProofTypeBadge = ({ type }: { type: string }) => {
 
 // ── AI VERDICT BADGE ──────────────────────────────────────────────────────────
 const AI_VERDICT_CFG: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  approve:    { bg: "bg-green-100",  border: "border-green-400",  text: "text-green-800",  label: "AI: Approve" },
-  reject:     { bg: "bg-red-100",    border: "border-red-400",    text: "text-red-800",    label: "AI: Reject" },
-  suspicious: { bg: "bg-amber-100",  border: "border-amber-400",  text: "text-amber-800",  label: "AI: Suspicious" },
+  approve: { bg: "bg-green-100", border: "border-green-400", text: "text-green-800", label: "AI: Approve" },
+  reject: { bg: "bg-red-100", border: "border-red-400", text: "text-red-800", label: "AI: Reject" },
+  suspicious: { bg: "bg-amber-100", border: "border-amber-400", text: "text-amber-800", label: "AI: Suspicious" },
 };
 
 const AiVerdictPanel = ({ data }: { data: CourtCaseDto }) => {
@@ -191,7 +194,8 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
     }
   };
 
-  const isMedia = ["PHOTO", "VIDEO", "SCREENSHOT", "GPS"].includes(data.proofType);
+  // Every ProofType requires mediaUrls except SELF_CHECK / TEXT_LOG (docs/PROOF_REQUIREMENTS.md §1).
+  const isMedia = !["SELF_CHECK", "TEXT_LOG"].includes(data.proofType);
   const alreadyResolved = ["Approved", "Rejected", "AdminResolved", "ExpiredAutoApproved"].includes(data.status);
 
   const overlay = (
@@ -405,10 +409,10 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                             type="button"
                             onClick={() => setVerdict(active ? "" : v)}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 rounded-2xl font-black text-sm transition-all ${active
-                                ? isApproved
-                                  ? "bg-green-200 border-green-600 text-green-900 shadow-none translate-x-0.5 translate-y-0.5"
-                                  : "bg-red-200 border-red-600 text-red-900 shadow-none translate-x-0.5 translate-y-0.5"
-                                : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
+                              ? isApproved
+                                ? "bg-green-200 border-green-600 text-green-900 shadow-none translate-x-0.5 translate-y-0.5"
+                                : "bg-red-200 border-red-600 text-red-900 shadow-none translate-x-0.5 translate-y-0.5"
+                              : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5"
                               }`}
                           >
                             <img

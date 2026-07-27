@@ -41,13 +41,8 @@ import AdminQuestLibraryManagement from "./pages/AdminQuestLibraryManagement";
 import AdminSystemOpsPage from "./pages/AdminSystemOpsPage";
 import AdminSubscriptionPage from "./pages/AdminSubscriptionPage";
 import AdminConfigPage from "./pages/AdminConfigPage";
-import AdminItemManagement from "./pages/AdminItemManagement";
 import AdminSystemJobsPage from "./pages/AdminSystemJobsPage";
-import AdminLootTableManagement from "./pages/AdminLootTableManagement";
-import AdminShopManagement from "./pages/AdminShopManagement";
-import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 import AdminEconomyHub from "./pages/AdminEconomyHub";
-import AdminNotificationBroadcast from "./pages/AdminNotificationBroadcast";
 import AdminJobsMonitor from "./pages/AdminJobsMonitor";
 import AdminAuditLog from "./pages/AdminAuditLog";
 import AdminAppealQueue from "./pages/AdminAppealQueue";
@@ -63,6 +58,7 @@ import RallyTab from "./pages/Mentor/PartyWorkspace/RallyTab";
 import LiveChallengeSession from "./pages/Mentor/LiveChallengeSession";
 import QuestionBank from "./pages/Mentor/QuestionBank";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
+import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 
 export default function App() {
   return (
@@ -97,7 +93,6 @@ export default function App() {
               <Route path="/daily-boss" element={<AdminDailyBossManagement />} />
               <Route path="/quest-library" element={<AdminQuestLibraryManagement />} />
               <Route path="/admin/economy" element={<AdminEconomyHub />} />
-              <Route path="/admin/notifications/broadcast" element={<AdminNotificationBroadcast />} />
               <Route path="/admin/jobs" element={<AdminJobsMonitor />} />
               <Route path="/admin/audit-log" element={<AdminAuditLog />} />
               <Route path="/admin/appeals" element={<AdminAppealQueue />} />
@@ -105,9 +100,6 @@ export default function App() {
               <Route path="/system-config" element={<AdminConfigPage />} />
               <Route path="/system-ops" element={<AdminSystemOpsPage />} />
               <Route path="/system-jobs" element={<AdminSystemJobsPage />} />
-              <Route path="/item-catalog" element={<AdminItemManagement />} />
-              <Route path="/loot-tables" element={<AdminLootTableManagement />} />
-              <Route path="/shop-management" element={<AdminShopManagement />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/blank" element={<Blank />} />
 

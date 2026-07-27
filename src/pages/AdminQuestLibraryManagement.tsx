@@ -21,7 +21,7 @@ const PAGE_SIZE = 20;
 const DIFFICULTIES: QuestLibraryDifficulty[] = ['EASY', 'NORMAL', 'HARD', 'EPIC'];
 const STATUSES: QuestLibraryStatus[] = ['Draft', 'Published', 'Archived'];
 const REPEAT_RULES: RepeatRule[] = ['Daily', 'Weekly', 'Monthly', 'OneTime'];
-const PROOF_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'STEP_COUNTER'];
+const PROOF_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
 
 const DIFF_CFG: Record<QuestLibraryDifficulty, { label: string; cls: string }> = {
   EASY:   { label: 'Easy',   cls: 'bg-green-100 border-green-400 text-green-800 dark:bg-green-900/30 dark:border-green-600 dark:text-green-300' },

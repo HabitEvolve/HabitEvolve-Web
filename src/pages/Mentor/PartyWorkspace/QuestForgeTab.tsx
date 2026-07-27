@@ -1,15 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import mentorApi from "../../../api/mentorApi";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import { useAlert } from "../../../context/AlertContext";
-import { inkBorder, shadowSm, shadowMd, shadowLg, easeExpo, getMentorId, Spinner } from "./shared";
+import { inkBorder, shadowSm, shadowMd, easeExpo, getMentorId, Spinner } from "./shared";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
 import type { PartyMember } from "../../../types/api.types";
 import type {
-    QuestDto,
     QuestDifficulty,
     MentorQuestRangeDto,
     ActiveSubscriptionDto,
@@ -19,92 +17,17 @@ import type {
 
 // Orange is this tab's signature accent (Quest Forge), consistent with the
 // "each Mentor feature gets its own accent inside the shared system" pattern.
-const btnPress =
-    `hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] ` +
-    `active:shadow-none active:translate-x-[3px] active:translate-y-[3px] ` +
-    `disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 ` +
-    `transition-all duration-150 ${easeExpo}`;
 const inputCls =
     `w-full p-3 border-[3px] ${inkBorder} rounded-xl text-sm font-medium bg-gray-25 dark:bg-gray-800 ` +
     `focus:outline-none focus:ring-4 focus:ring-orange-200 dark:focus:ring-orange-500/20 placeholder:text-gray-400`;
 const chipInactive = `bg-gray-25 dark:bg-gray-800 text-gray-700 ${shadowSm} hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5`;
 const chipActive = "bg-orange-500 text-white shadow-none translate-x-0.5 translate-y-0.5";
 
-const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }> = {
-    NotStarted: { bg: "bg-gray-100 dark:bg-gray-700",    border: "border-gray-400",    text: "text-gray-700 dark:text-gray-200" },
-    InProgress:  { bg: "bg-blue-100 dark:bg-blue-500/15",   border: "border-blue-400",    text: "text-blue-800 dark:text-blue-300" },
-    Submitted:   { bg: "bg-warning-100 dark:bg-warning-500/15",  border: "border-warning-400",   text: "text-warning-800 dark:text-warning-300" },
-    Approved:    { bg: "bg-success-100 dark:bg-success-500/15",border: "border-success-400", text: "text-success-800 dark:text-success-300" },
-    Rejected:    { bg: "bg-error-100 dark:bg-error-500/15",    border: "border-error-400",     text: "text-error-800 dark:text-error-300" },
-    Expired:     { bg: "bg-gray-100 dark:bg-gray-700",   border: "border-gray-300",    text: "text-gray-500 dark:text-gray-400" },
-    Failed:      { bg: "bg-error-100 dark:bg-error-500/15",    border: "border-error-400",     text: "text-error-700 dark:text-error-300" },
-};
-
 const DIFFICULTIES: QuestDifficulty[] = ["EASY", "NORMAL", "HARD"];
 const DIFF_STYLE: Record<QuestDifficulty, { active: string; inactive: string; label: string }> = {
     EASY:   { active: "bg-success-400 text-success-900", inactive: "bg-success-50 dark:bg-success-500/10 text-success-700 dark:text-success-300", label: "Easy" },
     NORMAL: { active: "bg-warning-400 text-warning-900", inactive: "bg-warning-50 dark:bg-warning-500/10 text-warning-700 dark:text-warning-300", label: "Normal" },
     HARD:   { active: "bg-error-500 text-white",         inactive: "bg-error-50 dark:bg-error-500/10 text-error-700 dark:text-error-300",           label: "Hard" },
-};
-
-// ── DELETE CONFIRM MODAL ──────────────────────────────────────────────────────
-interface DeleteQuestModalProps {
-    quest: QuestDto;
-    onClose: () => void;
-    onDeleted: () => void;
-}
-
-const DeleteQuestModal = ({ quest, onClose, onDeleted }: DeleteQuestModalProps) => {
-    const { t } = useTranslation();
-    const alert = useAlert();
-    const [loading, setLoading] = useState(false);
-
-    const handleDelete = async () => {
-        setLoading(true);
-        try {
-            const res = await mentorApi.deleteMentorQuest(quest.questId);
-            if (res.success) {
-                alert.success(t("mentor.questCommand.deleteModal.deleted"));
-                onDeleted();
-            } else {
-                alert.error(res.message || t("mentor.questCommand.errors.deleteFailed"));
-            }
-        } catch (e: any) {
-            alert.error(e?.response?.data?.message || t("mentor.questCommand.errors.errorOccurred"));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return createPortal(
-        <div
-            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-game-outline/60 backdrop-blur-sm"
-            onClick={onClose}
-        >
-            <div
-                className={`w-full max-w-sm bg-error-100 dark:bg-error-500/15 border-4 ${inkBorder} rounded-2xl ${shadowLg} p-6`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <h2 className="text-xl font-black mb-2">{t("mentor.questCommand.deleteModal.title")}</h2>
-                <p className="text-sm text-gray-700 mb-4">
-                    Remove <strong>"{quest.title}"</strong>?
-                </p>
-                <div className="flex gap-3">
-                    <button onClick={onClose} className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-gray-25 dark:bg-gray-800 ${shadowSm} ${btnPress}`}>
-                        {t("mentor.questCommand.deleteModal.cancel")}
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        disabled={loading}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-error-500 text-white ${shadowSm} ${btnPress} inline-flex items-center justify-center gap-2`}
-                    >
-                        {loading ? <><Spinner size={14} /> {t("mentor.questCommand.deleteModal.deleting")}</> : t("mentor.questCommand.deleteModal.deleteForever")}
-                    </button>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
 };
 
 // ── FORM DEFAULTS ─────────────────────────────────────────────────────────────
@@ -252,13 +175,10 @@ export default function QuestForgeTab() {
     const [selectedMemberId, setSelectedMemberId] = useState<number | "">("");
     const [form, setForm] = useState(emptyForm);
 
-    const [quests, setQuests] = useState<QuestDto[]>([]);
     const [activeSub, setActiveSub] = useState<ActiveSubscriptionDto | null>(null);
     const [ranges, setRanges] = useState<MentorQuestRangeDto[]>([]);
-    const [loadingQuests, setLoadingQuests] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<QuestDto | null>(null);
 
     // Load static data (subscription/ranges are mentor-wide) + this party's members
     useEffect(() => {
@@ -306,16 +226,6 @@ export default function QuestForgeTab() {
             setForm((prev) => ({ ...prev, difficulty }));
         }
     };
-
-    // Load quests for this party
-    const fetchQuests = useCallback(() => {
-        setLoadingQuests(true);
-        mentorApi.getMentorQuests(partyId)
-            .then((res) => { if (res.success) setQuests(res.data ?? []); })
-            .finally(() => setLoadingQuests(false));
-    }, [partyId]);
-
-    useEffect(() => { fetchQuests(); }, [fetchQuests]);
 
     const handleField = (field: string, value: string | number | boolean) => {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -372,7 +282,6 @@ export default function QuestForgeTab() {
                         username: members.find((m) => m.userId === selectedMemberId)?.username ?? "member",
                     }));
                     setForm(emptyForm);
-                    fetchQuests();
                 } else {
                     alert.error(res.message || t("mentor.questCommand.errors.assignFailed"));
                 }
@@ -396,7 +305,6 @@ export default function QuestForgeTab() {
                         partyName: res.data.partyName,
                     }));
                     setForm(emptyForm);
-                    fetchQuests();
                 } else {
                     alert.error(res.message || t("mentor.questCommand.errors.fanOutFailed"));
                 }
@@ -474,7 +382,11 @@ export default function QuestForgeTab() {
                     {assignMode === "party" && (
                         <div className="mt-4 min-w-0">
                             <div className={`p-3 bg-purple-50 dark:bg-purple-500/10 border-2 border-purple-400 dark:border-purple-500/40 rounded-xl text-sm font-medium text-purple-800 dark:text-purple-200 mb-2`}>
-                                {t("mentor.questCommand.fanOutInfo", { count: members.length })}
+                                <Trans
+                                    i18nKey="mentor.questCommand.fanOutInfo"
+                                    count={members.length}
+                                    components={{ strong: <strong /> }}
+                                />
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                                 {members.map((m) => (
@@ -668,94 +580,6 @@ export default function QuestForgeTab() {
                 <QuestPreview form={form} currentRange={currentRange} assignMode={assignMode} targetLabel={targetLabel} />
             </div>
 
-            {/* ── Quest Table ────────────────────────────────────────── */}
-            <div className="lg:col-span-12 mt-2">
-                <h2 className="text-xl font-black mb-4">
-                    {t("mentor.questCommand.activeQuests")}
-                    {loadingQuests && <span className="ml-2 inline-flex"><Spinner size={16} /></span>}
-                </h2>
-                <div className={`bg-gray-25 dark:bg-gray-800 border-4 ${inkBorder} rounded-2xl ${shadowMd} overflow-hidden overflow-x-auto`}>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className={`border-b-4 ${inkBorder} bg-orange-100 dark:bg-orange-500/15`}>
-                                {[
-                                    t("mentor.questCommand.colTitle"),
-                                    t("mentor.questCommand.colAssignee"),
-                                    "Difficulty",
-                                    t("mentor.questCommand.damage"),
-                                    "M-Gold",
-                                    t("mentor.questCommand.proofType"),
-                                    t("mentor.questCommand.colStatus"),
-                                    t("mentor.questCommand.deadline"),
-                                    "",
-                                ].map((h) => (
-                                    <th key={h} className="px-4 py-3 text-left font-black text-xs uppercase tracking-wider whitespace-nowrap">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {quests.length === 0 ? (
-                                <tr>
-                                    <td colSpan={9} className="py-12 text-center text-gray-400 font-medium">
-                                        {t("mentor.questCommand.noQuests")}
-                                    </td>
-                                </tr>
-                            ) : (
-                                quests.map((q) => {
-                                    const s = STATUS_STYLES[q.status] ?? STATUS_STYLES.NotStarted;
-                                    return (
-                                        <tr key={q.questId} className="border-b-2 border-gray-100 dark:border-gray-700 hover:bg-orange-50/50 dark:hover:bg-orange-500/5 transition-colors">
-                                            <td className="px-4 py-3 font-bold max-w-44 truncate">{q.title}</td>
-                                            <td className="px-4 py-3 text-gray-600">{q.username ?? "—"}</td>
-                                            <td className="px-4 py-3">
-                                                {q.difficulty && (
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-black border-2 ${inkBorder} ${DIFF_STYLE[q.difficulty]?.inactive ?? "bg-gray-100 text-gray-700"}`}>
-                                                        {DIFF_STYLE[q.difficulty]?.label ?? q.difficulty}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 font-black text-error-600 dark:text-error-300">{q.damage}</td>
-                                            <td className="px-4 py-3 font-black text-amber-600 dark:text-amber-300">
-                                                <span className="inline-flex items-center gap-1">{q.rewardMGold} <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /></span>
-                                            </td>
-                                            <td className="px-4 py-3 text-xs font-bold text-gray-500">{q.proofType ?? "ANY"}</td>
-                                            <td className="px-4 py-3">
-                                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-black border-2 ${s.bg} ${s.border} ${s.text}`}>
-                                                    {q.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-gray-500">
-                                                {q.deadlineAt ? new Date(q.deadlineAt).toLocaleDateString() : "—"}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {q.status === "NotStarted" && (
-                                                    <button
-                                                        onClick={() => setDeleteTarget(q)}
-                                                        className={`p-1.5 bg-error-100 dark:bg-error-500/20 border-2 border-error-400 rounded-lg hover:bg-error-200 dark:hover:bg-error-500/30 transition-colors`}
-                                                        title="Delete quest"
-                                                    >
-                                                        <svg className="w-3.5 h-3.5 text-error-600 dark:text-error-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {deleteTarget && (
-                <DeleteQuestModal
-                    quest={deleteTarget}
-                    onClose={() => setDeleteTarget(null)}
-                    onDeleted={() => { setDeleteTarget(null); fetchQuests(); }}
-                />
-            )}
         </div>
     );
 }

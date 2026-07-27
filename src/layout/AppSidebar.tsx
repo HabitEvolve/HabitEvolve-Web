@@ -5,7 +5,7 @@ import {
   ChevronDownIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import { Scale, Coins, Megaphone, Cpu, FileClock } from "lucide-react";
+import { Scale, Coins, Cpu, FileClock } from "lucide-react";
 
 const GI = ({ src, alt = "" }: { src: string; alt?: string }) => (
   <img src={src} alt={alt} className="w-5 h-5 object-contain shrink-0" />
@@ -105,29 +105,9 @@ const navItems: NavItem[] = [
     sectionKey: "nav.sections.MONETIZATION",
   },
   {
-    icon: <GI src="/icon/Item/Chest/64px/Chest 1st 64px.png" alt="Item Catalog" />,
-    nameKey: "nav.admin.itemCatalog",
-    path: "/item-catalog",
-  },
-  {
-    icon: <GI src="/icon/Item/Dice/64px/Golden Dice 1st 64px.png" alt="Loot Tables" />,
-    nameKey: "nav.admin.lootTables",
-    path: "/loot-tables",
-  },
-  {
-    icon: <GI src="/icon/Main/Shopping Bag/64px/Golden Shopping Bag 1st 64px.png" alt="Shop Management" />,
-    nameKey: "nav.admin.shopManagement",
-    path: "/shop-management",
-  },
-  {
     icon: <Coins className="w-5 h-5 shrink-0" />,
     nameKey: "nav.admin.economyHub",
     path: "/admin/economy",
-  },
-  {
-    icon: <Megaphone className="w-5 h-5 shrink-0" />,
-    nameKey: "nav.admin.notificationBroadcast",
-    path: "/admin/notifications/broadcast",
   },
 ];
 

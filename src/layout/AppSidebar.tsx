@@ -5,7 +5,7 @@ import {
   ChevronDownIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import { Scale, Coins, Megaphone, Cpu, FileClock } from "lucide-react";
+import { Scale, Coins, Megaphone, Cpu, FileClock, Swords } from "lucide-react";
 
 const GI = ({ src, alt = "" }: { src: string; alt?: string }) => (
   <img src={src} alt={alt} className="w-5 h-5 object-contain shrink-0" />
@@ -108,6 +108,11 @@ const navItems: NavItem[] = [
     icon: <GI src="/icon/Item/Chest/64px/Chest 1st 64px.png" alt="Item Catalog" />,
     nameKey: "nav.admin.itemCatalog",
     path: "/item-catalog",
+  },
+  {
+    icon: <Swords className="w-5 h-5 shrink-0" />,
+    nameKey: "nav.admin.combatItems",
+    path: "/admin/combat-items",
   },
   {
     icon: <GI src="/icon/Item/Dice/64px/Golden Dice 1st 64px.png" alt="Loot Tables" />,

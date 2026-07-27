@@ -42,6 +42,7 @@ import AdminSystemOpsPage from "./pages/AdminSystemOpsPage";
 import AdminSubscriptionPage from "./pages/AdminSubscriptionPage";
 import AdminConfigPage from "./pages/AdminConfigPage";
 import AdminItemManagement from "./pages/AdminItemManagement";
+import AdminCombatItemManagement from "./pages/AdminCombatItemManagement";
 import AdminSystemJobsPage from "./pages/AdminSystemJobsPage";
 import AdminLootTableManagement from "./pages/AdminLootTableManagement";
 import AdminShopManagement from "./pages/AdminShopManagement";
@@ -106,6 +107,7 @@ export default function App() {
               <Route path="/system-ops" element={<AdminSystemOpsPage />} />
               <Route path="/system-jobs" element={<AdminSystemJobsPage />} />
               <Route path="/item-catalog" element={<AdminItemManagement />} />
+              <Route path="/admin/combat-items" element={<AdminCombatItemManagement />} />
               <Route path="/loot-tables" element={<AdminLootTableManagement />} />
               <Route path="/shop-management" element={<AdminShopManagement />} />
               <Route path="/calendar" element={<Calendar />} />

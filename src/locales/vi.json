@@ -78,8 +78,7 @@
       "combatItems": "Chưởng Lực",
       "lootTables": "Bảng Rơi Đồ",
       "shopManagement": "Quản Lý Cửa Hàng",
-      "economyHub": "Trung Tâm Kinh Tế",
-      "notificationBroadcast": "Gửi Thông Báo"
+      "economyHub": "Trung Tâm Kinh Tế"
     },
     "sections": {
       "GAMEPLAY": "THỬ THÁCH",
@@ -356,8 +355,6 @@
       "assignBtn": "⚡ Giao Nhiệm Vụ",
       "fanOutBtn": "⚔️ Giao Cho Cả Nhóm",
       "assigning": "Đang giao…",
-      "activeQuests": "Nhiệm Vụ Đang Hoạt Động",
-      "noQuests": "Chưa có nhiệm vụ nào cho nhóm này.",
       "columns": {
         "title": "Tiêu Đề",
         "assignee": "Người Được Giao",
@@ -366,22 +363,13 @@
         "status": "Trạng Thái",
         "deadline": "Hạn Chót"
       },
-      "deleteModal": {
-        "title": "Xóa Nhiệm Vụ?",
-        "cancel": "Hủy",
-        "deleting": "Đang xóa…",
-        "deleteForever": "Xóa Vĩnh Viễn",
-        "deleted": "Đã xóa nhiệm vụ thành công!"
-      },
       "errors": {
         "selectParty": "Vui lòng chọn một nhóm trước.",
         "titleRequired": "Tiêu đề nhiệm vụ là bắt buộc.",
         "selectMember": "Vui lòng chọn thành viên để giao nhiệm vụ.",
         "assignFailed": "Giao nhiệm vụ thất bại.",
         "fanOutFailed": "Giao cho cả nhóm thất bại.",
-        "unexpected": "Đã xảy ra lỗi không mong đợi.",
-        "deleteFailed": "Xóa thất bại.",
-        "errorOccurred": "Đã xảy ra lỗi."
+        "unexpected": "Đã xảy ra lỗi không mong đợi."
       },
       "assignedTo": "Đã giao nhiệm vụ cho {{username}}!",
       "fanOutComplete": "Hoàn tất! Đã giao cho {{count}} thành viên trong {{partyName}}.",
@@ -389,9 +377,6 @@
       "description": "Mô Tả",
       "descPlaceholder": "Mô tả nhiệm vụ (tùy chọn)…",
       "mandatoryQuest": "Nhiệm Vụ Bắt Buộc",
-      "colTitle": "Tiêu Đề",
-      "colAssignee": "Người Được Giao",
-      "colStatus": "Trạng Thái",
       "assignQuest": "Giao Nhiệm Vụ",
       "forge": {
         "kicker": "Chỉ Huy Nhiệm Vụ",

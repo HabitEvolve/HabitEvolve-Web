@@ -5,6 +5,17 @@
 // Matches BE CourtCaseStatus enum exactly: Pending, Approved, Rejected, AdminResolved, ExpiredAutoApproved
 export type CourtCaseStatus = "Pending" | "Approved" | "Rejected" | "AdminResolved" | "ExpiredAutoApproved";
 
+// Matches BE Domain.Enums.ProofType exactly (8 canonical types, see docs/PROOF_REQUIREMENTS.md)
+export type ProofType =
+    | "PHOTO"
+    | "VIDEO"
+    | "TIMER"
+    | "SCREENSHOT"
+    | "GPS"
+    | "STEP_COUNTER"
+    | "TEXT_LOG"
+    | "SELF_CHECK";
+
 // Matches BE CourtVoteDto
 export interface VoteDto {
     voteId: number;
@@ -30,7 +41,7 @@ export interface CourtCaseDto {
     questTitleMasked: string;
     /** Admin-only — real, unmasked quest title (falls back to null if quest lookup failed). */
     questTitle: string | null;
-    proofType: "PHOTO" | "VIDEO" | "GPS" | "SCREENSHOT" | string;
+    proofType: ProofType | string;
     mediaUrls: string[];
     /** Unblurred original media URLs — admin-only. */
     originalMediaUrls: string[];

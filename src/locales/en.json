@@ -78,8 +78,7 @@
       "combatItems": "Combat Items",
       "lootTables": "Loot Tables",
       "shopManagement": "Shop Management",
-      "economyHub": "Economy Hub",
-      "notificationBroadcast": "Notification Broadcast"
+      "economyHub": "Economy Hub"
     },
     "sections": {
       "GAMEPLAY": "GAMEPLAY",
@@ -356,8 +355,6 @@
       "assignBtn": "⚡ Assign Quest",
       "fanOutBtn": "⚔️ Fan-out to Party",
       "assigning": "Assigning…",
-      "activeQuests": "Active Quests",
-      "noQuests": "No quests for this party yet.",
       "columns": {
         "title": "Title",
         "assignee": "Assignee",
@@ -366,22 +363,13 @@
         "status": "Status",
         "deadline": "Deadline"
       },
-      "deleteModal": {
-        "title": "Delete Quest?",
-        "cancel": "Cancel",
-        "deleting": "Deleting…",
-        "deleteForever": "Delete Forever",
-        "deleted": "Quest deleted successfully!"
-      },
       "errors": {
         "selectParty": "Please select a party first.",
         "titleRequired": "Quest title is required.",
         "selectMember": "Please select a member to assign to.",
         "assignFailed": "Failed to assign quest.",
         "fanOutFailed": "Fan-out failed.",
-        "unexpected": "An unexpected error occurred.",
-        "deleteFailed": "Delete failed.",
-        "errorOccurred": "An error occurred."
+        "unexpected": "An unexpected error occurred."
       },
       "assignedTo": "Quest assigned to {{username}}!",
       "fanOutComplete": "Fan-out complete! Assigned to {{count}} members in {{partyName}}.",
@@ -389,9 +377,6 @@
       "description": "Description",
       "descPlaceholder": "Optional quest description…",
       "mandatoryQuest": "Mandatory Quest",
-      "colTitle": "Title",
-      "colAssignee": "Assignee",
-      "colStatus": "Status",
       "assignQuest": "Assign Quest",
       "forge": {
         "kicker": "Quest Command",

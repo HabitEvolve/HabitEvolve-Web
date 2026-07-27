@@ -1,6 +1,6 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/api.types';
-import type { NotificationDto, GetNotificationsQuery, PagedNotifications, BroadcastPayload, BroadcastResultDto } from '../types/notification.types';
+import type { NotificationDto, GetNotificationsQuery, PagedNotifications } from '../types/notification.types';
 
 const getUserId = (): number => Number(localStorage.getItem('user_id') ?? 0);
 
@@ -29,11 +29,6 @@ export const notificationApi = {
 
   deleteNotification: async (id: number): Promise<ApiResponse<boolean>> => {
     const res = await axiosClient.delete<ApiResponse<boolean>>(`/me/notifications/${id}`, { params: { userId: getUserId() } });
-    return res.data;
-  },
-
-  broadcast: async (payload: BroadcastPayload): Promise<ApiResponse<BroadcastResultDto>> => {
-    const res = await axiosClient.post<ApiResponse<BroadcastResultDto>>('/admin/notifications/broadcast', payload);
     return res.data;
   },
 };

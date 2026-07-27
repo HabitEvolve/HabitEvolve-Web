@@ -15,6 +15,8 @@ export interface GetAuditLogsQuery {
   pageSize?: number;
   actorUserId?: number;
   action?: string;
+  targetType?: string;
+  targetId?: number;
 }
 
 export interface PagedAuditLogs {

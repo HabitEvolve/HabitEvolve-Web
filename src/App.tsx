@@ -31,6 +31,7 @@ import MentorLayout from "./layout/MentorLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import UserManagement from "./pages/UserManagement";
+import UserDetail from "./pages/UserDetail";
 import EditProfile from "./pages/EditProfile";
 import TargetRuleManagement from "./pages/TargetRuleManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
@@ -85,6 +86,7 @@ export default function App() {
               <Route index path="/home" element={<Home />} />
               <Route path="/admin/dashboard" element={<Navigate to="/home" replace />} />
               <Route path="/user-management" element={<UserManagement />} />
+              <Route path="/user-management/:userId" element={<UserDetail />} />
               <Route path="/target-rules" element={<TargetRuleManagement />} />
               <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
               <Route path="/questionnaires" element={<QuestionnaireManagement />} />

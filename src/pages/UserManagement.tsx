@@ -1,23 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Coins, Flame, ImageOff, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import Pagination from "../components/common/Pagination";
 import adminUserApi from "../api/adminUserApi";
-import playerDataApi from "../api/playerDataApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
-import { WalletDto, DailyStreakDto, UserProofDto } from "../types/userDetail.types";
 import { useAlert } from "../context/AlertContext";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
-type ModalType = "create" | "view" | "update" | "delete" | null;
+type ModalType = "create" | "update" | "delete" | null;
 const PAGE_SIZE = 10;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getInitials = (name: string) => name.slice(0, 2).toUpperCase();
 
-const formatDate = (dateStr: string) =>
+// Exported: reused by UserDetail.tsx (Admin 360 view) to keep date formatting consistent.
+export const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -37,7 +36,8 @@ const getAvatarGradient = (id: number) =>
   AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 
 // ── USER AVATAR ───────────────────────────────────────────────────────────────
-const UserAvatar = ({
+// Exported: reused by UserDetail.tsx (Admin 360 view header).
+export const UserAvatar = ({
   username,
   userId,
   avatarUrl,
@@ -116,7 +116,8 @@ const ROLE_STYLES: Record<string, string> = {
   MENTOR: "bg-purple-100 border-purple-400 text-purple-800",
   PLAYER: "bg-blue-100 border-blue-400 text-blue-800",
 };
-const RoleBadge = ({ role }: { role: string }) => (
+// Exported: reused by UserDetail.tsx (Admin 360 view).
+export const RoleBadge = ({ role }: { role: string }) => (
   <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 ${ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>
     {role}
   </span>
@@ -128,7 +129,8 @@ const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
   Banned:  { badge: "bg-red-100 border-red-400 text-red-800",       dot: "bg-red-500"   },
   Deleted: { badge: "bg-gray-100 border-gray-400 text-gray-500",    dot: "bg-gray-400"  },
 };
-const StatusBadge = ({ status }: { status: string }) => {
+// Exported: reused by UserDetail.tsx (Admin 360 view).
+export const StatusBadge = ({ status }: { status: string }) => {
   const s = STATUS_STYLES[status] ?? { badge: "bg-gray-100 border-gray-400 text-gray-600", dot: "bg-gray-400" };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${s.badge}`}>
@@ -207,168 +209,6 @@ const FormField = ({
 
 const inputCls = (accent = "orange") =>
   `w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-${accent}-300 bg-white placeholder:text-gray-400`;
-
-// ── PROOF STATUS BADGE (small, for the proof gallery) ───────────────────────
-const PROOF_STATUS_STYLES: Record<string, string> = {
-  Approved: "bg-green-100 border-green-400 text-green-800",
-  Rejected: "bg-red-100 border-red-400 text-red-800",
-  Pending: "bg-amber-100 border-amber-400 text-amber-800",
-  Suspicious: "bg-orange-100 border-orange-400 text-orange-800",
-  AiChecking: "bg-sky-100 border-sky-400 text-sky-800",
-};
-const ProofStatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${PROOF_STATUS_STYLES[status] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>
-    {status}
-  </span>
-);
-
-// ── MODAL: VIEW ───────────────────────────────────────────────────────────────
-const ViewUserContent = ({ user }: { user: UserItem }) => {
-  const { t } = useTranslation();
-
-  const [wallet, setWallet] = useState<WalletDto | null>(null);
-  const [streak, setStreak] = useState<DailyStreakDto | null>(null);
-  const [proofs, setProofs] = useState<UserProofDto[]>([]);
-  const [detailLoading, setDetailLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setDetailLoading(true);
-    Promise.allSettled([
-      playerDataApi.getWallet(user.userId),
-      playerDataApi.getDailyStreak(user.userId),
-      playerDataApi.getProofs(user.userId),
-    ]).then(([walletRes, streakRes, proofsRes]) => {
-      if (cancelled) return;
-      if (walletRes.status === "fulfilled" && walletRes.value.success) setWallet(walletRes.value.data ?? null);
-      if (streakRes.status === "fulfilled" && streakRes.value.success) setStreak(streakRes.value.data ?? null);
-      if (proofsRes.status === "fulfilled" && proofsRes.value.success) setProofs(proofsRes.value.data ?? []);
-    }).finally(() => { if (!cancelled) setDetailLoading(false); });
-    return () => { cancelled = true; };
-  }, [user.userId]);
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-4">
-        <UserAvatar username={user.username} userId={user.userId} size="lg" />
-        <div>
-          <p className="text-xl font-black text-gray-900">{user.username}</p>
-          <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
-          <div className="mt-2"><StatusBadge status={user.status} /></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: t("admin.userManagement.profileModal.userId"),        value: `#${user.userId}` },
-          { label: t("admin.userManagement.profileModal.emailVerified"), value: user.emailVerified ? t("admin.userManagement.profileModal.verified") : t("admin.userManagement.profileModal.unverified") },
-          { label: t("admin.userManagement.profileModal.createdAt"),     value: formatDate(user.createdAt) },
-          { label: t("admin.userManagement.profileModal.updatedAt"),     value: user.updatedAt ? formatDate(user.updatedAt) : "—" },
-        ].map(({ label, value }) => (
-          <div key={label} className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-3">
-            <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{label}</p>
-            <p className="text-sm font-semibold text-gray-800 mt-0.5">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div>
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">{t("admin.userManagement.profileModal.roles")}</p>
-        <div className="flex flex-wrap gap-2">
-          {user.roles.map((r) => <RoleBadge key={r} role={r} />)}
-        </div>
-      </div>
-
-      {/* ── Wallet + Streak ──────────────────────────────────────────────── */}
-      <div>
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">
-          {t("admin.userManagement.profileModal.walletStreak", "Wallet & Streak")}
-        </p>
-        {detailLoading ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm font-semibold py-3">
-            <Loader2 className="w-4 h-4 animate-spin" /> {t("admin.userManagement.loading")}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 flex items-center gap-2.5">
-              <Coins className="w-5 h-5 text-amber-600 shrink-0" />
-              <div>
-                <p className="text-[10px] font-black text-amber-500 uppercase tracking-wide">Gold</p>
-                <p className="text-sm font-black text-amber-800">{wallet ? wallet.totalGold.toLocaleString() : "—"}</p>
-              </div>
-            </div>
-            <div className="bg-fuchsia-50 border-2 border-fuchsia-200 rounded-2xl p-3">
-              <p className="text-[10px] font-black text-fuchsia-500 uppercase tracking-wide">Gems</p>
-              <p className="text-sm font-black text-fuchsia-800">{wallet ? wallet.gemsBalance.toLocaleString() : "—"}</p>
-            </div>
-            <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3">
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-wide">M-Gold</p>
-              <p className="text-sm font-black text-indigo-800">{wallet ? wallet.mentorGoldBalance.toLocaleString() : "—"}</p>
-            </div>
-            <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 flex items-center gap-2.5 col-span-2 sm:col-span-1">
-              <Flame className="w-5 h-5 text-orange-600 shrink-0" />
-              <div>
-                <p className="text-[10px] font-black text-orange-500 uppercase tracking-wide">
-                  {t("admin.userManagement.profileModal.currentStreak", "Current Streak")}
-                </p>
-                <p className="text-sm font-black text-orange-800">{streak ? `${streak.currentStreak}d` : "—"}</p>
-              </div>
-            </div>
-            <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-3">
-              <p className="text-[10px] font-black text-rose-500 uppercase tracking-wide">
-                {t("admin.userManagement.profileModal.bestStreak", "Best Streak")}
-              </p>
-              <p className="text-sm font-black text-rose-800">{streak ? `${streak.bestStreak}d` : "—"}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Proof Gallery ────────────────────────────────────────────────── */}
-      <div>
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">
-          {t("admin.userManagement.profileModal.recentProofs", "Recent Proofs")} {!detailLoading && `(${proofs.length})`}
-        </p>
-        {detailLoading ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm font-semibold py-3">
-            <Loader2 className="w-4 h-4 animate-spin" /> {t("admin.userManagement.loading")}
-          </div>
-        ) : proofs.length === 0 ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm font-medium py-3">
-            <ImageOff className="w-4 h-4" /> {t("admin.userManagement.profileModal.noProofs", "No proofs submitted yet.")}
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1">
-            {proofs.slice(0, 12).map((p) => {
-              const thumb = p.mediaUrls?.[0];
-              return (
-                <a
-                  key={p.proofId}
-                  href={thumb ?? undefined}
-                  target={thumb ? "_blank" : undefined}
-                  rel="noreferrer"
-                  className="relative aspect-square rounded-xl border-2 border-black overflow-hidden bg-gray-100 shadow-[2px_2px_0_0_#1A1D20] group"
-                  title={p.questTitle ?? p.proofType}
-                >
-                  {thumb ? (
-                    <img src={thumb} alt={p.questTitle ?? "proof"} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                      <ImageOff className="w-5 h-5 text-gray-300" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-1 left-1 right-1">
-                    <ProofStatusBadge status={p.status} />
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // ── MODAL: CREATE ─────────────────────────────────────────────────────────────
 const CreateUserForm = ({
@@ -660,7 +500,8 @@ const DeleteConfirm = ({
 // ── ROLES EDITOR (embedded inline in the Edit User modal) ──────────────────
 const ALL_ROLES = ["PLAYER", "MENTOR", "ADMIN"] as const;
 
-const RolesEditor = ({
+// Exported: reused by UserDetail.tsx (Admin 360 view, Overview tab — Role Management).
+export const RolesEditor = ({
   user,
   onRefresh,
 }: {
@@ -803,6 +644,7 @@ const SkeletonRow = () => (
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function UserManagement() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const TABLE_HEADERS = [
     t("admin.userManagement.table.user"),
@@ -1032,7 +874,7 @@ export default function UserManagement() {
                             title="View User"
                             bgColor="bg-sky-200"
                             hoverColor="hover:bg-sky-300"
-                            onClick={() => openModal("view", user)}
+                            onClick={() => navigate(`/user-management/${user.userId}`)}
                             icon={<EyeIcon />}
                           />
                           <ActionButton
@@ -1076,10 +918,6 @@ export default function UserManagement() {
       </div>
 
       {/* ── MODALS ────────────────────────────────────────────────────────────── */}
-      <GameModal isOpen={activeModal === "view"} onClose={closeModal} title={t("admin.userManagement.profileModal.title")} maxWidth="max-w-2xl">
-        {selectedUser && <ViewUserContent user={selectedUser} />}
-      </GameModal>
-
       <GameModal isOpen={activeModal === "create"} onClose={closeModal} title={t("admin.userManagement.form.createTitle")}>
         <CreateUserForm onClose={closeModal} onSuccess={handleMutationSuccess} />
       </GameModal>

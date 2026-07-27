@@ -7,6 +7,7 @@ import {
     UpdateUserStatusPayload,
     AssignRolePayload
 } from '../types/api.types';
+import { UserQuestsDto, UserStatsDto, UserActivityDto } from '../types/userWorkspace.types';
 
 const ADMIN_USER_URL = '/admin/users';
 
@@ -79,6 +80,33 @@ const adminUserApi = {
     // GET /admin/roles
     getRoles: async (): Promise<ApiResponse<string[]>> => {
         const response = await axiosClient.get<ApiResponse<string[]>>('/admin/roles');
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/quests — Admin 360 view, Tab "Current Quests"
+    getUserQuests: async (userId: number, recentCompletedLimit?: number): Promise<ApiResponse<UserQuestsDto>> => {
+        const response = await axiosClient.get<ApiResponse<UserQuestsDto>>(
+            `${ADMIN_USER_URL}/${userId}/quests`,
+            { params: { recentCompletedLimit } }
+        );
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/stats — Admin 360 view, Tab "Analytics"
+    getUserStats: async (userId: number, rangeDays?: number): Promise<ApiResponse<UserStatsDto>> => {
+        const response = await axiosClient.get<ApiResponse<UserStatsDto>>(
+            `${ADMIN_USER_URL}/${userId}/stats`,
+            { params: { rangeDays } }
+        );
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/history — Admin 360 view, Tab "Activity History"
+    getUserHistory: async (userId: number, limit?: number): Promise<ApiResponse<UserActivityDto[]>> => {
+        const response = await axiosClient.get<ApiResponse<UserActivityDto[]>>(
+            `${ADMIN_USER_URL}/${userId}/history`,
+            { params: { limit } }
+        );
         return response.data;
     },
 };

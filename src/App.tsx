@@ -145,7 +145,7 @@ export default function App() {
               <Route path="/mentor/live-arena" element={<LiveChallengeSession />} />
               <Route path="/mentor/question-bank" element={<QuestionBank />} />
             </Route>
-          </ >
+          </Route>
 
           <Route path="/unauthorized" element={<Unauthorized />} />
 

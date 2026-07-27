@@ -2,7 +2,7 @@ import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/api.types';
 import type {
     BossTemplateDto,
-    BossTemplatePayload,
+    CreateBossTemplatePayload,
     UpdateBossTemplatePayload,
     BossModePayload,
     WeeklyBossScheduleDto,
@@ -34,8 +34,8 @@ export const adminBossApi = {
         return res.data;
     },
 
-    // POST /admin/boss-templates
-    createTemplate: async (payload: BossTemplatePayload): Promise<ApiResponse<BossTemplateDto>> => {
+    // POST /admin/boss-templates — atomic: creates theme + all 3 modes (easy/normal/hard) in one call.
+    createTemplate: async (payload: CreateBossTemplatePayload): Promise<ApiResponse<BossTemplateDto>> => {
         const res = await axiosClient.post<ApiResponse<BossTemplateDto>>(BOSS_URL, payload);
         return res.data;
     },

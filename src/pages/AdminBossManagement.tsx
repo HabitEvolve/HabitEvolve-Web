@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Swords, Plus, Pencil, Settings2, X, Save,
   ChevronLeft, ChevronRight, Loader2, Filter, Users,
+  CalendarDays, Trash2, CalendarClock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
@@ -11,24 +12,31 @@ import PageMeta from "../components/common/PageMeta";
 import { adminBossApi } from "../api/adminBossApi";
 import type {
   BossTemplateDto,
-  BossTemplatePayload,
+  CreateBossTemplatePayload,
+  BossModeInput,
+  UpdateBossTemplatePayload,
   BossModePayload,
   BossTemplateStatus,
   BossModeType,
   PackageTier,
   RewardTierType,
+  WeeklyBossScheduleDto,
 } from "../types/adminBoss.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
 
-const EMPTY_TEMPLATE: BossTemplatePayload = {
-  themeName: "", description: "",
-  activeWeekStart: "", activeWeekEnd: "",
-  startTime: "MON 00:00", endTime: "SUN 23:59",
-  registrationWindow: "",
-  proofPolicy: "BY_SUBSCRIPTION",
-  rewardPolicy: "BY_MODE",
+// WebDemo prefill defaults for the 3 modes (B7). Admin only tweaks what they need.
+const DEFAULT_MODES: Record<BossModeType, BossModeInput> = {
+  Easy:   { minTier: "Free",    partyMin: 2, partyMax: 4,  bossHp: 500,
+            maxQuestPerMemberPerDay: 1, maxPartyQuestPerWeek: 4,
+            maxDamagePerQuest: 100, mGoldRewardCapPerQuest: 20,  rewardTier: "BRONZE" },
+  Normal: { minTier: "Basic",   partyMin: 3, partyMax: 8,  bossHp: 1200,
+            maxQuestPerMemberPerDay: 2, maxPartyQuestPerWeek: 8,
+            maxDamagePerQuest: 200, mGoldRewardCapPerQuest: 100, rewardTier: "SILVER" },
+  Hard:   { minTier: "Premium", partyMin: 5, partyMax: 20, bossHp: 3000,
+            maxQuestPerMemberPerDay: 5, maxPartyQuestPerWeek: 20,
+            maxDamagePerQuest: 500, mGoldRewardCapPerQuest: 300, rewardTier: "GOLD" },
 };
 
 const EMPTY_MODE: BossModePayload = {
@@ -57,8 +65,36 @@ const inputCls =
 const errMsg = (e: unknown) =>
   (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
 
+// Flatten the per-field `errors` from a 400 envelope (FluentValidation) into a string list.
+const errList = (e: unknown): string[] => {
+  const errs = (e as { response?: { data?: { errors?: unknown } } })?.response?.data?.errors;
+  if (Array.isArray(errs)) return errs.map(String);
+  if (errs && typeof errs === "object") return Object.values(errs as Record<string, unknown>).flat().map(String);
+  return [];
+};
+
+const MODE_ORDER: BossModeType[] = ["Easy", "Normal", "Hard"];
+
 const fmtDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+// Local-time YYYY-MM-DD (avoids the UTC shift of toISOString()).
+const toYmd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+// From any date within a week, return that week's Monday (start) and Sunday (end).
+// Boss week runs MON 00:00 → SUN 23:59.
+const weekBounds = (dateStr: string): { start: string; end: string } | null => {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (isNaN(d.getTime())) return null;
+  const day = d.getDay();                       // 0=Sun … 6=Sat
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return { start: toYmd(mon), end: toYmd(sun) };
+};
 
 const SI = (src: string) => (
   <img src={src} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
@@ -124,7 +160,52 @@ const Label = ({ children }: { children: React.ReactNode }) => (
   <p className="text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">{children}</p>
 );
 
+// ── MODE FIELDSET (one Easy/Normal/Hard block inside the atomic create form) ────
+const ModeFieldset = ({ mode, value, onChange }: {
+  mode: BossModeType;
+  value: BossModeInput;
+  onChange: (patch: Partial<BossModeInput>) => void;
+}) => {
+  const { t } = useTranslation();
+  const c = MODE_CFG[mode] ?? MODE_CFG.Easy;
+  const num = (k: keyof BossModeInput, min = 0) => (
+    <input type="number" min={min} value={value[k] as number}
+      onChange={e => onChange({ [k]: Number(e.target.value) } as Partial<BossModeInput>)}
+      className={inputCls} />
+  );
+  return (
+    <div className={`border-2 ${c.cardBorder} ${c.cardBg} rounded-2xl p-4 space-y-3`}>
+      <div className="flex items-center gap-2">
+        <img src={c.iconSrc} alt="" className="w-6 h-6 object-contain shrink-0" />
+        <ModeBadge mode={mode} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>{t("admin.bossManagement.modesModal.minTierLabel")}</Label>
+          <select value={value.minTier} onChange={e => onChange({ minTier: e.target.value as PackageTier })} className={inputCls}>
+            {(["Free", "Basic", "Premium"] as PackageTier[]).map(tt => <option key={tt} value={tt}>{tt}</option>)}
+          </select>
+        </div>
+        <div><Label>{t("admin.bossManagement.modesModal.bossHpLabel")}</Label>{num("bossHp", 1)}</div>
+        <div><Label>{t("admin.bossManagement.modesModal.partyMinLabel")}</Label>{num("partyMin", 0)}</div>
+        <div><Label>{t("admin.bossManagement.modesModal.partyMaxLabel")}</Label>{num("partyMax", 0)}</div>
+        <div><Label>{t("admin.bossManagement.modesModal.maxQuestsLabel")}</Label>{num("maxQuestPerMemberPerDay", 0)}</div>
+        <div><Label>{t("admin.bossManagement.modesModal.maxPartyQuestsLabel")}</Label>{num("maxPartyQuestPerWeek", 0)}</div>
+        <div><Label>{t("admin.bossManagement.modesModal.maxDamageLabel")}</Label>{num("maxDamagePerQuest", 0)}</div>
+        <div><Label>{t("admin.bossManagement.modesModal.goldCapLabel")}</Label>{num("mGoldRewardCapPerQuest", 0)}</div>
+      </div>
+      <div>
+        <Label>{t("admin.bossManagement.modesModal.rewardTierLabel")}</Label>
+        <input type="text" value={value.rewardTier} onChange={e => onChange({ rewardTier: e.target.value })}
+          placeholder="BRONZE / SILVER / GOLD" className={inputCls} />
+      </div>
+    </div>
+  );
+};
+
 // ── TEMPLATE FORM MODAL ───────────────────────────────────────────────────────
+// Create: atomic — theme + all 3 modes in one POST (B7). Edit: theme name/description only
+// (modes are edited separately via the "Configure Modes" panel).
 interface TemplateFormModalProps {
   template: BossTemplateDto | null;
   onClose: () => void;
@@ -135,39 +216,60 @@ interface TemplateFormModalProps {
 const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFormModalProps) => {
   const { t } = useTranslation();
   const isEdit = template !== null;
-  const [form, setForm] = useState<BossTemplatePayload>(() =>
-    isEdit ? {
-      themeName: template.themeName,
-      description: template.description ?? "",
-      activeWeekStart: template.activeWeekStart,
-      activeWeekEnd: template.activeWeekEnd,
-      startTime: template.startTime,
-      endTime: template.endTime,
-      registrationWindow: template.registrationWindow,
-      proofPolicy: template.proofPolicy,
-      rewardPolicy: template.rewardPolicy,
-    } : { ...EMPTY_TEMPLATE }
-  );
+
+  const [themeName, setThemeName] = useState(isEdit ? template.themeName : "");
+  const [description, setDescription] = useState(isEdit ? (template.description ?? "") : "");
+  const [modes, setModes] = useState<Record<BossModeType, BossModeInput>>(() => ({
+    Easy: { ...DEFAULT_MODES.Easy },
+    Normal: { ...DEFAULT_MODES.Normal },
+    Hard: { ...DEFAULT_MODES.Hard },
+  }));
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
 
-  const set = (k: keyof BossTemplatePayload, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const patchMode = (m: BossModeType, patch: Partial<BossModeInput>) =>
+    setModes(prev => ({ ...prev, [m]: { ...prev[m], ...patch } }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setFormError(null);
+    setFieldErrors([]);
+
+    if (!themeName.trim()) { setFormError("Theme name is required."); return; }
+    if (!isEdit) {
+      for (const m of MODE_ORDER) {
+        const md = modes[m];
+        if (md.bossHp <= 0) { setFormError(`${m}: Boss HP must be greater than 0.`); return; }
+        if (md.partyMax < md.partyMin) { setFormError(`${m}: Party Max must be ≥ Party Min.`); return; }
+        if (!md.rewardTier.trim()) { setFormError(`${m}: Reward Tier is required.`); return; }
+      }
+    }
+
+    setSaving(true);
     try {
       if (isEdit) {
-        await adminBossApi.updateTemplate(template.bossTemplateId, form);
-        onAlert({ type: "success", message: `"${form.themeName}" updated!` });
+        const payload: UpdateBossTemplatePayload = {
+          themeName: themeName.trim(),
+          description: description.trim(),
+        };
+        await adminBossApi.updateTemplate(template.bossTemplateId, payload);
+        onAlert({ type: "success", message: `"${themeName}" updated!` });
       } else {
-        await adminBossApi.createTemplate(form);
-        onAlert({ type: "success", message: `"${form.themeName}" created!` });
+        const payload: CreateBossTemplatePayload = {
+          themeName: themeName.trim(),
+          description: description.trim() || undefined,
+          easy: modes.Easy,
+          normal: modes.Normal,
+          hard: modes.Hard,
+        };
+        await adminBossApi.createTemplate(payload);
+        onAlert({ type: "success", message: `"${themeName}" created!` });
       }
       onSuccess();
       onClose();
     } catch (err) {
+      setFieldErrors(errList(err));
       setFormError(errMsg(err) ?? t("admin.bossManagement.modesModal.errorSaveTemplate"));
     } finally {
       setSaving(false);
@@ -176,7 +278,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
 
   return createPortal(
     <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div className={`modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full ${isEdit ? "max-w-xl" : "max-w-3xl"} max-h-[92vh] flex flex-col overflow-hidden`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-purple-50 dark:bg-purple-900/30 shrink-0 rounded-t-3xl">
           <div className="flex items-center gap-3">
@@ -198,58 +300,43 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label>{t("admin.bossManagement.form.themeNameLabel")}</Label>
-              <input required type="text" value={form.themeName} onChange={e => set("themeName", e.target.value)}
-                placeholder={t("admin.bossManagement.form.themeNamePlaceholder")} className={inputCls} />
+              <input required type="text" value={themeName} onChange={e => setThemeName(e.target.value)}
+                maxLength={200} placeholder={t("admin.bossManagement.form.themeNamePlaceholder")} className={inputCls} />
             </div>
             <div>
               <Label>{t("admin.bossManagement.form.descLabel")}</Label>
-              <textarea value={form.description} onChange={e => set("description", e.target.value)}
+              <textarea value={description} onChange={e => setDescription(e.target.value)}
                 rows={2} placeholder={t("admin.bossManagement.form.descPlaceholder")} className={`${inputCls} resize-none`} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>{t("admin.bossManagement.form.weekStartLabel")}</Label>
-                <input required type="date" value={form.activeWeekStart} onChange={e => set("activeWeekStart", e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <Label>{t("admin.bossManagement.form.weekEndLabel")}</Label>
-                <input required type="date" value={form.activeWeekEnd} onChange={e => set("activeWeekEnd", e.target.value)} className={inputCls} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>{t("admin.bossManagement.form.startTimeLabel")}</Label>
-                <input type="text" value={form.startTime} onChange={e => set("startTime", e.target.value)}
-                  placeholder={t("admin.bossManagement.form.startTimePlaceholder")} className={inputCls} />
-              </div>
-              <div>
-                <Label>{t("admin.bossManagement.form.endTimeLabel")}</Label>
-                <input type="text" value={form.endTime} onChange={e => set("endTime", e.target.value)}
-                  placeholder={t("admin.bossManagement.form.endTimePlaceholder")} className={inputCls} />
-              </div>
-            </div>
-            <div>
-              <Label>{t("admin.bossManagement.form.regWindowLabel")}</Label>
-              <input type="text" value={form.registrationWindow} onChange={e => set("registrationWindow", e.target.value)}
-                placeholder={t("admin.bossManagement.form.regWindowPlaceholder")} className={inputCls} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>{t("admin.bossManagement.form.proofPolicyLabel")}</Label>
-                <select value={form.proofPolicy} onChange={e => set("proofPolicy", e.target.value)} className={inputCls}>
-                  <option value="BY_SUBSCRIPTION">BY_SUBSCRIPTION</option>
-                </select>
-              </div>
-              <div>
-                <Label>{t("admin.bossManagement.form.rewardPolicyLabel")}</Label>
-                <select value={form.rewardPolicy} onChange={e => set("rewardPolicy", e.target.value)} className={inputCls}>
-                  <option value="BY_MODE">BY_MODE</option>
-                </select>
-              </div>
-            </div>
 
-            {formError && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{formError}</p>
+            {isEdit ? (
+              <div className="flex items-start gap-2 px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-2xl">
+                <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">{t("admin.bossManagement.form.editModesHint")}</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-2xl">
+                  <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
+                  <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">{t("admin.bossManagement.form.createModesHint")}</p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                  {MODE_ORDER.map(m => (
+                    <ModeFieldset key={m} mode={m} value={modes[m]} onChange={patch => patchMode(m, patch)} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {(formError || fieldErrors.length > 0) && (
+              <div className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2 space-y-1">
+                {formError && <p>{formError}</p>}
+                {fieldErrors.length > 0 && (
+                  <ul className="list-disc list-inside font-semibold">
+                    {fieldErrors.map((msg, i) => <li key={i}>{msg}</li>)}
+                  </ul>
+                )}
+              </div>
             )}
 
             <div className="flex gap-3 pt-2 border-t-2 border-gray-100 dark:border-gray-700">
@@ -616,6 +703,211 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
   );
 };
 
+// ── WEEKLY SCHEDULE CARD (B7 step ③) ──────────────────────────────────────────
+// Assigns a Published theme to a week. BE normalises weekDate → Monday, one theme per week.
+const ScheduleCard = ({ reloadKey, onAlert }: {
+  reloadKey: number;   // bump to refetch after a publish/archive elsewhere on the page
+  onAlert: (a: { type: "success" | "error"; message: string }) => void;
+}) => {
+  const { t } = useTranslation();
+  const [schedules, setSchedules] = useState<WeeklyBossScheduleDto[]>([]);
+  const [publishedTemplates, setPublishedTemplates] = useState<BossTemplateDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [templateId, setTemplateId] = useState<number | "">("");
+  const [weekDate, setWeekDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Published themes for the dropdown are fetched independently of the table's status filter.
+      const [schedRes, tplRes] = await Promise.all([
+        adminBossApi.getSchedules(false),
+        adminBossApi.getTemplates({ status: "Published" }),
+      ]);
+      if (schedRes.success && schedRes.data) setSchedules(schedRes.data);
+      if (tplRes.success && tplRes.data) setPublishedTemplates(tplRes.data);
+    } catch { /* silent — surfaced on next action */ }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load, reloadKey]);
+
+  const bounds = weekBounds(weekDate);
+
+  const handleAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!templateId || !weekDate) return;
+
+    // Overwrite guard: BE replaces the theme for a week that's already scheduled.
+    if (bounds) {
+      const clash = schedules.find(s => s.weekStart.slice(0, 10) === bounds.start && s.bossTemplateId !== templateId);
+      if (clash) {
+        const next = publishedTemplates.find(x => x.bossTemplateId === templateId)?.themeName ?? "";
+        if (!window.confirm(t("admin.bossManagement.schedule.overwriteConfirm", { current: clash.themeName, next }))) return;
+      }
+    }
+
+    setSaving(true);
+    try {
+      const res = await adminBossApi.setSchedule({ bossTemplateId: Number(templateId), weekDate });
+      if (res.success) {
+        onAlert({ type: "success", message: t("admin.bossManagement.schedule.assigned") });
+        setWeekDate("");
+        load();
+      } else {
+        onAlert({ type: "error", message: res.message ?? "Failed to schedule." });
+      }
+    } catch (err) {
+      onAlert({ type: "error", message: errMsg(err) ?? "Failed to schedule." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemove = async (id: number) => {
+    setRemovingId(id);
+    try {
+      await adminBossApi.deleteSchedule(id);
+      onAlert({ type: "success", message: t("admin.bossManagement.schedule.removed") });
+      load();
+    } catch (err) {
+      onAlert({ type: "error", message: errMsg(err) ?? "Failed to remove schedule." });
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-5 py-4 border-b-2 border-black bg-indigo-50 dark:bg-indigo-900/30">
+        <div className="w-9 h-9 rounded-2xl bg-indigo-300 dark:bg-indigo-700 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20] shrink-0">
+          <CalendarDays className="w-4 h-4" />
+        </div>
+        <div>
+          <h3 className="text-base font-black text-gray-900 dark:text-gray-100">{t("admin.bossManagement.schedule.title")}</h3>
+          <p className="text-xs font-medium text-gray-500">{t("admin.bossManagement.schedule.subtitle")}</p>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Assign form */}
+        {publishedTemplates.length === 0 ? (
+          <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-2xl">
+            <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
+            <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">{t("admin.bossManagement.schedule.noPublished")}</p>
+          </div>
+        ) : (
+          <form onSubmit={handleAssign} className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="flex-1">
+              <Label>{t("admin.bossManagement.schedule.themeLabel")}</Label>
+              <select value={templateId} onChange={e => setTemplateId(e.target.value ? Number(e.target.value) : "")} className={inputCls}>
+                <option value="">{t("admin.bossManagement.schedule.themePlaceholder")}</option>
+                {publishedTemplates.map(tpl => (
+                  <option key={tpl.bossTemplateId} value={tpl.bossTemplateId}>{tpl.themeName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <Label>{t("admin.bossManagement.schedule.weekLabel")}</Label>
+              <input
+                type="date"
+                value={weekDate}
+                onChange={e => setWeekDate(e.target.value)}
+                onClick={e => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
+                onFocus={e => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
+                className={`${inputCls} cursor-pointer`}
+              />
+              {bounds && (
+                <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-300 mt-1">
+                  {t("admin.bossManagement.schedule.weekPreview", { start: fmtDate(bounds.start), end: fmtDate(bounds.end) })}
+                </p>
+              )}
+            </div>
+            <button type="submit" disabled={saving || !templateId || !weekDate}
+              className={`${btnBase} justify-center bg-indigo-200 dark:bg-indigo-700 text-indigo-900 dark:text-white`}>
+              {saving ? <><Spinner size={13} /> {t("admin.bossManagement.schedule.assigning")}</> : <><Plus className="w-3.5 h-3.5" /> {t("admin.bossManagement.schedule.assign")}</>}
+            </button>
+          </form>
+        )}
+
+        {/* Schedule table */}
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+            <Spinner size={20} /><span className="text-sm font-bold">{t("admin.bossManagement.loading")}</span>
+          </div>
+        ) : schedules.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8 text-gray-400">
+            <CalendarClock className="w-10 h-10 opacity-30" />
+            <p className="text-sm font-bold">{t("admin.bossManagement.schedule.empty")}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-200 bg-gray-50/60 dark:bg-gray-800/40">
+                  {[
+                    t("admin.bossManagement.schedule.colWeek"),
+                    t("admin.bossManagement.schedule.colTheme"),
+                    t("admin.bossManagement.schedule.colStatus"),
+                    "",
+                  ].map((h, i) => (
+                    <th key={i} className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-gray-500">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {schedules.map(s => {
+                  const notPublished = s.bossStatus !== "Published";
+                  return (
+                    <tr key={s.weeklyBossScheduleId} className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10">
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{fmtDate(s.weekStart)} → {fmtDate(s.weekEnd)}</span>
+                          {s.isCurrentWeek && (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full border border-green-400 bg-green-100 text-green-700">
+                              {t("admin.bossManagement.schedule.thisWeek")}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-xs font-black text-gray-900 dark:text-gray-100">{s.themeName}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className={notPublished ? "inline-flex flex-col gap-0.5" : ""}>
+                          <StatusBadge status={s.bossStatus} />
+                          {notPublished && (
+                            <span className="text-[10px] font-bold text-red-600">{t("admin.bossManagement.schedule.notPublishedWarn")}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        {s.isCurrentWeek ? (
+                          <span className="text-[10px] font-black text-gray-400 uppercase">{t("admin.bossManagement.schedule.ongoing")}</span>
+                        ) : (
+                          <button
+                            onClick={() => handleRemove(s.weeklyBossScheduleId)}
+                            disabled={removingId === s.weeklyBossScheduleId}
+                            title={t("admin.bossManagement.schedule.remove")}
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-xl border-2 border-black bg-red-100 hover:bg-red-200 text-red-700 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all disabled:opacity-50">
+                            {removingId === s.weeklyBossScheduleId ? <Spinner size={13} /> : <Trash2 className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 interface StatusConfirmState {
   templateId: number;
@@ -640,6 +932,8 @@ export default function AdminBossManagement() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
+  // Bumped after create/publish/archive so the Schedule card refetches its Published-theme dropdown + rows.
+  const [scheduleReload, setScheduleReload] = useState(0);
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true);
@@ -656,6 +950,12 @@ export default function AdminBossManagement() {
       setLoading(false);
     }
   }, [statusFilter, page]);
+
+  // Refetch templates AND signal the schedule card to reload (used by create/publish/archive success).
+  const refreshAll = useCallback(() => {
+    fetchTemplates();
+    setScheduleReload(n => n + 1);
+  }, [fetchTemplates]);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
@@ -717,6 +1017,9 @@ export default function AdminBossManagement() {
             {loading ? <><Spinner size={13} /> {t("admin.bossManagement.loading")}</> : t("admin.bossManagement.refresh")}
           </button>
         </div>
+
+        {/* Weekly schedule */}
+        <ScheduleCard reloadKey={scheduleReload} onAlert={setAlert} />
 
         {/* Table */}
         <div className="bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
@@ -847,7 +1150,7 @@ export default function AdminBossManagement() {
           template={editingTemplate === "new" ? null : editingTemplate}
           onClose={() => setEditingTemplate(null)}
           onAlert={setAlert}
-          onSuccess={fetchTemplates}
+          onSuccess={refreshAll}
         />
       )}
       {modesTemplate && (
@@ -863,7 +1166,7 @@ export default function AdminBossManagement() {
           {...confirmStatus}
           onClose={() => setConfirmStatus(null)}
           onAlert={setAlert}
-          onSuccess={fetchTemplates}
+          onSuccess={refreshAll}
         />
       )}
     </>

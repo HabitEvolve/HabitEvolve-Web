@@ -47,19 +47,29 @@ export interface BossTemplateDto {
     modes: BossModeDto[];
 }
 
-// Payload for POST /admin/boss-templates (CreateBossTemplateCommand)
-export interface BossTemplatePayload {
+// ── ATOMIC CREATE (B7) ────────────────────────────────────────────────────────
+// POST /admin/boss-templates now creates the theme + ALL 3 modes in one request.
+// There is no "create empty theme then add modes" flow — a missing mode = nothing created.
+// One mode block inside the create payload. NOTE: no `mode` field (keyed by easy/normal/hard),
+// and `rewardTier` is a free-text display label (BRONZE/SILVER/GOLD…), not the enum.
+export interface BossModeInput {
+    minTier: PackageTier;
+    partyMin: number;
+    partyMax: number;
+    bossHp: number;
+    maxQuestPerMemberPerDay: number;
+    maxPartyQuestPerWeek: number;
+    maxDamagePerQuest: number;
+    mGoldRewardCapPerQuest: number;
+    rewardTier: string;
+}
+
+export interface CreateBossTemplatePayload {
     themeName: string;
     description?: string;
-    activeWeekStart: string;
-    activeWeekEnd: string;
-    startTime: string;
-    endTime: string;
-    registrationWindow: string;
-    lateRegistrationWindow?: string;
-    requestExceptionWindow?: string;
-    proofPolicy: ProofPolicyType;
-    rewardPolicy: RewardPolicyType;
+    easy: BossModeInput;
+    normal: BossModeInput;
+    hard: BossModeInput;
 }
 
 // Payload for PUT /admin/boss-templates/{id}

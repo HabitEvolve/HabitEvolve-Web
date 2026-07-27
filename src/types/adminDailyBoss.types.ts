@@ -21,6 +21,8 @@ export interface DailyBossPayload {
     icon?: string;
     hpMin: number;
     hpMax: number;
+    /** Goal category this boss is themed for. null = generic boss (matches every goal). */
+    categoryCode?: string | null;
 }
 
 // ── Sprite-sheet animation ──────────────────────────────────────────────────

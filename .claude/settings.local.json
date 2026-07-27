@@ -50,7 +50,8 @@
       "Bash(npm init *)",
       "Bash(npm install *)",
       "Bash(npx playwright *)",
-      "Bash(pkill -f \"vite\")"
+      "Bash(pkill -f \"vite\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/locales/en.json','utf8'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('src/locales/vi.json','utf8'\\)\\); console.log\\('both locale JSON valid'\\)\")"
     ]
   }
 }

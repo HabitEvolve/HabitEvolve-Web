@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus, Pencil, Trash2, X, Loader2,
-  ToggleLeft, ToggleRight, ShieldAlert, Wand2, ImageUp, Film,
+  ToggleLeft, ToggleRight, ShieldAlert, Wand2, Film,
 } from 'lucide-react';
 import { adminDailyBossApi } from '../api/adminDailyBossApi';
+import { adminGoalApi } from '../api/adminGoalApi';
 import type { DailyBossTemplateDto, DailyBossPayload } from '../types/adminDailyBoss.types';
+import type { GoalCategoryDto } from '../types/adminGoal.types';
 import DailyBossAnimationStudioModal from '../components/game/DailyBossAnimationStudioModal';
 
 /** icon field is either an emoji ("🐉") or a Supabase https:// URL uploaded via /icon. */
@@ -73,45 +75,25 @@ function ConfirmDeleteModal({ boss, onConfirm, onCancel, loading }: {
 }
 
 // ─── Boss form modal ──────────────────────────────────────────────────────────
-const EMPTY_FORM: DailyBossPayload = { name: '', description: '', icon: '', hpMin: 100, hpMax: 300 };
+const EMPTY_FORM: DailyBossPayload = { name: '', description: '', icon: '', hpMin: 100, hpMax: 300, categoryCode: null };
 
-function BossFormModal({ editing, onSave, onClose, onIconUploaded }: {
+function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose }: {
   editing: DailyBossTemplateDto | null;
+  categories: GoalCategoryDto[];
+  categoriesLoading: boolean;
   onSave(payload: DailyBossPayload): Promise<void>;
   onClose(): void;
-  onIconUploaded(updated: DailyBossTemplateDto): void;
 }) {
   const [form, setForm] = useState<DailyBossPayload>(
     editing
-      ? { name: editing.name, description: editing.description ?? '', icon: editing.icon ?? '', hpMin: editing.hpMin, hpMax: editing.hpMax }
+      ? { name: editing.name, description: editing.description ?? '', icon: editing.icon ?? '', hpMin: editing.hpMin, hpMax: editing.hpMax, categoryCode: editing.categoryCode }
       : EMPTY_FORM
   );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
-  const [uploadingIcon, setUploadingIcon] = useState(false);
-  const iconFileRef = useRef<HTMLInputElement | null>(null);
 
   const set = <K extends keyof DailyBossPayload>(k: K, v: DailyBossPayload[K]) =>
     setForm(p => ({ ...p, [k]: v }));
-
-  const handleIconFile = async (file: File | null) => {
-    if (!file || !editing) return;
-    setUploadingIcon(true); setErr('');
-    try {
-      const res = await adminDailyBossApi.uploadIcon(editing.dailyBossTemplateId, file);
-      if (res.success && res.data) {
-        set('icon', res.data.icon ?? '');
-        onIconUploaded(res.data);
-      } else {
-        setErr(res.message ?? 'Upload icon thất bại.');
-      }
-    } catch (ex: any) {
-      setErr(ex?.response?.data?.message ?? 'Upload icon thất bại.');
-    } finally {
-      setUploadingIcon(false);
-      if (iconFileRef.current) iconFileRef.current.value = '';
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +108,7 @@ function BossFormModal({ editing, onSave, onClose, onIconUploaded }: {
         icon: form.icon?.trim() || undefined,
         hpMin: form.hpMin,
         hpMax: form.hpMax,
+        categoryCode: form.categoryCode || null,
       });
     } catch (err) {
       setErr((err as any)?.message ?? 'Failed to save.');
@@ -166,33 +149,12 @@ function BossFormModal({ editing, onSave, onClose, onIconUploaded }: {
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Icon</label>
-                <div className="flex gap-1.5">
-                  <input
-                    value={form.icon ?? ''}
-                    onChange={e => set('icon', e.target.value)}
-                    className={inputCls}
-                    placeholder="🐉"
-                  />
-                  <input
-                    ref={iconFileRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
-                    className="hidden"
-                    onChange={e => handleIconFile(e.target.files?.[0] ?? null)}
-                  />
-                  <button
-                    type="button"
-                    title={editing ? 'Upload ảnh icon' : 'Lưu boss trước khi upload ảnh icon'}
-                    disabled={!editing || uploadingIcon}
-                    onClick={() => iconFileRef.current?.click()}
-                    className={`${btnBase} px-2.5 shrink-0 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200`}
-                  >
-                    {uploadingIcon ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageUp className="w-4 h-4" />}
-                  </button>
-                </div>
-                {isIconUrl(form.icon) && (
-                  <p className="text-[11px] text-gray-400 mt-1 truncate">Đang dùng ảnh upload — gõ đè để quay lại emoji.</p>
-                )}
+                <input
+                  value={form.icon ?? ''}
+                  onChange={e => set('icon', e.target.value)}
+                  className={inputCls}
+                  placeholder="🐉"
+                />
               </div>
             </div>
 
@@ -205,6 +167,28 @@ function BossFormModal({ editing, onSave, onClose, onIconUploaded }: {
                 className={inputCls}
                 placeholder="Optional lore or notes"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Category</label>
+              <select
+                value={form.categoryCode ?? ''}
+                onChange={e => set('categoryCode', e.target.value || null)}
+                disabled={categoriesLoading}
+                className={inputCls}
+              >
+                <option value="">— Generic (mọi goal) —</option>
+                {categories.map(c => (
+                  <option key={c.categoryId} value={c.categoryCode}>
+                    {c.iconCode ? `${c.iconCode} ` : ''}{c.categoryName}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">
+                {categoriesLoading
+                  ? 'Đang tải danh mục…'
+                  : 'Boss hợp chủ đề sẽ ưu tiên cho player theo goal đó; Generic khớp mọi goal.'}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -243,8 +227,9 @@ function BossFormModal({ editing, onSave, onClose, onIconUploaded }: {
 }
 
 // ─── Boss card ────────────────────────────────────────────────────────────────
-function BossCard({ boss, onEdit, onToggle, onDelete, onOpenAnimation, toggling }: {
+function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimation, toggling }: {
   boss: DailyBossTemplateDto;
+  categories: GoalCategoryDto[];
   onEdit(): void;
   onToggle(): void;
   onDelete(): void;
@@ -252,6 +237,9 @@ function BossCard({ boss, onEdit, onToggle, onDelete, onOpenAnimation, toggling 
   toggling: boolean;
 }) {
   const hasAnimation = boss.totalFrames > 0;
+  // Resolve friendly category label; a code with no matching category is likely a typo (A7.5).
+  const cat = boss.categoryCode ? categories.find(c => c.categoryCode === boss.categoryCode) : null;
+  const categoryUnknown = !!boss.categoryCode && !cat;
   return (
     <div className={`relative border-4 rounded-3xl p-5 shadow-[4px_4px_0_0_#1A1D20] bg-white dark:bg-gray-800 transition-all ${boss.isActive ? 'border-orange-500' : 'border-black dark:border-gray-600'}`}>
       {/* Status badge */}
@@ -275,6 +263,22 @@ function BossCard({ boss, onEdit, onToggle, onDelete, onOpenAnimation, toggling 
           {boss.description && (
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{boss.description}</p>
           )}
+          <span
+            title={categoryUnknown ? `Category code "${boss.categoryCode}" khớp không danh mục nào — có thể gõ sai.` : undefined}
+            className={`inline-block mt-1 text-[10px] font-black px-2 py-0.5 rounded-full border ${
+              categoryUnknown
+                ? 'bg-amber-100 border-amber-400 text-amber-700 dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-300'
+                : boss.categoryCode
+                  ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300'
+                  : 'bg-gray-100 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-500'
+            }`}
+          >
+            {categoryUnknown
+              ? `⚠ ${boss.categoryCode}`
+              : cat
+                ? `${cat.iconCode ? `${cat.iconCode} ` : ''}${cat.categoryName}`
+                : 'Generic'}
+          </span>
         </div>
       </div>
 
@@ -345,6 +349,8 @@ export default function AdminDailyBossManagement() {
   const [delLoading, setDelLoading] = useState(false);
   const [toggling, setToggling] = useState<number | null>(null);
   const [animBoss, setAnimBoss] = useState<DailyBossTemplateDto | null>(null);
+  const [categories, setCategories] = useState<GoalCategoryDto[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const flash = (type: 'success' | 'error', msg: string) => {
@@ -363,6 +369,18 @@ export default function AdminDailyBossManagement() {
   }, [activeOnly]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Category dropdown source (A7.2) — loaded once, active goal categories only.
+  useEffect(() => {
+    (async () => {
+      setCategoriesLoading(true);
+      try {
+        const res = await adminGoalApi.getCategories({ activeOnly: true });
+        if (res.success) setCategories(res.data ?? []);
+      } catch { /* dropdown just falls back to Generic-only */ }
+      finally { setCategoriesLoading(false); }
+    })();
+  }, []);
 
   const handleSave = async (payload: DailyBossPayload) => {
     if (formModal?.editing) {
@@ -473,6 +491,7 @@ export default function AdminDailyBossManagement() {
             <BossCard
               key={boss.dailyBossTemplateId}
               boss={boss}
+              categories={categories}
               onEdit={() => setFormModal({ editing: boss })}
               onToggle={() => handleToggle(boss)}
               onDelete={() => setDelBoss(boss)}
@@ -487,9 +506,10 @@ export default function AdminDailyBossManagement() {
       {formModal !== null && (
         <BossFormModal
           editing={formModal.editing}
+          categories={categories}
+          categoriesLoading={categoriesLoading}
           onSave={handleSave}
           onClose={() => setFormModal(null)}
-          onIconUploaded={() => { flash('success', 'Icon updated.'); load(); }}
         />
       )}
       {delBoss && (

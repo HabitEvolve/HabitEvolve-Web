@@ -208,7 +208,12 @@ export default function LiveChallengeSession() {
                                 {leaderboard.map((p, i) => (
                                     <div key={p.userId} className="flex justify-between text-sm font-bold">
                                         <span>#{p.finalRank ?? i + 1} {p.username}</span>
-                                        <span>{p.score} pts</span>
+                                        <span>
+                                            {p.score} pts
+                                            {p.mGoldAwarded > 0 && (
+                                                <span className="ml-2 text-amber-600">+{p.mGoldAwarded} M-Gold</span>
+                                            )}
+                                        </span>
                                     </div>
                                 ))}
                             </div>

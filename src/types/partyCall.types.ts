@@ -23,6 +23,7 @@ export interface LiveSessionParticipantDto {
     username: string;
     score: number;
     finalRank: number | null;
+    mGoldAwarded: number;
 }
 
 export interface LiveChallengeDto {

@@ -47,6 +47,11 @@ const navItems: NavItem[] = [
     path: "/daily-boss",
   },
   {
+    icon: <GI src="/icon/Social/Guilded/64w/Guilded 1st 64px.png" alt="Party Management" />,
+    nameKey: "nav.admin.party",
+    path: "/admin/parties",
+  },
+  {
     icon: <GI src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="Quest Library" />,
     nameKey: "nav.admin.questLibrary",
     path: "/quest-library",

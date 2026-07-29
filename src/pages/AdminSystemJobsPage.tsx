@@ -187,7 +187,6 @@ export default function AdminSystemJobsPage() {
                 <div className="border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
                     <div className="bg-[#fde8c8] dark:bg-amber-900/30 px-5 py-4 border-b-4 border-black">
                         <h3 className="font-black text-gray-900 dark:text-gray-100">Run a Specific Job</h3>
-                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mt-0.5">POST /api/admin/jobs/run/{"{jobName}"}</p>
                     </div>
                     <div className="bg-white dark:bg-gray-900 px-5 py-5 space-y-4">
                         {knownJobNames.length > 0 && (

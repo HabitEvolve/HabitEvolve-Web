@@ -18,6 +18,7 @@ const EMPTY_ITEM: CreateCombatItemPayload = {
     code: "",
     name: "",
     iconUrl: "",
+    description: "",
     price: 0,
     currency: "GOLD",
     damageBonus: 0,
@@ -82,6 +83,7 @@ const CombatItemFormModal = ({ item, onClose, onSuccess }: CombatItemFormModalPr
                 code: item.code,
                 name: item.name,
                 iconUrl: item.iconUrl ?? "",
+                description: item.description ?? "",
                 price: item.price,
                 currency: item.currency,
                 damageBonus: item.damageBonus,
@@ -110,6 +112,7 @@ const CombatItemFormModal = ({ item, onClose, onSuccess }: CombatItemFormModalPr
                 await adminCombatItemApi.updateCombatItem(item.combatItemDefinitionId, {
                     name: form.name,
                     iconUrl: form.iconUrl,
+                    description: form.description,
                     price: form.price,
                     damageBonus: form.damageBonus,
                     isDefault: form.isDefault,
@@ -201,6 +204,12 @@ const CombatItemFormModal = ({ item, onClose, onSuccess }: CombatItemFormModalPr
                                 <input type="text" value={form.iconUrl} onChange={e => set("iconUrl", e.target.value)}
                                     placeholder="https://…" className={inputCls} />
                             </div>
+                        </div>
+                        <div>
+                            <Label>Description</Label>
+                            <textarea value={form.description} onChange={e => set("description", e.target.value)}
+                                placeholder="Shown to players on the item detail sheet (optional, max 1000 chars)."
+                                rows={3} maxLength={1000} className={`${inputCls} resize-none`} />
                         </div>
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                             <input type="checkbox" checked={form.isDefault} onChange={e => set("isDefault", e.target.checked)} className="w-4 h-4" />

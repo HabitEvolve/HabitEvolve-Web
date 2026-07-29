@@ -10,15 +10,29 @@ import { useTableFilters } from "../hooks/useTableFilters";
 import { TableFilterBar } from "../components/common/TableFilterBar";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
-  PracticalTaskDto,
+  AdminTaskTemplateDto as PracticalTaskDto,
   PracticalTaskPayload,
   VerificationType,
-} from "../types/adminPracticalTask.types";
-import type { GoalDto } from "../types/adminGoal.types";
+  VerificationTag,
+  CvQuestType,
+  GoalDto,
+} from "../types/adminGoal.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
+// NOTE: the previous import here pointed at "../types/adminPracticalTask.types",
+// which does not (and never did) export PracticalTaskDto/PracticalTaskPayload/
+// VerificationType — that's why this page is listed in tsconfig.app.json's
+// "exclude" (along with AdminGoalManagement.tsx). The real DTOs this page's API
+// client (adminPracticalTaskApi.ts) actually uses live in adminGoal.types.ts as
+// AdminTaskTemplateDto/PracticalTaskPayload — aliased above so the rest of this
+// file didn't need a mass rename. Fixed as a byproduct of wiring the 3 new
+// fields below; the page's separate pre-existing data-fetching signature bugs
+// (getGoals/getTasks argument shapes) are out of scope for this change.
 const PAGE_SIZE = 10;
 const VERIFICATION_TYPES: VerificationType[] = ["GPS", "PHOTO", "NONE"];
+const VERIFICATION_TAGS: VerificationTag[] = ["FACE", "ITEM", "ACTION"];
+const CV_QUEST_TYPES: CvQuestType[] = ["running", "drinking_water", "sleeping", "reading", "cooking", "exercise"];
+const HOW_TO_SUBMIT_MAX = 500;
 
 // ── FILTER TYPES ──────────────────────────────────────────────────────────────
 type TaskFilters = { search: string; isActive: string };
@@ -231,8 +245,11 @@ const TaskFormModal = ({ goalId, goalName, editing, onClose, onSuccess }: TaskFo
   const [form, setForm] = useState<Omit<PracticalTaskPayload, "goalId">>({
     title: editing?.title ?? "",
     description: editing?.description ?? "",
-    verificationType: editing?.verificationType ?? "NONE",
+    verificationType: (editing?.verificationType as VerificationType) ?? "NONE",
     isActive: editing?.isActive ?? true,
+    howToSubmit: editing?.howToSubmit ?? "",
+    verificationTags: editing?.verificationTags ?? "",
+    cvQuestType: editing?.cvQuestType ?? "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -240,11 +257,26 @@ const TaskFormModal = ({ goalId, goalName, editing, onClose, onSuccess }: TaskFo
   const setField = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
     setForm(p => ({ ...p, [k]: v }));
 
+  const selectedTags = (form.verificationTags ?? "")
+    .split(",").map(s => s.trim()).filter(Boolean) as VerificationTag[];
+  const toggleTag = (tag: VerificationTag) => {
+    const next = selectedTags.includes(tag)
+      ? selectedTags.filter(t => t !== tag)
+      : [...selectedTags, tag];
+    setField("verificationTags", next.join(","));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
-    const payload: PracticalTaskPayload = { goalId, ...form };
+    const payload: PracticalTaskPayload = {
+      goalId,
+      ...form,
+      howToSubmit: form.howToSubmit?.trim() || undefined,
+      verificationTags: form.verificationTags || undefined,
+      cvQuestType: form.cvQuestType || undefined,
+    };
     try {
       if (editing) {
         await adminPracticalTaskApi.updateTask(editing.taskId, payload);
@@ -310,6 +342,58 @@ const TaskFormModal = ({ goalId, goalName, editing, onClose, onSuccess }: TaskFo
               <option key={vt} value={vt}>
                 {vt === "GPS" ? "📍 GPS — Location check-in" : vt === "PHOTO" ? "📷 PHOTO — Photo proof" : "— NONE — No verification"}
               </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField
+          label="How To Submit"
+          hint={`${(form.howToSubmit ?? "").length}/${HOW_TO_SUBMIT_MAX} — player-facing submission instructions.`}
+        >
+          <textarea
+            rows={3}
+            maxLength={HOW_TO_SUBMIT_MAX}
+            value={form.howToSubmit ?? ""}
+            onChange={e => setField("howToSubmit", e.target.value)}
+            placeholder="e.g. Take a clear photo of your completed workout log…"
+            className={`${inputCls} resize-none`}
+          />
+        </FormField>
+
+        <FormField
+          label="Verification Tags"
+          hint="Signals sent to AI verification. FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only."
+        >
+          <div className="flex flex-wrap gap-3">
+            {VERIFICATION_TAGS.map(tag => (
+              <label
+                key={tag}
+                className="inline-flex items-center gap-2 px-3 py-2 border-2 border-black rounded-2xl bg-white text-sm font-bold cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedTags.includes(tag)}
+                  onChange={() => toggleTag(tag)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                {tag}
+              </label>
+            ))}
+          </div>
+        </FormField>
+
+        <FormField
+          label="CV Quest Type"
+          hint="Optional — tells the external CV service exactly which detector to use instead of guessing from the title."
+        >
+          <select
+            value={form.cvQuestType ?? ""}
+            onChange={e => setField("cvQuestType", e.target.value)}
+            className={inputCls}
+          >
+            <option value="">— None —</option>
+            {CV_QUEST_TYPES.map(ct => (
+              <option key={ct} value={ct}>{ct}</option>
             ))}
           </select>
         </FormField>

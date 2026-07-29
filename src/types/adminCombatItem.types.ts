@@ -16,6 +16,7 @@ export interface CombatItemDefinitionDto {
     code: string;
     name: string;
     iconUrl: string | null;
+    description: string | null;
     price: number;
     currency: string;
     damageBonus: number;
@@ -29,6 +30,7 @@ export interface CreateCombatItemPayload {
     code: string;
     name: string;
     iconUrl?: string;
+    description?: string;
     price: number;
     currency: string;
     damageBonus: number;
@@ -40,6 +42,7 @@ export interface CreateCombatItemPayload {
 export interface UpdateCombatItemPayload {
     name: string;
     iconUrl?: string;
+    description?: string;
     price: number;
     damageBonus: number;
     isDefault: boolean;

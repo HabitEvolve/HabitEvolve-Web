@@ -115,6 +115,19 @@ export interface GoalQuestionnaireDto {
 // BE: AdminTaskTemplateDto — simplified CRUD view returned by /api/admin/practical-task-templates
 // ==========================================
 
+// Matches BE VerificationType options exposed on this simplified admin CRUD view
+// (GPS check-in, photo proof, or no verification at all).
+export type VerificationType = "GPS" | "PHOTO" | "NONE";
+
+// Matches BE VerificationGuidance.ValidTags — CSV combination of these on VerificationTags.
+// FACE blocks proof submission until the player has a verified portrait; ITEM/ACTION are
+// informational hints (for the player and as AI request context) only.
+export type VerificationTag = "FACE" | "ITEM" | "ACTION";
+
+// Matches BE VerificationGuidance.ValidCvQuestTypes — the fixed vocabulary the external CV
+// service supports. When set, it's used instead of guessing the quest type from the title.
+export type CvQuestType = "running" | "drinking_water" | "sleeping" | "reading" | "cooking" | "exercise";
+
 export interface AdminTaskTemplateDto {
     taskId: number;
     goalId: number;
@@ -123,16 +136,24 @@ export interface AdminTaskTemplateDto {
     verificationType: string;
     isActive: boolean;
     createdAt: string;
+    // Player-facing submission instructions (max 500 chars).
+    howToSubmit: string | null;
+    // CSV of VerificationTag values, e.g. "FACE,ITEM".
+    verificationTags: string | null;
+    cvQuestType: string | null;
 }
 
-// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?)
-// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive)
+// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, CvQuestType?)
+// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, CvQuestType?)
 export interface PracticalTaskPayload {
     goalId?: number;     // required only on create
     title: string;
     description?: string;
     verificationType: string;
     isActive: boolean;
+    howToSubmit?: string;
+    verificationTags?: string;
+    cvQuestType?: string;
 }
 
 // ==========================================

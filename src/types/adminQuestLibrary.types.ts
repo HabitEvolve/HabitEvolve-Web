@@ -8,6 +8,15 @@ export type QuestLibraryStatus = "Draft" | "Published" | "Archived";
 export type RepeatRule = "Daily" | "Weekly" | "Monthly" | "OneTime" | string;
 export type QuestAction = "publish" | "archive";
 
+// Matches BE VerificationGuidance.ValidTags — CSV combination of these on VerificationTags.
+// FACE blocks proof submission until the player has a verified portrait; ITEM/ACTION are
+// informational hints (for the player and as AI request context) only.
+export type VerificationTag = "FACE" | "ITEM" | "ACTION";
+
+// Matches BE VerificationGuidance.ValidCvQuestTypes — the fixed vocabulary the external CV
+// service supports. When set, it's used instead of guessing the quest type from the title.
+export type CvQuestType = "running" | "drinking_water" | "sleeping" | "reading" | "cooking" | "exercise";
+
 // Matches BE SystemQuestTemplateDto (AdminQuestLibraryController)
 export interface QuestLibraryItemDto {
     templateId: number;
@@ -27,6 +36,11 @@ export interface QuestLibraryItemDto {
     goalIds: number[];
     createdAt: string;
     updatedAt: string | null;
+    // Player-facing submission instructions (max 500 chars).
+    howToSubmit: string | null;
+    // CSV of VerificationTag values, e.g. "FACE,ITEM".
+    verificationTags: string | null;
+    cvQuestType: string | null;
 }
 
 // POST /api/admin/quest-library — CreateQuestTemplateCommand
@@ -44,6 +58,9 @@ export interface CreateQuestLibraryItemPayload {
     goalIds: number[];
     verificationPolicyId?: number;
     isActive?: boolean;
+    howToSubmit?: string;
+    verificationTags?: string;
+    cvQuestType?: string;
 }
 
 // PUT /api/admin/quest-library/{id} — UpdateQuestTemplateCommand
@@ -57,6 +74,9 @@ export interface UpdateQuestLibraryItemPayload {
     proofType: string;
     repeatRule: RepeatRule;
     verificationPolicyId?: number;
+    howToSubmit?: string;
+    verificationTags?: string;
+    cvQuestType?: string;
 }
 
 // PATCH /api/admin/quest-library/{id}/status — ChangeQuestStatusRequest

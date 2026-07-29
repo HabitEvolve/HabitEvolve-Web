@@ -13,6 +13,8 @@ import type {
     ActiveSubscriptionDto,
     CreateMentorQuestRequest,
     CreatePartyQuestRequest,
+    VerificationTag,
+    CvQuestType,
 } from "../../../types/mentor.types";
 
 // Orange is this tab's signature accent (Quest Forge), consistent with the
@@ -24,6 +26,9 @@ const chipInactive = `bg-gray-25 dark:bg-gray-800 text-gray-700 ${shadowSm} hove
 const chipActive = "bg-orange-500 text-white shadow-none translate-x-0.5 translate-y-0.5";
 
 const DIFFICULTIES: QuestDifficulty[] = ["EASY", "NORMAL", "HARD"];
+const VERIFICATION_TAGS: VerificationTag[] = ["FACE", "ITEM", "ACTION"];
+const CV_QUEST_TYPES: CvQuestType[] = ["running", "drinking_water", "sleeping", "reading", "cooking", "exercise"];
+const HOW_TO_SUBMIT_MAX = 500;
 const DIFF_STYLE: Record<QuestDifficulty, { active: string; inactive: string; label: string }> = {
     EASY:   { active: "bg-success-400 text-success-900", inactive: "bg-success-50 dark:bg-success-500/10 text-success-700 dark:text-success-300", label: "Easy" },
     NORMAL: { active: "bg-warning-400 text-warning-900", inactive: "bg-warning-50 dark:bg-warning-500/10 text-warning-700 dark:text-warning-300", label: "Normal" },
@@ -40,6 +45,9 @@ const emptyForm = {
     proofType: "PHOTO",
     isMandatory: false,
     deadlineAt: "",
+    howToSubmit: "",
+    verificationTags: "",
+    cvQuestType: "",
 };
 
 type AssignMode = "individual" | "party";
@@ -232,6 +240,13 @@ export default function QuestForgeTab() {
         setFormError(null);
     };
 
+    const selectedTags = (form.verificationTags || "")
+        .split(",").map((s) => s.trim()).filter(Boolean) as VerificationTag[];
+    const toggleTag = (tag: VerificationTag) => {
+        const next = selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag];
+        handleField("verificationTags", next.join(","));
+    };
+
     const buildDeadline = () => {
         if (form.deadlineAt) return new Date(form.deadlineAt).toISOString();
         const d = new Date();
@@ -275,6 +290,9 @@ export default function QuestForgeTab() {
                     proofType: form.proofType,
                     isMandatory: form.isMandatory,
                     deadlineAt: buildDeadline(),
+                    howToSubmit: form.howToSubmit.trim() || undefined,
+                    verificationTags: form.verificationTags || undefined,
+                    cvQuestType: form.cvQuestType || undefined,
                 };
                 const res = await mentorApi.createMentorQuest(payload);
                 if (res.success) {
@@ -297,6 +315,9 @@ export default function QuestForgeTab() {
                     proofType: form.proofType,
                     isMandatory: form.isMandatory,
                     deadlineAt: buildDeadline(),
+                    howToSubmit: form.howToSubmit.trim() || undefined,
+                    verificationTags: form.verificationTags || undefined,
+                    cvQuestType: form.cvQuestType || undefined,
                 };
                 const res = await mentorApi.createPartyQuest(payload);
                 if (res.success && res.data) {
@@ -535,6 +556,61 @@ export default function QuestForgeTab() {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                                {t("mentor.questCommand.forge.howToSubmitLabel")}
+                                <span className="ml-1.5 text-[10px] font-normal normal-case text-gray-400">
+                                    {form.howToSubmit.length}/{HOW_TO_SUBMIT_MAX}
+                                </span>
+                            </label>
+                            <textarea
+                                value={form.howToSubmit}
+                                onChange={(e) => handleField("howToSubmit", e.target.value)}
+                                placeholder={t("mentor.questCommand.forge.howToSubmitPlaceholder")}
+                                rows={2}
+                                maxLength={HOW_TO_SUBMIT_MAX}
+                                className={`${inputCls} resize-none`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                                {t("mentor.questCommand.forge.verificationTagsLabel")}
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                {VERIFICATION_TAGS.map((tag) => {
+                                    const isSelected = selectedTags.includes(tag);
+                                    return (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => toggleTag(tag)}
+                                            className={`px-3 py-1.5 border-[3px] ${inkBorder} rounded-full text-xs font-black transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
+                                        >
+                                            {tag}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-medium mt-1.5">{t("mentor.questCommand.forge.verificationTagsHint")}</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                                {t("mentor.questCommand.forge.cvQuestTypeLabel")}
+                            </label>
+                            <select
+                                value={form.cvQuestType}
+                                onChange={(e) => handleField("cvQuestType", e.target.value)}
+                                className={inputCls}
+                            >
+                                <option value="">{t("mentor.questCommand.forge.cvQuestTypeNone")}</option>
+                                {CV_QUEST_TYPES.map((ct) => (
+                                    <option key={ct} value={ct}>{ct}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <label className="flex items-center gap-3 cursor-pointer select-none">

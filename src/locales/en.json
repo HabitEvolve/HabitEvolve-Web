@@ -396,7 +396,13 @@
         "previewNoDescription": "No description yet.",
         "previewMandatoryBadge": "Mandatory",
         "previewDeadlineNone": "No deadline set",
-        "selectMemberAria": "Target {{username}}"
+        "selectMemberAria": "Target {{username}}",
+        "howToSubmitLabel": "How To Submit",
+        "howToSubmitPlaceholder": "Player-facing submission instructions…",
+        "verificationTagsLabel": "Verification Tags",
+        "verificationTagsHint": "FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.",
+        "cvQuestTypeLabel": "CV Quest Type",
+        "cvQuestTypeNone": "— None —"
       }
     },
     "subscriptionWallet": {
@@ -512,7 +518,11 @@
         "comparisonPlayerNote": "Player note",
         "comparisonClose": "Close",
         "mascotEmptyTitle": "All caught up!",
-        "mascotEmptySubtitle": "No proof pending — time for a snack. 🍩"
+        "mascotEmptySubtitle": "No proof pending — time for a snack. 🍩",
+        "aiAssessment": "AI assessment",
+        "aiConfidenceLabel": "Confidence",
+        "aiNoReasoning": "No reasoning provided.",
+        "aiAssistNotice": "AI assists — a mentor still decides."
       }
     },
     "partyReminder": {
@@ -1092,6 +1102,7 @@
         "resolving": "Resolving…",
         "resolve": "Resolve Case",
         "aiNotUsed": "AI was not used to assess this proof.",
+        "aiReasoningLabel": "AI Reasoning",
         "submittedBy": "Submitted by"
       }
     },

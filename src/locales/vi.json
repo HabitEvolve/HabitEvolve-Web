@@ -396,7 +396,13 @@
         "previewNoDescription": "Chưa có mô tả.",
         "previewMandatoryBadge": "Bắt Buộc",
         "previewDeadlineNone": "Chưa đặt hạn chót",
-        "selectMemberAria": "Nhắm mục tiêu {{username}}"
+        "selectMemberAria": "Nhắm mục tiêu {{username}}",
+        "howToSubmitLabel": "Cách Nộp Bài",
+        "howToSubmitPlaceholder": "Hướng dẫn nộp bài dành cho người chơi…",
+        "verificationTagsLabel": "Thẻ Xác Minh",
+        "verificationTagsHint": "FACE sẽ chặn nộp bài cho đến khi người chơi xác minh ảnh chân dung; ITEM/ACTION chỉ mang tính gợi ý.",
+        "cvQuestTypeLabel": "Loại Nhiệm Vụ CV",
+        "cvQuestTypeNone": "— Không đặt —"
       }
     },
     "subscriptionWallet": {
@@ -512,7 +518,11 @@
         "comparisonPlayerNote": "Ghi chú người chơi",
         "comparisonClose": "Đóng",
         "mascotEmptyTitle": "Xong hết rồi!",
-        "mascotEmptySubtitle": "Không có bằng chứng nào đang chờ — nghỉ ăn bánh thôi. 🍩"
+        "mascotEmptySubtitle": "Không có bằng chứng nào đang chờ — nghỉ ăn bánh thôi. 🍩",
+        "aiAssessment": "Đánh giá của AI",
+        "aiConfidenceLabel": "Độ tin cậy",
+        "aiNoReasoning": "Không có giải thích.",
+        "aiAssistNotice": "AI chỉ hỗ trợ — mentor vẫn là người quyết định."
       }
     },
     "partyReminder": {
@@ -1092,6 +1102,7 @@
         "resolving": "Đang giải quyết…",
         "resolve": "Giải Quyết Vụ Kiện",
         "aiNotUsed": "AI chưa được dùng để đánh giá bằng chứng này.",
+        "aiReasoningLabel": "Giải Thích Của AI",
         "submittedBy": "Người nộp"
       }
     },

@@ -143,6 +143,14 @@ const AiVerdictPanel = ({ data }: { data: CourtCaseDto }) => {
           {data.aiVerdictFinal && `Result: ${data.aiVerdictFinal}`}
         </p>
       )}
+      {data.aiReasoning && (
+        <div className="mt-2 pt-2 border-t border-black/10">
+          <p className={`text-[10px] font-black uppercase tracking-wide ${cfg.text} opacity-80 mb-0.5`}>
+            {t("admin.courtManagement.reviewModal.aiReasoningLabel")}
+          </p>
+          <p className={`text-xs font-medium ${cfg.text} leading-relaxed`}>{data.aiReasoning}</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -13,6 +13,7 @@ import type {
   QuestLibraryItemDto, QuestLibraryDifficulty, QuestLibraryStatus,
   RepeatRule, CreateQuestLibraryItemPayload, UpdateQuestLibraryItemPayload,
   SetRewardMatrixPayload, SetPersonalizationPayload,
+  VerificationTag, CvQuestType,
 } from '../types/adminQuestLibrary.types';
 import type { GoalDto } from '../types/adminGoal.types';
 
@@ -22,6 +23,9 @@ const DIFFICULTIES: QuestLibraryDifficulty[] = ['EASY', 'NORMAL', 'HARD', 'EPIC'
 const STATUSES: QuestLibraryStatus[] = ['Draft', 'Published', 'Archived'];
 const REPEAT_RULES: RepeatRule[] = ['Daily', 'Weekly', 'Monthly', 'OneTime'];
 const PROOF_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
+const VERIFICATION_TAGS: VerificationTag[] = ['FACE', 'ITEM', 'ACTION'];
+const CV_QUEST_TYPES: CvQuestType[] = ['running', 'drinking_water', 'sleeping', 'reading', 'cooking', 'exercise'];
+const HOW_TO_SUBMIT_MAX = 500;
 
 const DIFF_CFG: Record<QuestLibraryDifficulty, { label: string; cls: string }> = {
   EASY:   { label: 'Easy',   cls: 'bg-green-100 border-green-400 text-green-800 dark:bg-green-900/30 dark:border-green-600 dark:text-green-300' },
@@ -214,11 +218,21 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
   const [xp, setXp] = useState(editing?.rewardXp ?? 100);
   const [gems, setGems] = useState(editing?.rewardGems ?? 0);
   const [selectedGoalIds, setSelectedGoalIds] = useState<number[]>(editing?.goalIds ?? []);
+  const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
+  const [verificationTags, setVerificationTags] = useState(editing?.verificationTags ?? '');
+  const [cvQuestType, setCvQuestType] = useState(editing?.cvQuestType ?? '');
   const [saving, setSaving] = useState(false);
   const alert = useAlert();
 
   const toggleGoal = (id: number) =>
     setSelectedGoalIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
+
+  const selectedTags = (verificationTags ?? '')
+    .split(',').map(s => s.trim()).filter(Boolean) as VerificationTag[];
+  const toggleTag = (tag: VerificationTag) => {
+    const next = selectedTags.includes(tag) ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag];
+    setVerificationTags(next.join(','));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +249,9 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
           damage,
           proofType,
           repeatRule,
+          howToSubmit: howToSubmit.trim() || undefined,
+          verificationTags: verificationTags || undefined,
+          cvQuestType: cvQuestType || undefined,
         };
         await onSave(payload, false);
       } else {
@@ -250,6 +267,9 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
           rewardXp: xp,
           rewardGems: gems,
           goalIds: selectedGoalIds,
+          howToSubmit: howToSubmit.trim() || undefined,
+          verificationTags: verificationTags || undefined,
+          cvQuestType: cvQuestType || undefined,
         };
         await onSave(payload, true);
       }
@@ -305,6 +325,42 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             <div>
               <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Damage</label>
               <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={inputCls} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">
+                How To Submit
+                <span className="ml-1.5 text-[10px] font-normal normal-case text-gray-400">{howToSubmit.length}/{HOW_TO_SUBMIT_MAX}</span>
+              </label>
+              <textarea
+                value={howToSubmit}
+                onChange={e => setHowToSubmit(e.target.value)}
+                rows={2}
+                maxLength={HOW_TO_SUBMIT_MAX}
+                className={inputCls}
+                placeholder="Player-facing submission instructions…"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Verification Tags</label>
+              <div className="flex flex-wrap gap-3">
+                {VERIFICATION_TAGS.map(tag => (
+                  <label key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-xs font-bold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 cursor-pointer">
+                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 accent-violet-500" />
+                    {tag}
+                  </label>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">CV Quest Type</label>
+              <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
+                <option value="">— None —</option>
+                {CV_QUEST_TYPES.map(ct => <option key={ct} value={ct}>{ct}</option>)}
+              </select>
             </div>
 
             {/* Rewards — only for create */}

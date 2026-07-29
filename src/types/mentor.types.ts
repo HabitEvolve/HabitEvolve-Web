@@ -115,6 +115,15 @@ export type QuestStatus =
 
 export type QuestDifficulty = 'EASY' | 'NORMAL' | 'HARD';
 
+// Matches BE VerificationGuidance.ValidTags — CSV combination of these on VerificationTags.
+// FACE blocks proof submission until the player has a verified portrait; ITEM/ACTION are
+// informational hints (for the player and as AI request context) only.
+export type VerificationTag = 'FACE' | 'ITEM' | 'ACTION';
+
+// Matches BE VerificationGuidance.ValidCvQuestTypes — the fixed vocabulary the external CV
+// service supports. When set, it's used instead of guessing the quest type from the title.
+export type CvQuestType = 'running' | 'drinking_water' | 'sleeping' | 'reading' | 'cooking' | 'exercise';
+
 export interface QuestDto {
     questId: number;
     userId: number;
@@ -180,6 +189,9 @@ export interface CreateMentorQuestRequest {
     proofType?: string;
     isMandatory: boolean;
     deadlineAt: string;
+    howToSubmit?: string;
+    verificationTags?: string;
+    cvQuestType?: string;
 }
 
 export interface CreatePartyQuestRequest {
@@ -193,6 +205,9 @@ export interface CreatePartyQuestRequest {
     proofType?: string;
     isMandatory: boolean;
     deadlineAt: string;
+    howToSubmit?: string;
+    verificationTags?: string;
+    cvQuestType?: string;
 }
 
 export interface CreatePartyQuestResultDto {
@@ -223,6 +238,8 @@ export interface ProofDto {
     status: ProofStatus;
     reviewRoute: string;
     aiStatus?: AiVerdict;   // enriched by BE: "Not Used" | "Approved" | "Suspicious" | "Rejected"
+    aiConfidence?: number | null; // BE AiConfidence — 0..1
+    aiReasoning?: string | null;  // BE AiReasoning — AI's explanation text for its verdict
     reviewType?: ReviewType; // enriched: "Manual" | "AI + Mentor"
     deadlineAt?: string;
     deadlineMet: boolean;

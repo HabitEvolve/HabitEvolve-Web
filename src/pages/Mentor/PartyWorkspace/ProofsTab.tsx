@@ -111,6 +111,8 @@ interface ComparisonModalProps {
 const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
     const { t } = useTranslation();
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
+    const [activeIndex, setActiveIndex] = useState(0);
+    const activeUrl = proof.mediaUrls?.[activeIndex] ?? proof.mediaUrls?.[0];
 
     return createPortal(
         <div
@@ -157,6 +159,31 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                                     {proof.deadlineAt ? new Date(proof.deadlineAt).toLocaleString() : t("mentor.proofQueue.grid.comparisonNoDeadline")}
                                 </p>
                             </div>
+
+                            {/* AI assessment — informational only, visually separate from the
+                                Approve/Reject action buttons on the card (AI assists, a mentor decides). */}
+                            {proof.aiStatus && proof.aiStatus !== "Not Used" && (
+                                <div className={`p-3 border-[3px] ${inkBorder} rounded-2xl bg-purple-50 dark:bg-purple-500/10`}>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-300">
+                                            {t("mentor.proofQueue.grid.aiAssessment")}
+                                        </span>
+                                        <AiStatusBadge status={proof.aiStatus} />
+                                    </div>
+                                    {typeof proof.aiConfidence === "number" && (
+                                        <div className="flex items-center justify-between text-xs font-bold text-purple-700 dark:text-purple-300 mb-1.5">
+                                            <span>{t("mentor.proofQueue.grid.aiConfidenceLabel")}</span>
+                                            <span>{Math.round(proof.aiConfidence * 100)}%</span>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                                        {proof.aiReasoning ? `"${proof.aiReasoning}"` : t("mentor.proofQueue.grid.aiNoReasoning")}
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-gray-400 mt-1.5">
+                                        {t("mentor.proofQueue.grid.aiAssistNotice")}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -165,8 +192,25 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                             {t("mentor.proofQueue.grid.comparisonSubmitted")}
                         </span>
                         {hasMedia ? (
-                            <div className={`w-full rounded-xl overflow-hidden border-[3px] ${inkBorder} bg-gray-100 dark:bg-gray-900 mb-3`}>
-                                <img src={proof.mediaUrls[0]} alt="Submitted proof" className="w-full max-h-72 object-contain" />
+                            <div className="mb-3">
+                                <div className={`w-full rounded-xl overflow-hidden border-[3px] ${inkBorder} bg-gray-100 dark:bg-gray-900`}>
+                                    <img src={activeUrl} alt={`Submitted proof ${activeIndex + 1}/${proof.mediaUrls.length}`} className="w-full max-h-72 object-contain" />
+                                </div>
+                                {proof.mediaUrls.length > 1 && (
+                                    <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                                        {proof.mediaUrls.map((url, idx) => (
+                                            <button
+                                                key={`${url}-${idx}`}
+                                                type="button"
+                                                onClick={() => setActiveIndex(idx)}
+                                                className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 ${idx === activeIndex ? "border-orange-500" : `${inkBorder} opacity-70 hover:opacity-100`}`}
+                                                aria-label={`Media ${idx + 1}`}
+                                            >
+                                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className={`w-full h-40 rounded-xl border-[3px] border-dashed ${inkBorder} bg-gray-50 dark:bg-gray-900 flex items-center justify-center mb-3`}>
@@ -515,10 +559,22 @@ export default function ProofsTab() {
         });
     }, [partyId]);
 
+    // AI-routed proofs (ReviewRoute = "AI") are rejected by the mentor
+    // approve/reject endpoints on the BE (they only accept ReviewRoute =
+    // "MENTOR"). Approve/reject on an AI-queue card must instead go through
+    // the AI verdict endpoint (`simulateAiVerdict`), which is what actually
+    // moves an AI-routed proof forward.
+    const isAiProof = useCallback(
+        (proofId: number) => aiProofs.some((p) => p.proofId === proofId),
+        [aiProofs],
+    );
+
     const handleApprove = async (proofId: number) => {
         setActionLoading(proofId);
         try {
-            const res = await mentorApi.approveProof(proofId);
+            const res = isAiProof(proofId)
+                ? await mentorApi.simulateAiVerdict(proofId, "approve")
+                : await mentorApi.approveProof(proofId);
             if (res.success) {
                 setManualProofs((prev) => prev.filter((p) => p.proofId !== proofId));
                 setAiProofs((prev) => prev.filter((p) => p.proofId !== proofId));
@@ -530,6 +586,34 @@ export default function ProofsTab() {
             alert.error(e?.response?.data?.message || t("mentor.proofQueue.errorOccurred"));
         } finally {
             setActionLoading(null);
+        }
+    };
+
+    // AI-verdict "reject" has no reason field, so an AI-queue card rejects
+    // immediately (no RejectModal) — only the manual queue's reject goes
+    // through the reason-collecting modal.
+    const handleRejectAiDirect = async (proofId: number) => {
+        setActionLoading(proofId);
+        try {
+            const res = await mentorApi.simulateAiVerdict(proofId, "reject");
+            if (res.success) {
+                setAiProofs((prev) => prev.filter((p) => p.proofId !== proofId));
+                alert.success(t("mentor.proofQueue.rejectedSuccess"));
+            } else {
+                alert.error(res.message || t("mentor.proofQueue.rejectModal.rejectionFailed"));
+            }
+        } catch (e: any) {
+            alert.error(e?.response?.data?.message || t("mentor.proofQueue.errorOccurred"));
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRejectClick = (proof: ProofDto) => {
+        if (isAiProof(proof.proofId)) {
+            handleRejectAiDirect(proof.proofId);
+        } else {
+            setRejectTarget(proof);
         }
     };
 
@@ -673,7 +757,7 @@ export default function ProofsTab() {
                     proofs={visibleManual}
                     loading={loadingManual || scopingLoading}
                     onApprove={handleApprove}
-                    onReject={setRejectTarget}
+                    onReject={handleRejectClick}
                     onCompare={setCompareTarget}
                     actionLoading={actionLoading}
                     emptyIcon={<UserRoundPen className="w-5 h-5" />}
@@ -688,7 +772,7 @@ export default function ProofsTab() {
                     proofs={visibleAi}
                     loading={loadingAi || scopingLoading}
                     onApprove={handleApprove}
-                    onReject={setRejectTarget}
+                    onReject={handleRejectClick}
                     onCompare={setCompareTarget}
                     actionLoading={actionLoading}
                     emptyIcon={<Bot className="w-5 h-5" />}

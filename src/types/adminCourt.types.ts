@@ -60,6 +60,8 @@ export interface CourtCaseDto {
     aiConfidence: number | null;
     aiVerdictRaw: string | null;
     aiVerdictFinal: string | null;
+    /** AI's explanation text for its verdict — null if AI wasn't used. */
+    aiReasoning: string | null;
 }
 
 // POST /admin/court/{caseId}/resolve

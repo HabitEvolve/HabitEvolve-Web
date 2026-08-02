@@ -12,11 +12,30 @@ import { connectPartyCall, type PartyCallConnection } from '../services/partyCal
 // e.g. an Android emulator's virtual NAT often can't establish a direct media path.
 // ⚠️ Free/shared — fine for testing, swap for a real TURN account before production.
 const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-];
+      {
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: "7b4ec8d1e404dadbf8605261",
+        credential: "OQb8WbZtx7yrL1pM",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "7b4ec8d1e404dadbf8605261",
+        credential: "OQb8WbZtx7yrL1pM",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "7b4ec8d1e404dadbf8605261",
+        credential: "OQb8WbZtx7yrL1pM",
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "7b4ec8d1e404dadbf8605261",
+        credential: "OQb8WbZtx7yrL1pM",
+      },
+  ];
 
 export interface PartyCallGameHandlers {
   onParticipantJoined?: (userId: number) => void;

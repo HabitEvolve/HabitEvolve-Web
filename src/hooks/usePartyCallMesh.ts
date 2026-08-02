@@ -11,31 +11,19 @@ import { connectPartyCall, type PartyCallConnection } from '../services/partyCal
 // TURN (Open Relay Project, free public relay) as a fallback when STUN-only P2P fails —
 // e.g. an Android emulator's virtual NAT often can't establish a direct media path.
 // ⚠️ Free/shared — fine for testing, swap for a real TURN account before production.
+// Cloudflare Calls TURN Server (TTL 1 năm - Hạn dùng tới tháng 8/2027)
 const ICE_SERVERS: RTCIceServer[] = [
-      {
-        urls: "stun:stun.relay.metered.ca:80",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80",
-        username: "7b4ec8d1e404dadbf8605261",
-        credential: "OQb8WbZtx7yrL1pM",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "7b4ec8d1e404dadbf8605261",
-        credential: "OQb8WbZtx7yrL1pM",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:443",
-        username: "7b4ec8d1e404dadbf8605261",
-        credential: "OQb8WbZtx7yrL1pM",
-      },
-      {
-        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "7b4ec8d1e404dadbf8605261",
-        credential: "OQb8WbZtx7yrL1pM",
-      },
-  ];
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  {
+    urls: [
+      'turn:turn.cloudflare.com:3478?transport=udp',
+      'turn:turn.cloudflare.com:3478?transport=tcp',
+      'turns:turn.cloudflare.com:5349?transport=tcp'
+    ],
+    username: 'd66ab55e4b30dcbe95ae1687f4ffd324:31536000:1785714473:8e5a7821034d6ee1bd496f8c7b8d0097',
+    credential: 'J8+q9+yK/JzD66R/B4+Z/p18eQA='
+  }
+];
 
 export interface PartyCallGameHandlers {
   onParticipantJoined?: (userId: number) => void;

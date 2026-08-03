@@ -1,18 +1,13 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import partyCallApi from "../../api/partyCallApi";
 import partyMentorApi from "../../api/mentorPartyApi";
-import { usePartyCallMesh } from "../../hooks/usePartyCallMesh";
+import { useLiveCall } from "../../context/LiveCallContext";
 import type { PartyItem } from "../../types/api.types";
-import type { ChallengeMode, LiveChallengeBankItemDto, LiveChallengeSessionDto } from "../../types/partyCall.types";
+import type { ChallengeMode, LiveChallengeBankItemDto } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
-
-const getMentorId = () => {
-    const id = localStorage.getItem("user_id");
-    return id ? parseInt(id, 10) : 0;
-};
 
 function VideoTile({ stream, label, muted = false }: { stream: MediaStream | null; label: string; muted?: boolean }) {
     const ref = useRef<HTMLVideoElement>(null);
@@ -32,17 +27,17 @@ function VideoTile({ stream, label, muted = false }: { stream: MediaStream | nul
 }
 
 export default function LiveChallengeSession() {
-    const mentorUserId = getMentorId();
     // When rendered as a tab inside a party's workspace (`/mentor/parties/:partyId/live-arena`),
     // the party is already scoped by the route — skip the standalone party picker.
     const workspace = useOutletContext<PartyWorkspaceContext | undefined>();
 
+    // Session + WebRTC mesh live in a context mounted at MentorLayout, so they survive
+    // switching workspace tabs or navigating to another mentor page entirely — only an
+    // explicit "End session" (or closing the browser tab) actually stops the call.
+    const { session, starting, ending, error, setError, mesh, startSession, endSession, refreshSession, resumeActiveSession } = useLiveCall();
+
     const [parties, setParties] = useState<PartyItem[]>([]);
     const [selectedPartyId, setSelectedPartyId] = useState<number | "">(workspace?.partyId ?? "");
-    const [session, setSession] = useState<LiveChallengeSessionDto | null>(null);
-    const [starting, setStarting] = useState(false);
-    const [ending, setEnding] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const [bankItems, setBankItems] = useState<LiveChallengeBankItemDto[]>([]);
     const [selectedBankItemId, setSelectedBankItemId] = useState<number | "">("");
@@ -66,60 +61,26 @@ export default function LiveChallengeSession() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const refreshSession = useCallback(async () => {
-        if (!session) return;
-        const r = await partyCallApi.getSessionStatus(session.sessionId);
-        if (r.success) setSession(r.data ?? null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [session?.sessionId]);
+    const selectedPartyName = workspace?.party.name ?? parties.find((p) => p.partyId === selectedPartyId)?.name ?? "";
 
-    const mesh = usePartyCallMesh(session && session.status === "Active" ? session.sessionId : null, mentorUserId, {
-        onParticipantJoined: refreshSession,
-        onParticipantLeft: refreshSession,
-        onChallengePosed: refreshSession,
-        onChallengeResponded: refreshSession,
-        onChallengeJudged: refreshSession,
-        onLeaderboardUpdated: refreshSession,
-        onSessionEnded: refreshSession,
-    });
-
-    // Check for an already-active session when a party is picked (reconnect/resume).
+    // Reconnect/resume an already-active session when a party is picked — a no-op if the
+    // context already has a live session tracked (e.g. one running for another party).
     useEffect(() => {
-        if (!selectedPartyId) {
-            setSession(null);
-            return;
-        }
-        partyCallApi.getActiveSessionByParty(selectedPartyId as number).then((r) => {
-            if (r.success && r.data) setSession(r.data);
-        });
-    }, [selectedPartyId]);
+        if (!selectedPartyId) return;
+        resumeActiveSession(selectedPartyId as number, selectedPartyName);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedPartyId, selectedPartyName]);
+
+    const isActiveHere = session?.status === "Active" && session.partyId === selectedPartyId;
+    const activeElsewhere = session?.status === "Active" && session.partyId !== selectedPartyId;
 
     const handleStart = async () => {
-        if (!selectedPartyId) return;
-        setStarting(true);
-        setError(null);
-        try {
-            const r = await partyCallApi.createSession(selectedPartyId as number);
-            if (r.success) setSession(r.data ?? null);
-            else setError(r.message || "Could not start the session");
-        } catch (e: any) {
-            setError(e?.response?.data?.message || "Unexpected error");
-        } finally {
-            setStarting(false);
-        }
+        if (!selectedPartyId || activeElsewhere) return;
+        await startSession(selectedPartyId as number, selectedPartyName);
     };
 
     const handleEnd = async () => {
-        if (!session) return;
-        setEnding(true);
-        try {
-            const r = await partyCallApi.endSession(session.sessionId);
-            if (r.success) setSession(r.data ?? null);
-        } catch (e: any) {
-            setError(e?.response?.data?.message || "Could not end the session");
-        } finally {
-            setEnding(false);
-        }
+        await endSession();
     };
 
     const handleSendChallenge = async () => {
@@ -197,11 +158,20 @@ export default function LiveChallengeSession() {
                 </div>
             )}
 
-            {!session || session.status !== "Active" ? (
+            {!session || !isActiveHere ? (
                 <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 max-w-xl">
                     <h2 className="text-xl font-black mb-4">Start a Live Challenge Arena</h2>
 
-                    {session?.status === "Ended" && (
+                    {activeElsewhere && (
+                        <div className="mb-4 p-4 bg-amber-50 border-2 border-amber-400 rounded-xl">
+                            <p className="font-black text-amber-800">You already have a live session running elsewhere.</p>
+                            <p className="text-sm text-amber-700 mt-1">
+                                End it (via the floating "LIVE" bar) before starting a new one — only one call can run at a time.
+                            </p>
+                        </div>
+                    )}
+
+                    {session?.status === "Ended" && session.partyId === selectedPartyId && (
                         <div className="mb-4 p-4 bg-violet-50 border-2 border-violet-400 rounded-xl">
                             <p className="font-black text-violet-800 mb-2">Final results</p>
                             <div className="space-y-1">
@@ -242,7 +212,7 @@ export default function LiveChallengeSession() {
 
                     <button
                         onClick={handleStart}
-                        disabled={!selectedPartyId || starting}
+                        disabled={!selectedPartyId || starting || activeElsewhere}
                         className="w-full py-3 border-2 border-black rounded-full font-black text-sm bg-violet-500 text-white shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 transition-all"
                     >
                         {starting ? "Starting…" : "Start Live Challenge Arena"}

@@ -113,7 +113,17 @@ export function usePartyCallMesh(
     (async () => {
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 480, max: 640 },
+            height: { ideal: 360, max: 480 },
+            frameRate: { max: 15 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+          }
+        });
       } catch {
         setMediaError('Could not access camera/microphone');
         return;

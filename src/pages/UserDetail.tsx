@@ -260,6 +260,41 @@ const OverviewTab = ({
         )}
       </div>
 
+      {/* ── Verification Portrait ────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Verification Portrait</p>
+        <div className="flex items-center gap-4">
+          <a
+            href={user.portraitUrl ?? undefined}
+            target={user.portraitUrl ? "_blank" : undefined}
+            rel="noreferrer"
+            className="relative w-24 h-24 rounded-xl border-2 border-black overflow-hidden bg-gray-100 shadow-[2px_2px_0_0_#1A1D20] shrink-0"
+          >
+            {user.portraitUrl ? (
+              <img src={user.portraitUrl} alt="Verification portrait" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                <Camera className="w-6 h-6 text-gray-300" />
+              </div>
+            )}
+          </a>
+          <div>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                user.hasVerifiedPortrait
+                  ? "bg-green-100 border-green-400 text-green-800"
+                  : "bg-gray-100 border-gray-400 text-gray-600"
+              }`}
+            >
+              {user.hasVerifiedPortrait ? "Verified" : "Not verified"}
+            </span>
+            {user.portraitVerifiedAt && (
+              <p className="text-xs text-gray-400 font-medium mt-1">Verified {fmtDateTime(user.portraitVerifiedAt)}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ── Proof Gallery ────────────────────────────────────────────────── */}
       <div>
         <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">

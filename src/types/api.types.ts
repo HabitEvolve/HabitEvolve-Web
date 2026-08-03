@@ -64,6 +64,9 @@ export type UserStatus = "Active" | "Inactive" | "Banned" | "Deleted" | string;
 // BE UserDto (HabitEvolve.Application/Common/DTOs/UserDto.cs) has NO AvatarUrl field —
 // admin/users list responses never include it. (Player-facing avatar lives on
 // PlayerProfileDetailDto, surfaced separately via PlayerProfile below.)
+// PortraitUrl/HasVerifiedPortrait ARE included, but only on the single-user detail
+// response (GET /admin/users/{id}) — GetUserByIdQueryHandler joins PlayerProfile;
+// the list endpoint does not.
 export interface UserItem {
     userId: number;
     username: string;
@@ -74,6 +77,9 @@ export interface UserItem {
     updatedAt: string | null;
     role?: UserRole;    // raw BE field (singular) — normalized to roles[] in adminUserApi.ts
     roles: UserRole[];  // normalized FE field
+    portraitUrl?: string | null;
+    hasVerifiedPortrait?: boolean;
+    portraitVerifiedAt?: string | null;
 }
 
 // Query params for GET /admin/users

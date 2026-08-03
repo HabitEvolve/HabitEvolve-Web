@@ -6,9 +6,11 @@ import {
   ChevronDown, ChevronUp, Users, Zap, Coins,
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
-import Pagination from '../components/common/Pagination';
+import Pagination from '../components/common/SkyPagination';
 import { adminQuestLibraryApi } from '../api/adminQuestLibraryApi';
 import { adminGoalApi } from '../api/adminGoalApi';
+import SkyCard from '../components/ui/card/SkyCard';
+import SkyButton from '../components/ui/button/SkyButton';
 import type {
   QuestLibraryItemDto, QuestLibraryDifficulty, QuestLibraryStatus,
   RepeatRule, CreateQuestLibraryItemPayload, UpdateQuestLibraryItemPayload,
@@ -28,31 +30,24 @@ const CV_QUEST_TYPES: CvQuestType[] = ['running', 'drinking_water', 'sleeping', 
 const HOW_TO_SUBMIT_MAX = 500;
 
 const DIFF_CFG: Record<QuestLibraryDifficulty, { label: string; cls: string }> = {
-  EASY:   { label: 'Easy',   cls: 'bg-green-100 border-green-400 text-green-800 dark:bg-green-900/30 dark:border-green-600 dark:text-green-300' },
-  NORMAL: { label: 'Normal', cls: 'bg-blue-100 border-blue-400 text-blue-800 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-300' },
-  HARD:   { label: 'Hard',   cls: 'bg-orange-100 border-orange-400 text-orange-800 dark:bg-orange-900/30 dark:border-orange-600 dark:text-orange-300' },
-  EPIC:   { label: 'Epic',   cls: 'bg-purple-100 border-purple-400 text-purple-800 dark:bg-purple-900/30 dark:border-purple-600 dark:text-purple-300' },
+  EASY:   { label: 'Easy',   cls: 'bg-success-100 text-success-800' },
+  NORMAL: { label: 'Normal', cls: 'bg-blue-100 text-blue-800' },
+  HARD:   { label: 'Hard',   cls: 'bg-warning-100 text-warning-800' },
+  EPIC:   { label: 'Epic',   cls: 'bg-purple-100 text-purple-800' },
 };
 
 const STATUS_CFG: Record<QuestLibraryStatus, { cls: string }> = {
-  Draft:     { cls: 'bg-gray-100 border-gray-400 text-gray-600 dark:bg-gray-700 dark:border-gray-500 dark:text-gray-300' },
-  Published: { cls: 'bg-emerald-100 border-emerald-400 text-emerald-800 dark:bg-emerald-900/30 dark:border-emerald-600 dark:text-emerald-300' },
-  Archived:  { cls: 'bg-red-100 border-red-300 text-red-600 dark:bg-red-900/30 dark:border-red-600 dark:text-red-400' },
+  Draft:     { cls: 'bg-gray-100 text-gray-600' },
+  Published: { cls: 'bg-success-100 text-success-800' },
+  Archived:  { cls: 'bg-error-100 text-error-600' },
 };
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
 const inputCls = [
-  'w-full px-3 py-2 rounded-xl border-2 border-black bg-white dark:bg-gray-800',
-  'text-gray-900 dark:text-gray-100 text-sm font-medium',
-  'focus:outline-none focus:ring-2 focus:ring-violet-400',
-  'dark:border-gray-600 dark:placeholder:text-gray-500',
-].join(' ');
-
-const btnBase = [
-  'inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black',
-  'font-black text-sm transition-all shadow-[2px_2px_0_0_#1A1D20]',
-  'hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5',
-  'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
+  'w-full px-3 py-2 rounded-sky-chip border border-sky-surf-border bg-white',
+  'text-sky-ink text-sm font-medium',
+  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
+  'placeholder:text-sky-ink-3',
 ].join(' ');
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
@@ -85,47 +80,47 @@ function RewardModal({ item, onClose, onSaved }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-amber-100 dark:bg-amber-900/30 rounded-t-3xl">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
             <div className="flex items-center gap-2">
               <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-5 h-5 object-contain" alt="" />
-              <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">Edit Rewards</h2>
+              <h2 className="font-bold text-lg text-sky-ink">Edit Rewards</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded-lg"><X className="w-5 h-5" /></button>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <div className="p-5 space-y-4">
-            <p className="text-xs font-bold text-gray-400 truncate">Quest: {item.title}</p>
+            <p className="text-xs font-semibold text-sky-ink-3 truncate">Quest: {item.title}</p>
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Gold', icon: <Coins className="w-3.5 h-3.5 text-yellow-500" />, val: gold, set: setGold },
-                { label: 'Bonus Gold', icon: <Coins className="w-3.5 h-3.5 text-orange-400" />, val: bonusGold, set: setBonusGold },
+                { label: 'Gold', icon: <Coins className="w-3.5 h-3.5 text-warning-500" />, val: gold, set: setGold },
+                { label: 'Bonus Gold', icon: <Coins className="w-3.5 h-3.5 text-warning-400" />, val: bonusGold, set: setBonusGold },
                 { label: 'XP', icon: <img src="/icon/Item/Medal/64px/Bronze Medal 1st 64px.png" className="w-3.5 h-3.5 object-contain" alt="" />, val: xp, set: setXp },
                 { label: 'Gems', icon: <Zap className="w-3.5 h-3.5 text-purple-500" />, val: gems, set: setGems },
               ].map(f => (
                 <div key={f.label}>
-                  <label className="flex items-center gap-1 text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">
                     {f.icon} {f.label}
                   </label>
                   <input
                     type="number" min={0}
                     value={f.val}
                     onChange={e => f.set(Number(e.target.value))}
-                    className="w-full px-3 py-2 border-2 border-black dark:border-gray-600 rounded-xl text-sm font-black bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className={inputCls}
                   />
                 </div>
               ))}
             </div>
 
             <div className="flex gap-3 pt-1">
-              <button onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="button" variant="primary" onClick={handleSave} disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-4 h-4 object-contain" alt="" />} Save
-              </button>
+              </SkyButton>
             </div>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -159,41 +154,41 @@ function GoalsModal({ item, allGoals, onClose, onSaved }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md flex flex-col max-h-[80vh]">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-indigo-100 dark:bg-indigo-900/30 rounded-t-3xl shrink-0">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md flex flex-col max-h-[80vh]">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-blue-50 shrink-0">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-indigo-700 dark:text-indigo-400" />
-              <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">Edit Goal Mappings</h2>
+              <Users className="w-5 h-5 text-blue-700" />
+              <h2 className="font-bold text-lg text-sky-ink">Edit Goal Mappings</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-lg"><X className="w-5 h-5" /></button>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <div className="p-5 space-y-3 overflow-y-auto flex-1">
-            <p className="text-xs font-bold text-gray-400 truncate">Quest: {item.title}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Thay thế toàn bộ goal mappings. <strong>({selectedIds.length} selected)</strong></p>
+            <p className="text-xs font-semibold text-sky-ink-3 truncate">Quest: {item.title}</p>
+            <p className="text-xs text-sky-ink-2">Thay thế toàn bộ goal mappings. <strong>({selectedIds.length} selected)</strong></p>
             {allGoals.length === 0 ? (
-              <p className="text-xs text-amber-600 font-semibold">No goals found.</p>
+              <p className="text-xs text-warning-600 font-semibold">No goals found.</p>
             ) : (
-              <div className="border-2 border-black dark:border-gray-600 rounded-2xl divide-y divide-gray-100 dark:divide-white/5">
+              <div className="border border-sky-surf-border rounded-sky-chip divide-y divide-gray-100">
                 {allGoals.map(g => (
-                  <label key={g.goalId} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors ${selectedIds.includes(g.goalId) ? 'bg-indigo-50 dark:bg-indigo-900/10' : ''}`}>
-                    <input type="checkbox" checked={selectedIds.includes(g.goalId)} onChange={() => toggle(g.goalId)} className="w-4 h-4 accent-indigo-500 shrink-0" />
+                  <label key={g.goalId} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-blue-50 transition-colors ${selectedIds.includes(g.goalId) ? 'bg-blue-50' : ''}`}>
+                    <input type="checkbox" checked={selectedIds.includes(g.goalId)} onChange={() => toggle(g.goalId)} className="w-4 h-4 accent-sky-deep shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{g.goalName}</p>
-                      <p className="text-[10px] font-mono text-gray-400">{g.goalCode}</p>
+                      <p className="text-sm font-semibold text-sky-ink truncate">{g.goalName}</p>
+                      <p className="text-[10px] font-mono text-sky-ink-3">{g.goalCode}</p>
                     </div>
                   </label>
                 ))}
               </div>
             )}
           </div>
-          <div className="flex gap-3 px-5 py-4 border-t-2 border-gray-100 dark:border-white/10 shrink-0">
-            <button onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-            <button onClick={handleSave} disabled={saving} className={`${btnBase} flex-1 justify-center bg-indigo-300 dark:bg-indigo-700 text-gray-900 dark:text-white`}>
+          <div className="flex gap-3 px-5 py-4 border-t border-gray-200 shrink-0">
+            <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+            <SkyButton type="button" variant="primary" onClick={handleSave} disabled={saving} className="flex-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />} Save Goals
-            </button>
+            </SkyButton>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -280,42 +275,42 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-xl max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-violet-100 dark:bg-violet-900/30 rounded-t-3xl shrink-0">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-xl max-h-[90vh] flex flex-col">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-purple-50 shrink-0">
             <div className="flex items-center gap-2">
               <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-5 h-5 object-contain" alt="" />
-              <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? 'Edit Quest' : 'New Quest'}</h2>
+              <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Quest' : 'New Quest'}</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-violet-200 dark:hover:bg-violet-800 rounded-lg"><X className="w-5 h-5" /></button>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Title *</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Title *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Drink 2L of water" required />
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Description</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} placeholder="Optional details…" />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Difficulty *</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Difficulty *</label>
                 <select value={difficulty} onChange={e => setDifficulty(e.target.value as QuestLibraryDifficulty)} className={inputCls}>
                   {DIFFICULTIES.map(d => <option key={d} value={d}>{DIFF_CFG[d].label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Proof Type *</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Proof Type *</label>
                 <select value={proofType} onChange={e => setProofType(e.target.value)} className={inputCls}>
                   {PROOF_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Repeat *</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Repeat *</label>
                 <select value={repeatRule} onChange={e => setRepeatRule(e.target.value as RepeatRule)} className={inputCls}>
                   {REPEAT_RULES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -323,14 +318,14 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Damage</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Damage</label>
               <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={inputCls} />
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">
                 How To Submit
-                <span className="ml-1.5 text-[10px] font-normal normal-case text-gray-400">{howToSubmit.length}/{HOW_TO_SUBMIT_MAX}</span>
+                <span className="ml-1.5 text-[10px] font-normal normal-case text-sky-ink-3">{howToSubmit.length}/{HOW_TO_SUBMIT_MAX}</span>
               </label>
               <textarea
                 value={howToSubmit}
@@ -343,20 +338,20 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Verification Tags</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Verification Tags</label>
               <div className="flex flex-wrap gap-3">
                 {VERIFICATION_TAGS.map(tag => (
-                  <label key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-xs font-bold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 cursor-pointer">
-                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 accent-violet-500" />
+                  <label key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sky-chip border border-sky-surf-border text-xs font-semibold bg-white text-sky-ink cursor-pointer">
+                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 accent-sky-deep" />
                     {tag}
                   </label>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.</p>
+              <p className="text-[10px] text-sky-ink-3 mt-1">FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.</p>
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">CV Quest Type</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">CV Quest Type</label>
               <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
                 <option value="">— None —</option>
                 {CV_QUEST_TYPES.map(ct => <option key={ct} value={ct}>{ct}</option>)}
@@ -366,7 +361,7 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             {/* Rewards — only for create */}
             {!editing && (
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-2">Rewards</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-2">Rewards</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { label: 'Gold', val: gold, set: setGold },
@@ -375,9 +370,8 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
                     { label: 'Gems', val: gems, set: setGems },
                   ].map(f => (
                     <div key={f.label}>
-                      <label className="block text-[10px] font-black text-gray-400 mb-1">{f.label}</label>
-                      <input type="number" min={0} value={f.val} onChange={e => f.set(Number(e.target.value))}
-                        className="w-full px-2 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-sm font-black bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                      <label className="block text-[10px] font-semibold text-sky-ink-3 mb-1">{f.label}</label>
+                      <input type="number" min={0} value={f.val} onChange={e => f.set(Number(e.target.value))} className={inputCls} />
                     </div>
                   ))}
                 </div>
@@ -387,19 +381,19 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             {/* Goals — only for create */}
             {!editing && (
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-2">
-                  Map to Goals * <span className="text-[10px] font-normal normal-case text-gray-400">({selectedGoalIds.length} selected)</span>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-2">
+                  Map to Goals * <span className="text-[10px] font-normal normal-case text-sky-ink-3">({selectedGoalIds.length} selected)</span>
                 </label>
                 {allGoals.length === 0 ? (
-                  <p className="text-xs text-amber-600 font-semibold">No goals available. Create goals first.</p>
+                  <p className="text-xs text-warning-600 font-semibold">No goals available. Create goals first.</p>
                 ) : (
-                  <div className="max-h-36 overflow-y-auto border-2 border-black dark:border-gray-600 rounded-2xl divide-y divide-gray-100 dark:divide-white/5">
+                  <div className="max-h-36 overflow-y-auto border border-sky-surf-border rounded-sky-chip divide-y divide-gray-100">
                     {allGoals.map(g => (
-                      <label key={g.goalId} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-900/10 transition-colors ${selectedGoalIds.includes(g.goalId) ? 'bg-violet-50 dark:bg-violet-900/10' : ''}`}>
-                        <input type="checkbox" checked={selectedGoalIds.includes(g.goalId)} onChange={() => toggleGoal(g.goalId)} className="w-4 h-4 accent-violet-500 shrink-0" />
+                      <label key={g.goalId} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-purple-50 transition-colors ${selectedGoalIds.includes(g.goalId) ? 'bg-purple-50' : ''}`}>
+                        <input type="checkbox" checked={selectedGoalIds.includes(g.goalId)} onChange={() => toggleGoal(g.goalId)} className="w-4 h-4 accent-sky-deep shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{g.goalName}</p>
-                          <p className="text-[10px] font-mono text-gray-400">{g.goalCode}</p>
+                          <p className="text-sm font-semibold text-sky-ink truncate">{g.goalName}</p>
+                          <p className="text-[10px] font-mono text-sky-ink-3">{g.goalCode}</p>
                         </div>
                       </label>
                     ))}
@@ -409,20 +403,20 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             )}
 
             {editing && (
-              <p className="text-xs text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+              <p className="text-xs text-sky-ink-3 bg-gray-50 rounded-sky-chip px-3 py-2">
                 Dùng "Edit Goals" để cập nhật goal mappings. Dùng "Rewards" để cập nhật phần thưởng.
               </p>
             )}
           </form>
 
-          <div className="flex gap-3 px-5 py-4 border-t-2 border-gray-100 dark:border-white/10 shrink-0">
-            <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-            <button type="submit" disabled={saving} onClick={handleSubmit} className={`${btnBase} flex-1 justify-center bg-violet-300 dark:bg-violet-700 text-gray-900 dark:text-white`}>
+          <div className="flex gap-3 px-5 py-4 border-t border-gray-200 shrink-0">
+            <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+            <SkyButton type="submit" variant="primary" disabled={saving} onClick={handleSubmit} className="flex-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {editing ? 'Save Changes' : 'Create Quest'}
-            </button>
+            </SkyButton>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -434,20 +428,20 @@ function ConfirmDeleteModal({ title, onConfirm, onCancel, loading }: {
 }) {
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm p-6">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-2">
-            <ShieldAlert className="w-5 h-5 text-red-500 shrink-0" />
-            <h3 className="text-lg font-black text-red-700 dark:text-red-400">Delete Quest?</h3>
+            <ShieldAlert className="w-5 h-5 text-error-500 shrink-0" />
+            <h3 className="text-lg font-bold text-error-700">Delete Quest?</h3>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">Remove <strong>"{title}"</strong>? Only Draft or Archived quests can be deleted.</p>
+          <p className="text-sm text-sky-ink-2 mb-6">Remove <strong>"{title}"</strong>? Only Draft or Archived quests can be deleted.</p>
           <div className="flex gap-3">
-            <button onClick={onCancel} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700`}>Cancel</button>
-            <button onClick={onConfirm} disabled={loading} className={`${btnBase} flex-1 justify-center bg-red-400 text-white`}>
+            <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancel</SkyButton>
+            <SkyButton type="button" variant="destructive" onClick={onConfirm} disabled={loading} className="flex-1">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
-            </button>
+            </SkyButton>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -465,15 +459,15 @@ function ExpandedRow({ item, allGoals, onRefresh }: {
   const goalObjects = allGoals.filter(g => (item.goalIds ?? []).includes(g.goalId));
 
   return (
-    <div className="px-4 pb-4 pt-3 bg-violet-50/40 dark:bg-violet-900/5 border-t-2 border-gray-100 dark:border-white/5 space-y-3">
+    <div className="px-4 pb-4 pt-3 bg-purple-50/40 border-t border-gray-200 space-y-3">
       {/* Goals */}
       <div>
-        <p className="text-[10px] font-black uppercase tracking-wide text-violet-500 dark:text-violet-400 mb-1.5">Mapped Goals</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-600 mb-1.5">Mapped Goals</p>
         <div className="flex flex-wrap gap-1.5">
           {goalObjects.length === 0
-            ? <span className="text-xs text-amber-600 font-bold">No goals mapped — publish blocked</span>
+            ? <span className="text-xs text-warning-600 font-semibold">No goals mapped — publish blocked</span>
             : goalObjects.map(g => (
-              <span key={g.goalId} className="text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-violet-200 dark:border-violet-700 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+              <span key={g.goalId} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
                 {g.goalCode}
               </span>
             ))
@@ -483,24 +477,24 @@ function ExpandedRow({ item, allGoals, onRefresh }: {
 
       {/* Rewards */}
       <div>
-        <p className="text-[10px] font-black uppercase tracking-wide text-amber-500 dark:text-amber-400 mb-1.5">Rewards</p>
-        <div className="flex gap-3 flex-wrap text-xs font-bold text-gray-600 dark:text-gray-300">
-          <span>🪙 Gold: <span className="font-black">{item.rewardGold}</span></span>
-          <span>✨ Bonus: <span className="font-black">{item.rewardBonusGold}</span></span>
-          <span>⭐ XP: <span className="font-black">{item.rewardXp}</span></span>
-          <span>💎 Gems: <span className="font-black">{item.rewardGems}</span></span>
-          <span>⚔️ Dmg: <span className="font-black">{item.damage}</span></span>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-warning-600 mb-1.5">Rewards</p>
+        <div className="flex gap-3 flex-wrap text-xs font-semibold text-sky-ink-2">
+          <span>🪙 Gold: <span className="font-bold text-sky-ink">{item.rewardGold}</span></span>
+          <span>✨ Bonus: <span className="font-bold text-sky-ink">{item.rewardBonusGold}</span></span>
+          <span>⭐ XP: <span className="font-bold text-sky-ink">{item.rewardXp}</span></span>
+          <span>💎 Gems: <span className="font-bold text-sky-ink">{item.rewardGems}</span></span>
+          <span>⚔️ Dmg: <span className="font-bold text-sky-ink">{item.damage}</span></span>
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
-        <button onClick={() => setShowReward(true)} className={`${btnBase} bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 py-1.5 text-xs`}>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setShowReward(true)}>
           <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-3.5 h-3.5 object-contain" alt="" /> Edit Rewards
-        </button>
-        <button onClick={() => setShowGoals(true)} className={`${btnBase} bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 py-1.5 text-xs`}>
+        </SkyButton>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setShowGoals(true)}>
           <Users className="w-3.5 h-3.5" /> Edit Goals
-        </button>
+        </SkyButton>
       </div>
 
       {showReward && (
@@ -542,42 +536,40 @@ function QuestRow({ item, allGoals, onEdit, onDelete, onStatusChange, onRefresh,
   const canDelete = safeStatus === 'Draft' || safeStatus === 'Archived';
 
   return (
-    <div className="border-2 border-black dark:border-gray-600 rounded-2xl overflow-hidden shadow-[3px_3px_0_0_#1A1D20] bg-white dark:bg-gray-800">
+    <SkyCard variant="admin" className="p-0 overflow-hidden">
       <div className="flex items-start gap-3 p-4">
-        <span className={`shrink-0 mt-0.5 text-[10px] font-black px-2 py-0.5 rounded-full border ${diffCls}`}>{diffLabel}</span>
+        <span className={`shrink-0 mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffCls}`}>{diffLabel}</span>
 
         <div className="flex-1 min-w-0">
-          <p className="font-black text-sm text-gray-900 dark:text-gray-100">{item.title}</p>
+          <p className="font-bold text-sm text-sky-ink">{item.title}</p>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="text-[10px] font-bold text-gray-400">{item.repeatRule}</span>
-            <span className="text-[10px] font-bold bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-lg">{item.proofType}</span>
-            <span className="text-[10px] font-bold text-gray-400">{(item.goalIds ?? []).length} goal{(item.goalIds ?? []).length !== 1 ? 's' : ''}</span>
+            <span className="text-[10px] font-semibold text-sky-ink-3">{item.repeatRule}</span>
+            <span className="text-[10px] font-semibold bg-gray-100 text-sky-ink-2 px-1.5 py-0.5 rounded-lg">{item.proofType}</span>
+            <span className="text-[10px] font-semibold text-sky-ink-3">{(item.goalIds ?? []).length} goal{(item.goalIds ?? []).length !== 1 ? 's' : ''}</span>
           </div>
         </div>
 
-        <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border ${statusCls}`}>{safeStatus}</span>
+        <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusCls}`}>{safeStatus}</span>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => setExpanded(e => !e)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400" title="Details">
+          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpanded(e => !e)} title="Details" className="w-8 h-8">
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          <button onClick={onEdit} className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-gray-400"><Pencil className="w-4 h-4" /></button>
+          </SkyButton>
+          <SkyButton type="button" variant="ghost" size="icon" onClick={onEdit} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
 
           {safeStatus === 'Draft' && (
-            <button onClick={() => onStatusChange('publish')} disabled={statusChanging} title="Publish"
-              className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+            <SkyButton type="button" variant="ghost" size="icon" onClick={() => onStatusChange('publish')} disabled={statusChanging} title="Publish" className="w-8 h-8 text-success-600 hover:bg-success-50">
               {statusChanging ? <Loader2 className="w-4 h-4 animate-spin" /> : <ToggleRight className="w-4 h-4" />}
-            </button>
+            </SkyButton>
           )}
           {(safeStatus === 'Draft' || safeStatus === 'Published') && (
-            <button onClick={() => onStatusChange('archive')} disabled={statusChanging} title="Archive"
-              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-500 dark:text-red-400">
+            <SkyButton type="button" variant="ghost" size="icon" onClick={() => onStatusChange('archive')} disabled={statusChanging} title="Archive" className="w-8 h-8 text-error-500 hover:bg-error-50">
               {statusChanging ? <Loader2 className="w-4 h-4 animate-spin" /> : <ToggleLeft className="w-4 h-4" />}
-            </button>
+            </SkyButton>
           )}
 
           {canDelete && (
-            <button onClick={onDelete} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onDelete} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
           )}
         </div>
       </div>
@@ -585,7 +577,7 @@ function QuestRow({ item, allGoals, onEdit, onDelete, onStatusChange, onRefresh,
       {expanded && (
         <ExpandedRow item={item} allGoals={allGoals} onRefresh={onRefresh} />
       )}
-    </div>
+    </SkyCard>
   );
 }
 
@@ -677,21 +669,18 @@ export default function AdminQuestLibraryManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
-        <div className="w-12 h-12 rounded-2xl bg-violet-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
+        <div className="w-12 h-12 rounded-sky-chip bg-purple-100 flex items-center justify-center shrink-0">
           <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-6 h-6 object-contain" alt="" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">System Quest Library</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-black text-sky-ink">System Quest Library</h1>
+          <p className="text-sm text-sky-ink-2">
             Manage reusable quest templates — publish to make available to players via goal mapping.
           </p>
         </div>
-        <button
-          onClick={() => setFormModal({ editing: null })}
-          className={`${btnBase} ml-auto bg-violet-300 dark:bg-violet-600 text-gray-900 dark:text-white py-2`}
-        >
+        <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })} className="ml-auto">
           <Plus className="w-4 h-4" /> New Quest
-        </button>
+        </SkyButton>
       </div>
 
       {/* Stats + Filters */}
@@ -699,16 +688,16 @@ export default function AdminQuestLibraryManagement() {
         {/* Per-status breakdown can't be computed client-side once the list is
             server-paginated (items only holds the current page) — Total is the one
             count the BE's page metadata actually gives us accurately. */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl border-2 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 shadow-[2px_2px_0_0_#1A1D20]">
-          <span className="text-[10px] font-black uppercase tracking-wide opacity-60">Total</span>
-          <span className="text-base font-black">{totalRecords}</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-sky-ink-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wide opacity-70">Total</span>
+          <span className="text-base font-bold">{totalRecords}</span>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
           <select
             value={filterStatus}
             onChange={e => { setFilterStatus(e.target.value as QuestLibraryStatus | ''); setPage(1); }}
-            className="px-3 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-xs font-black bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400 shadow-[2px_2px_0_0_#1A1D20]"
+            className="px-3 py-1.5 rounded-sky-chip border border-sky-surf-border text-xs font-semibold bg-white text-sky-ink focus:outline-none focus:border-sky-deep"
           >
             <option value="">All statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -716,7 +705,7 @@ export default function AdminQuestLibraryManagement() {
           <select
             value={filterDiff}
             onChange={e => { setFilterDiff(e.target.value as QuestLibraryDifficulty | ''); setPage(1); }}
-            className="px-3 py-1.5 border-2 border-black dark:border-gray-600 rounded-xl text-xs font-black bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400 shadow-[2px_2px_0_0_#1A1D20]"
+            className="px-3 py-1.5 rounded-sky-chip border border-sky-surf-border text-xs font-semibold bg-white text-sky-ink focus:outline-none focus:border-sky-deep"
           >
             <option value="">All difficulties</option>
             {DIFFICULTIES.map(d => <option key={d} value={d}>{DIFF_CFG[d].label}</option>)}
@@ -728,13 +717,13 @@ export default function AdminQuestLibraryManagement() {
           section with a spinner; a page-change/filter-change refetch just dims the
           existing list in place so the table never unmounts under the user. */}
       {loading && items.length === 0 ? (
-        <div className="flex items-center gap-2 justify-center py-20 text-gray-400">
+        <div className="flex items-center gap-2 justify-center py-20 text-sky-ink-3">
           <Loader2 className="w-6 h-6 animate-spin" /> Loading quest library…
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-20 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl text-gray-400">
+        <div className="text-center py-20 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
           <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-14 h-14 mx-auto mb-3 opacity-20 object-contain" alt="" />
-          <p className="font-black text-lg">No quests found</p>
+          <p className="font-bold text-lg">No quests found</p>
           <p className="text-sm mt-1">Create a quest and map it to at least one goal before publishing.</p>
         </div>
       ) : (

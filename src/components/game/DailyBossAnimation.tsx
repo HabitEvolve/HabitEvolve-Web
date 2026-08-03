@@ -6,11 +6,9 @@ import type { DailyBossAnimationFrameDto } from "../../types/adminDailyBoss.type
 // 10fps ≈ 100ms/frame — đúng tốc độ khung hình pixel-art boss theo yêu cầu.
 const FRAME_DURATION_MS = 100;
 
-// Neo-brutalism tokens dùng chung toàn dự án (xem DESIGN.md): viền/đổ bóng
-// dùng "ink" (#3d4a3e, biến --color-game-outline) thay vì đen tuyệt đối #000,
-// để nhất quán với các màn hình gamified khác (Boss Raid, Wallet...).
-const INK_BORDER = "border-game-outline dark:border-brand-300";
-const SHADOW_HARD = "shadow-[8px_8px_0_0_var(--color-game-outline)] dark:shadow-[8px_8px_0_0_var(--color-brand-300)]";
+// Sky-Pastel tokens (see DESIGN.md) — the neo-brutalism system this widget
+// used to mirror ("Boss Raid, Wallet...") has itself been retired in favor
+// of Sky-Pastel across those same screens, so this preview frame follows.
 const EASE_EXPO = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 
 // BE không enforce enum cho animationState (free string, uppercase) — 4 state
@@ -19,12 +17,12 @@ const EASE_EXPO = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 const KNOWN_STATES = ["IDLE", "ATTACK", "HIT", "DEFEAT"] as const;
 
 const STATE_META: Record<string, { label: string; icon: string; accent: string }> = {
-    IDLE: { label: "Idle", icon: "💤", accent: "bg-brand-100 dark:bg-brand-500/15 text-brand-800 dark:text-brand-300" },
-    ATTACK: { label: "Attack", icon: "⚔️", accent: "bg-orange-100 dark:bg-orange-500/15 text-orange-800 dark:text-orange-300" },
-    HIT: { label: "Hit", icon: "💥", accent: "bg-error-100 dark:bg-error-500/15 text-error-800 dark:text-error-300" },
-    DEFEAT: { label: "Defeat", icon: "☠️", accent: "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200" },
+    IDLE: { label: "Idle", icon: "💤", accent: "bg-brand-100 text-brand-800" },
+    ATTACK: { label: "Attack", icon: "⚔️", accent: "bg-warning-100 text-warning-800" },
+    HIT: { label: "Hit", icon: "💥", accent: "bg-error-100 text-error-800" },
+    DEFEAT: { label: "Defeat", icon: "☠️", accent: "bg-gray-200 text-gray-700" },
 };
-const FALLBACK_META = { label: "", icon: "🎞️", accent: "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200" };
+const FALLBACK_META = { label: "", icon: "🎞️", accent: "bg-gray-200 text-gray-700" };
 
 type StateMotion = { animate: Record<string, number[] | number>; transition: Record<string, unknown> };
 
@@ -162,17 +160,14 @@ export default function DailyBossAnimation({ frames, initialState = "IDLE", hide
 
     return (
         <div className="inline-flex flex-col items-center gap-4">
-            {/* ── KHUNG BOSS (Neo-Brutalism: viền dày + đổ bóng cứng, không blur) ── */}
-            <div
-                className={`relative w-64 h-64 flex items-center justify-center overflow-hidden
-                    border-4 ${INK_BORDER} rounded-2xl ${SHADOW_HARD} bg-yellow-300 dark:bg-yellow-500/80`}
-            >
+            {/* ── KHUNG BOSS (Sky-Pastel: viền mảnh + đổ bóng mềm, ink-blue) ── */}
+            <div className="relative w-64 h-64 flex items-center justify-center overflow-hidden rounded-sky-card shadow-sky-glass bg-warning-100">
                 {activeState && (
                     // Badge trạng thái: luôn có icon + label chữ, KHÔNG chỉ dựa vào màu
                     // (đúng nguyên tắc "state is never color-only" của DESIGN.md).
                     <span
                         className={`absolute top-2 left-2 z-10 inline-flex items-center gap-1 px-2 py-0.5
-                            border-2 ${INK_BORDER} rounded-full text-xs font-black ${meta.accent}`}
+                            rounded-full text-xs font-semibold ${meta.accent}`}
                     >
                         {meta.icon} {meta.label}
                     </span>
@@ -192,7 +187,7 @@ export default function DailyBossAnimation({ frames, initialState = "IDLE", hide
                         transition={motionProps.transition}
                     />
                 ) : (
-                    <span className="text-sm font-bold text-game-outline/60 dark:text-brand-300/60 px-4 text-center">
+                    <span className="text-sm font-semibold text-sky-ink/60 px-4 text-center">
                         Chưa có frame nào — hãy upload sprite sheet
                     </span>
                 )}
@@ -209,11 +204,11 @@ export default function DailyBossAnimation({ frames, initialState = "IDLE", hide
                                 key={state}
                                 type="button"
                                 onClick={() => setActiveState(state)}
-                                className={`inline-flex items-center gap-1.5 px-4 py-2 border-[3px] ${INK_BORDER} rounded-xl
-                                    font-black text-sm transition-all duration-150 ${EASE_EXPO}
+                                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-sky-chip
+                                    font-semibold text-sm transition-all duration-150 ${EASE_EXPO}
                                     ${isActive
-                                        ? "shadow-none translate-x-[3px] translate-y-[3px] bg-orange-400 text-game-outline"
-                                        : "shadow-[3px_3px_0_0_var(--color-game-outline)] dark:shadow-[3px_3px_0_0_var(--color-brand-300)] bg-gray-25 dark:bg-gray-800 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px]"}`}
+                                        ? "bg-warning-400 text-warning-950 shadow-sky-chip"
+                                        : "bg-white text-sky-ink-2 border border-sky-surf-border hover:border-warning-400/60"}`}
                             >
                                 {stateMeta.icon} {stateMeta.label}
                             </button>

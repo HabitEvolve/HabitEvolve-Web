@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { Plus, Pencil, Trash2, Save, X, Lock, Info, AlertTriangle, BarChart2 } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminTargetRuleApi } from "../api/adminTargetRuleApi";
 import { useTableFilters } from "../hooks/useTableFilters";
-import { TableFilterBar } from "../components/common/TableFilterBar";
+import { SkyTableFilterBar } from "../components/common/SkyTableFilterBar";
+import SkyCard from "../components/ui/card/SkyCard";
+import SkyButton from "../components/ui/button/SkyButton";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
   TargetCalculationRuleDto,
@@ -32,11 +35,11 @@ const MEASUREMENT_LABELS: Record<string, string> = {
   TIME_BASED:      "Time-Based",
 };
 
-const DIFFICULTY_STYLES: Record<string, { bg: string; border: string; text: string }> = {
-  Easy:   { bg: "bg-emerald-100", border: "border-emerald-500", text: "text-emerald-800" },
-  Normal: { bg: "bg-yellow-100",  border: "border-yellow-500",  text: "text-yellow-800"  },
-  Hard:   { bg: "bg-red-100",     border: "border-red-500",     text: "text-red-800"     },
-  Any:    { bg: "bg-gray-100",    border: "border-gray-400",    text: "text-gray-600"    },
+const DIFFICULTY_STYLES: Record<string, string> = {
+  Easy:   "bg-success-100 text-success-800",
+  Normal: "bg-warning-100 text-warning-800",
+  Hard:   "bg-error-100 text-error-800",
+  Any:    "bg-gray-100 text-gray-600",
 };
 
 // Key format: "MEASUREMENT_TYPE+Difficulty"
@@ -53,19 +56,16 @@ type RuleFilters = { search: string; measurementType: string; difficulty: string
 const RULE_INITIAL_FILTERS: RuleFilters = { search: "", measurementType: "", difficulty: "" };
 
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
-const btnBase =
-  "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
-  "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
-  "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
-
-const inputCls =
-  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium bg-white " +
-  "focus:outline-none focus:ring-2 focus:ring-orange-300 placeholder:text-gray-400";
+const inputCls = [
+  "w-full px-4 py-2.5 rounded-sky-chip border border-sky-surf-border bg-white",
+  "text-sm font-medium text-sky-ink",
+  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20",
+  "placeholder:text-sky-ink-3",
+].join(" ");
 
 const lockedInputCls =
-  "w-full px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-2xl text-sm font-medium " +
-  "bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none";
+  "w-full px-4 py-2.5 rounded-sky-chip border border-dashed border-gray-300 text-sm font-medium " +
+  "bg-gray-100 text-sky-ink-3 cursor-not-allowed focus:outline-none";
 
 const EMPTY_FORM: TargetCalculationRulePayload = {
   measurementType: "CHECK_IN",
@@ -91,38 +91,11 @@ const Spinner = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const PlusIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-const PencilIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-const TrashIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-  </svg>
-);
-const SaveIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
-  </svg>
-);
-
 // ── DIFFICULTY BADGE ──────────────────────────────────────────────────────────
 const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
-  const s = DIFFICULTY_STYLES[difficulty] ?? DIFFICULTY_STYLES["Any"];
+  const cls = DIFFICULTY_STYLES[difficulty] ?? DIFFICULTY_STYLES["Any"];
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black border-2 ${s.bg} ${s.border} ${s.text}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${cls}`}>
       {difficulty}
     </span>
   );
@@ -132,12 +105,10 @@ const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
 const StatusPill = ({ isActive }: { isActive: boolean }) => {
   const { t } = useTranslation();
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${
-      isActive
-        ? "bg-green-100 border-green-400 text-green-800"
-        : "bg-gray-100 border-gray-400 text-gray-500"
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+      isActive ? "bg-success-100 text-success-800" : "bg-gray-100 text-gray-500"
     }`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-success-500" : "bg-gray-400"}`} />
       {isActive ? t("admin.targetRules.statusActive") : t("admin.targetRules.statusInactive")}
     </span>
   );
@@ -152,22 +123,16 @@ const GameModal = ({
   children: React.ReactNode;
   maxWidth?: string;
 }) => createPortal(
-  <div className="modal-content fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className={`relative w-full ${maxWidth} mx-4 bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] max-h-[90vh] overflow-y-auto`}>
-      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b-2 border-black bg-white">
-        <h2 className="text-lg font-black text-gray-900">{title}</h2>
-        <button
-          onClick={onClose}
-          className="flex items-center justify-center w-8 h-8 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+  <div className="modal-content fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm">
+    <SkyCard variant="admin" className={`relative w-full ${maxWidth} mx-4 p-0 overflow-hidden max-h-[90vh] overflow-y-auto`}>
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-white">
+        <h2 className="text-lg font-bold text-sky-ink">{title}</h2>
+        <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}>
+          <X className="w-4 h-4" />
+        </SkyButton>
       </div>
       <div className="px-6 py-6">{children}</div>
-    </div>
+    </SkyCard>
   </div>,
   document.body
 );
@@ -185,33 +150,30 @@ const FormField = ({
   return (
     <div>
       <div className="flex items-center gap-2 mb-1.5">
-        <label className="text-xs font-black text-gray-700 uppercase tracking-wide">{label}</label>
+        <label className="text-xs font-bold text-sky-ink-2 uppercase tracking-wide">{label}</label>
         {locked && (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-bold bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-500">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-bold bg-gray-100 rounded text-sky-ink-3">
+            <Lock className="w-2.5 h-2.5" />
             {t("admin.targetRules.locked")}
           </span>
         )}
       </div>
       {children}
-      {hint && <p className="text-xs text-gray-400 mt-1 font-medium">{hint}</p>}
+      {hint && <p className="text-xs text-sky-ink-3 mt-1 font-medium">{hint}</p>}
     </div>
   );
 };
 
 // ── SKELETON ROW ─────────────────────────────────────────────────────────────
 const SkeletonRow = () => (
-  <tr className="border-b-2 border-gray-100 animate-pulse">
-    <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-xl" style={{ width: "100px" }} /></td>
+  <tr className="border-b border-gray-100 animate-pulse">
+    <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-sky-chip" style={{ width: "100px" }} /></td>
     <td className="px-4 py-4"><div className="h-5 bg-gray-200 rounded-full" style={{ width: "60px" }} /></td>
     <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-full" style={{ width: "110px" }} /></td>
     <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-full" style={{ width: "40px" }} /></td>
     <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-full" style={{ width: "140px" }} /></td>
     <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-full" style={{ width: "68px" }} /></td>
-    <td className="px-4 py-4"><div className="h-8 bg-gray-200 rounded-xl" style={{ width: "72px" }} /></td>
+    <td className="px-4 py-4"><div className="h-8 bg-gray-200 rounded-sky-chip" style={{ width: "72px" }} /></td>
   </tr>
 );
 
@@ -401,35 +363,33 @@ export default function TargetRuleManagement() {
       {/* ── TOP ACTION BAR ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">{t("admin.targetRules.pageTitle")}</h1>
-          <p className="text-sm text-gray-500 font-medium mt-0.5">
+          <h1 className="text-2xl font-bold text-sky-ink">{t("admin.targetRules.pageTitle")}</h1>
+          <p className="text-sm text-sky-ink-2 font-medium mt-0.5">
             {t("admin.targetRules.subtitle")}
           </p>
         </div>
-        <button onClick={openCreate} className={`${btnBase} bg-emerald-300 text-gray-900 whitespace-nowrap`}>
-          <PlusIcon />
+        <SkyButton type="button" variant="primary" onClick={openCreate} className="whitespace-nowrap">
+          <Plus className="w-4 h-4" />
           {t("admin.targetRules.createRule")}
-        </button>
+        </SkyButton>
       </div>
 
       {/* ── TABLE CARD ──────────────────────────────────────────────────── */}
-      <div className="bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] overflow-hidden">
+      <SkyCard variant="admin" className="p-0 overflow-hidden">
 
         {/* Card header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b-4 border-black bg-gray-50">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
-          <span className="font-black text-gray-900 text-sm">{t("admin.targetRules.allRules")}</span>
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <BarChart2 className="w-4 h-4 text-sky-ink-2" />
+          <span className="font-bold text-sky-ink text-sm">{t("admin.targetRules.allRules")}</span>
           {!loading && (
-            <span className="ml-auto bg-orange-200 border-2 border-black text-gray-800 text-xs font-black px-2.5 py-0.5 rounded-full">
+            <span className="ml-auto bg-warning-100 text-sky-ink-2 text-xs font-bold px-2.5 py-0.5 rounded-full">
               {ruleHasActiveFilters ? `${filteredRules.length} / ${rules.length}` : rules.length}
             </span>
           )}
         </div>
 
         {/* Filter bar */}
-        <TableFilterBar<RuleFilters>
+        <SkyTableFilterBar<RuleFilters>
           fields={RULE_FILTER_FIELDS}
           filters={ruleFilters}
           onFilterChange={setRuleFilter}
@@ -439,9 +399,9 @@ export default function TargetRuleManagement() {
 
         {/* Fetch error */}
         {fetchError && (
-          <div className="mx-6 mt-5 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-2xl p-3 text-sm text-red-700 dark:text-red-400 font-semibold flex items-center justify-between gap-3">
+          <div className="mx-6 mt-5 bg-error-50 rounded-sky-chip p-3 text-sm text-error-700 font-semibold flex items-center justify-between gap-3">
             <span>{fetchError}</span>
-            <button onClick={fetchRules} className="underline font-black hover:no-underline whitespace-nowrap">
+            <button onClick={fetchRules} className="underline font-bold hover:no-underline whitespace-nowrap">
               {t("admin.targetRules.retry")}
             </button>
           </div>
@@ -451,7 +411,7 @@ export default function TargetRuleManagement() {
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b-2 border-gray-200 bg-gray-50">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 {[
                   t("admin.targetRules.table.measurementType"),
                   t("admin.targetRules.table.difficulty"),
@@ -461,7 +421,7 @@ export default function TargetRuleManagement() {
                   t("admin.targetRules.table.status"),
                   t("admin.targetRules.table.actions"),
                 ].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-sky-ink-3">
                     {h}
                   </th>
                 ))}
@@ -473,32 +433,27 @@ export default function TargetRuleManagement() {
               ) : filteredRules.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-20 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full border-4 border-black bg-gray-100 flex items-center justify-center text-2xl shadow-[4px_4px_0_0_#1A1D20]">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center text-2xl">
                       📋
                     </div>
-                    <p className="text-gray-600 text-sm font-black">
+                    <p className="text-sky-ink-2 text-sm font-bold">
                       {ruleHasActiveFilters ? t("admin.targetRules.noRulesMatch") : t("admin.targetRules.noRulesYet")}
                     </p>
                     {ruleHasActiveFilters ? (
-                      <button onClick={clearRuleFilters} className="mt-2 text-xs font-black text-blue-600 underline hover:no-underline">
+                      <button onClick={clearRuleFilters} className="mt-2 text-xs font-bold text-sky-deep underline hover:no-underline">
                         {t("admin.targetRules.clearFilters")}
                       </button>
                     ) : (
-                      <p className="text-gray-400 text-xs mt-1 font-medium">{t("admin.targetRules.createHint")}</p>
+                      <p className="text-sky-ink-3 text-xs mt-1 font-medium">{t("admin.targetRules.createHint")}</p>
                     )}
                   </td>
                 </tr>
               ) : (
-                filteredRules.map((rule, idx) => (
-                  <tr
-                    key={rule.ruleId}
-                    className={`transition-colors hover:bg-orange-50/60 ${
-                      idx < filteredRules.length - 1 ? "border-b-2 border-gray-100" : ""
-                    }`}
-                  >
+                filteredRules.map((rule) => (
+                  <tr key={rule.ruleId} className="sky-table-row">
                     {/* Measurement Type */}
                     <td className="px-4 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black border-2 border-black bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300 shadow-[2px_2px_0_0_#1A1D20]">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-sky-chip text-xs font-bold bg-sky-deep/10 text-sky-deep">
                         {MEASUREMENT_LABELS[rule.measurementType] ?? rule.measurementType}
                       </span>
                     </td>
@@ -509,22 +464,22 @@ export default function TargetRuleManagement() {
                     </td>
 
                     {/* Method */}
-                    <td className="px-4 py-4 text-sm font-semibold text-gray-700 whitespace-nowrap">
+                    <td className="px-4 py-4 text-sm font-semibold text-sky-ink-2 whitespace-nowrap">
                       {rule.calculationMethod}
                     </td>
 
                     {/* Change Value */}
                     <td className="px-4 py-4">
-                      <span className="text-sm font-black text-gray-900">{rule.changeValue}</span>
+                      <span className="text-sm font-bold text-sky-ink">{rule.changeValue}</span>
                       {(rule.minValue !== null || rule.maxValue !== null) && (
-                        <span className="block text-xs text-gray-400 font-medium mt-0.5 whitespace-nowrap">
+                        <span className="block text-xs text-sky-ink-3 font-medium mt-0.5 whitespace-nowrap">
                           [{rule.minValue ?? "—"} – {rule.maxValue ?? "—"}]
                         </span>
                       )}
                     </td>
 
                     {/* Example */}
-                    <td className="px-4 py-4 text-sm text-gray-500 font-medium" style={{ maxWidth: "200px" }}>
+                    <td className="px-4 py-4 text-sm text-sky-ink-2 font-medium max-w-50">
                       <span className="line-clamp-2">{rule.example || "—"}</span>
                     </td>
 
@@ -536,20 +491,12 @@ export default function TargetRuleManagement() {
                     {/* Actions */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <button
-                          title="Edit rule"
-                          onClick={() => openEdit(rule)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800 dark:text-blue-300"
-                        >
-                          <PencilIcon />
-                        </button>
-                        <button
-                          title="Delete rule"
-                          onClick={() => openDelete(rule)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-900/70 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-red-700 dark:text-red-300"
-                        >
-                          <TrashIcon />
-                        </button>
+                        <SkyButton type="button" variant="ghost" size="icon" title="Edit rule" onClick={() => openEdit(rule)} className="w-8 h-8">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </SkyButton>
+                        <SkyButton type="button" variant="ghost" size="icon" title="Delete rule" onClick={() => openDelete(rule)} className="w-8 h-8 text-error-500 hover:bg-error-50">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </SkyButton>
                       </div>
                     </td>
                   </tr>
@@ -560,8 +507,8 @@ export default function TargetRuleManagement() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t-2 border-gray-100 bg-gray-50">
-          <span className="text-xs text-gray-400 font-medium">
+        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50">
+          <span className="text-xs text-sky-ink-3 font-medium">
             {loading
               ? "Loading…"
               : ruleHasActiveFilters
@@ -569,7 +516,7 @@ export default function TargetRuleManagement() {
                 : `${rules.length} rule${rules.length !== 1 ? "s" : ""} total`}
           </span>
         </div>
-      </div>
+      </SkyCard>
 
       {/* ══════════════════ MODAL: CREATE / EDIT ═════════════════════════ */}
       {showForm && (
@@ -612,13 +559,9 @@ export default function TargetRuleManagement() {
 
             {/* Constraint notice — only visible when editing */}
             {editingRule && (
-              <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-xl px-3.5 py-3 shadow-[2px_2px_0_0_#1A1D20]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+              <div className="flex items-start gap-2.5 bg-warning-50 rounded-sky-chip px-3.5 py-3">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-warning-600" />
+                <p className="text-xs font-semibold text-warning-800">
                   {t("admin.targetRules.lockedHint")}
                 </p>
               </div>
@@ -648,13 +591,9 @@ export default function TargetRuleManagement() {
                   className={inputCls}
                 />
                 {CHANGE_VALUE_HINTS[`${form.measurementType}+${form.difficulty}`] && (
-                  <div className="mt-2 flex items-start gap-2 bg-sky-50 dark:bg-sky-900/20 border-2 border-sky-200 dark:border-sky-700 rounded-xl px-3 py-2.5 shadow-[2px_2px_0_0_#1A1D20]">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    <p className="text-xs font-semibold text-sky-800 dark:text-sky-300 leading-relaxed">
+                  <div className="mt-2 flex items-start gap-2 bg-sky-deep/10 rounded-sky-chip px-3 py-2.5">
+                    <Info className="w-3 h-3 shrink-0 mt-0.5 text-sky-deep" />
+                    <p className="text-xs font-semibold text-sky-deep leading-relaxed">
                       {CHANGE_VALUE_HINTS[`${form.measurementType}+${form.difficulty}`]}
                     </p>
                   </div>
@@ -713,21 +652,21 @@ export default function TargetRuleManagement() {
             </FormField>
 
             {/* isActive toggle */}
-            <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl">
+            <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 rounded-sky-chip">
               <div>
-                <p className="text-sm font-black text-gray-800">{t("admin.targetRules.form.activeLabel")}</p>
-                <p className="text-xs text-gray-400 font-medium">{t("admin.targetRules.form.activeHint")}</p>
+                <p className="text-sm font-bold text-sky-ink">{t("admin.targetRules.form.activeLabel")}</p>
+                <p className="text-xs text-sky-ink-3 font-medium">{t("admin.targetRules.form.activeHint")}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setField("isActive", !form.isActive)}
                 aria-pressed={form.isActive}
-                className={`relative flex-shrink-0 w-12 h-6 rounded-full border-2 border-black transition-colors shadow-[2px_2px_0_0_#1A1D20] ${
-                  form.isActive ? "bg-emerald-400" : "bg-gray-300"
+                className={`relative shrink-0 w-12 h-6 rounded-full transition-colors ${
+                  form.isActive ? "bg-success-400" : "bg-gray-300"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full border-2 border-black bg-white transition-transform ${
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sky-chip transition-transform ${
                     form.isActive ? "translate-x-6" : "translate-x-0"
                   }`}
                 />
@@ -736,36 +675,25 @@ export default function TargetRuleManagement() {
 
             {/* Inline error */}
             {formError && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">
+              <p className="text-xs font-bold text-error-600 bg-error-50 rounded-sky-chip px-3 py-2">
                 {formError}
               </p>
             )}
 
             {/* Form actions */}
             <div className="flex gap-3 pt-1">
-              <button
-                type="button"
-                onClick={closeForm}
-                disabled={submitting}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}
-              >
+              <SkyButton type="button" variant="secondary" onClick={closeForm} disabled={submitting} className="flex-1">
                 {t("admin.targetRules.form.cancel")}
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`${btnBase} flex-1 justify-center ${
-                  editingRule ? "bg-blue-200 text-blue-900" : "bg-emerald-300 text-gray-900"
-                }`}
-              >
+              </SkyButton>
+              <SkyButton type="submit" variant={editingRule ? "primary" : "success"} disabled={submitting} className="flex-1">
                 {submitting ? (
                   <><Spinner size={13} />{editingRule ? t("admin.targetRules.form.saving") : t("admin.targetRules.form.creating")}</>
                 ) : editingRule ? (
-                  <><SaveIcon />{t("admin.targetRules.form.saveChanges")}</>
+                  <><Save className="w-3.5 h-3.5" />{t("admin.targetRules.form.saveChanges")}</>
                 ) : (
-                  <><PlusIcon />{t("admin.targetRules.form.create")}</>
+                  <><Plus className="w-4 h-4" />{t("admin.targetRules.form.create")}</>
                 )}
-              </button>
+              </SkyButton>
             </div>
           </form>
         </GameModal>
@@ -776,44 +704,35 @@ export default function TargetRuleManagement() {
         <GameModal title={t("admin.targetRules.deleteModal.title")} onClose={closeDelete} maxWidth="max-w-md">
           <div className="text-center space-y-5">
             <div className="flex items-center justify-center">
-              <span className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-black bg-red-100 dark:bg-red-900/50 shadow-[4px_4px_0_0_#1A1D20] text-3xl">
+              <span className="flex items-center justify-center w-16 h-16 rounded-full bg-error-100 text-3xl">
                 ⚠️
               </span>
             </div>
             <div>
-              <p className="font-black text-gray-900 text-lg">
+              <p className="font-bold text-sky-ink text-lg">
                 Delete{" "}
-                <span className="text-red-600">
+                <span className="text-error-600">
                   {MEASUREMENT_LABELS[deletingRule.measurementType] ?? deletingRule.measurementType}
                 </span>
                 {" / "}
-                <span className="text-red-600">{deletingRule.difficulty}</span>
+                <span className="text-error-600">{deletingRule.difficulty}</span>
                 {" "}rule?
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mt-2 leading-relaxed bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl px-4 py-3">
+              <p className="text-sm text-sky-ink-2 font-medium mt-2 leading-relaxed bg-error-50 rounded-sky-chip px-4 py-3">
                 {t("admin.targetRules.deleteModal.message")}
               </p>
             </div>
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={closeDelete}
-                disabled={deleting}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}
-              >
+              <SkyButton type="button" variant="secondary" onClick={closeDelete} disabled={deleting} className="flex-1">
                 {t("admin.targetRules.deleteModal.cancel")}
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-                className={`${btnBase} flex-1 justify-center bg-red-500 text-white`}
-              >
+              </SkyButton>
+              <SkyButton type="button" variant="destructive" onClick={handleDeleteConfirm} disabled={deleting} className="flex-1">
                 {deleting ? (
                   <><Spinner size={13} />{t("admin.targetRules.deleteModal.deleting")}</>
                 ) : (
-                  <><TrashIcon />{t("admin.targetRules.deleteModal.confirm")}</>
+                  <><Trash2 className="w-3.5 h-3.5" />{t("admin.targetRules.deleteModal.confirm")}</>
                 )}
-              </button>
+              </SkyButton>
             </div>
           </div>
         </GameModal>

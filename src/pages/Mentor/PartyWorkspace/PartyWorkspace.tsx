@@ -6,11 +6,12 @@ import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import TabBar from "./TabBar";
+import SkyButton from "../../../components/ui/button/SkyButton";
 import {
-  btnBase, inputCls, Spinner,
-  JoinPolicyBadge, CapacityMeter, GameModal,
+  inputCls, Spinner,
+  JoinPolicyBadge, CapacityMeter, SkyModal,
   POLICY_STYLES, JOIN_POLICIES, POLICY_LABEL_KEYS,
-} from "./shared";
+} from "./sharedSky";
 import type { PartyItem, UpdatePartyPayload } from "../../../types/api.types";
 
 export interface PartyWorkspaceContext {
@@ -105,11 +106,11 @@ export default function PartyWorkspace() {
 
   if (error || !party) {
     return (
-      <div className={`p-6 bg-error-50 dark:bg-error-500/15 border-[3px] border-error-500 rounded-[28px] flex items-center justify-between gap-4`}>
-        <span className="font-black text-error-800 dark:text-error-300 text-sm">{error ?? t("admin.partyManagement.flashCreateFailed")}</span>
-        <button onClick={() => navigate("/mentor/parties")} className={`${btnBase} bg-gray-25 dark:bg-gray-800 text-gray-800`}>
+      <div className="p-6 bg-error-50 border border-error-400 rounded-sky-card shadow-sky-tint flex items-center justify-between gap-4">
+        <span className="font-semibold text-error-800 text-sm">{error ?? t("admin.partyManagement.flashCreateFailed")}</span>
+        <SkyButton type="button" variant="secondary" onClick={() => navigate("/mentor/parties")}>
           {t("admin.partyManagement.backToList")}
-        </button>
+        </SkyButton>
       </div>
     );
   }
@@ -120,41 +121,41 @@ export default function PartyWorkspace() {
       <PageBreadcrumb pageTitle={party.name} />
 
       <div className="space-y-6">
-        <button onClick={() => navigate("/mentor/parties")} className={`${btnBase} bg-gray-25 dark:bg-gray-800 text-gray-800`}>
+        <SkyButton type="button" variant="secondary" onClick={() => navigate("/mentor/parties")}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
           {t("admin.partyManagement.backToList")}
-        </button>
+        </SkyButton>
 
         {/* Huge party name + meta, distinct hierarchy */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="min-w-0">
-            <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-purple-600 dark:text-purple-300 mb-2">
+            <span className="inline-block text-xs font-semibold uppercase tracking-[0.16em] text-sky-deep mb-2">
               {t("admin.partyManagement.hub.commandKicker")}
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[0.95] break-words">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-sky-ink tracking-tight leading-[0.95] wrap-break-word">
               {party.name}
             </h1>
             <div className="flex flex-wrap items-center gap-3 mt-4">
               <JoinPolicyBadge policy={party.joinPolicy} />
               <CapacityMeter current={party.memberCount ?? 0} max={party.maxMembers || 1} />
               {party.description && (
-                <span className="text-sm text-gray-500 font-medium truncate max-w-[40ch]">
+                <span className="text-sm text-sky-ink-2 font-medium truncate max-w-[40ch]">
                   {party.description}
                 </span>
               )}
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <button onClick={openEditModal} className={`${btnBase} bg-blue-100 dark:bg-blue-500/15 text-blue-900 dark:text-blue-300`}>
+            <SkyButton type="button" variant="secondary" onClick={openEditModal}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
               {t("admin.partyManagement.editParty")}
-            </button>
+            </SkyButton>
           </div>
         </div>
 
@@ -167,10 +168,10 @@ export default function PartyWorkspace() {
       </div>
 
       {showEdit && (
-        <GameModal title={t("admin.partyManagement.form.editTitle")} onClose={resetEditModal}>
+        <SkyModal title={t("admin.partyManagement.form.editTitle")} onClose={resetEditModal}>
           <form onSubmit={handleUpdateParty} className="space-y-5">
             <div>
-              <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
+              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
                 {t("admin.partyManagement.form.nameLabel")}
               </label>
               <input
@@ -184,7 +185,7 @@ export default function PartyWorkspace() {
             </div>
 
             <div>
-              <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
+              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
                 {t("admin.partyManagement.form.descLabel")}
               </label>
               <textarea
@@ -197,7 +198,7 @@ export default function PartyWorkspace() {
             </div>
 
             <div>
-              <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-2">
+              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-2">
                 {t("admin.partyManagement.form.policyLabel")}
               </label>
               <div className="flex flex-col gap-2">
@@ -208,9 +209,9 @@ export default function PartyWorkspace() {
                   return (
                     <label
                       key={policy}
-                      className={`flex items-center gap-3 px-4 py-3 border-2 rounded-2xl cursor-pointer transition-all duration-150 ${checked
-                          ? `${s.bg} ${s.border} shadow-[2px_2px_0_0_var(--color-game-outline)] dark:shadow-[2px_2px_0_0_var(--color-brand-300)]`
-                          : "border-gray-200 bg-gray-25 dark:bg-gray-800 hover:border-gray-400"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-sky-chip cursor-pointer transition-all duration-150 ${checked
+                          ? `${s.bg} ring-2 ${s.ring}`
+                          : "border border-sky-surf-border bg-white/40 hover:border-sky-deep/30"
                         }`}
                     >
                       <input
@@ -222,12 +223,12 @@ export default function PartyWorkspace() {
                         className="sr-only"
                       />
                       <span
-                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${checked ? `${s.border} ${s.bg}` : "border-gray-400 bg-gray-25 dark:bg-gray-800"
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${checked ? "border-sky-deep bg-white" : "border-sky-ink/20 bg-white/40"
                           }`}
                       >
-                        {checked && <span className="w-2 h-2 rounded-full bg-game-outline dark:bg-brand-300" />}
+                        {checked && <span className="w-2 h-2 rounded-full bg-sky-deep" />}
                       </span>
-                      <span className={`text-sm font-black ${checked ? s.text : "text-gray-600"}`}>
+                      <span className={`text-sm font-semibold ${checked ? s.text : "text-sky-ink-2"}`}>
                         {policyLabel}
                       </span>
                     </label>
@@ -237,24 +238,16 @@ export default function PartyWorkspace() {
             </div>
 
             {editError && (
-              <p className="text-xs font-bold text-error-600 dark:text-error-300 bg-error-50 dark:bg-error-500/15 border-2 border-error-300 rounded-xl px-3 py-2">
+              <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">
                 {editError}
               </p>
             )}
 
             <div className="flex gap-3 pt-1">
-              <button
-                type="button"
-                onClick={resetEditModal}
-                className={`${btnBase} flex-1 justify-center bg-gray-25 dark:bg-gray-800 text-gray-700`}
-              >
+              <SkyButton type="button" variant="secondary" onClick={resetEditModal} className="flex-1">
                 {t("admin.partyManagement.form.cancel")}
-              </button>
-              <button
-                type="submit"
-                disabled={updating}
-                className={`${btnBase} flex-1 justify-center bg-blue-100 dark:bg-blue-500/15 text-blue-900 dark:text-blue-300`}
-              >
+              </SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={updating} className="flex-1">
                 {updating ? (
                   <><Spinner size={13} /> {t("admin.partyManagement.form.saving")}</>
                 ) : (
@@ -267,10 +260,10 @@ export default function PartyWorkspace() {
                     {t("admin.partyManagement.form.saveChanges")}
                   </>
                 )}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </GameModal>
+        </SkyModal>
       )}
     </>
   );

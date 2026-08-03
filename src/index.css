@@ -165,6 +165,18 @@ layer(base);
   --z-index-99999: 99999;
   --z-index-999999: 999999;
 
+  /* ── ROLE-COLOR TOKENS (DESIGN.md's Role-Color Rule — sidebar wayfinding) ──
+     NOTE: these are intentionally NOT aliased to any sky-* token. Role color
+     is a wayfinding signal independent of the Sky-Pastel surface system —
+     Mentor's Signal Purple has no relationship to sky-deep (Sky-Pastel's
+     action blue), and Admin's Ember Orange has no relationship to sky-ink
+     (Sky-Pastel's text color). Aliasing them would silently swap the
+     sidebar identity colors for unrelated ones the next time either sky-*
+     token changes. */
+  --color-admin-active: #f7a561;  /* Ember Orange — Admin sidebar active state */
+  --color-mentor-active: #7C3AED; /* Signal Purple — Mentor sidebar active state, badges */
+  --color-admin-surface: #B5EBE0; /* Field Mint — Admin sidebar background. Formalizes the bg-[#B5EBE0] literal already in AppSidebar.tsx. */
+
   /* ── GAME / NEO-BRUTALISM DESIGN TOKENS (ported from mobile colors.ts) ──── */
 
   /* Game palette — exact hex values from HabitEvolve Stitch design system */
@@ -208,6 +220,93 @@ layer(base);
   --shadow-neo-button: 4px 4px 0 0 #3d4a3e;
   --shadow-neo-sticker: 2px 2px 0 0 #3d4a3e;
   --shadow-neo-modal: 6px 6px 0 0 #3d4a3e;
+
+  /* ── SKY-PASTEL DESIGN TOKENS (ported from mobile theme/pastel.ts `sky`) ──
+     Mentor-portal-only glass layer. Keeps Space Grotesk (DESIGN.md's
+     One-Family Rule); only surface/shadow/color language is synced from
+     Mobile's current default layer, not the retired neo-brutalism Sticker
+     layer above. Do not use these on Admin surfaces. */
+
+  /* Mesh backdrop tints — atmosphere only (mesh/glass/chart fill), never text:
+     all four are <2:1 contrast on sky-cream. */
+  --color-sky-1: #A9C7E8;
+  --color-sky-2: #C0D8F1;
+  --color-sky-3: #D7EAF8;
+  --color-sky-4: #EEF6FD;
+  --color-sky-cream: #F5F0E8;
+
+  /* Ink — the three text greys for content on Sky-Pastel surfaces */
+  --color-sky-ink: #24344D;
+  --color-sky-ink-2: rgba(36, 52, 77, 0.62);
+  --color-sky-ink-3: rgba(36, 52, 77, 0.38);
+
+  /* The colours that actually run Sky-Pastel UI */
+  --color-sky-deep: #3D6DA6;       /* PRIMARY: buttons, XP, level, links */
+  --color-sky-deep-lo: #5C8CC4;    /* light head of the primary gradient */
+  --color-sky-peach: #F0AC72;      /* REWARD only: gold, streak, achievements */
+  --color-sky-peach-deep: #A85F1F; /* peach as a text colour */
+  --color-sky-rose: #C4708A;       /* destructive (e.g. remove mentee, revoke) */
+
+  /* Glass surface */
+  --color-sky-surf: rgba(255, 255, 255, 0.72);
+  --color-sky-surf-border: rgba(255, 255, 255, 0.92);
+
+  /* Shadow tint — always blue-ink, never black (black reads "dirty" on cream) */
+  --color-sky-shadow: #24344D;
+
+  /* Rarity tiers — boss raid / item badges */
+  --color-sky-rarity-common-fg: #7E8CA3;
+  --color-sky-rarity-common-bg: rgba(126, 140, 163, 0.12);
+  --color-sky-rarity-rare-fg: #4C8DD6;
+  --color-sky-rarity-rare-bg: rgba(76, 141, 214, 0.13);
+  --color-sky-rarity-epic-fg: #8B6DE0;
+  --color-sky-rarity-epic-bg: rgba(139, 109, 224, 0.13);
+  --color-sky-rarity-legendary-fg: #E0902F;
+  --color-sky-rarity-legendary-bg: rgba(224, 144, 47, 0.14);
+
+  /* Currency text colours — Mentor wallet/subscription surfaces */
+  --color-sky-currency-gold: #A85F1F;
+  --color-sky-currency-gem: #3D6DA6;
+  --color-sky-currency-mgold: #B07A16;
+
+  /* Radius — new steps introduced by Sky-Pastel, outside the 8/12/16/24 ladder.
+     Scoped to sky-* components only; everything else keeps the existing ladder. */
+  --radius-sky-card: 1.25rem;  /* 20px — SkyCard default */
+  --radius-sky-chip: 0.875rem; /* 14px — glass icon/back buttons */
+
+  /* Type scale — Sky-Pastel's own size/weight steps, rendered in Space Grotesk
+     (not Plus Jakarta Sans) per the One-Family Rule. Weight is set per-use via
+     font-bold/font-extrabold etc., not baked into the token. */
+  --text-sky-h1: 28px;
+  --text-sky-h1--line-height: 36px;
+  --text-sky-h2: 24px;
+  --text-sky-h2--line-height: 32px;
+  --text-sky-h3: 20px;
+  --text-sky-h3--line-height: 28px;
+  --text-sky-body: 16px;
+  --text-sky-body--line-height: 24px;
+  --text-sky-small: 12px;
+  --text-sky-small--line-height: 18px;
+  --text-sky-xs: 10px;
+  --text-sky-xs--line-height: 16px;
+
+  /* Shadows — soft, blue-ink, real blur (never the hard zero-blur neo-* offset).
+     Web can afford genuine backdrop-blur (no RN Android perf constraint that
+     made Mobile drop its live BlurView), so glass utilities below pair these
+     with backdrop-filter rather than Mobile's static-gradient-frost workaround. */
+  --shadow-sky-glass: 0 6px 20px rgba(36, 52, 77, 0.16);  /* SkyCard surf variant */
+  --shadow-sky-tint: 0 8px 12px rgba(36, 52, 77, 0.20);   /* SkyCard tint variant */
+  --shadow-sky-chip: 0 8px 12px rgba(36, 52, 77, 0.14);   /* glass back button / icon chip */
+  --shadow-sky-fill: 0 14px 20px rgba(61, 109, 166, 0.40); /* deep-gradient CTA card */
+
+  /* ── ADMIN-RESTRAINED SKY TOKENS ────────────────────────────────────────
+     Per PRODUCT.md: Sky-Pastel is unified across portals, but heavily
+     restrained on Admin — glass stays on container chrome (sidebar/topnav/
+     modal wrapper), never behind data-dense tables/forms/approval queues.
+     Muted slate, not the colorful Mentor mesh. */
+  --color-sky-admin-bg: #F8FAFC;      /* base slate wash */
+  --color-sky-admin-bg-deep: #F1F5F9; /* subtle gradient stop, still opaque */
+  --shadow-sky-admin: 0 2px 8px rgba(36, 52, 77, 0.08); /* restrained — lighter than shadow-sky-tint */
 }
 
 /*
@@ -401,6 +500,136 @@ layer(base);
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
+  }
+}
+
+/* ── SKY-PASTEL COMPONENT UTILITIES ────────────────────────────────────────
+ * Mentor-portal-only glass surfaces, ported from mobile SkyCard/SkyBackground/
+ * SkyHeader. Never mix with neo-* (hard shadow) or apply to Admin surfaces.
+ */
+
+/* Full-bleed mesh backdrop — mirrors mobile's SkyMesh (gradient wash + corner
+   blobs). Apply to a screen/section wrapper, position: relative on the parent. */
+@utility sky-mesh-bg {
+  position: relative;
+  background: linear-gradient(160deg, var(--color-sky-4) 0%, var(--color-sky-cream) 70%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 5% -5%, color-mix(in srgb, var(--color-sky-1) 50%, transparent) 0%, transparent 30%),
+      radial-gradient(circle at 95% 5%, color-mix(in srgb, var(--color-sky-3) 60%, transparent) 0%, transparent 28%),
+      radial-gradient(circle at 100% 45%, color-mix(in srgb, var(--color-sky-2) 45%, transparent) 0%, transparent 30%),
+      radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--color-sky-2) 40%, transparent) 0%, transparent 32%);
+  }
+}
+
+/* Glass card: frosted "liquid glass" surface over the mesh backdrop. Real
+   backdrop-blur (web has no RN Android perf constraint), translucent white/sky
+   wash, specular top edge, faint ink bevel at the bottom. */
+@utility sky-glass {
+  position: relative;
+  border-radius: var(--radius-sky-card);
+  border: 1px solid var(--color-sky-surf-border);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, white 88%, transparent),
+    color-mix(in srgb, white 52%, transparent)
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-sky-glass);
+
+  &::before {
+    /* top specular hairline */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    border-radius: var(--radius-sky-card) var(--radius-sky-card) 0 0;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  &::after {
+    /* bottom ink bevel */
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(36, 52, 77, 0.1);
+  }
+}
+
+/* Flat tint card — secondary Sky-Pastel panel, no blur */
+@utility sky-glass-tint {
+  border-radius: var(--radius-sky-card);
+  border: 1px solid var(--color-sky-surf-border);
+  background-color: var(--color-sky-3);
+  box-shadow: var(--shadow-sky-tint);
+}
+
+/* Small glass chip — icon/back buttons (SkyHeader) */
+@utility sky-glass-chip {
+  border-radius: var(--radius-sky-chip);
+  border: 1px solid var(--color-sky-surf-border);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sky-chip);
+}
+
+/* Deep-gradient CTA / hero fill surface */
+@utility sky-glass-fill {
+  border-radius: var(--radius-sky-card);
+  background: linear-gradient(135deg, var(--color-sky-deep-lo), var(--color-sky-deep));
+  box-shadow: var(--shadow-sky-fill);
+  color: white;
+}
+
+/* ── ADMIN-RESTRAINED SKY UTILITIES ────────────────────────────────────────
+ * Container-chrome-only glass for the Admin portal. No mesh blobs, no heavy
+ * blur, near-opaque white — data-dense content underneath stays legible and
+ * cheap to render. See PRODUCT.md's "Restrain the glass on data-dense
+ * surfaces" principle.
+ */
+
+/* Static muted-slate backdrop for Admin shells (sidebar/topnav/page bg).
+   No radial blobs — a single subtle top-to-bottom wash, unlike sky-mesh-bg. */
+@utility sky-admin-bg {
+  background: linear-gradient(180deg, var(--color-sky-admin-bg) 0%, var(--color-sky-admin-bg-deep) 100%);
+}
+
+/* Restrained glass shell for Admin containers only — sidebars, top navs,
+   modal wrappers. Higher opacity (92%) + lower blur (8px) than sky-glass's
+   72%/20px, so it reads as a calm solid panel with only a faint frost, never
+   the showy Mentor liquid-glass effect. Do not use inside tables/forms. */
+@utility sky-glass-admin {
+  border-radius: var(--radius-sky-card);
+  border: 1px solid var(--color-gray-200);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sky-admin);
+}
+
+/* Opaque data row — explicitly no blur, no translucency. Apply to table rows,
+   list rows, and any repeated data-dense element. Zebra-striped against
+   sky-admin-bg, not the sky mesh. */
+@utility sky-table-row {
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+
+  &:nth-child(even) {
+    background-color: var(--color-sky-admin-bg);
+  }
+
+  &:hover {
+    background-color: var(--color-gray-100);
   }
 }
 

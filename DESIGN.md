@@ -21,7 +21,22 @@ colors:
   game-streak: "#E85D20"
   game-flame: "#FF6B35"
   game-tertiary: "#7e22ce"
-  neo-outline: "#3d4a3e"
+  sky-ink: "#24344D"
+  sky-ink-2: "rgba(36,52,77,0.62)"
+  sky-ink-3: "rgba(36,52,77,0.38)"
+  sky-deep: "#3D6DA6"
+  sky-deep-lo: "#5C8CC4"
+  sky-peach: "#F0AC72"
+  sky-peach-deep: "#A85F1F"
+  sky-rose: "#C4708A"
+  sky-surf: "rgba(255,255,255,0.72)"
+  sky-surf-border: "rgba(255,255,255,0.92)"
+  sky-shadow: "#24344D"
+  sky-1: "#A9C7E8"
+  sky-2: "#C0D8F1"
+  sky-3: "#D7EAF8"
+  sky-4: "#EEF6FD"
+  sky-cream: "#F5F0E8"
 typography:
   display:
     fontFamily: "'Space Grotesk', sans-serif"
@@ -54,10 +69,8 @@ typography:
     lineHeight: "18px"
     letterSpacing: "0.02em"
 rounded:
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
+  chip: "14px"
+  card: "20px"
   full: "9999px"
 spacing:
   sm: "8px"
@@ -66,20 +79,20 @@ spacing:
   xl: "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.brand-primary}"
+    backgroundColor: "{colors.sky-deep}"
     textColor: "#ffffff"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.chip}"
     padding: "14px 20px"
   button-primary-hover:
-    backgroundColor: "#005a2e"
+    backgroundColor: "{colors.sky-deep-lo}"
   button-outline:
-    backgroundColor: "{colors.neutral-surface}"
-    textColor: "#344054"
-    rounded: "{rounded.sm}"
+    backgroundColor: "{colors.sky-surf}"
+    textColor: "{colors.sky-ink}"
+    rounded: "{rounded.chip}"
     padding: "14px 20px"
-  badge-light-primary:
-    backgroundColor: "#dcfce7"
-    textColor: "{colors.brand-primary}"
+  badge-rarity:
+    fg: "per-tier — see Rarity Badges"
+    bg: "per-tier, 12-14% opacity of fg"
     rounded: "{rounded.full}"
     padding: "2px 10px"
   badge-solid-success:
@@ -88,23 +101,23 @@ components:
     rounded: "{rounded.full}"
     padding: "2px 10px"
   input-default:
-    backgroundColor: "transparent"
-    textColor: "#1a2b1e"
-    rounded: "{rounded.sm}"
+    backgroundColor: "{colors.sky-surf}"
+    textColor: "{colors.sky-ink}"
+    rounded: "{rounded.chip}"
     height: "44px"
-  card-default:
-    backgroundColor: "{colors.neutral-surface}"
-    rounded: "{rounded.lg}"
+  card-glass:
+    backgroundColor: "{colors.sky-surf}"
+    rounded: "{rounded.card}"
     padding: "24px"
   sidebar-admin-active:
     backgroundColor: "{colors.admin-active}"
     textColor: "#ffffff"
-    rounded: "{rounded.md}"
+    rounded: "12px"
     padding: "12px 16px"
   sidebar-mentor-active:
     backgroundColor: "{colors.mentor-active}"
     textColor: "#ffffff"
-    rounded: "{rounded.md}"
+    rounded: "12px"
     padding: "12px 16px"
 ---
 
@@ -112,135 +125,153 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "The Basecamp"**
+**Creative North Star: "The Basecamp, in Glass"**
 
-HabitEvolve Web is the calm command post from which admins and mentors run other people's expeditions — quests, parties, boss raids, streaks. The people using it are not here to be delighted by the interface; they're here to move fast, trust the numbers, and get back to coaching. So the chrome stays precise and unshowy: flat surfaces, an 8px-based radius system, one typeface, and shadows that only ever answer a question of depth (is this floating above the page?) rather than decorate.
+HabitEvolve Web is the command post from which admins and mentors run other people's expeditions — quests, parties, boss raids, streaks. As of this revision, **the entire console — Admin and Mentor alike — runs on Sky-Pastel**: Mobile's current default visual language (liquid-glass surfaces, mesh-gradient backdrops, soft ink-blue shadows that are never pure black). This replaces the older flat/bordered "operational card" system and fully retires the neo-brutalism (`neo-*`) token set that previously lived on Mentor's motivational surfaces.
 
-Game energy is real in this product — it's the whole point of the mobile app this console operates — but it lives at the edges here: icon sets, streak colors, the neo-brutalism button/card variants reserved for motivational surfaces (boss raid, wallet, streaks). It never invades a data table, a config form, or an approval queue, where clarity is the only job. This system explicitly rejects looking like an unmodified admin template (visible TailAdmin scaffolding) and rejects applying the mobile app's full neo-brutalism treatment to operational screens.
+**Deprecation notice.** Neo-Brutalism (Sticker layer — heavy `#3d4a3e`/`#000` borders, hard zero-blur offset shadows, `neo-card`/`neo-button`/`neo-input`/`btn-neo`) is **fully deprecated across the whole web project**. It was itself a port of Mobile's *oldest* layer, since superseded on Mobile by Sky-Pastel. Do not use `neo-*` or `btn-neo` classes in new work; treat any surviving instance as migration debt, not a valid alternate register. The tokens remain in `src/index.css` only until existing usages are migrated — do not extend them.
 
-One deliberate signal carries through every screen: **role color**. Admin surfaces run on mint-and-orange (sidebar `#B5EBE0`, active `#f7a561`); the Mentor portal runs on lavender-and-purple (sidebar `#EDE9FE`, active `#7C3AED`). Neither role's sidebar borrows brand green — that's reserved for buttons, links, and true brand moments — so at a glance, the sidebar alone tells you which seat you're sitting in.
+**One system, two moods, not two systems.** Admin and Mentor now share the same glass/mesh/shadow grammar — the distinction between them is no longer "flat vs. game," it's **density and color temperature**:
+- **Mentor Portal** — highly gamified: saturated mesh gradients, floating glass cards used liberally, `sky-deep`/`sky-peach` accents front and center.
+- **Admin Portal** — high data density: the same glass and radius language, but panels sit on a muted slate-tinted wash rather than the colorful sky mesh, glass effects are restrained to container chrome (page background, card shells) rather than applied inside dense tables/grids, so rows of data stay crisp and legible.
 
 **Key Characteristics:**
-- Single typeface (Space Grotesk) carrying everything from 72px stat headlines down to 12px table labels
-- Flat cards and inputs with soft utility shadows, never decorative ones
-- 8/12/16/24px radius ladder shared by both admin chrome and game components
-- Role-colored sidebars (mint+orange for Admin, lavender+purple for Mentor) as a functional wayfinding signal, not a cosmetic choice
-- Neo-brutalism (`neo-card`, `neo-button`, hard-offset shadows) reserved for gamified surfaces only
+- Liquid-glass containers (`sky-glass`) — translucent frosted surface, real `backdrop-filter: blur()`, specular top edge, faint ink bevel at the bottom.
+- Mesh-gradient backdrops (`sky-mesh-bg`) — soft radial color blobs over a diagonal wash, replacing flat single-color page backgrounds.
+- Shadows are always soft and ink-blue-tinted (`sky-shadow` / `rgba(36,52,77,…)`), **never pure black** — black shadows read as "dirty" against the warm/cool tints in this system.
+- Radius hierarchy: **20px** for cards/modals, **14px** for buttons/chips, full-pill for badges.
+- Space Grotesk stays the one typeface (see Named Rules) — only Mobile's *size/weight* scale was adopted, not its font family.
+- Role-colored sidebars (mint+orange Admin, lavender+purple Mentor) are unchanged — they're a wayfinding signal orthogonal to the surface-treatment change above.
 
 ## 2. Colors
 
-The palette is a trustworthy, low-saturation neutral base (cool white-mint) with brand green as the one true accent, plus two role-signal pairs that exist only in sidebar chrome.
+### Primary / Action
+- **Sky Deep** (`#3D6DA6`, `sky-deep`): The primary action color across both portals now — buttons, links, focus states, active nav. Paired with **Sky Deep-Lo** (`#5C8CC4`, `sky-deep-lo`) as the light head of primary-action gradients (`sky-glass-fill`).
+- **Deep Forest Green** (`#006d36`, `brand-primary`): Reserved for true brand moments — logo, marketing/auth surfaces, the "Visual Gate" panel gradient. No longer the default interactive color inside app chrome; `sky-deep` carries that role now.
 
-### Primary
-- **Deep Forest Green** (`#006d36`, brand-primary): The one brand color that means "this is HabitEvolve" and "this is actionable." Primary buttons, active links, focus rings, checked states. Never used as a sidebar background — that's the role-color's job.
-- **Sprout Green** (`#4ade80`, brand-primary-light): Highlight/container tint for brand-colored surfaces on gamified screens (quest progress, primary game containers).
-- **Pine Green** (`#004d26`, brand-primary-dark): Hover/pressed state for primary actions, and dark-mode brand text.
+### Reward / Destructive
+- **Sky Peach** (`#F0AC72`) / **Peach Deep** (`#A85F1F` as text): Reward-only — gold, streak, achievements. Never used for a generic CTA.
+- **Sky Rose** (`#C4708A`): Destructive actions (remove mentee, revoke access, log out).
 
-### Secondary — Role Signals (Admin)
-- **Field Mint** (`#B5EBE0`, admin-surface): Admin sidebar background. Exists only there.
-- **Ember Orange** (`#f7a561`, admin-active): Admin sidebar active/open-submenu state. The one warm color allowed inside admin chrome.
+### Secondary — Role Signals (unchanged)
+- **Field Mint** (`#B5EBE0`, admin-surface) + **Ember Orange** (`#f7a561`, admin-active): Admin sidebar only.
+- **Basecamp Lavender** (`#EDE9FE`, mentor-surface) + **Signal Purple** (`#7C3AED`, mentor-active): Mentor sidebar only.
+- **The Role-Color Rule still holds**: sidebar background/active-state color is the only place role identity lives as full saturated color. This is independent of the Sky-Pastel unification above — role color is wayfinding, not surface treatment.
 
-### Secondary — Role Signals (Mentor)
-- **Basecamp Lavender** (`#EDE9FE`, mentor-surface): Mentor sidebar background. Exists only there.
-- **Signal Purple** (`#7C3AED`, mentor-active): Mentor sidebar active state, and the mentor-only "coach" badge.
+### Ink & Glass
+- **Sky Ink** (`#24344D`, `sky-ink`) / **Ink-2** (62% opacity) / **Ink-3** (38% opacity): The three text greys on Sky-Pastel surfaces, replacing `neutral-ink`/`neutral-muted` inside glass containers.
+- **Glass surface** (`sky-surf` `rgba(255,255,255,.72)`, border `sky-surf-border` `rgba(255,255,255,.92)`): The frosted-white base every `sky-glass*` utility composites over the mesh.
+- **Shadow tint** (`sky-shadow` `#24344D`): Every shadow in the system routes through this ink-blue, at varying opacity — see Elevation.
 
-### Tertiary — Game Accents (motivational surfaces only)
-- **Streak Ember** (`#E85D20`, game-streak) and **Flame** (`#FF6B35`, game-flame): Streak counters and daily-fire indicators.
-- **Raid Purple** (`#7e22ce`, game-tertiary): Boss raid tier/rarity accents.
-- **Outline Ink** (`#3d4a3e`, neo-outline): The hard 4px border and drop-shadow color for every `neo-*` component.
+### Mesh Backdrop (atmosphere only — never text)
+`sky-1` `#A9C7E8` → `sky-2` `#C0D8F1` → `sky-3` `#D7EAF8` → `sky-4` `#EEF6FD`, over `sky-cream` `#F5F0E8`. All four sky-N steps are under 2:1 contrast on cream by design — they exist purely for the mesh/glow/chart-fill layer, never for legible type.
 
-### Neutral
-- **Mist White** (`#f4fafd`, neutral-bg): Page background.
-- **Paper** (`#ffffff`, neutral-surface): Cards, inputs, modals, table rows.
-- **Ink** (`#0e1a12`, neutral-ink): Primary text, headline numbers.
-- **Hairline** (`#e4e7ec`, neutral-border): Card borders, table dividers.
-- **Slate** (`#667085`, neutral-muted): Secondary text, hints, placeholders (always checked against 4.5:1, never a lighter step).
+### Rarity Badges
+Boss-raid / item-tier badges — `fg` on a matching low-opacity `bg`:
+| Tier | fg | bg |
+|---|---|---|
+| Common | `#7E8CA3` | `rgba(126,140,163,0.12)` |
+| Rare | `#4C8DD6` | `rgba(76,141,214,0.13)` |
+| Epic | `#8B6DE0` | `rgba(139,109,224,0.13)` |
+| Legendary | `#E0902F` | `rgba(224,144,47,0.14)` |
+
+### Tertiary — Game Accents (still motivational-surface-only)
+**Streak Ember** (`#E85D20`) / **Flame** (`#FF6B35`) for streak counters, **Raid Purple** (`#7e22ce`) for boss-raid accents beyond the rarity table above. These are colors, not the deprecated hard-shadow mechanism — express them via glass badges/pills, never via `neo-*` shadows or thick borders.
 
 ### State
-- **Success** (`#12b76a`), **Error** (`#f04438`), **Warning** (`#f79009`), **Info** (`#0ba5ec`): Badge and inline-status colors. Always paired with a label or icon — see the Legibility Rule below.
+Unchanged: **Success** (`#12b76a`), **Error** (`#f04438`), **Warning** (`#f79009`), **Info** (`#0ba5ec`). Always paired with a label or icon (Legibility Rule).
 
 ### Named Rules
-**The Role-Color Rule.** Sidebar background and active-state color are the only place role identity lives as full color. Admin = mint surface + orange active. Mentor = lavender surface + purple active. Brand green never appears as a sidebar background in either role — it stays reserved for actionable brand moments (buttons, links, focus rings) so it keeps meaning "do this," not "you are here."
-
-**The Legibility Rule.** No state (approved/pending/rejected, subscription tier, boss difficulty) is communicated by color alone. Every colored badge carries a label; every colored icon carries a shape distinct from its neighbors.
+**The Glass-Not-Black Rule.** Every shadow in this system is ink-blue-tinted (`sky-shadow`), at 14–40% opacity depending on elevation. A pure-black or pure-gray shadow anywhere in new work is a bug, not a style choice — it reads as dirty against both the sky mesh and the slate-tinted Admin wash.
+**The Role-Color Rule.** Unchanged from prior revision — see Colors → Secondary above.
+**The Legibility Rule.** Unchanged — no state (approved/pending/rejected, subscription tier, boss difficulty) is color-only; every colored badge carries a label.
 
 ## 3. Typography
 
-**Display/Body/Label Font:** Space Grotesk (fallback: sans-serif) — one family for the entire system, weight does the differentiating work instead of a second typeface.
+**Font:** Space Grotesk stays the system's one typeface. Mobile's Sky-Pastel redesign uses Plus Jakarta Sans — **Web deliberately does not follow that swap**, to preserve brand identity and avoid re-testing line-length/wrap behavior across every dense Admin table. What *was* adopted from Sky-Pastel is its size/weight rhythm, re-set in Space Grotesk:
 
-**Character:** A geometric grotesk that reads as confident and current without being decorative — it carries both a $125,000 dashboard stat and a 12px table label without switching personality.
+| Step | Size / Line-height | Typical weight | Use |
+|---|---|---|---|
+| sky-h1 | 28 / 36px | 800 (extrabold) | Sky-Pastel screen titles (Mentor headers) |
+| sky-h2 | 24 / 32px | 700 | Section headers on glass surfaces |
+| sky-h3 | 20 / 28px | 600 | Card headers |
+| sky-body | 16 / 24px | 400–500 | Default UI text on Sky-Pastel surfaces |
+| sky-small | 12 / 18px | 500 | Captions, timestamps, helper hints |
+| sky-xs | 10 / 16px | 500 | Micro-labels (rarity chips, currency ticks) |
 
-### Hierarchy
-- **Display** (900, 72px / 90px, -0.02em): Rare — hero dashboard stat callouts only (e.g. `text-3xl font-black` stat cards use a scaled-down 30px cut of this same weight).
-- **Headline** (700, 36px / 44px): Section-level numbers and page-level emphasis.
-- **Title** (700, 20px / 30px): Card headers, page titles, modal headers.
-- **Body** (500, 14px / 20px): Default UI text — labels, table cells, form copy. Caps at 65–75ch in prose contexts (proof descriptions, quest instructions).
-- **Label** (600, 12px / 18px, +0.02em): Table column headers, badges, timestamps, helper hints.
+The pre-existing `display`/`headline`/`title`/`body`/`label` scale (frontmatter above) remains valid for admin-dense contexts (stat headlines, table labels) — use whichever step matches the surface: `sky-*` sizes on glass containers, the original scale on dense data chrome.
 
 ### Named Rules
-**The One-Family Rule.** Every weight from 500 to 900 is Space Grotesk. Introducing a second family for "emphasis" is prohibited — reach for weight or size first.
+**The One-Family Rule.** Unchanged: every weight from 400 to 900 is Space Grotesk. No second family, on either portal, regardless of Mobile's own font choice.
 
 ## 4. Elevation
 
-Flat by default, with soft utility shadows reserved for real overlays. Cards and inputs sit on the page with a 1px border and, at most, a barely-visible ambient shadow (`shadow-theme-xs`) — depth is not the point, legibility is. Shadow grows only when something is genuinely floating above the page: dropdowns, modals, tooltips, the date picker.
+**Soft, ink-blue, and always blurred — hard zero-blur offset shadows are retired.** Every surface either sits flat (rare — deep in a dense table body) or floats on a `sky-shadow`-tinted soft shadow. There is no longer a "flat operational card vs. game card" fork — glass is now the default container, just tuned differently by portal (see §1, §6).
 
 ### Shadow Vocabulary
-- **theme-xs** (`0px 1px 2px 0px rgba(16,24,40,0.05)`): Resting state for inputs, small buttons.
-- **theme-sm** (`0px 1px 3px 0px rgba(16,24,40,0.1), 0px 1px 2px 0px rgba(16,24,40,0.06)`): Resting cards, table containers.
-- **theme-md** (`0px 4px 8px -2px rgba(16,24,40,0.1), 0px 2px 4px -2px rgba(16,24,40,0.06)`): Dropdowns, popovers.
-- **theme-lg / theme-xl**: Modals and the date picker — the deepest shadows in the system, used sparingly.
-- **neo-card / neo-button / neo-modal**: Hard 4–6px offset shadows with zero blur, color `#3d4a3e`. Exclusive to gamified components — never mixed with the soft `theme-*` shadows on the same element.
+- **shadow-sky-glass** (`0 6px 20px rgba(36,52,77,.16)`): Default floating glass card (`sky-glass`).
+- **shadow-sky-tint** (`0 8px 12px rgba(36,52,77,.20)`): Flat tint panel, no blur (`sky-glass-tint`) — secondary panels, dense list containers.
+- **shadow-sky-chip** (`0 8px 12px rgba(36,52,77,.14)`): Small glass buttons/icon chips (`sky-glass-chip`).
+- **shadow-sky-fill** (`0 14px 20px rgba(61,109,166,.40)`): Deep-gradient CTA/hero surfaces (`sky-glass-fill`), shadow tinted `sky-deep` instead of `sky-ink`.
+- **theme-xs / theme-sm / theme-md / theme-lg / theme-xl**: The prior soft-shadow ladder remains valid for dense Admin data chrome (table containers, dropdowns) that isn't a glass panel — still ink-neutral gray, not black, and never mixed with `sky-*` shadows on the same element.
 
 ### Named Rules
-**The No-Mixing Rule.** Soft ambient shadows (`theme-*`) and hard neo-brutalism offset shadows (`neo-*`) never appear on the same component. A card is either an operational card (soft, bordered, flat) or a game card (hard border, hard offset shadow) — never both.
+**The No-Black-Shadow Rule** (supersedes the old No-Mixing Rule). `neo-*` hard shadows are deprecated project-wide. The live constraint now is: shadow color always comes from `sky-shadow` (glass surfaces) or the neutral `theme-*` gray ladder (dense data chrome) — never black, never mixed within one element.
 
 ## 5. Components
 
-Precise and unshowy: shapes stay small and consistent, feedback is quick and quiet, and the "game" variants are a clearly separate register rather than a stylistic option applied inconsistently.
-
 ### Buttons
-- **Shape:** 8px radius (`rounded-lg`) for all standard buttons.
-- **Primary:** Deep Forest Green background, white text, `shadow-theme-xs` at rest, Pine Green (`#005a2e`) on hover, 40%-opacity Sprout Green fill when disabled.
-- **Outline:** White background, slate text, 1px gray-300 ring, hover fills to gray-50.
-- **Game / Game-Outline:** `neo-button` — 4px solid `#3d4a3e` border, hard offset shadow that lifts on hover (`translate(-2px,-2px)`) and collapses flat on press (`translate(2px,2px)`, shadow removed). Reserved for boss raid, wallet, and other motivational mentor screens.
+- **Shape:** 14px radius (`rounded-sky-chip`) for all buttons, both portals.
+- **Primary:** `sky-glass-fill` gradient (`sky-deep-lo` → `sky-deep`), white text, `shadow-sky-fill` at rest.
+- **Outline / Glass:** `sky-glass-chip` surface — translucent white, 1px `sky-surf-border`, `shadow-sky-chip`.
+- **Destructive:** Same shapes, `sky-rose` as the fill/ink color.
+- `neo-button` / `btn-neo` are deprecated — do not use in new components.
 
 ### Badges
-- **Light variant:** Tinted background (e.g. `bg-brand-50` / `text-brand-500`) — default for status pills in tables.
-- **Solid variant:** Full-color background, white text — used when a status needs to dominate the row (rejected, expired).
-- **Shape:** Fully rounded (`rounded-full`), 12px label text, always includes a text label alongside color (Legibility Rule).
+- **Rarity / tier:** `fg` on tier `bg` from the Rarity Badges table above, fully rounded, 12px label, always paired with text (Legibility Rule).
+- **Status (success/error/warning/info):** Unchanged solid/light pattern from the prior system, fully rounded.
 
 ### Cards / Containers
-- **Corner Style:** 16px radius (`rounded-2xl`) for operational cards; 16–24px (`neo-card`) for game cards.
-- **Background:** White, 1px `gray-200` border, `shadow-theme-xs`-or-none at rest.
-- **Border:** Present on every operational card — this system does not float cards on background-tint alone.
-- **Internal Padding:** 24px body, with a 20px header separated by a 1px `gray-100` divider (see `ComponentCard`).
+- **Shape:** 20px radius (`rounded-sky-card`) for every card, replacing the old 16px (`rounded-2xl`) operational default.
+- **Mentor:** `sky-glass` (frosted, blurred, over `sky-mesh-bg`) as the default; `sky-glass-tint` for secondary panels; `sky-glass-fill` for hero/CTA surfaces.
+- **Admin:** Same `sky-glass`/`sky-glass-tint` shells, composited over a **muted slate wash** (existing neutral `gray-50`/`gray-100` tokens) instead of the colorful sky mesh — glass chrome stays on the *container* (page background, card shell, panel header), while table/grid **row content itself stays on an opaque `gray-50`/`white` background**, not blurred, so dense data keeps full contrast and render performance stays acceptable at row-count scale. *(Note: the slate-tinted mesh/glass variant for Admin is a documented target — `src/index.css` currently only ships the colorful Mentor-tuned `sky-mesh-bg`; a neutral Admin variant needs to be added before Admin components can consume this literally — see follow-up.)*
 
 ### Inputs / Fields
-- **Style:** 44px height, 8px radius, 1px `gray-300` border, transparent background, gray-400 placeholder.
-- **Focus:** Border shifts to Sprout Green (`brand-300`) with a 3px `brand-500/20` ring — no color change without the ring, no ring without the border shift.
-- **Error / Success:** Border and ring swap to `error-500`/`success-500`; the hint text below the field always restates the state in words.
+- **Style:** 44px height, 14px radius, `sky-surf` background, `sky-surf-border` border.
+- **Focus:** Border shifts to `sky-deep` with a 3px `sky-deep/20` ring.
+- **Error / Success:** Border/ring swap to `error-500`/`success-500`; hint text always restates state in words.
 
 ### Navigation
-- **Admin Sidebar:** Field Mint background, 12px-radius nav items, Ember Orange fill on the active item, `hover:bg-white/30` on inactive items.
-- **Mentor Sidebar:** Basecamp Lavender background, same 12px-radius items, Signal Purple fill on active, game-icon set (64px PNGs from the mobile icon library) instead of line icons.
-- **Both:** Section dividers are a 1px hairline in the role's own outline tint (`#1a3a3a`/20 for Admin, `#3b1f6e`/20 for Mentor), never the neutral gray divider.
+Unchanged from prior revision — Admin sidebar Field Mint + Ember Orange active, Mentor sidebar Basecamp Lavender + Signal Purple active, both 12px-radius nav items. Sidebar chrome is intentionally exempt from the glass treatment — it's the one place role-color solidity matters more than the shared surface language.
 
-### Neo Components (mentor game surfaces)
-`neo-card`, `neo-button`, `neo-input` share one visual grammar: 2–4px solid `#3d4a3e` (or `game-border`) outlines, hard offset shadows with zero blur, and a lift-on-hover/press-on-active motion instead of an opacity or color fade. This is the only place in the system where borders exceed 1–2px and shadows have zero blur — a deliberate, contained exception.
+## 6. Portal Distinction (within one shared system)
 
-## 6. Do's and Don'ts
+| | Mentor Portal | Admin Portal |
+|---|---|---|
+| Backdrop | `sky-mesh-bg` — full saturated mesh gradient, used extensively per-screen | Muted slate wash (neutral gray tokens) — see follow-up note in §5 |
+| Card default | `sky-glass`, liberal use, floating feel | `sky-glass`/`sky-glass-tint` restrained to container chrome; row/cell content stays opaque |
+| Density | Low — fewer simultaneous choices, generous spacing | High — power-user tables, bulk actions, minimal chrome |
+| Accent temperature | `sky-peach` reward accents, rarity badges, streak colors used freely | Accent kept to state colors (success/error/warning/info) + `sky-deep` actions; reward/rarity colors rarely appear |
+
+Both portals draw from the same token system (§2–§5) — this table is about *how much* of the glass/mesh vocabulary a screen reaches for, not a different vocabulary.
+
+## 7. Do's and Don'ts
 
 ### Do:
-- **Do** keep role color (mint+orange / lavender+purple) exclusive to sidebar chrome — it's a wayfinding signal, not a decoration to reuse elsewhere.
-- **Do** pair every status color with a text label or distinct icon shape (approve/reject, subscription tier, boss difficulty).
-- **Do** use the 8/12/16/24px radius ladder for every new component — pick the nearest existing step rather than a new value.
-- **Do** reserve `neo-*` hard-shadow components for gamified, motivational surfaces (boss raid, streaks, wallet) in the Mentor portal.
+- **Do** use `sky-glass`/`sky-glass-tint`/`sky-glass-chip`/`sky-glass-fill` as the default container vocabulary on both portals.
+- **Do** keep every shadow ink-blue-tinted (`sky-shadow`) or neutral-gray (`theme-*`) — never black.
+- **Do** keep role color (mint+orange / lavender+purple) exclusive to sidebar chrome.
+- **Do** pair every status/rarity color with a text label or distinct icon shape.
+- **Do** use the 20px (card) / 14px (button/chip) / full (badge/pill) radius steps for new components.
 - **Do** run every new string through i18next (EN/VI) — no hardcoded copy.
 
 ### Don't:
-- **Don't** let the interface read as an unmodified admin template — no visible generic TailAdmin scaffolding without HabitEvolve's own color and type layered on.
-- **Don't** apply full neo-brutalism treatment (hard borders, zero-blur offset shadows) to operational screens — tables, config forms, and approval queues stay flat and soft-shadowed.
-- **Don't** mix `theme-*` soft shadows and `neo-*` hard shadows on the same element.
-- **Don't** use brand green (`#006d36`) as a sidebar background in either role — it's reserved for actionable brand moments, not identity chrome.
-- **Don't** introduce a second typeface for "emphasis." Space Grotesk carries the whole hierarchy through weight and size alone.
-- **Don't** drop body/placeholder text below the 4.5:1 contrast floor — `neutral-muted` (`#667085`) is the lightest allowed step on white, never a lighter gray "for elegance."
+- **Don't** use `neo-card`, `neo-button`, `neo-input`, or `btn-neo` in new work — deprecated project-wide.
+- **Don't** apply live `backdrop-filter: blur()` inside dense table/grid rows — keep blur to container chrome; row content stays opaque for legibility and render performance.
+- **Don't** introduce a second typeface — Space Grotesk carries the whole hierarchy, including the ported Sky-Pastel size steps.
+- **Don't** use `brand-primary` (`#006d36`) as an interactive/action color inside app chrome — that's `sky-deep`'s role now; `brand-primary` is reserved for true brand/marketing moments.
+- **Don't** drop text below the 4.5:1 contrast floor — glass surfaces are translucent, so re-check contrast per background, especially `sky-ink-2`/`sky-ink-3` over saturated mesh regions.
+
+---
+
+**Follow-up needed (not yet in `src/index.css`):** a neutral/slate-tinted variant of `sky-mesh-bg` and possibly `sky-glass-tint` for Admin's muted backdrop, distinct from Mentor's colorful mesh. Flagging so the next implementation pass adds it rather than reusing the Mentor-tuned mesh literally on Admin screens.

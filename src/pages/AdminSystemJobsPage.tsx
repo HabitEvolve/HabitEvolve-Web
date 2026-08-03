@@ -4,25 +4,19 @@ import { Cog, Play, Zap, Loader2, CheckCircle2, XCircle, RefreshCw } from "lucid
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
-import Pagination from "../components/common/Pagination";
+import Pagination from "../components/common/SkyPagination";
 import { adminJobsApi } from "../api/adminJobsApi";
+import SkyCard from "../components/ui/card/SkyCard";
+import SkyButton from "../components/ui/button/SkyButton";
 import type { JobExecutionLogDto } from "../types/adminJobs.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
 
-// ── STYLES ────────────────────────────────────────────────────────────────────
-const btnBase =
-    "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
-    "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
-    "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
-    "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
-
 const inputCls =
-    "w-full px-4 py-2.5 border-2 border-black dark:border-gray-600 rounded-2xl text-sm font-medium " +
-    "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 " +
-    "focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 " +
-    "placeholder:text-gray-400 dark:placeholder:text-gray-500";
+    "w-full px-4 py-2.5 rounded-sky-chip border border-sky-surf-border text-sm font-medium " +
+    "bg-white text-sky-ink focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 " +
+    "placeholder:text-sky-ink-3";
 
 const errMsg = (e: unknown) =>
     (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
@@ -31,14 +25,14 @@ const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animat
 
 // BE JobExecutionLogDto only exposes a `success` boolean (no "Running" state — the log row is
 // written after the job finishes), so the badge collapses to Success/Failed.
-const STATUS_CFG: Record<string, { bg: string; border: string; text: string; icon: React.ReactNode }> = {
-    Success: { bg: "bg-green-100 dark:bg-green-900/30", border: "border-green-400", text: "text-green-800 dark:text-green-300", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    Failed: { bg: "bg-red-100 dark:bg-red-900/30", border: "border-red-400", text: "text-red-800 dark:text-red-300", icon: <XCircle className="w-3.5 h-3.5" /> },
+const STATUS_CFG: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
+    Success: { bg: "bg-success-100", text: "text-success-800", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+    Failed: { bg: "bg-error-100", text: "text-error-800", icon: <XCircle className="w-3.5 h-3.5" /> },
 };
 const StatusBadge = ({ success }: { success: boolean }) => {
     const status = success ? "Success" : "Failed";
     const c = STATUS_CFG[status];
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border ${c.bg} ${c.border} ${c.text}`}>{c.icon} {status}</span>;
+    return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
 };
 
 const fmtDateTime = (d: string | null) =>
@@ -56,24 +50,22 @@ interface ConfirmModalProps {
 
 const ConfirmModal = ({ title, message, confirmLabel, loading, onConfirm, onClose }: ConfirmModalProps) =>
     createPortal(
-        <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-sm p-6 space-y-4">
+        <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm p-4">
+            <SkyCard variant="admin" className="modal-content w-full max-w-sm space-y-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-2xl bg-amber-300 dark:bg-amber-700 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_0_#1A1D20] shrink-0">
-                        <Zap className="w-4.5 h-4.5" />
+                    <div className="w-9 h-9 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
+                        <Zap className="w-4.5 h-4.5 text-warning-600" />
                     </div>
-                    <h3 className="font-black text-gray-900 dark:text-gray-100">{title}</h3>
+                    <h3 className="font-bold text-sky-ink">{title}</h3>
                 </div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{message}</p>
+                <p className="text-sm font-medium text-sky-ink-2">{message}</p>
                 <div className="flex gap-3 pt-1">
-                    <button onClick={onClose} disabled={loading}
-                        className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-                    <button onClick={onConfirm} disabled={loading}
-                        className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-700 text-amber-900 dark:text-white`}>
+                    <SkyButton type="button" variant="secondary" onClick={onClose} disabled={loading} className="flex-1">Cancel</SkyButton>
+                    <SkyButton type="button" variant="primary" onClick={onConfirm} disabled={loading} className="flex-1">
                         {loading ? <><Spinner size={13} /> Running…</> : <><Play className="w-3.5 h-3.5" /> {confirmLabel}</>}
-                    </button>
+                    </SkyButton>
                 </div>
-            </div>
+            </SkyCard>
         </div>,
         document.body
     );
@@ -169,31 +161,30 @@ export default function AdminSystemJobsPage() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-300 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-                            <Cog className="w-6 h-6" />
+                        <div className="w-12 h-12 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
+                            <Cog className="w-6 h-6 text-warning-600" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">System Jobs</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5">Trigger background jobs and review recent execution logs</p>
+                            <h1 className="text-2xl font-black text-sky-ink">System Jobs</h1>
+                            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Trigger background jobs and review recent execution logs</p>
                         </div>
                     </div>
-                    <button onClick={() => setConfirmRunAll(true)} disabled={running}
-                        className={`${btnBase} bg-amber-300 text-amber-900 shrink-0`}>
+                    <SkyButton type="button" variant="primary" onClick={() => setConfirmRunAll(true)} disabled={running} className="shrink-0">
                         <Zap className="w-3.5 h-3.5" /> Run All Jobs
-                    </button>
+                    </SkyButton>
                 </div>
 
                 {/* Run specific job */}
-                <div className="border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
-                    <div className="bg-[#fde8c8] dark:bg-amber-900/30 px-5 py-4 border-b-4 border-black">
-                        <h3 className="font-black text-gray-900 dark:text-gray-100">Run a Specific Job</h3>
+                <SkyCard variant="admin" className="p-0 overflow-hidden">
+                    <div className="bg-warning-50 px-5 py-4 border-b border-gray-200">
+                        <h3 className="font-bold text-sky-ink">Run a Specific Job</h3>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 px-5 py-5 space-y-4">
+                    <div className="px-5 py-5 space-y-4">
                         {knownJobNames.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {knownJobNames.map(name => (
-                                    <button key={name} onClick={() => setJobName(name)}
-                                        className="px-3 py-1 rounded-full border-2 border-black text-xs font-black bg-gray-50 dark:bg-gray-800 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                                    <button key={name} type="button" onClick={() => setJobName(name)}
+                                        className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-sky-ink-2 hover:bg-warning-100 transition-colors">
                                         {name}
                                     </button>
                                 ))}
@@ -202,59 +193,61 @@ export default function AdminSystemJobsPage() {
                         <div className="flex gap-3">
                             <input value={jobName} onChange={e => setJobName(e.target.value)}
                                 placeholder="e.g. DailyStreakFinalizer" className={inputCls} />
-                            <button
+                            <SkyButton
+                                type="button"
+                                variant="primary"
                                 onClick={() => jobName.trim() && setConfirmRunOne(jobName.trim())}
                                 disabled={running || !jobName.trim()}
-                                className={`${btnBase} bg-black text-white shrink-0`}
+                                className="shrink-0"
                             >
                                 <Play className="w-3.5 h-3.5" /> Run
-                            </button>
+                            </SkyButton>
                         </div>
                     </div>
-                </div>
+                </SkyCard>
 
                 {/* Recent logs table */}
-                <div className="bg-white dark:bg-gray-900 border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b-2 border-gray-100 dark:border-gray-700">
-                        <h3 className="font-black text-gray-900 dark:text-gray-100">Recent Job Logs</h3>
-                        <button onClick={fetchLogs} disabled={loading} className={`${btnBase} bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5`}>
+                <SkyCard variant="admin" className="p-0 overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                        <h3 className="font-bold text-sky-ink">Recent Job Logs</h3>
+                        <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs} disabled={loading}>
                             {loading ? <Spinner size={13} /> : <RefreshCw className="w-3.5 h-3.5" />} Refresh
-                        </button>
+                        </SkyButton>
                     </div>
 
                     {error ? (
                         <div className="flex flex-col items-center gap-3 py-16">
-                            <p className="font-black text-gray-700 dark:text-gray-300">Couldn't load logs</p>
-                            <p className="text-sm text-gray-400">{error}</p>
-                            <button onClick={fetchLogs} className={`${btnBase} bg-red-100 text-red-800`}>Retry</button>
+                            <p className="font-bold text-sky-ink-2">Couldn't load logs</p>
+                            <p className="text-sm text-sky-ink-3">{error}</p>
+                            <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs}>Retry</SkyButton>
                         </div>
                     ) : loading && logs.length === 0 ? (
-                        <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
-                            <Spinner size={32} /><p className="font-bold text-sm">Loading logs…</p>
+                        <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
+                            <Spinner size={32} /><p className="font-semibold text-sm">Loading logs…</p>
                         </div>
                     ) : logs.length === 0 ? (
-                        <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
+                        <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
                             <Cog className="w-12 h-12" />
-                            <p className="font-black text-lg text-gray-500 dark:text-gray-300">No job runs yet</p>
+                            <p className="font-black text-lg text-sky-ink-2">No job runs yet</p>
                         </div>
                     ) : (
                         <div className={`overflow-x-auto max-h-125 overflow-y-auto transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>
                             <table className="w-full text-sm">
-                                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10">
-                                    <tr className="border-b-2 border-gray-200 dark:border-gray-700">
+                                <thead className="sticky top-0 bg-sky-admin-bg-deep z-10">
+                                    <tr className="border-b border-slate-200">
                                         {["Job", "Status", "Started", "Finished", "Message"].map(h => (
-                                            <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{h}</th>
+                                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-sky-ink">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tbody>
                                     {pagedLogs.map((log, index) => (
-                                        <tr key={log.jobExecutionLogId ?? index} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-colors">
-                                            <td className="px-4 py-3 font-black text-gray-900 dark:text-gray-100 whitespace-nowrap">{log.jobName}</td>
+                                        <tr key={log.jobExecutionLogId ?? index} className="sky-table-row">
+                                            <td className="px-4 py-3 font-semibold text-sky-ink whitespace-nowrap">{log.jobName}</td>
                                             <td className="px-4 py-3"><StatusBadge success={log.success} /></td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDateTime(log.startedAt)}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDateTime(log.finishedAt)}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-70 truncate" title={log.resultSummary ?? log.errorMessage ?? ""}>{log.resultSummary ?? log.errorMessage ?? "—"}</td>
+                                            <td className="px-4 py-3 text-xs text-sky-ink-2 whitespace-nowrap">{fmtDateTime(log.startedAt)}</td>
+                                            <td className="px-4 py-3 text-xs text-sky-ink-2 whitespace-nowrap">{fmtDateTime(log.finishedAt)}</td>
+                                            <td className="px-4 py-3 text-xs text-sky-ink-2 max-w-70 truncate" title={log.resultSummary ?? log.errorMessage ?? ""}>{log.resultSummary ?? log.errorMessage ?? "—"}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -263,7 +256,7 @@ export default function AdminSystemJobsPage() {
                     )}
 
                     <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
-                </div>
+                </SkyCard>
             </div>
 
             {confirmRunAll && (

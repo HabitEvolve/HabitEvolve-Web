@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { adminGoalApi } from '../api/adminGoalApi';
+import SkyCard from '../components/ui/card/SkyCard';
+import SkyButton from '../components/ui/button/SkyButton';
 import {
   QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
   QuestionDto, QuestionOptionDto, QuestionType,
@@ -16,17 +18,10 @@ import {
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
 const inputCls = [
-  'w-full px-3 py-2 rounded-xl border-2 border-black bg-white dark:bg-gray-800',
-  'text-gray-900 dark:text-gray-100 text-sm font-medium',
-  'focus:outline-none focus:ring-2 focus:ring-amber-400',
-  'dark:border-gray-600 dark:placeholder:text-gray-500',
-].join(' ');
-
-const btnBase = [
-  'inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black',
-  'font-black text-sm transition-all shadow-[2px_2px_0_0_#1A1D20]',
-  'hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5',
-  'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
+  'w-full px-3 py-2 rounded-sky-chip border border-sky-surf-border bg-white',
+  'text-sky-ink text-sm font-medium',
+  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
+  'placeholder:text-sky-ink-3',
 ].join(' ');
 
 const QUESTION_TYPES: { value: QuestionType; label: string; icon: React.ReactNode }[] = [
@@ -54,20 +49,20 @@ function ConfirmDeleteModal({
   const { t } = useTranslation();
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm p-6">
-          <h3 className="text-lg font-black text-red-700 dark:text-red-400 mb-2">{title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{body}</p>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content w-full max-w-sm">
+          <h3 className="text-lg font-bold text-error-700 mb-2">{title}</h3>
+          <p className="text-sm text-sky-ink-2 mb-6">{body}</p>
           <div className="flex gap-3">
-            <button onClick={onCancel} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>
+            <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">
               {t('admin.questionnaire.deleteModal.cancel')}
-            </button>
-            <button onClick={onConfirm} disabled={loading} className={`${btnBase} flex-1 justify-center bg-red-400 text-white`}>
+            </SkyButton>
+            <SkyButton type="button" variant="destructive" onClick={onConfirm} disabled={loading} className="flex-1">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               {t('admin.questionnaire.deleteModal.delete')}
-            </button>
+            </SkyButton>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -99,35 +94,33 @@ function TemplateFormModal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-amber-100 dark:bg-amber-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
+            <h2 className="font-bold text-lg text-sky-ink">
               {editing ? t('admin.questionnaire.templateForm.editTitle') : t('admin.questionnaire.templateForm.newTitle')}
             </h2>
-            <button onClick={onClose} className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-semibold bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.templateForm.nameLabel')}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.templateForm.nameLabel')}</label>
               <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder={t('admin.questionnaire.templateForm.namePlaceholder')} required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.templateForm.descLabel')}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.templateForm.descLabel')}</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} className={inputCls} placeholder={t('admin.questionnaire.templateForm.descPlaceholder')} />
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t('admin.questionnaire.templateForm.cancel')}</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('admin.questionnaire.templateForm.cancel')}</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {editing ? t('admin.questionnaire.templateForm.save') : t('admin.questionnaire.templateForm.create')}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -165,43 +158,43 @@ function QuestionFormModal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-lg">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-violet-100 dark:bg-violet-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? t('admin.questionnaire.questionForm.editTitle') : t('admin.questionnaire.questionForm.newTitle')}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-violet-200 dark:hover:bg-violet-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-lg">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-purple-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? t('admin.questionnaire.questionForm.editTitle') : t('admin.questionnaire.questionForm.newTitle')}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-semibold bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.questionForm.textLabel')}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.textLabel')}</label>
               <textarea value={text} onChange={e => setText(e.target.value)} rows={2} className={inputCls} placeholder={t('admin.questionnaire.questionForm.textPlaceholder')} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.questionForm.typeLabel')}</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.typeLabel')}</label>
                 <select value={type} onChange={e => setType(e.target.value as QuestionType)} className={inputCls}>
                   {QUESTION_TYPES.map(qt => <option key={qt.value} value={qt.value}>{t(`admin.questionnaire.questionTypes.${qt.value}`)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.questionForm.orderLabel')}</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.orderLabel')}</label>
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="w-4 h-4 rounded border-gray-400 accent-violet-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('admin.questionnaire.questionForm.requiredLabel')}</span>
+              <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="w-4 h-4 accent-sky-deep" />
+              <span className="text-sm font-semibold text-sky-ink-2">{t('admin.questionnaire.questionForm.requiredLabel')}</span>
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t('admin.questionnaire.questionForm.cancel')}</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-violet-300 dark:bg-violet-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('admin.questionnaire.questionForm.cancel')}</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {editing ? t('admin.questionnaire.questionForm.save') : t('admin.questionnaire.questionForm.add')}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -238,36 +231,36 @@ function OptionFormModal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-emerald-100 dark:bg-emerald-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg text-gray-900 dark:text-gray-100">{editing ? t('admin.questionnaire.optionForm.editTitle') : t('admin.questionnaire.optionForm.newTitle')}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-sm">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-success-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? t('admin.questionnaire.optionForm.editTitle') : t('admin.questionnaire.optionForm.newTitle')}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-semibold bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.optionForm.displayLabel')}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.optionForm.displayLabel')}</label>
               <input value={text} onChange={e => setText(e.target.value)} className={inputCls} placeholder={t('admin.questionnaire.optionForm.displayPlaceholder')} required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.optionForm.valueLabel')}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.optionForm.valueLabel')}</label>
               <input value={value} onChange={e => setValue(e.target.value)} className={inputCls} placeholder={t('admin.questionnaire.optionForm.valuePlaceholder')} required />
-              <p className="text-[10px] text-gray-400 mt-1">{t('admin.questionnaire.optionForm.valueHint')}</p>
+              <p className="text-[10px] text-sky-ink-3 mt-1">{t('admin.questionnaire.optionForm.valueHint')}</p>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-1">{t('admin.questionnaire.optionForm.orderLabel')}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.optionForm.orderLabel')}</label>
               <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>{t('admin.questionnaire.optionForm.cancel')}</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-emerald-300 dark:bg-emerald-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('admin.questionnaire.optionForm.cancel')}</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {editing ? t('admin.questionnaire.optionForm.save') : t('admin.questionnaire.optionForm.add')}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -305,24 +298,24 @@ function OptionsPanel({ question, onRefresh }: { question: QuestionDto; onRefres
   return (
     <div className="pt-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-black uppercase tracking-wide text-gray-400">{t('admin.questionnaire.optionsLabel')} ({sorted.length})</p>
-        <button onClick={() => setOptModal({ editing: null })} className={`${btnBase} bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 py-1 px-3 text-xs`}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-ink-3">{t('admin.questionnaire.optionsLabel')} ({sorted.length})</p>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setOptModal({ editing: null })}>
           <Plus className="w-3 h-3" /> {t('admin.questionnaire.optionForm.add')}
-        </button>
+        </SkyButton>
       </div>
       {sorted.length === 0 ? (
-        <p className="text-xs text-gray-400 italic py-3 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">{t('admin.questionnaire.noOptions')}</p>
+        <p className="text-xs text-sky-ink-3 italic py-3 text-center border border-dashed border-sky-ink/15 rounded-sky-chip">{t('admin.questionnaire.noOptions')}</p>
       ) : (
         <div className="space-y-1.5">
           {sorted.map(opt => (
-            <div key={opt.optionId} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl">
-              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 w-5">#{opt.displayOrder}</span>
+            <div key={opt.optionId} className="flex items-center gap-2 px-3 py-1.5 bg-success-50 border border-success-200 rounded-sky-chip">
+              <span className="text-[10px] font-semibold text-success-700 w-5">#{opt.displayOrder}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{opt.optionText}</p>
-                <p className="text-[10px] text-gray-400 font-mono truncate">{opt.optionValue}</p>
+                <p className="text-xs font-semibold text-sky-ink truncate">{opt.optionText}</p>
+                <p className="text-[10px] text-sky-ink-3 font-mono truncate">{opt.optionValue}</p>
               </div>
-              <button onClick={() => setOptModal({ editing: opt })} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded text-gray-400"><Pencil className="w-3 h-3" /></button>
-              <button onClick={() => setDelOpt(opt)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-400"><Trash2 className="w-3 h-3" /></button>
+              <SkyButton type="button" variant="ghost" size="icon" onClick={() => setOptModal({ editing: opt })} className="w-6 h-6"><Pencil className="w-3 h-3" /></SkyButton>
+              <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelOpt(opt)} className="w-6 h-6 text-error-500 hover:bg-error-50"><Trash2 className="w-3 h-3" /></SkyButton>
             </div>
           ))}
         </div>
@@ -384,59 +377,59 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
     <div className="flex flex-col h-full">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <button onClick={onBack} className={`${btnBase} bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-1 px-3 text-xs`}>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={onBack}>
           <ChevronRight className="w-3.5 h-3.5 rotate-180" /> {t('admin.questionnaire.backToTemplates')}
-        </button>
-        <ChevronRight className="w-4 h-4 text-gray-400" />
-        <span className="font-black text-gray-800 dark:text-gray-100 text-sm truncate max-w-xs">{template.templateName}</span>
-        <span className={`text-[10px] px-2 py-0.5 rounded-full font-black border ${template.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+        </SkyButton>
+        <ChevronRight className="w-4 h-4 text-sky-ink-3" />
+        <span className="font-bold text-sky-ink text-sm truncate max-w-xs">{template.templateName}</span>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${template.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
           {template.isActive ? t('admin.questionnaire.statusActive') : t('admin.questionnaire.statusInactive')}
         </span>
-        <button onClick={() => setQModal({ editing: null })} className={`${btnBase} ml-auto bg-violet-200 dark:bg-violet-800 text-violet-900 dark:text-violet-100 py-1.5`}>
+        <SkyButton type="button" variant="primary" size="sm" onClick={() => setQModal({ editing: null })} className="ml-auto">
           <Plus className="w-4 h-4" /> {t('admin.questionnaire.addQuestion')}
-        </button>
+        </SkyButton>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto space-y-3">
         {loading ? (
-          <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> {t('admin.questionnaire.loading')}</div>
+          <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> {t('admin.questionnaire.loading')}</div>
         ) : sorted.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+          <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
             <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
-            <p className="font-bold">{t('admin.questionnaire.noQuestions')}</p>
+            <p className="font-semibold">{t('admin.questionnaire.noQuestions')}</p>
           </div>
         ) : sorted.map(q => (
-          <div key={q.questionId} className="border-2 border-black dark:border-gray-600 rounded-2xl bg-white dark:bg-gray-800/80 shadow-[3px_3px_0_0_#1A1D20] overflow-hidden">
+          <SkyCard key={q.questionId} variant="admin" className="p-0 overflow-hidden">
             <div className="flex items-start gap-3 p-4">
-              <span className="text-xs font-black text-gray-400 w-5 shrink-0 mt-0.5">#{q.displayOrder}</span>
-              <span className="text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+              <span className="text-xs font-semibold text-sky-ink-3 w-5 shrink-0 mt-0.5">#{q.displayOrder}</span>
+              <span className="text-purple-600 shrink-0 mt-0.5">
                 {QUESTION_TYPES.find(qt => qt.value === q.questionType)?.icon ?? <HelpCircle className="w-4 h-4" />}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-gray-800 dark:text-gray-100">{q.questionText}</p>
+                <p className="font-bold text-sm text-sky-ink">{q.questionText}</p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-[10px] font-black bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full border border-violet-200 dark:border-violet-700">{q.questionType}</span>
-                  {q.isRequired && <span className="text-[10px] font-black bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">{t('admin.questionnaire.requiredBadge')}</span>}
-                  {isChoiceType(q.questionType) && <span className="text-[10px] text-gray-400">{q.options.length} option{q.options.length !== 1 ? 's' : ''}</span>}
+                  <span className="text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{q.questionType}</span>
+                  {q.isRequired && <span className="text-[10px] font-semibold bg-error-100 text-error-600 px-2 py-0.5 rounded-full">{t('admin.questionnaire.requiredBadge')}</span>}
+                  {isChoiceType(q.questionType) && <span className="text-[10px] text-sky-ink-3">{q.options.length} option{q.options.length !== 1 ? 's' : ''}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 {isChoiceType(q.questionType) && (
-                  <button onClick={() => setExpandedQ(expandedQ === q.questionId ? null : q.questionId)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400">
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpandedQ(expandedQ === q.questionId ? null : q.questionId)} className="w-8 h-8">
                     {expandedQ === q.questionId ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
+                  </SkyButton>
                 )}
-                <button onClick={() => setQModal({ editing: q })} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => setDelQ(q)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setQModal({ editing: q })} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelQ(q)} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
               </div>
             </div>
             {isChoiceType(q.questionType) && expandedQ === q.questionId && (
-              <div className="px-4 pb-4 border-t-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
+              <div className="px-4 pb-4 border-t border-gray-200 bg-gray-50">
                 <OptionsPanel question={q} onRefresh={fetch} />
               </div>
             )}
-          </div>
+          </SkyCard>
         ))}
       </div>
 
@@ -518,23 +511,23 @@ export default function QuestionnaireManagement() {
     <div className="h-full flex flex-col gap-4">
       {/* Flash alert */}
       {alert && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl border-2 border-black font-bold text-sm shadow-[3px_3px_0_0_#1A1D20] ${alert.type === 'success' ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'}`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-sky-chip font-semibold text-sm shadow-sky-glass ${alert.type === 'success' ? 'bg-success-100 text-success-800' : 'bg-error-100 text-error-800'}`}>
           {alert.msg}
         </div>
       )}
 
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
-        <div className="w-12 h-12 rounded-2xl bg-amber-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
+        <div className="w-12 h-12 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
           <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('admin.questionnaire.pageTitle')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.questionnaire.subtitle')}</p>
+          <h1 className="text-2xl font-black text-sky-ink">{t('admin.questionnaire.pageTitle')}</h1>
+          <p className="text-sm text-sky-ink-2">{t('admin.questionnaire.subtitle')}</p>
         </div>
-        <button onClick={() => setTplModal({ editing: null })} className={`${btnBase} ml-auto bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white py-2`}>
+        <SkyButton type="button" variant="primary" onClick={() => setTplModal({ editing: null })} className="ml-auto">
           <Plus className="w-4 h-4" /> {t('admin.questionnaire.newTemplate')}
-        </button>
+        </SkyButton>
       </div>
 
       {/* Body: split pane */}
@@ -542,52 +535,52 @@ export default function QuestionnaireManagement() {
         {/* Left pane — Template list */}
         <div className="w-72 shrink-0 overflow-y-auto flex flex-col gap-3 pr-1">
           {loading ? (
-            <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('admin.questionnaire.loading')}</div>
+            <div className="flex items-center justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('admin.questionnaire.loading')}</div>
           ) : templates.length === 0 ? (
-            <div className="text-center py-12 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
-              <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" /><p className="font-bold">{t('admin.questionnaire.noTemplates')}</p>
+            <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
+              <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" /><p className="font-semibold">{t('admin.questionnaire.noTemplates')}</p>
             </div>
           ) : templates.map(tpl => (
             <div
               key={tpl.templateId}
               onClick={() => setSelectedTpl(tpl)}
-              className={`cursor-pointer border-4 rounded-2xl p-4 transition-all ${
+              className={`cursor-pointer p-4 transition-all ${
                 selectedTpl?.templateId === tpl.templateId
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 shadow-[4px_4px_0_0_#1A1D20]'
-                  : 'border-black bg-white dark:bg-gray-800 hover:bg-amber-50/60 dark:hover:bg-amber-900/10 shadow-[3px_3px_0_0_#1A1D20]'
+                  ? 'rounded-sky-card bg-warning-50 ring-2 ring-warning-400'
+                  : 'rounded-sky-card bg-white border border-sky-surf-border shadow-sky-tint hover:bg-warning-50/60'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="font-black text-sm text-gray-900 dark:text-gray-100 leading-tight">{tpl.templateName}</p>
-                <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-black border ${tpl.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600'}`}>
+                <p className="font-bold text-sm text-sky-ink leading-tight">{tpl.templateName}</p>
+                <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold ${tpl.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
                   {tpl.isActive ? t('admin.questionnaire.statusActive') : t('admin.questionnaire.statusOff')}
                 </span>
               </div>
-              {tpl.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{tpl.description}</p>}
+              {tpl.description && <p className="text-xs text-sky-ink-2 mt-1 line-clamp-2">{tpl.description}</p>}
               <div className="flex items-center gap-1 mt-3" onClick={e => e.stopPropagation()}>
-                <button onClick={() => handleToggle(tpl)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" title={tpl.isActive ? 'Deactivate' : 'Activate'}>
-                  {tpl.isActive ? <ToggleRight className="w-4 h-4 text-green-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                </button>
-                <button onClick={() => setTplModal({ editing: tpl })} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => setDelTpl(tpl)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
-                <ChevronRight className="w-4 h-4 ml-auto text-gray-300 dark:text-gray-600" />
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggle(tpl)} title={tpl.isActive ? 'Deactivate' : 'Activate'} className="w-7 h-7">
+                  {tpl.isActive ? <ToggleRight className="w-4 h-4 text-success-600" /> : <ToggleLeft className="w-4 h-4 text-sky-ink-3" />}
+                </SkyButton>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setTplModal({ editing: tpl })} className="w-7 h-7"><Pencil className="w-4 h-4" /></SkyButton>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelTpl(tpl)} className="w-7 h-7 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
+                <ChevronRight className="w-4 h-4 ml-auto text-sky-ink-3" />
               </div>
             </div>
           ))}
         </div>
 
         {/* Right pane — Questions panel */}
-        <div className="flex-1 border-4 border-black dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-800 shadow-[4px_4px_0_0_#1A1D20] p-6 min-h-0 overflow-hidden flex flex-col">
+        <SkyCard variant="admin" className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {selectedTpl ? (
             <QuestionsPanel template={selectedTpl} onBack={() => setSelectedTpl(null)} />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400 gap-3">
+            <div className="flex-1 flex flex-col items-center justify-center text-center text-sky-ink-3 gap-3">
               <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-16 h-16 object-contain opacity-20" />
-              <p className="font-black text-lg text-gray-500 dark:text-gray-400">{t('admin.questionnaire.selectTemplate')}</p>
+              <p className="font-bold text-lg text-sky-ink-2">{t('admin.questionnaire.selectTemplate')}</p>
               <p className="text-sm">{t('admin.questionnaire.selectTemplateHint')}</p>
             </div>
           )}
-        </div>
+        </SkyCard>
       </div>
 
       {/* Modals */}

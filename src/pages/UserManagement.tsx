@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
-import Pagination from "../components/common/Pagination";
+import Pagination from "../components/common/SkyPagination";
 import adminUserApi from "../api/adminUserApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
 import { useAlert } from "../context/AlertContext";
+import SkyCard from "../components/ui/card/SkyCard";
+import SkyButton from "../components/ui/button/SkyButton";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 type ModalType = "create" | "update" | "delete" | null;
@@ -140,24 +142,66 @@ export const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-// ── ACTION BUTTON ─────────────────────────────────────────────────────────────
-const ActionButton = ({
-  onClick, icon, bgColor, hoverColor, title,
-}: {
-  onClick: () => void;
-  icon: React.ReactNode;
-  bgColor: string;
-  hoverColor: string;
-  title: string;
-}) => (
-  <button
-    title={title}
-    onClick={onClick}
-    className={`w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black ${bgColor} ${hoverColor} shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-gray-800`}
-  >
-    {icon}
-  </button>
+// ── SKY-PASTEL TABLE ATOMS ────────────────────────────────────────────────────
+// Forked from UserAvatar/RoleBadge/StatusBadge above rather than restyling
+// those in place: UserDetail.tsx imports the originals directly (`import {
+// UserAvatar, StatusBadge, RoleBadge, RolesEditor, formatDate } from
+// "./UserManagement"`), and that page hasn't been migrated yet. Restyling
+// the exports would have silently reskinned badges on an otherwise-untouched
+// neo-brutalism page. These Table-prefixed versions are local to this file's
+// table only; the exported originals (and the CRUD modals that use them,
+// also out of scope for this pass) are untouched.
+
+const TableUserAvatar = ({
+  username, userId, avatarUrl,
+}: { username: string; userId: number; avatarUrl?: string | null }) => {
+  const [imgError, setImgError] = useState(false);
+  const showImage = !!avatarUrl && !imgError;
+  return (
+    <div
+      className={`w-9 h-9 text-xs shrink-0 rounded-full flex items-center justify-center font-bold overflow-hidden ${
+        showImage ? "" : `text-sky-ink bg-linear-to-br ${getAvatarGradient(userId)}`
+      }`}
+    >
+      {showImage ? (
+        <img
+          src={avatarUrl!}
+          alt={username}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span className="leading-none">{getInitials(username)}</span>
+      )}
+    </div>
+  );
+};
+
+const TABLE_ROLE_STYLES: Record<string, string> = {
+  ADMIN: "bg-error-100 text-error-800",
+  MENTOR: "bg-purple-100 text-purple-800",
+  PLAYER: "bg-blue-100 text-blue-800",
+};
+const TableRoleBadge = ({ role }: { role: string }) => (
+  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full ${TABLE_ROLE_STYLES[role] ?? "bg-gray-100 text-gray-700"}`}>
+    {role}
+  </span>
 );
+
+const TABLE_STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
+  Active: { badge: "bg-success-100 text-success-800", dot: "bg-success-500" },
+  Banned: { badge: "bg-error-100 text-error-800", dot: "bg-error-500" },
+  Deleted: { badge: "bg-gray-100 text-gray-500", dot: "bg-gray-400" },
+};
+const TableStatusBadge = ({ status }: { status: string }) => {
+  const s = TABLE_STATUS_STYLES[status] ?? { badge: "bg-gray-100 text-gray-600", dot: "bg-gray-400" };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${s.badge}`}>
+      <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+      {status}
+    </span>
+  );
+};
 
 // ── GAMIFIED MODAL WRAPPER ────────────────────────────────────────────────────
 const GameModal = ({
@@ -632,7 +676,7 @@ export const RolesEditor = ({
 
 // ── SKELETON ROW ─────────────────────────────────────────────────────────────
 const SkeletonRow = () => (
-  <tr className="border-b-2 border-gray-100">
+  <tr className="sky-table-row">
     {[40, 64, 32, 28, 36, 24].map((w, i) => (
       <td key={i} className="px-5 py-4">
         <div className={`h-4 w-${w} rounded-full bg-gray-200 animate-pulse`} />
@@ -737,7 +781,7 @@ export default function UserManagement() {
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           {/* Search */}
           <div className="relative w-full sm:w-80">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-ink-2 pointer-events-none">
               <SearchIcon />
             </span>
             <input
@@ -745,32 +789,29 @@ export default function UserManagement() {
               placeholder={t("admin.userManagement.searchPlaceholder")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-2xl bg-white dark:bg-white/3 dark:border-white/20 dark:text-white dark:placeholder:text-gray-500 text-sm font-medium shadow-[3px_3px_0_0_#1A1D20] dark:shadow-none focus:outline-none focus:shadow-none focus:translate-x-0.75 focus:translate-y-0.75 transition-all placeholder:text-gray-400"
+              className="w-full pl-10 pr-4 py-2.5 rounded-sky-chip border border-sky-surf-border bg-white text-sky-ink text-sm font-medium focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 transition-all placeholder:text-sky-ink-3"
             />
           </div>
 
           {/* Create button */}
-          <button
-            onClick={() => openModal("create")}
-            className="flex items-center gap-2 px-5 py-2.5 bg-orange-300 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all whitespace-nowrap"
-          >
+          <SkyButton type="button" variant="primary" onClick={() => openModal("create")}>
             <PlusIcon />
             {t("admin.userManagement.createUser")}
-          </button>
+          </SkyButton>
         </div>
 
         {/* ── TABLE CARD ──────────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-white/3 border-4 border-black dark:border-white/20 rounded-3xl shadow-[6px_6px_0_0_#1A1D20] dark:shadow-none overflow-hidden">
+        <SkyCard variant="admin" className="p-0 overflow-hidden">
           {/* Card header */}
-          <div className="px-6 py-4 border-b-4 border-black dark:border-white/20 flex items-center gap-2 bg-gray-50 dark:bg-white/2">
-            <span className="text-gray-600 dark:text-gray-300">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2 bg-sky-admin-bg-deep">
+            <span className="text-sky-ink-2">
               <UserGroupIcon />
             </span>
-            <span className="font-black text-gray-900 dark:text-white text-sm">
+            <span className="font-semibold text-sky-ink text-sm">
               {t("admin.userManagement.allUsers")}
             </span>
             {!loading && (
-              <span className="ml-auto bg-orange-200 border-2 border-black dark:border-white/20 text-gray-800 text-xs font-black px-2.5 py-0.5 rounded-full">
+              <span className="ml-auto bg-admin-active/15 text-sky-ink text-xs font-semibold px-2.5 py-0.5 rounded-full">
                 {totalRecords}
               </span>
             )}
@@ -778,11 +819,12 @@ export default function UserManagement() {
 
           {/* Error banner */}
           {fetchError && (
-            <div className="mx-6 mt-5 bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold flex items-center justify-between">
+            <div className="mx-6 mt-5 bg-error-50 border border-error-300 rounded-sky-chip p-3 text-sm text-error-700 font-semibold flex items-center justify-between">
               <span>{fetchError}</span>
               <button
+                type="button"
                 onClick={fetchUsers}
-                className="underline font-black hover:no-underline"
+                className="underline font-semibold hover:no-underline"
               >
                 {t("admin.userManagement.retry")}
               </button>
@@ -793,11 +835,11 @@ export default function UserManagement() {
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
-                <tr className="border-b-2 border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-white/1">
+                <tr className="bg-sky-admin-bg-deep border-b border-slate-200">
                   {TABLE_HEADERS.map((h) => (
                     <th
                       key={h}
-                      className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                      className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-sky-ink"
                     >
                       {h}
                     </th>
@@ -812,39 +854,36 @@ export default function UserManagement() {
                 ) : users.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-20 text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-black dark:border-white/20 bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
                         <SearchIcon />
                       </div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm font-bold">
+                      <p className="text-sky-ink-2 text-sm font-semibold">
                         {t("admin.userManagement.noUsersFound")}
                       </p>
-                      <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                      <p className="text-sky-ink-3 text-xs mt-1">
                         {searchQuery ? t("admin.userManagement.tryDifferentSearch") : t("admin.userManagement.noUsersYet")}
                       </p>
                     </td>
                   </tr>
                 ) : (
-                  users.map((user, idx) => (
-                    <tr
-                      key={user.userId}
-                      className={`transition-colors hover:bg-orange-50/60 dark:hover:bg-white/3 ${
-                        idx < users.length - 1
-                          ? "border-b-2 border-gray-100 dark:border-white/5"
-                          : ""
-                      }`}
-                    >
+                  users.map((user) => (
+                    // sky-table-row already bakes in a bottom border + zebra
+                    // striping + hover state (index.css) — no extra hover/
+                    // border override here, that would just fight its own
+                    // :hover/:nth-child rules over cascade order.
+                    <tr key={user.userId} className="sky-table-row">
                       {/* User */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <UserAvatar username={user.username} userId={user.userId} />
-                          <span className="font-bold text-gray-800 dark:text-white/90 text-sm">
+                          <TableUserAvatar username={user.username} userId={user.userId} />
+                          <span className="font-semibold text-sky-ink text-sm">
                             {user.username}
                           </span>
                         </div>
                       </td>
 
                       {/* Email */}
-                      <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                      <td className="px-5 py-4 text-sm text-sky-ink-2 font-medium">
                         {user.email}
                       </td>
 
@@ -852,45 +891,51 @@ export default function UserManagement() {
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-1.5">
                           {user.roles.map((r) => (
-                            <RoleBadge key={r} role={r} />
+                            <TableRoleBadge key={r} role={r} />
                           ))}
                         </div>
                       </td>
 
                       {/* Status */}
                       <td className="px-5 py-4">
-                        <StatusBadge status={user.status} />
+                        <TableStatusBadge status={user.status} />
                       </td>
 
                       {/* Created At */}
-                      <td className="px-5 py-4 text-sm text-gray-400 dark:text-gray-500 font-medium">
+                      <td className="px-5 py-4 text-sm text-sky-ink-3 font-medium">
                         {formatDate(user.createdAt)}
                       </td>
 
                       {/* Actions */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
-                          <ActionButton
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
                             title="View User"
-                            bgColor="bg-sky-200"
-                            hoverColor="hover:bg-sky-300"
                             onClick={() => navigate(`/user-management/${user.userId}`)}
-                            icon={<EyeIcon />}
-                          />
-                          <ActionButton
+                          >
+                            <EyeIcon />
+                          </SkyButton>
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
                             title="Edit User"
-                            bgColor="bg-amber-200"
-                            hoverColor="hover:bg-amber-300"
                             onClick={() => openModal("update", user)}
-                            icon={<PencilIcon />}
-                          />
-                          <ActionButton
+                          >
+                            <PencilIcon />
+                          </SkyButton>
+                          <SkyButton
+                            type="button"
+                            variant="destructive"
+                            size="icon"
                             title="Delete User"
-                            bgColor="bg-red-200"
-                            hoverColor="hover:bg-red-300"
                             onClick={() => openModal("delete", user)}
-                            icon={<TrashIcon />}
-                          />
+                          >
+                            <TrashIcon />
+                          </SkyButton>
                         </div>
                       </td>
                     </tr>
@@ -909,12 +954,12 @@ export default function UserManagement() {
             onPageChange={setCurrentPage}
           />
 
-          <div className="px-6 py-3 border-t-2 border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/1">
-            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+          <div className="px-6 py-3 border-t border-gray-200 bg-sky-admin-bg-deep">
+            <span className="text-xs text-sky-ink-3 font-medium">
               {loading ? t("admin.userManagement.loading") : `Showing ${users.length} of ${totalRecords} users — page ${currentPage} of ${totalPages}`}
             </span>
           </div>
-        </div>
+        </SkyCard>
       </div>
 
       {/* ── MODALS ────────────────────────────────────────────────────────────── */}

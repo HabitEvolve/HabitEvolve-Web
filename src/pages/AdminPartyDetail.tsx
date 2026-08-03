@@ -9,6 +9,8 @@ import PageMeta from "../components/common/PageMeta";
 import adminPartyApi from "../api/adminPartyApi";
 import adminUserApi from "../api/adminUserApi";
 import { useAlert } from "../context/AlertContext";
+import SkyCard from "../components/ui/card/SkyCard";
+import SkyButton from "../components/ui/button/SkyButton";
 import { PartyItem, PartyMember, JoinRequestItem, JoinPolicy, UserItem } from "../types/api.types";
 import { PartyRaidDto } from "../types/adminParty.types";
 import { UserQuestDto } from "../types/userWorkspace.types";
@@ -20,75 +22,69 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { year: "
 const fmtDateTime = (d: string) => new Date(d).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const inputCls =
-  "w-full px-3.5 py-2 border-2 border-black rounded-xl text-sm font-medium focus:outline-none " +
-  "focus:ring-2 focus:ring-violet-300 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder:text-gray-400";
-
-const btnBase =
-  "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
-  "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
-  "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
+  "w-full px-3.5 py-2 rounded-sky-chip border border-sky-surf-border text-sm font-medium bg-white text-sky-ink " +
+  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 placeholder:text-sky-ink-3";
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<string, string> = {
-  Active: "bg-green-100 border-green-400 text-green-800",
-  Disbanded: "bg-gray-100 border-gray-400 text-gray-500",
-  Archived: "bg-amber-100 border-amber-400 text-amber-800",
+  Active: "bg-success-100 text-success-800",
+  Disbanded: "bg-gray-100 text-gray-500",
+  Archived: "bg-warning-100 text-warning-800",
 };
 const StatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black border-2 ${STATUS_STYLES[status] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>{status}</span>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
 );
 const POLICY_STYLES: Record<string, string> = {
-  PUBLIC: "bg-sky-100 border-sky-400 text-sky-800",
-  APPROVAL_REQUIRED: "bg-amber-100 border-amber-400 text-amber-800",
-  INVITE_ONLY: "bg-fuchsia-100 border-fuchsia-400 text-fuchsia-800",
+  PUBLIC: "bg-blue-100 text-blue-800",
+  APPROVAL_REQUIRED: "bg-warning-100 text-warning-800",
+  INVITE_ONLY: "bg-purple-100 text-purple-800",
 };
 const PolicyBadge = ({ policy }: { policy: string }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${POLICY_STYLES[policy] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>{policy}</span>
+  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${POLICY_STYLES[policy] ?? "bg-gray-100 text-gray-700"}`}>{policy}</span>
 );
 const QUEST_STATUS_STYLES: Record<string, string> = {
-  InProgress: "bg-sky-100 border-sky-400 text-sky-800",
-  Submitted: "bg-amber-100 border-amber-400 text-amber-800",
-  Approved: "bg-green-100 border-green-400 text-green-800",
-  Rejected: "bg-red-100 border-red-400 text-red-800",
-  Expired: "bg-gray-100 border-gray-400 text-gray-600",
-  Failed: "bg-red-100 border-red-400 text-red-800",
-  NotStarted: "bg-gray-100 border-gray-300 text-gray-500",
+  InProgress: "bg-blue-100 text-blue-800",
+  Submitted: "bg-warning-100 text-warning-800",
+  Approved: "bg-success-100 text-success-800",
+  Rejected: "bg-error-100 text-error-800",
+  Expired: "bg-gray-100 text-gray-600",
+  Failed: "bg-error-100 text-error-800",
+  NotStarted: "bg-gray-100 text-gray-500",
 };
 const QuestStatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black border-2 ${QUEST_STATUS_STYLES[status] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>{status}</span>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${QUEST_STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
 );
 const RAID_STATUS_STYLES: Record<string, string> = {
-  Upcoming: "bg-sky-100 border-sky-400 text-sky-800",
-  Active: "bg-amber-100 border-amber-400 text-amber-800",
-  Defeated: "bg-green-100 border-green-400 text-green-800",
-  Failed: "bg-red-100 border-red-400 text-red-800",
-  Expired: "bg-gray-100 border-gray-400 text-gray-600",
-  WipeOut: "bg-red-100 border-red-400 text-red-800",
+  Upcoming: "bg-blue-100 text-blue-800",
+  Active: "bg-warning-100 text-warning-800",
+  Defeated: "bg-success-100 text-success-800",
+  Failed: "bg-error-100 text-error-800",
+  Expired: "bg-gray-100 text-gray-600",
+  WipeOut: "bg-error-100 text-error-800",
 };
 const RaidStatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black border-2 ${RAID_STATUS_STYLES[status] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>{status}</span>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${RAID_STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
 );
 
 // ── SKELETONS ─────────────────────────────────────────────────────────────────
 const SkeletonBlock = ({ className = "" }: { className?: string }) => (
-  <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-xl ${className}`} />
+  <div className={`animate-pulse bg-gray-200 rounded-sky-chip ${className}`} />
 );
 const CardSkeletonGrid = ({ count = 3 }: { count?: number }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-    {Array.from({ length: count }).map((_, i) => <SkeletonBlock key={i} className="h-20 border-2 border-gray-200" />)}
+    {Array.from({ length: count }).map((_, i) => <SkeletonBlock key={i} className="h-20" />)}
   </div>
 );
 const ListSkeleton = ({ rows = 4 }: { rows?: number }) => (
-  <div className="space-y-3">{Array.from({ length: rows }).map((_, i) => <SkeletonBlock key={i} className="h-16 border-2 border-gray-200" />)}</div>
+  <div className="space-y-3">{Array.from({ length: rows }).map((_, i) => <SkeletonBlock key={i} className="h-16" />)}</div>
 );
 
 // ── EMPTY STATE ───────────────────────────────────────────────────────────────
 const EmptyState = ({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) => (
-  <div className="flex flex-col items-center gap-2 py-14 text-gray-400">
+  <div className="flex flex-col items-center gap-2 py-14 text-sky-ink-3">
     {icon}
-    <p className="font-black text-sm text-gray-500">{title}</p>
-    {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+    <p className="font-bold text-sm text-sky-ink-2">{title}</p>
+    {subtitle && <p className="text-xs text-sky-ink-3">{subtitle}</p>}
   </div>
 );
 
@@ -182,7 +178,7 @@ const OverviewTab = ({ party, onPartyChange }: { party: PartyItem; onPartyChange
     <div className="space-y-6">
       {/* ── Basic Info ───────────────────────────────────────────────────── */}
       <div>
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Basic Info</p>
+        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide mb-2">Basic Info</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Party ID", value: `#${party.partyId}` },
@@ -190,73 +186,73 @@ const OverviewTab = ({ party, onPartyChange }: { party: PartyItem; onPartyChange
             { label: "Created At", value: fmtDate(party.createdAt) },
             { label: "Updated At", value: party.updatedAt ? fmtDate(party.updatedAt) : "—" },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-gray-50 dark:bg-white/5 border-2 border-gray-200 dark:border-white/10 rounded-2xl p-3">
-              <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-0.5">{value}</p>
+            <div key={label} className="bg-gray-50 border border-gray-200 rounded-sky-chip p-3">
+              <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide">{label}</p>
+              <p className="text-sm font-semibold text-sky-ink mt-0.5">{value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── Invite Code ──────────────────────────────────────────────────── */}
-      <div className="border-2 border-black rounded-2xl p-4 bg-white dark:bg-white/3 shadow-[3px_3px_0_0_#1A1D20]">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-3">Invite Code</p>
+      <div className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint">
+        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide mb-3">Invite Code</p>
         <div className="flex flex-wrap items-center gap-3">
-          <code className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-2 border-black rounded-xl font-black text-sm tracking-widest">{party.inviteCode || "— none —"}</code>
+          <code className="px-4 py-2 bg-gray-100 rounded-sky-chip font-bold text-sm tracking-widest text-sky-ink">{party.inviteCode || "— none —"}</code>
           {party.inviteCode && (
-            <button onClick={copyInviteCode} className={`${btnBase} bg-white text-gray-700 py-1.5`}>
+            <SkyButton type="button" variant="secondary" size="sm" onClick={copyInviteCode}>
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copied ? "Copied" : "Copy"}
-            </button>
+            </SkyButton>
           )}
-          <button onClick={handleGenerateInviteCode} disabled={generatingCode} className={`${btnBase} bg-sky-200 text-gray-900 py-1.5`}>
+          <SkyButton type="button" variant="secondary" size="sm" onClick={handleGenerateInviteCode} disabled={generatingCode}>
             <KeyRound className="w-3.5 h-3.5" /> {generatingCode ? "Generating…" : "Regenerate"}
-          </button>
+          </SkyButton>
         </div>
       </div>
 
       {/* ── Edit Info ────────────────────────────────────────────────────── */}
-      <div className="border-2 border-black rounded-2xl p-4 bg-white dark:bg-white/3 shadow-[3px_3px_0_0_#1A1D20] space-y-3">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide">Edit Party Info</p>
+      <div className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint space-y-3">
+        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide">Edit Party Info</p>
         <div>
-          <label className="block text-xs font-black text-gray-600 mb-1">Name</label>
+          <label className="block text-xs font-semibold text-sky-ink-2 mb-1">Name</label>
           <input required maxLength={200} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={inputCls} />
         </div>
         <div>
-          <label className="block text-xs font-black text-gray-600 mb-1">Description</label>
+          <label className="block text-xs font-semibold text-sky-ink-2 mb-1">Description</label>
           <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className={inputCls} />
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[180px]">
-            <label className="block text-xs font-black text-gray-600 mb-1">Join Policy</label>
+          <div className="flex-1 min-w-45">
+            <label className="block text-xs font-semibold text-sky-ink-2 mb-1">Join Policy</label>
             <select value={editForm.joinPolicy} onChange={(e) => setEditForm({ ...editForm, joinPolicy: e.target.value as JoinPolicy })} className={inputCls}>
               <option value="APPROVAL_REQUIRED">APPROVAL_REQUIRED</option>
               <option value="PUBLIC">PUBLIC</option>
               <option value="INVITE_ONLY">INVITE_ONLY</option>
             </select>
           </div>
-          <button onClick={handleSaveInfo} disabled={savingInfo || !infoChanged} className={`${btnBase} bg-amber-300 text-gray-900`}>
+          <SkyButton type="button" variant="primary" onClick={handleSaveInfo} disabled={savingInfo || !infoChanged}>
             {savingInfo ? "Saving…" : "Save Changes"}
-          </button>
+          </SkyButton>
         </div>
       </div>
 
       {/* ── Transfer Mentor ──────────────────────────────────────────────── */}
-      <div className="border-2 border-black rounded-2xl p-4 bg-white dark:bg-white/3 shadow-[3px_3px_0_0_#1A1D20]">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-3">Transfer Ownership</p>
-        <p className="text-sm text-gray-500 mb-3">Currently owned by <span className="font-black text-gray-800 dark:text-gray-100">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>.</p>
+      <div className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint">
+        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide mb-3">Transfer Ownership</p>
+        <p className="text-sm text-sky-ink-2 mb-3">Currently owned by <span className="font-bold text-sky-ink">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>.</p>
         {mentorsLoading ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm font-semibold py-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading mentors…</div>
+          <div className="flex items-center gap-2 text-sky-ink-3 text-sm font-semibold py-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading mentors…</div>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
-            <select value={newMentorId} onChange={(e) => setNewMentorId(e.target.value)} className={`${inputCls} flex-1 min-w-[200px]`}>
+            <select value={newMentorId} onChange={(e) => setNewMentorId(e.target.value)} className={`${inputCls} flex-1 min-w-50`}>
               <option value="">Select a new mentor…</option>
               {mentors.filter((m) => m.userId !== party.mentorUserId).map((m) => (
                 <option key={m.userId} value={m.userId}>{m.username} (#{m.userId})</option>
               ))}
             </select>
-            <button onClick={handleTransfer} disabled={transferring || !newMentorId} className={`${btnBase} bg-violet-300 text-gray-900`}>
+            <SkyButton type="button" variant="primary" onClick={handleTransfer} disabled={transferring || !newMentorId}>
               <UserCog className="w-3.5 h-3.5" /> {transferring ? "Transferring…" : "Transfer"}
-            </button>
+            </SkyButton>
           </div>
         )}
       </div>
@@ -288,19 +284,21 @@ const MembersTab = ({ partyId, members, loading, onRefresh }: { partyId: number;
   return (
     <div className="space-y-2">
       {members.map((m) => (
-        <div key={m.partyMemberId} className="flex items-center justify-between border-2 border-black rounded-2xl px-4 py-3 bg-white dark:bg-white/3 shadow-[2px_2px_0_0_#1A1D20]">
+        <div key={m.partyMemberId} className="flex items-center justify-between rounded-sky-chip px-4 py-3 bg-white border border-sky-surf-border shadow-sky-tint">
           <div>
-            <p className="font-black text-sm text-gray-900 dark:text-gray-100">{m.username}</p>
-            <p className="text-xs text-gray-400">#{m.userId} · Joined {m.joinedAt ? fmtDate(m.joinedAt) : "—"}</p>
+            <p className="font-bold text-sm text-sky-ink">{m.username}</p>
+            <p className="text-xs text-sky-ink-3">#{m.userId} · Joined {m.joinedAt ? fmtDate(m.joinedAt) : "—"}</p>
           </div>
-          <button
+          <SkyButton
+            type="button"
+            variant="destructive"
+            size="icon"
             onClick={() => handleRemove(m.userId)}
             disabled={removingId === m.userId}
             title="Remove from party"
-            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-red-200 hover:bg-red-300 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 transition-all text-gray-800"
           >
             <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          </SkyButton>
         </div>
       ))}
     </div>
@@ -332,15 +330,15 @@ const JoinRequestsTab = ({ partyId, requests, loading, onRefresh }: { partyId: n
   return (
     <div className="space-y-2">
       {requests.map((r) => (
-        <div key={r.requestId} className="flex items-center justify-between gap-3 border-2 border-black rounded-2xl px-4 py-3 bg-white dark:bg-white/3 shadow-[2px_2px_0_0_#1A1D20]">
+        <div key={r.requestId} className="flex items-center justify-between gap-3 rounded-sky-chip px-4 py-3 bg-white border border-sky-surf-border shadow-sky-tint">
           <div className="min-w-0">
-            <p className="font-black text-sm text-gray-900 dark:text-gray-100">{r.username}</p>
-            {r.message && <p className="text-xs text-gray-500 truncate">"{r.message}"</p>}
-            <p className="text-xs text-gray-400">Requested {fmtDateTime(r.requestedAt)}</p>
+            <p className="font-bold text-sm text-sky-ink">{r.username}</p>
+            {r.message && <p className="text-xs text-sky-ink-2 truncate">"{r.message}"</p>}
+            <p className="text-xs text-sky-ink-3">Requested {fmtDateTime(r.requestedAt)}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => handleDecision(r.requestId, true)} disabled={processingId === r.requestId} className={`${btnBase} bg-green-200 text-gray-900 py-1.5 px-3 text-xs`}>Approve</button>
-            <button onClick={() => handleDecision(r.requestId, false)} disabled={processingId === r.requestId} className={`${btnBase} bg-red-200 text-gray-900 py-1.5 px-3 text-xs`}>Reject</button>
+            <SkyButton type="button" variant="success" size="sm" onClick={() => handleDecision(r.requestId, true)} disabled={processingId === r.requestId}>Approve</SkyButton>
+            <SkyButton type="button" variant="destructive" size="sm" onClick={() => handleDecision(r.requestId, false)} disabled={processingId === r.requestId}>Reject</SkyButton>
           </div>
         </div>
       ))}
@@ -356,18 +354,18 @@ const QuestsTab = ({ quests, loading }: { quests: UserQuestDto[]; loading: boole
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {quests.map((q) => (
-        <div key={q.questId} className="border-2 border-black rounded-2xl p-4 bg-white dark:bg-white/3 shadow-[3px_3px_0_0_#1A1D20] space-y-2">
+        <div key={q.questId} className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint space-y-2">
           <div className="flex items-start justify-between gap-2">
-            <p className="font-black text-sm text-gray-900 dark:text-gray-100 leading-snug">{q.title}</p>
+            <p className="font-bold text-sm text-sky-ink leading-snug">{q.title}</p>
             <QuestStatusBadge status={q.status} />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border bg-violet-100 border-violet-400 text-violet-800">{q.questType}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border bg-blue-100 border-blue-400 text-blue-800">{q.difficulty}</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800">{q.questType}</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">{q.difficulty}</span>
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
+          <div className="flex items-center justify-between text-xs text-sky-ink-2 font-medium pt-1 border-t border-dashed border-sky-ink/15">
             <span>{q.deadlineAt ? `Due ${fmtDate(q.deadlineAt)}` : "No deadline"}</span>
-            <span className="font-black text-gray-700 dark:text-gray-200">{q.rewardGold}g · {q.rewardXp}xp{q.damage > 0 ? ` · ${q.damage} dmg` : ""}</span>
+            <span className="font-bold text-sky-ink">{q.rewardGold}g · {q.rewardXp}xp{q.damage > 0 ? ` · ${q.damage} dmg` : ""}</span>
           </div>
         </div>
       ))}
@@ -385,15 +383,15 @@ const RaidsTab = ({ raids, loading }: { raids: PartyRaidDto[]; loading: boolean 
       {raids.map((r) => {
         const pct = Math.max(0, Math.min(100, r.healthPercentage));
         return (
-          <div key={r.raidId} className="border-2 border-black rounded-2xl p-4 bg-white dark:bg-white/3 shadow-[3px_3px_0_0_#1A1D20] space-y-2">
+          <div key={r.raidId} className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <p className="font-black text-sm text-gray-900 dark:text-gray-100">{r.bossName}</p>
+              <p className="font-bold text-sm text-sky-ink">{r.bossName}</p>
               <RaidStatusBadge status={r.status} />
             </div>
-            <div className="w-full h-3 bg-gray-100 dark:bg-gray-800 border-2 border-black rounded-full overflow-hidden">
-              <div className="h-full bg-red-400" style={{ width: `${pct}%` }} />
+            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-error-500" style={{ width: `${pct}%` }} />
             </div>
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
+            <div className="flex items-center justify-between text-xs text-sky-ink-2 font-medium">
               <span>{r.currentHp.toLocaleString()} / {r.maxHp.toLocaleString()} HP ({pct.toFixed(0)}%)</span>
               <span>{fmtDate(r.weekStartDate)} → {fmtDate(r.weekEndDate)}</span>
             </div>
@@ -495,7 +493,7 @@ export default function AdminPartyDetail() {
       <PageBreadcrumb pageTitle="Party Detail" />
 
       <div className="space-y-6">
-        <button onClick={() => navigate("/admin/parties")} className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
+        <button type="button" onClick={() => navigate("/admin/parties")} className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-ink-2 hover:text-sky-ink transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Party Management
         </button>
 
@@ -505,19 +503,19 @@ export default function AdminPartyDetail() {
             <div className="space-y-2"><SkeletonBlock className="h-6 w-40" /><SkeletonBlock className="h-4 w-56" /></div>
           </div>
         ) : partyError || !party ? (
-          <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 text-sm text-red-700 font-semibold">{partyError ?? "Party not found."}</div>
+          <div className="bg-error-50 border border-error-300 rounded-sky-chip p-4 text-sm text-error-700 font-semibold">{partyError ?? "Party not found."}</div>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl border-4 border-black bg-violet-200 flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-              <Users className="w-7 h-7 text-violet-800" />
+            <div className="w-16 h-16 rounded-sky-card bg-purple-100 flex items-center justify-center shrink-0">
+              <Users className="w-7 h-7 text-purple-700" />
             </div>
             <div>
-              <p className="text-xl font-black text-gray-900 dark:text-gray-100">{party.name}</p>
-              {party.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{party.description}</p>}
+              <p className="text-xl font-bold text-sky-ink">{party.name}</p>
+              {party.description && <p className="text-sm text-sky-ink-2 mt-0.5">{party.description}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusBadge status={party.status} />
                 <PolicyBadge policy={party.joinPolicy} />
-                <span className="text-xs text-gray-400 font-medium">Mentor: {party.mentorUsername ?? `#${party.mentorUserId}`}</span>
+                <span className="text-xs text-sky-ink-3 font-medium">Mentor: {party.mentorUsername ?? `#${party.mentorUserId}`}</span>
               </div>
             </div>
           </div>
@@ -525,32 +523,33 @@ export default function AdminPartyDetail() {
 
         {!partyLoading && party && (
           <>
-            <div className="flex items-end gap-1 border-b-2 border-black/10 overflow-x-auto">
+            <div className="flex items-end gap-1 border-b border-gray-200 overflow-x-auto">
               {TABS.map((tt) => (
                 <button
+                  type="button"
                   key={tt.id}
                   onClick={() => setTab(tt.id)}
-                  className={`px-5 py-2.5 font-black text-sm rounded-t-2xl border-2 transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                  className={`px-5 py-2.5 font-semibold text-sm rounded-t-sky-chip transition-all whitespace-nowrap flex items-center gap-1.5 ${
                     tab === tt.id
-                      ? "bg-violet-300 border-black text-gray-900 shadow-[3px_0_0_0_#1A1D20,0_3px_0_0_#1A1D20] -mb-0.5 relative z-10"
-                      : "bg-white dark:bg-gray-800 border-black/20 dark:border-white/20 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      ? "bg-purple-100 text-purple-800 -mb-px"
+                      : "text-sky-ink-2 hover:bg-sky-3/20"
                   }`}
                 >
                   {tt.icon} {tt.label}
                   {tt.id === "joinRequests" && !joinRequestsLoading && joinRequests.length > 0 && (
-                    <span className="bg-red-400 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{joinRequests.length}</span>
+                    <span className="bg-error-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">{joinRequests.length}</span>
                   )}
                 </button>
               ))}
             </div>
 
-            <div className="bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-5">
+            <SkyCard variant="admin">
               {tab === "overview" && <OverviewTab party={party} onPartyChange={setParty} />}
               {tab === "members" && <MembersTab partyId={party.partyId} members={members} loading={membersLoading} onRefresh={fetchMembers} />}
               {tab === "joinRequests" && <JoinRequestsTab partyId={party.partyId} requests={joinRequests} loading={joinRequestsLoading} onRefresh={() => { fetchJoinRequests(); fetchMembers(); }} />}
               {tab === "quests" && <QuestsTab quests={quests} loading={questsLoading} />}
               {tab === "raids" && <RaidsTab raids={raids} loading={raidsLoading} />}
-            </div>
+            </SkyCard>
           </>
         )}
       </div>

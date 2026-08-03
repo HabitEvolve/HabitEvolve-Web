@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../context/ThemeContext";
 import { useWallet } from "../context/WalletContext";
 import UserDropdown from "../components/header/UserDropdown";
 import LanguageToggle from "../components/common/LanguageToggle";
@@ -60,25 +59,23 @@ const GemBalance = () => {
   );
 };
 
+// Disabled, not hidden: Sky-Pastel has no dark-mode tokens yet (see
+// MentorLayout's forced-light override), so toggling here would visibly do
+// nothing — a disabled control with an explanatory tooltip reads as
+// "not yet available", where hiding it would just look like a missing button.
 const ThemeToggleInline = () => {
-  const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
   return (
     <button
-      onClick={toggleTheme}
-      aria-label={theme === "dark" ? t("header.switchToLight") : t("header.switchToDark")}
-      className={`flex items-center justify-center w-10 h-10 shrink-0 bg-gray-25 dark:bg-gray-800 border-[3px] ${inkBorder} rounded-xl ${shadowSm} hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-150 ${easeExpo} text-gray-800 dark:text-gray-200`}
+      type="button"
+      disabled
+      aria-label={t("header.themeDisabledMentor")}
+      title={t("header.themeDisabledMentor")}
+      className={`flex items-center justify-center w-10 h-10 shrink-0 bg-gray-25 dark:bg-gray-800 border-[3px] ${inkBorder} rounded-xl opacity-40 cursor-not-allowed text-gray-800 dark:text-gray-200`}
     >
-      {theme === "dark" ? (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
-          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      ) : (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </button>
   );
 };

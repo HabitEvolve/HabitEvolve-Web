@@ -3,11 +3,13 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import Pagination from "../../components/common/Pagination";
+import Pagination from "../../components/common/SkyPagination";
 import mentorApi from "../../api/mentorApi";
 import mentorWalletApi, { submitSepayForm } from "../../api/mentorWalletApi";
 import { useAlert } from "../../context/AlertContext";
 import { useWallet } from "../../context/WalletContext";
+import SkyCard from "../../components/ui/card/SkyCard";
+import SkyButton from "../../components/ui/button/SkyButton";
 import type {
     ActiveSubscriptionDto,
     MentorWalletDto,
@@ -17,30 +19,8 @@ import type {
 import type { WalletPaymentMethod, GemTransactionDto } from "../../types/mentorWallet.types";
 
 // ── DESIGN TOKENS ───────────────────────────────────────────────────────────────
-// Same "Guild Command Center" neo-brutalism system as PartyManagement.tsx:
-// tinted ink (game-outline / brand-300 in dark) instead of pure black, every
-// pastel surface carries an explicit dark: pair.
-const inkBorder = "border-game-outline dark:border-brand-300";
-const shadowSm = "shadow-[3px_3px_0_0_var(--color-game-outline)] dark:shadow-[3px_3px_0_0_var(--color-brand-300)]";
-const shadowMd = "shadow-[5px_5px_0_0_var(--color-game-outline)] dark:shadow-[5px_5px_0_0_var(--color-brand-300)]";
-const shadowLg = "shadow-[9px_9px_0_0_var(--color-game-outline)] dark:shadow-[9px_9px_0_0_var(--color-brand-300)]";
+// Sky-Pastel only — neo-brutalism ink borders/hard shadows retired (see DESIGN.md).
 const easeExpo = "ease-[cubic-bezier(0.16,1,0.3,1)]";
-const btnPress =
-    `hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] ` +
-    `active:shadow-none active:translate-x-[3px] active:translate-y-[3px] ` +
-    `disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 ` +
-    `transition-all duration-150 ${easeExpo}`;
-// Reserved for the single currently-active package card — a hard ink shadow
-// plus a soft success-tinted glow. Deliberate one-off accent, not a reusable
-// pattern (DESIGN.md's No-Mixing Rule still applies everywhere else).
-const featuredGlow =
-    "shadow-[6px_6px_0_0_var(--color-game-outline),0_0_24px_rgba(18,183,106,0.35)] " +
-    "dark:shadow-[6px_6px_0_0_var(--color-brand-300),0_0_28px_rgba(52,211,153,0.4)]";
-// Light card-tilt on hover ("card flip nhẹ") — motion-safe only, degrades to a
-// plain lift under prefers-reduced-motion.
-const cardTilt =
-    "motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] " +
-    "[transform-style:preserve-3d] motion-safe:hover:[transform:perspective(900px)_rotateY(-4deg)_rotateX(1.5deg)_translateY(-4px)]";
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getMentorId = () => {
@@ -61,13 +41,13 @@ const UsageBar = ({ label, used, max }: { label: string; used: number; max: numb
     const color = pct >= 90 ? "bg-error-500" : pct >= 70 ? "bg-warning-400" : "bg-success-500";
     return (
         <div>
-            <div className="flex justify-between text-xs font-black mb-1.5">
+            <div className="flex justify-between text-sky-small font-semibold mb-1.5 text-sky-ink">
                 <span>{label}</span>
-                <span className={pct >= 90 ? "text-error-600 dark:text-error-300" : "text-gray-600"}>
+                <span className={pct >= 90 ? "text-error-600" : "text-sky-ink-2"}>
                     {used} / {max === 0 ? "∞" : max}
                 </span>
             </div>
-            <div className={`h-3.5 bg-gray-200 border-2 ${inkBorder} rounded-full overflow-hidden`}>
+            <div className="h-3.5 bg-sky-3/40 rounded-full overflow-hidden">
                 <div
                     className={`h-full ${color} transition-all duration-500`}
                     style={{ width: `${pct}%` }}
@@ -79,15 +59,15 @@ const UsageBar = ({ label, used, max }: { label: string; used: number; max: numb
 
 // ── TRANSACTION LOGBOOK ───────────────────────────────────────────────────────
 const TX_META: Record<string, { symbol: string; sign: "+" | "-"; color: string; ring: string }> = {
-    TOPUP: { symbol: "↓", sign: "+", color: "text-success-600 dark:text-success-300", ring: "bg-success-100 dark:bg-success-500/20" },
-    PURCHASE: { symbol: "↑", sign: "-", color: "text-error-600 dark:text-error-300", ring: "bg-error-100 dark:bg-error-500/20" },
-    REFUND: { symbol: "↺", sign: "+", color: "text-brand-600 dark:text-brand-300", ring: "bg-brand-100 dark:bg-brand-500/20" },
+    TOPUP: { symbol: "↓", sign: "+", color: "text-success-600", ring: "bg-success-100" },
+    PURCHASE: { symbol: "↑", sign: "-", color: "text-error-600", ring: "bg-error-100" },
+    REFUND: { symbol: "↺", sign: "+", color: "text-brand-600", ring: "bg-brand-100" },
 };
 
 const TX_STATUS_STYLES: Record<string, string> = {
-    Completed: "bg-success-100 dark:bg-success-500/15 text-success-800 dark:text-success-300",
-    Pending: "bg-warning-100 dark:bg-warning-500/15 text-warning-800 dark:text-warning-300",
-    Cancelled: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+    Completed: "bg-success-100 text-success-800",
+    Pending: "bg-warning-100 text-warning-800",
+    Cancelled: "bg-gray-100 text-gray-600",
 };
 
 const TransactionLogbook = ({
@@ -103,26 +83,26 @@ const TransactionLogbook = ({
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center gap-3 py-14 text-gray-400">
+            <div className="flex items-center justify-center gap-3 py-14 text-sky-ink-3">
                 <Spinner size={22} />
-                <span className="font-bold text-sm">{t("mentor.subscriptionWallet.loadingTransactions", "Loading logbook…")}</span>
+                <span className="font-semibold text-sm">{t("mentor.subscriptionWallet.loadingTransactions", "Loading logbook…")}</span>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className={`text-center py-10 border-2 border-dashed border-error-300 dark:border-error-500/30 rounded-2xl bg-error-50 dark:bg-error-500/10`}>
-                <p className="text-sm font-bold text-error-600 dark:text-error-300">{error}</p>
+            <div className="text-center py-10 border border-dashed border-error-300 rounded-sky-chip bg-error-50">
+                <p className="text-sm font-semibold text-error-600">{error}</p>
             </div>
         );
     }
 
     if (transactions.length === 0) {
         return (
-            <div className="text-center py-14 border-2 border-dashed border-game-outline/25 dark:border-brand-300/25 rounded-2xl bg-white/40 dark:bg-white/5">
-                <p className="font-black text-gray-600 text-base">{t("mentor.subscriptionWallet.noTransactions", "The logbook is empty")}</p>
-                <p className="text-sm text-gray-400 font-medium mt-1">{t("mentor.subscriptionWallet.noTransactionsHint", "Top up or purchase a plan and it'll show up here.")}</p>
+            <div className="text-center py-14 border border-dashed border-sky-ink/15 rounded-sky-chip bg-white/40">
+                <p className="font-bold text-sky-ink text-base">{t("mentor.subscriptionWallet.noTransactions", "The logbook is empty")}</p>
+                <p className="text-sm text-sky-ink-3 font-medium mt-1">{t("mentor.subscriptionWallet.noTransactionsHint", "Top up or purchase a plan and it'll show up here.")}</p>
             </div>
         );
     }
@@ -136,27 +116,27 @@ const TransactionLogbook = ({
                 return (
                     <div
                         key={tx.gemTransactionId}
-                        className={`flex gap-4 py-4 ${isLast ? "" : "border-b-2 border-dashed border-game-outline/25 dark:border-brand-300/25"}`}
+                        className={`flex gap-4 py-4 ${isLast ? "" : "border-b border-dashed border-sky-ink/15"}`}
                     >
-                        <span className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${inkBorder} ${meta.ring} font-black text-lg shrink-0`}>
+                        <span className={`flex items-center justify-center w-10 h-10 rounded-full border border-sky-surf-border ${meta.ring} font-bold text-lg shrink-0 text-sky-ink`}>
                             {meta.symbol}
                         </span>
                         <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                                <p className="font-black text-sm text-gray-800 truncate">
+                                <p className="font-semibold text-sm text-sky-ink truncate">
                                     {tx.description || tx.type}
                                 </p>
-                                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                <p className="text-xs text-sky-ink-2 font-medium mt-0.5">
                                     {new Date(tx.createdAt).toLocaleString()}
-                                    {tx.reference && <span className="ml-1.5 text-gray-400">· {tx.reference}</span>}
+                                    {tx.reference && <span className="ml-1.5 text-sky-ink-3">· {tx.reference}</span>}
                                 </p>
                             </div>
                             <div className="text-right shrink-0">
-                                <p className={`font-black text-sm ${meta.color}`}>
+                                <p className={`font-bold text-sm ${meta.color}`}>
                                     {meta.sign}{tx.gemAmount.toLocaleString()}
                                     <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-3.5 h-3.5 object-contain align-text-bottom ml-1" />
                                 </p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-black rounded-full ${statusClass}`}>
+                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusClass}`}>
                                     {tx.status}
                                 </span>
                             </div>
@@ -203,17 +183,18 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 
     return createPortal(
         <div
-            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-game-outline/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-sky-ink/60 backdrop-blur-sm"
             onClick={onClose}
         >
-            <div
-                className={`relative w-full max-w-md bg-warning-100 dark:bg-warning-500/15 border-4 ${inkBorder} rounded-2xl ${shadowLg} p-6`}
+            <SkyCard
+                variant="mentor"
+                className="w-full max-w-md"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-2xl font-black mb-1">{pkg.name}</h2>
-                <p className="text-sm text-gray-600 mb-4">{pkg.description}</p>
+                <h2 className="text-sky-h2 font-bold text-sky-ink mb-1">{pkg.name}</h2>
+                <p className="text-sky-body text-sky-ink-2 mb-4">{pkg.description}</p>
 
-                <div className={`bg-gray-25 dark:bg-gray-800 border-2 ${inkBorder} rounded-xl p-4 mb-4 space-y-2`}>
+                <div className="bg-sky-3/20 border border-sky-surf-border rounded-sky-chip p-4 mb-4 space-y-2">
                     {[
                         [t("mentor.subscriptionWallet.maxParties"), `${pkg.maxParties}`],
                         [t("mentor.subscriptionWallet.maxMembers"), `${pkg.maxMembersPerParty}`],
@@ -225,35 +206,28 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                         [t("mentor.subscriptionWallet.duration"), `${pkg.durationDays} ${t("mentor.subscriptionWallet.days")}`],
                     ].map(([k, v]) => (
                         <div key={k} className="flex justify-between text-sm font-medium">
-                            <span className="text-gray-500">{k}</span>
-                            <span className="font-black">{v}</span>
+                            <span className="text-sky-ink-2">{k}</span>
+                            <span className="font-semibold text-sky-ink">{v}</span>
                         </div>
                     ))}
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-gray-500 font-medium">{t("mentor.subscriptionWallet.cost")}</span>
-                    <span className="text-2xl font-black text-amber-700 dark:text-amber-300">
+                    <span className="text-sky-small text-sky-ink-2 font-medium">{t("mentor.subscriptionWallet.cost")}</span>
+                    <span className="text-sky-h2 font-bold text-sky-peach-deep">
                         {pkg.price.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-5 h-5 object-contain align-text-bottom" />
                     </span>
                 </div>
 
                 <div className="flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-gray-25 dark:bg-gray-800 ${shadowSm} ${btnPress}`}
-                    >
+                    <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
                         {t("mentor.subscriptionWallet.cancel")}
-                    </button>
-                    <button
-                        onClick={handlePurchase}
-                        disabled={loading}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-amber-400 text-game-outline ${shadowSm} ${btnPress} inline-flex items-center justify-center gap-2`}
-                    >
+                    </SkyButton>
+                    <SkyButton type="button" variant="primary" onClick={handlePurchase} disabled={loading} className="flex-1">
                         {loading ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</> : t("mentor.subscriptionWallet.purchaseDemo")}
-                    </button>
+                    </SkyButton>
                 </div>
-            </div>
+            </SkyCard>
         </div>,
         document.body
     );
@@ -261,8 +235,8 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 
 // ── GEM STORE MODAL ───────────────────────────────────────────────────────────
 const GEM_PACKAGES = [
-    { gems: 5000,  label: "Guild",  color: "bg-warning-100 dark:bg-warning-500/15", badge: "POPULAR" },
-    { gems: 10000, label: "Legend", color: "bg-error-100 dark:bg-error-500/15",     badge: "BEST VALUE" },
+    { gems: 5000,  label: "Guild",  color: "bg-warning-100", badge: "POPULAR" },
+    { gems: 10000, label: "Legend", color: "bg-error-100",   badge: "BEST VALUE" },
 ] as const;
 
 type GemPackage = typeof GEM_PACKAGES[number];
@@ -334,19 +308,20 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
     return createPortal(
         <div
-            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-game-outline/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-sky-ink/60 backdrop-blur-sm"
             onClick={onClose}
         >
-            <div
-                className={`relative w-full max-w-lg bg-gray-25 dark:bg-gray-800 border-4 ${inkBorder} rounded-2xl ${shadowLg} p-6 overflow-hidden`}
+            <SkyCard
+                variant="mentor"
+                className="w-full max-w-lg overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Redirecting overlay — shown while SePay form is submitting */}
                 {redirecting && (
-                    <div className="absolute inset-0 bg-gray-25/95 dark:bg-gray-900/95 rounded-xl flex flex-col items-center justify-center gap-4 z-10">
+                    <div className="absolute inset-0 bg-white/95 rounded-sky-card flex flex-col items-center justify-center gap-4 z-10">
                         <Spinner size={40} />
-                        <p className="font-black text-xl">{t("mentor.subscriptionWallet.connectingSepay")}</p>
-                        <p className="text-sm text-gray-500 text-center max-w-xs font-medium">
+                        <p className="font-bold text-xl text-sky-ink">{t("mentor.subscriptionWallet.connectingSepay")}</p>
+                        <p className="text-sm text-sky-ink-2 text-center max-w-xs font-medium">
                             {t("mentor.subscriptionWallet.redirectingPayment")}
                         </p>
                     </div>
@@ -354,42 +329,45 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-2xl font-black flex items-center gap-2"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-7 h-7 object-contain" />{t("mentor.subscriptionWallet.gemStore")}</h2>
+                    <h2 className="text-sky-h2 font-bold text-sky-ink flex items-center gap-2"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-7 h-7 object-contain" />{t("mentor.subscriptionWallet.gemStore")}</h2>
                     <button
+                        type="button"
                         onClick={onClose}
-                        className={`w-8 h-8 flex items-center justify-center border-2 ${inkBorder} rounded-full font-black text-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
+                        className="w-8 h-8 flex items-center justify-center rounded-full text-sky-ink-2 hover:bg-sky-3/30 hover:text-sky-ink transition-colors text-lg"
                     >
                         ✕
                     </button>
                 </div>
-                <p className="text-xs text-gray-500 font-medium mb-5">
+                <p className="text-sky-small text-sky-ink-2 font-medium mb-5">
                     Rate: 1 <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-3.5 h-3.5 object-contain align-text-bottom" /> = {vndPerGem.toLocaleString()} VND
                 </p>
 
-                {/* Package grid */}
+                {/* Package grid — selection control, not a CTA: kept as a custom toggle
+                    rather than SkyButton so the selected-state ring stays legible. */}
                 <div className="grid grid-cols-2 gap-3 mb-3">
                     {GEM_PACKAGES.map((pkg) => {
                         const isSelected = selected?.gems === pkg.gems;
                         return (
                             <button
+                                type="button"
                                 key={pkg.gems}
                                 onClick={() => selectPackage(pkg)}
-                                className={`relative text-left p-4 rounded-2xl transition-all ${pkg.color} ${isSelected
-                                    ? `border-4 ${inkBorder} shadow-none translate-x-0.5 translate-y-0.5`
-                                    : `border-2 border-gray-300 dark:border-gray-600 shadow-[3px_3px_0_0_#d1d5db] dark:shadow-[3px_3px_0_0_#374151] hover:${inkBorder} hover:${shadowSm}`
+                                className={`relative text-left p-4 rounded-sky-chip transition-all ${pkg.color} ${isSelected
+                                    ? "border-2 border-sky-deep shadow-sky-chip"
+                                    : "border border-sky-surf-border hover:border-sky-deep/40"
                                 }`}
                             >
                                 {pkg.badge && (
-                                    <span className={`absolute top-2 right-2 px-1.5 py-0.5 text-[10px] font-black bg-game-outline dark:bg-brand-300 text-white dark:text-gray-900 rounded-full`}>
+                                    <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[10px] font-semibold bg-sky-deep text-white rounded-full">
                                         {pkg.badge}
                                     </span>
                                 )}
-                                <div className="text-3xl font-black text-gray-900">
+                                <div className="text-3xl font-extrabold text-sky-ink">
                                     {pkg.gems.toLocaleString()}
                                     <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-6 h-6 object-contain align-text-bottom ml-1" />
                                 </div>
-                                <div className="text-xs font-black text-gray-600 mt-0.5">{pkg.label}</div>
-                                <div className="text-sm font-black text-gray-800 mt-1">
+                                <div className="text-xs font-semibold text-sky-ink-2 mt-0.5">{pkg.label}</div>
+                                <div className="text-sm font-bold text-sky-ink mt-1">
                                     {(pkg.gems * vndPerGem).toLocaleString()} VND
                                 </div>
                             </button>
@@ -399,13 +377,13 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
                 {/* Custom amount */}
                 <div className="mb-5">
-                    <label className="block text-xs font-black uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                    <label className="block text-sky-small font-semibold uppercase tracking-wide text-sky-ink-2 mb-1.5">
                         {t("mentor.subscriptionWallet.customAmount", "Or enter a custom amount")}
                     </label>
                     <div
-                        className={`relative rounded-2xl transition-all ${!selected && customAmount
-                            ? `border-4 ${inkBorder} shadow-none`
-                            : "border-2 border-gray-300 dark:border-gray-600 shadow-[3px_3px_0_0_#d1d5db] dark:shadow-[3px_3px_0_0_#374151]"
+                        className={`relative rounded-sky-chip transition-all ${!selected && customAmount
+                            ? "border-2 border-sky-deep shadow-sky-chip"
+                            : "border border-sky-surf-border"
                         }`}
                     >
                         <input
@@ -415,26 +393,28 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                             value={customAmount}
                             onChange={(e) => handleCustomAmountChange(e.target.value)}
                             placeholder={t("mentor.subscriptionWallet.customAmountPlaceholder", "e.g. 2500")}
-                            className="w-full px-4 py-3 rounded-2xl bg-gray-25 dark:bg-gray-700 text-gray-900 dark:text-white font-black text-lg focus:outline-none placeholder:text-gray-400 placeholder:font-medium"
+                            className="w-full px-4 py-3 rounded-sky-chip bg-transparent text-sky-ink font-bold text-lg focus:outline-none placeholder:text-sky-ink-3 placeholder:font-medium"
                         />
                         <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 object-contain pointer-events-none" />
                     </div>
                     {!selected && parsedCustom > 0 && (
-                        <p className="text-xs font-bold text-gray-500 mt-1.5">
+                        <p className="text-xs font-semibold text-sky-ink-2 mt-1.5">
                             = {(parsedCustom * vndPerGem).toLocaleString()} VND
                         </p>
                     )}
                 </div>
 
-                {/* Payment method toggle */}
+                {/* Payment method toggle — segmented control, same reasoning as the
+                    package grid above: custom, not SkyButton. */}
                 <div className="flex gap-2 mb-5">
                     {(['SEPAY', 'DEMO'] as WalletPaymentMethod[]).map((m) => (
                         <button
+                            type="button"
                             key={m}
                             onClick={() => setMethod(m)}
-                            className={`flex-1 py-2 rounded-full border-2 font-black text-xs transition-all ${method === m
-                                ? `${inkBorder} bg-game-outline dark:bg-brand-300 text-white dark:text-gray-900 shadow-none`
-                                : "border-gray-300 bg-gray-25 dark:bg-gray-700 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-500"
+                            className={`flex-1 py-2 rounded-full border font-semibold text-xs transition-all ${method === m
+                                ? "border-sky-deep bg-sky-deep text-white"
+                                : "border-sky-surf-border bg-white/60 text-sky-ink-2 hover:border-sky-deep/40"
                             }`}
                         >
                             {m === 'SEPAY' ? '💳 SePay (Real)' : '🧪 DEMO (Dev)'}
@@ -444,16 +424,15 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
                 {/* Buy button */}
                 <div className="flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-gray-25 dark:bg-gray-700 ${shadowSm} ${btnPress}`}
-                    >
+                    <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
                         {t("mentor.subscriptionWallet.cancel")}
-                    </button>
-                    <button
+                    </SkyButton>
+                    <SkyButton
+                        type="button"
+                        variant="primary"
                         onClick={handleBuy}
                         disabled={loading || effectiveGems <= 0}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-brand-300 text-game-outline ${shadowSm} ${btnPress} inline-flex items-center justify-center gap-2`}
+                        className="flex-1"
                     >
                         {loading
                             ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</>
@@ -461,9 +440,9 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                                 ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-4 h-4 object-contain align-text-bottom" /> — {vndPrice} VND</>
                                 : t("mentor.subscriptionWallet.enterValidAmount", "Enter a valid gem amount.")
                         }
-                    </button>
+                    </SkyButton>
                 </div>
-            </div>
+            </SkyCard>
         </div>,
         document.body
     );
@@ -500,29 +479,30 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
 
     return createPortal(
         <div
-            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-game-outline/60 backdrop-blur-sm"
+            className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-sky-ink/60 backdrop-blur-sm"
             onClick={onClose}
         >
-            <div
-                className={`relative w-full max-w-md bg-gray-25 dark:bg-gray-800 border-4 ${inkBorder} rounded-2xl ${shadowLg} p-6`}
+            <SkyCard
+                variant="mentor"
+                className="w-full max-w-md"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-12 h-12 shrink-0 flex items-center justify-center bg-error-100 dark:bg-error-500/20 border-2 ${inkBorder} rounded-xl text-2xl select-none`}>
+                    <div className="w-12 h-12 shrink-0 flex items-center justify-center bg-error-100 border border-error-300 rounded-sky-chip text-2xl select-none">
                         ⚠️
                     </div>
                     <div>
-                        <h2 className="text-xl font-black leading-tight">{t("mentor.subscriptionWallet.cancelSubTitle")}</h2>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">
-                            {t("mentor.subscriptionWallet.currentPlan")}: <strong className="text-gray-800">{planName}</strong>
+                        <h2 className="text-sky-h3 font-bold text-sky-ink leading-tight">{t("mentor.subscriptionWallet.cancelSubTitle")}</h2>
+                        <p className="text-xs text-sky-ink-2 font-medium mt-0.5">
+                            {t("mentor.subscriptionWallet.currentPlan")}: <strong className="text-sky-ink font-semibold">{planName}</strong>
                         </p>
                     </div>
                 </div>
 
                 {/* Downgrade warning */}
-                <div className="bg-error-50 dark:bg-error-500/15 border-2 border-error-300 dark:border-error-500/40 rounded-xl p-4 mb-5 space-y-3">
-                    <p className="text-sm font-bold text-gray-800">
+                <div className="bg-error-50 border border-error-300 rounded-sky-chip p-4 mb-5 space-y-3">
+                    <p className="text-sm font-semibold text-sky-ink">
                         {t("mentor.subscriptionWallet.cancelWarning", { freeTier: t("mentor.subscriptionWallet.freeTier") })}
                     </p>
                     <ul className="space-y-1.5">
@@ -531,8 +511,8 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                             t("mentor.subscriptionWallet.cancelLimit2"),
                             t("mentor.subscriptionWallet.cancelLimit3"),
                         ].map((item) => (
-                            <li key={item} className="flex items-center gap-2 text-xs font-medium text-gray-700">
-                                <span className="w-4 h-4 shrink-0 flex items-center justify-center bg-error-200 dark:bg-error-500/30 border border-error-400 rounded-full text-error-700 dark:text-error-300 font-black text-[10px]">
+                            <li key={item} className="flex items-center gap-2 text-xs font-medium text-sky-ink-2">
+                                <span className="w-4 h-4 shrink-0 flex items-center justify-center bg-error-200 border border-error-400 rounded-full text-error-700 font-bold text-[10px]">
                                     ↓
                                 </span>
                                 {item}
@@ -542,24 +522,15 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                 </div>
 
                 <div className="flex gap-3">
-                    {/* Ghost/secondary — "safe" choice always on the left */}
-                    <button
-                        onClick={onClose}
-                        disabled={loading}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 ${shadowSm} ${btnPress}`}
-                    >
+                    {/* "Safe" choice always on the left */}
+                    <SkyButton type="button" variant="secondary" onClick={onClose} disabled={loading} className="flex-1">
                         {t("mentor.subscriptionWallet.keepPlan")}
-                    </button>
-                    {/* Primary destructive */}
-                    <button
-                        onClick={handleConfirmCancel}
-                        disabled={loading}
-                        className={`flex-1 py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-error-500 text-white hover:bg-error-600 ${shadowSm} ${btnPress} inline-flex items-center justify-center gap-2`}
-                    >
+                    </SkyButton>
+                    <SkyButton type="button" variant="destructive" onClick={handleConfirmCancel} disabled={loading} className="flex-1">
                         {loading ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.cancelling")}</> : t("mentor.subscriptionWallet.yesCancelIt")}
-                    </button>
+                    </SkyButton>
                 </div>
-            </div>
+            </SkyCard>
         </div>,
         document.body
     );
@@ -668,105 +639,110 @@ export default function SubscriptionWallet() {
             <PageBreadcrumb pageTitle={t("mentor.subscriptionWallet.pageTitle")} />
 
             {error && (
-                <div className={`mb-6 p-4 bg-error-100 dark:bg-error-500/15 border-4 border-error-400 rounded-2xl font-bold text-error-700 dark:text-error-300`}>
+                <div className="mb-6 p-4 bg-error-100 border border-error-400 rounded-sky-chip font-semibold text-error-700">
                     {error}
                 </div>
             )}
 
             {purchaseResult && (
-                <div className="mb-6 p-4 bg-success-100 dark:bg-success-500/15 border-4 border-success-400 rounded-2xl font-bold text-success-800 dark:text-success-300 flex items-center justify-between">
+                <div className="mb-6 p-4 bg-success-100 border border-success-400 rounded-sky-chip font-semibold text-success-800 flex items-center justify-between">
                     <span>
                         {t("mentor.subscriptionWallet.purchaseSuccessful", { plan: purchaseResult.subscription.packageName })}
                     </span>
-                    <button onClick={() => setPurchaseResult(null)} className="text-success-600 dark:text-success-300 hover:opacity-70 font-black text-lg">✕</button>
+                    <button type="button" onClick={() => setPurchaseResult(null)} className="text-success-600 hover:opacity-70 font-bold text-lg">✕</button>
                 </div>
             )}
 
             {cancelSuccess && (
-                <div className="mb-6 p-4 bg-warning-100 dark:bg-warning-500/15 border-4 border-warning-400 rounded-2xl font-bold text-warning-900 dark:text-warning-300 flex items-center justify-between">
+                <div className="mb-6 p-4 bg-warning-100 border border-warning-400 rounded-sky-chip font-semibold text-warning-900 flex items-center justify-between">
                     <span>
                         {t("mentor.subscriptionWallet.cancelledDowngrade")}
                     </span>
-                    <button onClick={() => setCancelSuccess(false)} className="text-warning-700 dark:text-warning-300 hover:opacity-70 font-black text-lg">✕</button>
+                    <button type="button" onClick={() => setCancelSuccess(false)} className="text-warning-700 hover:opacity-70 font-bold text-lg">✕</button>
                 </div>
             )}
 
             {/* Top Row: Gems Resource Container | Plan + Usage */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* ── Resource Container: Gems ──────────────────────────────── */}
-                <div className={`bg-warning-100 dark:bg-warning-500/15 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-6 flex flex-col items-center text-center gap-3`}>
+                <SkyCard variant="mentor" className="flex flex-col items-center text-center gap-3">
                     <div className="w-full flex items-center justify-between">
-                        <span className={`flex items-center justify-center w-10 h-10 rounded-xl border-2 ${inkBorder} bg-gray-25 dark:bg-gray-800 shrink-0`}>
+                        <span className="sky-glass-chip flex items-center justify-center w-10 h-10 shrink-0">
                             <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-6 h-6 object-contain" />
                         </span>
-                        <button
+                        <SkyButton
+                            type="button"
+                            variant="primary"
+                            size="sm"
                             onClick={() => setShowTopUp(true)}
-                            className={`px-3 py-1.5 text-xs border-2 ${inkBorder} rounded-full font-black bg-amber-400 text-game-outline ${shadowSm} ${btnPress}`}
                         >
                             + {t("mentor.subscriptionWallet.topUp")}
-                        </button>
+                        </SkyButton>
                     </div>
-                    <h2 className="text-xs font-black uppercase tracking-wider text-gray-500">{t("mentor.subscriptionWallet.gemWallet")}</h2>
-                    <div className="text-5xl font-black text-amber-700 dark:text-amber-300 leading-none">
+                    <h2 className="text-sky-small font-semibold uppercase tracking-wider text-sky-ink-2">{t("mentor.subscriptionWallet.gemWallet")}</h2>
+                    <div className="text-5xl font-extrabold text-sky-peach-deep leading-none">
                         {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
                     </div>
                     {wallet && (
-                        <p className="text-xs text-gray-500 font-medium">
+                        <p className="text-sky-small text-sky-ink-2 font-medium">
                             Rate: 1 <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-3.5 h-3.5 object-contain align-text-bottom" /> = {wallet.vndPerGem.toLocaleString()} VND
                         </p>
                     )}
-                </div>
+                </SkyCard>
 
                 {/* Current Plan + Usage — merged into one card spanning the remaining 2 columns */}
-                <div className={`md:col-span-2 bg-purple-100 dark:bg-purple-500/15 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-6 flex flex-col gap-4`}>
+                <SkyCard variant="mentor" className="md:col-span-2 flex flex-col gap-4">
                     {/* Plan header: info on the left, Cancel pinned to the top-right */}
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-1.5 min-w-0">
-                            <h2 className="text-lg font-black">{t("mentor.subscriptionWallet.currentPlan")}</h2>
+                            <h2 className="text-sky-h3 font-bold text-sky-ink">{t("mentor.subscriptionWallet.currentPlan")}</h2>
                             {plan ? (
                                 <>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-2xl font-black">{plan.name}</span>
+                                        <span className="text-2xl font-bold text-sky-ink">{plan.name}</span>
                                         {activeSub?.isDefaultFree && (
-                                            <span className={`px-2 py-0.5 text-xs font-black bg-gray-200 dark:bg-gray-700 dark:text-gray-200 border-2 ${inkBorder} rounded-full`}>
+                                            <span className="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-700 rounded-full">
                                                 FREE
                                             </span>
                                         )}
                                         {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && (
-                                            <span className={`px-2 py-0.5 text-xs font-black bg-purple-500 text-white border-2 ${inkBorder} rounded-full`}>
+                                            <span className="px-2 py-0.5 text-xs font-semibold bg-success-500 text-white rounded-full">
                                                 ACTIVE
                                             </span>
                                         )}
                                     </div>
                                     {activeSub?.subscription?.expiresAt && (
-                                        <p className="text-xs text-gray-500 font-medium">
+                                        <p className="text-xs text-sky-ink-2 font-medium">
                                             {t("mentor.subscriptionWallet.expires")}: {new Date(activeSub.subscription.expiresAt).toLocaleDateString()}
                                         </p>
                                     )}
                                     {plan.description && (
-                                        <p className="text-xs text-gray-600 font-medium">{plan.description}</p>
+                                        <p className="text-xs text-sky-ink-2 font-medium">{plan.description}</p>
                                     )}
                                 </>
                             ) : (
-                                <p className="text-gray-400 font-medium text-sm">{t("mentor.subscriptionWallet.noPlan")}</p>
+                                <p className="text-sky-ink-3 font-medium text-sm">{t("mentor.subscriptionWallet.noPlan")}</p>
                             )}
                         </div>
                         {/* Cancel — only for active paid subscriptions */}
                         {canCancel && (
-                            <button
+                            <SkyButton
+                                type="button"
+                                variant="destructive"
+                                size="sm"
                                 onClick={() => setShowCancel(true)}
-                                className={`shrink-0 px-3 py-1.5 border-2 ${inkBorder} rounded-xl font-black text-xs bg-error-400 hover:bg-error-500 text-game-outline hover:text-white ${shadowSm} ${btnPress}`}
+                                className="shrink-0"
                             >
                                 {t("mentor.subscriptionWallet.cancelSubscription")}
-                            </button>
+                            </SkyButton>
                         )}
                     </div>
 
-                    <div className="border-t-2 border-game-outline/10 dark:border-brand-300/15" />
+                    <div className="border-t border-sky-surf-border" />
 
                     {/* Usage section */}
                     <div>
-                        <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">
+                        <p className="text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wider mb-3">
                             {t("mentor.subscriptionWallet.usageThisPeriod")}
                         </p>
                         {usage ? (
@@ -777,84 +753,86 @@ export default function SubscriptionWallet() {
                                 <UsageBar label={t("mentor.subscriptionWallet.usagePartyQuestsWeek")} used={usage.partyQuestsThisWeek} max={usage.partyQuestsPerWeek} />
                             </div>
                         ) : (
-                            <p className="text-gray-400 font-medium text-sm">{t("mentor.subscriptionWallet.noUsageData")}</p>
+                            <p className="text-sky-ink-3 font-medium text-sm">{t("mentor.subscriptionWallet.noUsageData")}</p>
                         )}
                     </div>
-                </div>
+                </SkyCard>
             </div>
 
             {/* ── Transaction Logbook ────────────────────────────────────────── */}
-            <div className={`bg-gray-25 dark:bg-gray-800 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-6 mb-8`}>
-                <h2 className="text-lg font-black mb-1 flex items-center gap-2">
-                    <span className={`flex items-center justify-center w-7 h-7 rounded-full border-2 ${inkBorder} bg-gray-100 dark:bg-gray-700 text-sm`}>📜</span>
+            <SkyCard variant="mentor" className="mb-8">
+                <h2 className="text-sky-h3 font-bold text-sky-ink mb-1 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-3/30 text-sm">📜</span>
                     {t("mentor.subscriptionWallet.transactionLog", "Logbook")}
                 </h2>
-                <p className="text-xs text-gray-500 font-medium mb-4">
+                <p className="text-sky-small text-sky-ink-2 font-medium mb-4">
                     {t("mentor.subscriptionWallet.transactionLogHint", "Every top-up and purchase, in order.")}
                 </p>
                 <TransactionLogbook transactions={pagedTransactions} loading={loadingTx} error={txError} />
                 {!loadingTx && !txError && transactions.length > 0 && (
                     <Pagination currentPage={txPage} totalPages={txTotalPages} onPageChange={setTxPage} />
                 )}
-            </div>
+            </SkyCard>
 
             {/* Available Packages */}
             <div>
-                <h2 className="text-2xl font-black mb-4">{t("mentor.subscriptionWallet.availablePlans")}</h2>
+                <h2 className="text-sky-h2 font-bold text-sky-ink mb-4">{t("mentor.subscriptionWallet.availablePlans")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                     {packages.map((pkg) => {
                         const isCurrent = activeSub?.package.packageId === pkg.packageId;
                         return (
-                            <div
+                            <SkyCard
                                 key={pkg.packageId}
-                                className={[
-                                    "relative flex flex-col gap-4 p-5 rounded-2xl",
-                                    isCurrent ? `border-[5px] border-success-500 ${featuredGlow} bg-success-50 dark:bg-success-500/10` : `border-4 ${inkBorder} ${shadowMd} bg-gray-25 dark:bg-gray-800`,
-                                    cardTilt,
-                                ].join(" ")}
+                                variant="mentor"
+                                className={`relative flex flex-col gap-4 transition-transform duration-150 ${easeExpo} hover:scale-[1.01]`}
                             >
                                 {isCurrent && (
-                                    <span className="absolute top-3 right-3 px-2 py-0.5 text-xs font-black bg-success-500 text-white border-2 border-game-outline dark:border-brand-300 rounded-full">
+                                    <div className="absolute inset-0 rounded-sky-card bg-success-500/5 pointer-events-none" aria-hidden="true" />
+                                )}
+                                {isCurrent && (
+                                    <span className="absolute top-3 right-3 px-2 py-0.5 text-xs font-semibold bg-success-500 text-white rounded-full">
                                         CURRENT
                                     </span>
                                 )}
                                 <div>
-                                    <h3 className="text-xl font-black">{pkg.name}</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">{pkg.description}</p>
+                                    <h3 className="text-sky-h3 font-semibold text-sky-ink">{pkg.name}</h3>
+                                    <p className="text-xs text-sky-ink-2 mt-0.5">{pkg.description}</p>
                                 </div>
-                                <div className="text-2xl font-black text-amber-700 dark:text-amber-300">
-                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-gray-500 inline-flex items-center gap-0.5"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> / {pkg.durationDays}d</span>
+                                <div className="text-sky-h2 font-bold text-sky-peach-deep">
+                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-sky-ink-2 inline-flex items-center gap-0.5"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> / {pkg.durationDays}d</span>
                                 </div>
-                                <ul className="text-xs space-y-1 text-gray-700 font-medium">
+                                <ul className="text-xs space-y-1 text-sky-ink-2 font-medium">
                                     <li>✦ {t("mentor.subscriptionWallet.upToParties", { count: pkg.maxParties })}</li>
-                                    <li>✦ <strong>{pkg.maxMembersPerParty}</strong> {t("mentor.subscriptionWallet.membersPerParty")}</li>
-                                    <li>✦ <strong>{pkg.questsPerMemberPerDay}</strong> {t("mentor.subscriptionWallet.questsPerMemberDay")}</li>
-                                    <li>✦ {t("mentor.subscriptionWallet.bossModes")}: <strong>{pkg.bossModes}</strong></li>
-                                    <li>✦ {t("mentor.subscriptionWallet.rewardTier")}: <strong>{pkg.rewardTier}</strong></li>
+                                    <li>✦ <strong className="text-sky-ink">{pkg.maxMembersPerParty}</strong> {t("mentor.subscriptionWallet.membersPerParty")}</li>
+                                    <li>✦ <strong className="text-sky-ink">{pkg.questsPerMemberPerDay}</strong> {t("mentor.subscriptionWallet.questsPerMemberDay")}</li>
+                                    <li>✦ {t("mentor.subscriptionWallet.bossModes")}: <strong className="text-sky-ink">{pkg.bossModes}</strong></li>
+                                    <li>✦ {t("mentor.subscriptionWallet.rewardTier")}: <strong className="text-sky-ink">{pkg.rewardTier}</strong></li>
                                     {pkg.proofTypes && (
-                                        <li>✦ Proof: <strong>{pkg.proofTypes}</strong></li>
+                                        <li>✦ Proof: <strong className="text-sky-ink">{pkg.proofTypes}</strong></li>
                                     )}
                                     {pkg.aiVerificationBossModes ? (
                                         <li className="flex items-center gap-1">
                                             <span>✦ 🤖 AI verify:</span>
-                                            <strong>{pkg.aiVerificationBossModes}</strong>
+                                            <strong className="text-sky-ink">{pkg.aiVerificationBossModes}</strong>
                                         </li>
                                     ) : (
-                                        <li className="text-gray-400">✦ 🤖 No AI verification</li>
+                                        <li className="text-sky-ink-3">✦ 🤖 No AI verification</li>
                                     )}
                                 </ul>
-                                <button
+                                <SkyButton
+                                    type="button"
+                                    variant="primary"
                                     disabled={isCurrent}
                                     onClick={() => setPurchasePkg(pkg)}
-                                    className={`mt-auto py-2.5 border-2 ${inkBorder} rounded-full font-black text-sm bg-amber-400 text-game-outline ${shadowSm} ${btnPress} disabled:${shadowSm}`}
+                                    className="mt-auto"
                                 >
                                     {isCurrent ? t("mentor.subscriptionWallet.currentPlanBtn") : t("mentor.subscriptionWallet.buyUpgrade")}
-                                </button>
-                            </div>
+                                </SkyButton>
+                            </SkyCard>
                         );
                     })}
                     {packages.length === 0 && (
-                        <p className="col-span-3 text-gray-400 font-medium text-center py-12">
+                        <p className="col-span-3 text-sky-ink-3 font-medium text-center py-12">
                             {t("mentor.subscriptionWallet.noPackages")}
                         </p>
                     )}

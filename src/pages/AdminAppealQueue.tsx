@@ -1,17 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Scale, CheckCircle, XCircle, Loader2, X } from "lucide-react";
+import { Scale, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminAppealApi } from "../api/adminAppealApi";
+import SkyCard from "../components/ui/card/SkyCard";
+import SkyButton from "../components/ui/button/SkyButton";
 import type { AppealDto, AppealDecision } from "../types/adminAppeal.types";
-
-const btnBase =
-  "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
-  "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
-  "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
 
 const errMsg = (e: unknown) =>
   (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
@@ -20,9 +16,9 @@ const fmtDateTime = (d: string) =>
   new Date(d).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const STATUS_CFG: Record<string, string> = {
-  Pending: "bg-amber-100 border-amber-400 text-amber-800",
-  Accepted: "bg-green-100 border-green-400 text-green-800",
-  Rejected: "bg-red-100 border-red-400 text-red-800",
+  Pending: "bg-warning-100 text-warning-800",
+  Accepted: "bg-success-100 text-success-800",
+  Rejected: "bg-error-100 text-error-800",
 };
 
 function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealDto; onClose: () => void; onResolved: () => void }) {
@@ -45,46 +41,57 @@ function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealDto; onCl
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] w-full max-w-lg overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-amber-50 dark:bg-amber-900/20">
-          <h2 className="text-base font-black text-gray-900 dark:text-gray-100">Resolve Appeal #{appeal.appealId}</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-white dark:bg-gray-700 hover:bg-red-50 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"><X className="w-4 h-4" /></button>
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm p-4">
+      <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-base font-bold text-sky-ink">Resolve Appeal #{appeal.appealId}</h2>
+          <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}>
+            <XCircle className="w-4 h-4" />
+          </SkyButton>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div>
-            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Player Reason</p>
-            <div className="bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{appeal.reason}</div>
-            <p className="text-xs text-gray-400 mt-2">Proof #{appeal.proofId} · User #{appeal.userId} · Submitted {fmtDateTime(appeal.createdAt)}</p>
+            <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-widest mb-1">Player Reason</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-sky-chip px-4 py-3 text-sm text-sky-ink-2">{appeal.reason}</div>
+            <p className="text-xs text-sky-ink-3 mt-2">Proof #{appeal.proofId} · User #{appeal.userId} · Submitted {fmtDateTime(appeal.createdAt)}</p>
           </div>
           <div>
-            <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5">Decision *</p>
+            <p className="text-xs font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">Decision *</p>
+            {/* Selection toggle, not a plain CTA — kept custom (same reasoning
+                as every other segmented control in this migration) so the
+                selected state stays legible; SkyButton's variants don't
+                express a persistent "chosen" ring. */}
             <div className="flex gap-2">
               <button type="button" onClick={() => setDecision("accept")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 rounded-2xl font-black text-sm transition-all ${decision === "accept" ? "bg-green-200 border-green-600 text-green-900" : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500"}`}>
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-sky-chip font-semibold text-sm transition-all ${decision === "accept" ? "bg-success-100 ring-2 ring-success-500 text-success-800" : "border border-sky-surf-border text-sky-ink-2"}`}>
                 <CheckCircle className="w-4 h-4" /> Accept
               </button>
               <button type="button" onClick={() => setDecision("reject")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 rounded-2xl font-black text-sm transition-all ${decision === "reject" ? "bg-red-200 border-red-600 text-red-900" : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500"}`}>
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-sky-chip font-semibold text-sm transition-all ${decision === "reject" ? "bg-error-100 ring-2 ring-error-500 text-error-800" : "border border-sky-surf-border text-sky-ink-2"}`}>
                 <XCircle className="w-4 h-4" /> Reject
               </button>
             </div>
           </div>
           <div>
-            <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5">Admin Note (optional)</p>
+            <p className="text-xs font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">Admin Note (optional)</p>
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
-              className="w-full px-4 py-2.5 border-2 border-black dark:border-gray-600 rounded-2xl text-sm font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+              className="w-full px-4 py-2.5 rounded-sky-chip border border-sky-surf-border text-sm font-medium bg-white text-sky-ink focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 resize-none"
               placeholder="Reason shown internally…" />
           </div>
-          {err && <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{err}</p>}
+          {err && <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{err}</p>}
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} disabled={submitting} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-            <button type="submit" disabled={submitting || !decision} className={`${btnBase} flex-1 justify-center ${decision === "accept" ? "bg-green-300 text-green-900" : decision === "reject" ? "bg-red-300 text-red-900" : "bg-amber-200 text-amber-900"}`}>
+            <SkyButton type="button" variant="secondary" onClick={onClose} disabled={submitting} className="flex-1">Cancel</SkyButton>
+            <SkyButton
+              type="submit"
+              variant={decision === "accept" ? "success" : decision === "reject" ? "destructive" : "secondary"}
+              disabled={submitting || !decision}
+              className="flex-1"
+            >
               {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Resolving…</> : <><Scale className="w-4 h-4" /> Resolve</>}
-            </button>
+            </SkyButton>
           </div>
         </form>
-      </div>
+      </SkyCard>
     </div>,
     document.body
   );
@@ -117,59 +124,59 @@ export default function AdminAppealQueue() {
 
       <div className="space-y-6 p-1">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-300 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
-            <Scale className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
+            <Scale className="w-6 h-6 text-warning-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Appeal Queue</h1>
-            <p className="text-sm text-gray-500 font-medium mt-0.5">Review player appeals submitted for rejected proofs.</p>
+            <h1 className="text-2xl font-black text-sky-ink">Appeal Queue</h1>
+            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Review player appeals submitted for rejected proofs.</p>
           </div>
-          <button onClick={fetchQueue} disabled={loading} className={`${btnBase} ml-auto bg-amber-100 text-amber-900 py-1.5`}>
+          <SkyButton type="button" variant="secondary" size="sm" onClick={fetchQueue} disabled={loading} className="ml-auto">
             {loading ? "Loading…" : "Refresh"}
-          </button>
+          </SkyButton>
         </div>
 
-        <div className="bg-white dark:bg-[#1e2a3a] border-2 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden">
+        <SkyCard variant="admin" className="p-0 overflow-hidden">
           {error ? (
             <div className="flex flex-col items-center gap-3 py-16">
-              <p className="font-black text-gray-700 dark:text-gray-200">Failed to load</p>
-              <p className="text-sm text-gray-400">{error}</p>
-              <button onClick={fetchQueue} className={`${btnBase} bg-red-100 text-red-800`}>Retry</button>
+              <p className="font-bold text-sky-ink-2">Failed to load</p>
+              <p className="text-sm text-sky-ink-3">{error}</p>
+              <SkyButton type="button" variant="secondary" size="sm" onClick={fetchQueue}>Retry</SkyButton>
             </div>
           ) : loading && appeals.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-gray-400"><Loader2 className="w-8 h-8 animate-spin" /> Loading…</div>
+            <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3"><Loader2 className="w-8 h-8 animate-spin" /> Loading…</div>
           ) : appeals.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
+            <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
               <Scale className="w-14 h-14 opacity-40" />
-              <p className="font-black text-lg text-gray-500">No pending appeals</p>
+              <p className="font-black text-lg text-sky-ink-2">No pending appeals</p>
               <p className="text-sm">The appeal queue is empty. 🎉</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-gray-800/60">
+                  <tr className="bg-sky-admin-bg-deep border-b border-slate-200">
                     {["#", "Proof", "User", "Reason", "Status", "Submitted", "Action"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-sky-ink">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                <tbody>
                   {appeals.map(a => (
-                    <tr key={a.appealId} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-colors">
-                      <td className="px-4 py-3 text-xs font-black text-gray-400">{a.appealId}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-300">#{a.proofId}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-300">User #{a.userId}</td>
-                      <td className="px-4 py-3 max-w-xs truncate text-xs text-gray-600 dark:text-gray-300" title={a.reason}>{a.reason}</td>
-                      <td className="px-4 py-3"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black border ${STATUS_CFG[a.status] ?? STATUS_CFG.Pending}`}>{a.status}</span></td>
-                      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtDateTime(a.createdAt)}</td>
+                    <tr key={a.appealId} className="sky-table-row">
+                      <td className="px-4 py-3 text-xs font-semibold text-sky-ink-3">{a.appealId}</td>
+                      <td className="px-4 py-3 text-xs font-semibold text-sky-ink-2">#{a.proofId}</td>
+                      <td className="px-4 py-3 text-xs font-semibold text-sky-ink-2">User #{a.userId}</td>
+                      <td className="px-4 py-3 max-w-xs truncate text-xs text-sky-ink-2" title={a.reason}>{a.reason}</td>
+                      <td className="px-4 py-3"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_CFG[a.status] ?? STATUS_CFG.Pending}`}>{a.status}</span></td>
+                      <td className="px-4 py-3 text-xs text-sky-ink-2 whitespace-nowrap">{fmtDateTime(a.createdAt)}</td>
                       <td className="px-4 py-3">
                         {a.status === "Pending" ? (
-                          <button onClick={() => setResolving(a)} className={`${btnBase} bg-amber-200 text-amber-900 py-1.5 px-3 text-xs`}>
+                          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setResolving(a)}>
                             <Scale className="w-3 h-3" /> Resolve
-                          </button>
+                          </SkyButton>
                         ) : (
-                          <span className="text-xs text-gray-400 italic">Resolved</span>
+                          <span className="text-xs text-sky-ink-3 italic">Resolved</span>
                         )}
                       </td>
                     </tr>
@@ -178,7 +185,7 @@ export default function AdminAppealQueue() {
               </table>
             </div>
           )}
-        </div>
+        </SkyCard>
       </div>
 
       {resolving && (

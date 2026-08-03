@@ -169,14 +169,18 @@ const AppSidebar: React.FC = () => {
     <aside
       className={[
         // ── Base styles ──────────────────────────────────────────────────────
+        // bg-admin-surface (Field Mint) stays literal, not sky-glass-admin —
+        // this is the Role-Color Rule's sidebar identity signal (DESIGN.md),
+        // independent of the Sky-Pastel surface system. Glassing it would
+        // erase the one thing that visually tells Admin and Mentor apart.
         "h-screen flex flex-col",
-        "bg-[#B5EBE0] dark:bg-gray-800",
-        "text-gray-900 dark:text-gray-100",
+        "bg-admin-surface",
+        "text-sky-ink",
         "transition-all duration-300 overflow-hidden",
         // ── Mobile: fixed overlay, slides in/out ────────────────────────────
         // isMobileOpen controls translate; Backdrop handles dismiss
         "fixed top-0 left-0 z-50",
-        isMobileOpen ? "translate-x-0 shadow-[4px_0_0_0_#1A1D20]" : "-translate-x-full",
+        isMobileOpen ? "translate-x-0 shadow-sky-glass" : "-translate-x-full",
         // ── Desktop: in-flow, width driven by isExpanded ────────────────────
         // lg:relative overrides fixed; lg:translate-x-0 overrides mobile translate
         "lg:relative lg:z-auto lg:translate-x-0 lg:shadow-none",
@@ -191,15 +195,15 @@ const AppSidebar: React.FC = () => {
       <div className={`shrink-0 overflow-hidden transition-all duration-300 ${showFull ? "mb-2" : "mb-4"}`}>
         <Link to="/" className={`block ${!showFull ? "text-center" : ""}`}>
           {showFull ? (
-            <h1 className="text-3xl font-black text-[#1a3a3a] dark:text-emerald-300 tracking-tight whitespace-nowrap">
+            <h1 className="text-3xl font-black text-sky-ink tracking-tight whitespace-nowrap">
               HabitEvolve
             </h1>
           ) : (
-            <span className="text-2xl font-black text-[#1a3a3a] dark:text-emerald-300">H</span>
+            <span className="text-2xl font-black text-sky-ink">H</span>
           )}
         </Link>
         {showFull && (
-          <span className="text-balance inline-block mt-1 px-2 py-0.5 text-xs font-black bg-[#e18308] text-white rounded-full border-2 border-[#3b1f6e]">
+          <span className="text-balance inline-block mt-1 px-2 py-0.5 text-xs font-black bg-admin-active text-white rounded-full">
             {t("common.admin")}
           </span>
         )}
@@ -218,18 +222,18 @@ const AppSidebar: React.FC = () => {
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
-      <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1a3a3a]/20 dark:[&::-webkit-scrollbar-thumb]:bg-white/20">
+      <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1a3a3a]/20">
         {navItems.map((nav, index) => (
           <div key={nav.path ?? nav.nameKey}>
             {/* Section label — hidden when collapsed */}
             {nav.sectionKey && showFull && (
               <div className="px-2 pt-4 pb-1">
                 <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-[#1a3a3a]/20 dark:bg-gray-600" />
-                  <p className="text-[10px] font-black text-[#1a3a3a]/50 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                  <div className="h-px flex-1 bg-[#1a3a3a]/20" />
+                  <p className="text-[10px] font-black text-[#1a3a3a]/50 uppercase tracking-widest whitespace-nowrap">
                     {t(nav.sectionKey)}
                   </p>
-                  <div className="h-px flex-1 bg-[#1a3a3a]/20 dark:bg-gray-600" />
+                  <div className="h-px flex-1 bg-[#1a3a3a]/20" />
                 </div>
               </div>
             )}
@@ -243,8 +247,8 @@ const AppSidebar: React.FC = () => {
                 className={`w-full flex items-center py-3 rounded-xl transition-all shadow-sm
                   ${showFull ? "space-x-3 px-4" : "justify-center px-0"}
                   ${openSubmenu === index
-                    ? "bg-[#f7a561] text-white"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-white/10"
+                    ? "bg-admin-active text-white"
+                    : "text-sky-ink-2 hover:bg-white/30"
                   }`}
               >
                 {nav.icon}
@@ -264,8 +268,8 @@ const AppSidebar: React.FC = () => {
                   className={`flex items-center py-3 rounded-xl transition-all shadow-sm
                     ${showFull ? "space-x-3 px-4" : "justify-center px-0"}
                     ${isActive(nav.path)
-                      ? "bg-[#f7a561] text-white"
-                      : "text-gray-700 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-white/10"
+                      ? "bg-admin-active text-white"
+                      : "text-sky-ink-2 hover:bg-white/30"
                     }`}
                 >
                   {nav.icon}
@@ -288,8 +292,8 @@ const AppSidebar: React.FC = () => {
                       <Link
                         to={subItem.path}
                         className={`font-medium text-sm flex items-center px-3 py-2 rounded transition-all ${isActive(subItem.path)
-                          ? "bg-[#f7a561] text-white"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-white/30 dark:hover:bg-white/10"
+                          ? "bg-admin-active text-white"
+                          : "text-sky-ink-2 hover:bg-white/30"
                           }`}
                       >
                         {t(subItem.nameKey)}

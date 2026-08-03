@@ -4,7 +4,9 @@ import { Trans, useTranslation } from "react-i18next";
 import mentorApi from "../../../api/mentorApi";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import { useAlert } from "../../../context/AlertContext";
-import { inkBorder, shadowSm, shadowMd, easeExpo, getMentorId, Spinner } from "./shared";
+import SkyCard from "../../../components/ui/card/SkyCard";
+import SkyButton from "../../../components/ui/button/SkyButton";
+import { easeExpo, getMentorId, Spinner } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
 import type { PartyMember } from "../../../types/api.types";
 import type {
@@ -17,22 +19,24 @@ import type {
     CvQuestType,
 } from "../../../types/mentor.types";
 
-// Orange is this tab's signature accent (Quest Forge), consistent with the
-// "each Mentor feature gets its own accent inside the shared system" pattern.
+// sky-peach stays this tab's signature accent (Quest Forge), consistent with
+// the "each Mentor feature gets its own accent inside the shared system"
+// pattern — but only for decorative/selector chips, not the primary CTA
+// (that stays SkyButton's one true primary blue, app-wide).
 const inputCls =
-    `w-full p-3 border-[3px] ${inkBorder} rounded-xl text-sm font-medium bg-gray-25 dark:bg-gray-800 ` +
-    `focus:outline-none focus:ring-4 focus:ring-orange-200 dark:focus:ring-orange-500/20 placeholder:text-gray-400`;
-const chipInactive = `bg-gray-25 dark:bg-gray-800 text-gray-700 ${shadowSm} hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5`;
-const chipActive = "bg-orange-500 text-white shadow-none translate-x-0.5 translate-y-0.5";
+    "w-full p-3 rounded-sky-chip border border-sky-surf-border text-sm font-medium bg-transparent " +
+    "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 placeholder:text-sky-ink-3 text-sky-ink";
+const chipInactive = "bg-white/50 text-sky-ink-2 border border-sky-surf-border hover:border-sky-deep/30";
+const chipActive = "bg-sky-peach text-white border border-sky-peach";
 
 const DIFFICULTIES: QuestDifficulty[] = ["EASY", "NORMAL", "HARD"];
 const VERIFICATION_TAGS: VerificationTag[] = ["FACE", "ITEM", "ACTION"];
 const CV_QUEST_TYPES: CvQuestType[] = ["running", "drinking_water", "sleeping", "reading", "cooking", "exercise"];
 const HOW_TO_SUBMIT_MAX = 500;
-const DIFF_STYLE: Record<QuestDifficulty, { active: string; inactive: string; label: string }> = {
-    EASY:   { active: "bg-success-400 text-success-900", inactive: "bg-success-50 dark:bg-success-500/10 text-success-700 dark:text-success-300", label: "Easy" },
-    NORMAL: { active: "bg-warning-400 text-warning-900", inactive: "bg-warning-50 dark:bg-warning-500/10 text-warning-700 dark:text-warning-300", label: "Normal" },
-    HARD:   { active: "bg-error-500 text-white",         inactive: "bg-error-50 dark:bg-error-500/10 text-error-700 dark:text-error-300",           label: "Hard" },
+const DIFF_STYLE: Record<QuestDifficulty, { active: string; inactive: string; ring: string; label: string }> = {
+    EASY:   { active: "bg-success-400 text-success-900", inactive: "bg-success-50 text-success-700", ring: "ring-success-500", label: "Easy" },
+    NORMAL: { active: "bg-warning-400 text-warning-900", inactive: "bg-warning-50 text-warning-700", ring: "ring-warning-500", label: "Normal" },
+    HARD:   { active: "bg-error-500 text-white",         inactive: "bg-error-50 text-error-700",     ring: "ring-error-500",   label: "Hard" },
 };
 
 // ── FORM DEFAULTS ─────────────────────────────────────────────────────────────
@@ -52,7 +56,9 @@ const emptyForm = {
 
 type AssignMode = "individual" | "party";
 
-// ── LIMITS PANEL ──────────────────────────────────────────────────────────────
+// ── LIMITS PANEL — flat tinted info panel, not a glass card: the purple tint
+// itself is the signal ("this is read-only context"), so it stays plain
+// rather than sitting on the same frosted surface as interactive controls.
 interface LimitsPanelProps {
     activeSub: ActiveSubscriptionDto | null;
     ranges: MentorQuestRangeDto[];
@@ -65,21 +71,21 @@ const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps
     const usage = activeSub?.usage;
 
     return (
-        <div className={`bg-purple-100 dark:bg-purple-500/15 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-5`}>
-            <h3 className="inline-flex items-center gap-1.5 text-sm font-black uppercase tracking-wider mb-3">
+        <div className="bg-purple-50 border border-purple-200 rounded-sky-card shadow-sky-tint p-5">
+            <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider mb-3 text-sky-ink">
                 <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> Limits & Ranges
             </h3>
 
             {range && (
-                <div className={`mb-3 p-3 bg-gray-25 dark:bg-gray-800 border-2 border-purple-300 dark:border-purple-500/40 rounded-xl space-y-1`}>
-                    <p className="text-xs font-black text-purple-600 dark:text-purple-300 uppercase">{selectedDifficulty} Range</p>
+                <div className="mb-3 p-3 bg-white/60 border border-purple-200 rounded-sky-chip space-y-1">
+                    <p className="text-xs font-semibold text-purple-700 uppercase">{selectedDifficulty} Range</p>
                     <div className="flex justify-between text-xs font-medium">
-                        <span className="text-gray-500">Damage</span>
-                        <span className="font-black">{range.damageMin} – {range.damageMax}</span>
+                        <span className="text-sky-ink-2">Damage</span>
+                        <span className="font-semibold text-sky-ink">{range.damageMin} – {range.damageMax}</span>
                     </div>
                     <div className="flex justify-between text-xs font-medium">
-                        <span className="text-gray-500">M-Gold</span>
-                        <span className="font-black">{range.mGoldMin} – {range.mGoldMax}</span>
+                        <span className="text-sky-ink-2">M-Gold</span>
+                        <span className="font-semibold text-sky-ink">{range.mGoldMin} – {range.mGoldMax}</span>
                     </div>
                 </div>
             )}
@@ -95,8 +101,8 @@ const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps
                         ["Party quest/week", `${usage?.partyQuestsThisWeek ?? 0} / ${pkg.partyQuestsPerWeek}`],
                     ].map(([k, v]) => (
                         <div key={k} className="flex justify-between text-xs font-medium">
-                            <span className="text-gray-500">{k}</span>
-                            <span className="font-black text-right max-w-28 wrap-break-word">{v}</span>
+                            <span className="text-sky-ink-2">{k}</span>
+                            <span className="font-semibold text-sky-ink text-right max-w-28 wrap-break-word">{v}</span>
                         </div>
                     ))}
                 </div>
@@ -119,41 +125,41 @@ const QuestPreview = ({ form, assignMode, targetLabel }: PreviewProps) => {
     const hasContent = form.title.trim().length > 0;
 
     return (
-        <div className={`sticky top-6 bg-gray-25 dark:bg-gray-800 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-5`}>
-            <span className="inline-block text-[11px] font-black uppercase tracking-[0.14em] text-orange-600 dark:text-orange-300 mb-2">
+        <SkyCard variant="mentor" className="sticky top-6">
+            <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-peach-deep mb-2">
                 {t("mentor.questCommand.forge.previewKicker")}
             </span>
-            <h3 className="text-sm font-black mb-3">{t("mentor.questCommand.forge.previewTitle")}</h3>
+            <h3 className="text-sm font-semibold mb-3 text-sky-ink">{t("mentor.questCommand.forge.previewTitle")}</h3>
 
-            <div className={`border-[3px] ${inkBorder} rounded-2xl p-4 bg-orange-50 dark:bg-orange-500/10 ${shadowSm}`}>
+            <div className="rounded-sky-chip p-4 bg-sky-peach/10 border border-sky-peach/30">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                    <h4 className={`font-black text-base leading-tight ${hasContent ? "text-gray-900" : "text-gray-400 italic"}`}>
+                    <h4 className={`font-bold text-base leading-tight ${hasContent ? "text-sky-ink" : "text-sky-ink-3 italic"}`}>
                         {hasContent ? form.title : t("mentor.questCommand.forge.previewUntitled")}
                     </h4>
-                    <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border-2 ${inkBorder} ${diff.inactive}`}>
+                    <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${diff.inactive}`}>
                         {diff.label}
                     </span>
                 </div>
-                <p className="text-xs text-gray-600 font-medium mb-3 wrap-break-word">
+                <p className="text-xs text-sky-ink-2 font-medium mb-3 wrap-break-word">
                     {form.description.trim() || t("mentor.questCommand.forge.previewNoDescription")}
                 </p>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 ${inkBorder} bg-gray-25 dark:bg-gray-900`}>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/60 border border-sky-surf-border">
                         <img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" />
-                        <span className="text-xs font-black text-error-600 dark:text-error-300">-{form.damage}</span>
+                        <span className="text-xs font-semibold text-error-600">-{form.damage}</span>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 ${inkBorder} bg-gray-25 dark:bg-gray-900`}>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/60 border border-sky-surf-border">
                         <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" />
-                        <span className="text-xs font-black text-amber-700 dark:text-amber-300">+{form.rewardMGold}</span>
+                        <span className="text-xs font-semibold text-sky-peach-deep">+{form.rewardMGold}</span>
                     </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] font-bold text-gray-500">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-sky-ink-2">
                     <span className="inline-flex items-center gap-1"><img src="/icon/Item/Target/64px/Golden Target 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {targetLabel}</span>
                     {form.isMandatory && (
-                        <span className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-300"><img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {t("mentor.questCommand.forge.previewMandatoryBadge")}</span>
+                        <span className="inline-flex items-center gap-1 text-sky-peach-deep"><img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {t("mentor.questCommand.forge.previewMandatoryBadge")}</span>
                     )}
                 </div>
-                <div className="mt-2 pt-2 border-t-2 border-dashed border-game-outline/20 dark:border-brand-300/20 text-[11px] font-medium text-gray-500 flex items-center justify-between">
+                <div className="mt-2 pt-2 border-t border-dashed border-sky-ink/15 text-[11px] font-medium text-sky-ink-2 flex items-center justify-between">
                     <span className="inline-flex items-center gap-1">
                         <img src={assignMode === "individual" ? "/icon/Player/Player/64px/Player 1st 64px.png" : "/icon/Item/Sword/64px/Sword 1st 64px.png"} alt="" className="w-3.5 h-3.5 object-contain" />
                         {form.proofType.replace(/_/g, " ")}
@@ -163,11 +169,11 @@ const QuestPreview = ({ form, assignMode, targetLabel }: PreviewProps) => {
             </div>
 
             {!hasContent && (
-                <p className="text-xs text-gray-400 font-medium text-center mt-3">
+                <p className="text-xs text-sky-ink-3 font-medium text-center mt-3">
                     {t("mentor.questCommand.forge.previewEmpty")}
                 </p>
             )}
-        </div>
+        </SkyCard>
     );
 };
 
@@ -346,15 +352,16 @@ export default function QuestForgeTab() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* ── Target + Limits ────────────────────────────────────── */}
             <div className="lg:col-span-3 flex flex-col gap-4 min-w-0">
-                <div className={`bg-purple-100 dark:bg-purple-500/15 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-5`}>
-                    <h2 className="text-lg font-black mb-4">{t("mentor.questCommand.assignmentMode")}</h2>
+                <SkyCard variant="mentor">
+                    <h2 className="text-sky-h3 font-bold text-sky-ink mb-4">{t("mentor.questCommand.assignmentMode")}</h2>
 
                     <div className="flex gap-2">
                         {(["individual", "party"] as AssignMode[]).map((mode) => (
                             <button
+                                type="button"
                                 key={mode}
                                 onClick={() => { setAssignMode(mode); setSelectedMemberId(""); }}
-                                className={`flex-1 py-2 border-[3px] ${inkBorder} rounded-xl text-xs font-black transition-all duration-150 ${easeExpo} ${
+                                className={`flex-1 py-2 rounded-sky-chip text-xs font-semibold transition-all duration-150 ${easeExpo} ${
                                     assignMode === mode ? chipActive : chipInactive
                                 }`}
                             >
@@ -368,14 +375,14 @@ export default function QuestForgeTab() {
 
                     {assignMode === "individual" && (
                         <div className="mt-4 min-w-0">
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.member")}</label>
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">{t("mentor.questCommand.member")}</label>
                             {loadingMembers ? (
-                                <div className="flex items-center gap-2 text-sm text-gray-500"><Spinner size={14} /> {t("mentor.questCommand.loadingMembers")}</div>
+                                <div className="flex items-center gap-2 text-sm text-sky-ink-2"><Spinner size={14} /> {t("mentor.questCommand.loadingMembers")}</div>
                             ) : members.length === 0 ? (
-                                <p className="text-xs text-gray-500 font-medium">{t("mentor.questCommand.pickMember")}</p>
+                                <p className="text-xs text-sky-ink-2 font-medium">{t("mentor.questCommand.pickMember")}</p>
                             ) : (
                                 <>
-                                    <p className="text-[11px] text-gray-400 font-medium mb-2">{t("mentor.questCommand.forge.memberChipsHint")}</p>
+                                    <p className="text-[11px] text-sky-ink-3 font-medium mb-2">{t("mentor.questCommand.forge.memberChipsHint")}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {members.map((m) => {
                                             const isSelected = selectedMemberId === m.userId;
@@ -385,9 +392,9 @@ export default function QuestForgeTab() {
                                                     type="button"
                                                     onClick={() => setSelectedMemberId(m.userId)}
                                                     aria-label={t("mentor.questCommand.forge.selectMemberAria", { username: m.username })}
-                                                    className={`inline-flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 border-[3px] ${inkBorder} rounded-full text-xs font-black transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
+                                                    className={`inline-flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
                                                 >
-                                                    <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${isSelected ? "bg-white/25" : "bg-purple-200 dark:bg-purple-500/30"}`}>
+                                                    <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold ${isSelected ? "bg-white/25" : "bg-purple-100 text-purple-700"}`}>
                                                         {m.username.charAt(0).toUpperCase()}
                                                     </span>
                                                     {m.username}
@@ -402,7 +409,7 @@ export default function QuestForgeTab() {
 
                     {assignMode === "party" && (
                         <div className="mt-4 min-w-0">
-                            <div className={`p-3 bg-purple-50 dark:bg-purple-500/10 border-2 border-purple-400 dark:border-purple-500/40 rounded-xl text-sm font-medium text-purple-800 dark:text-purple-200 mb-2`}>
+                            <div className="p-3 bg-purple-50 border border-purple-300 rounded-sky-chip text-sm font-medium text-purple-800 mb-2">
                                 <Trans
                                     i18nKey="mentor.questCommand.fanOutInfo"
                                     count={members.length}
@@ -411,8 +418,8 @@ export default function QuestForgeTab() {
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                                 {members.map((m) => (
-                                    <span key={m.userId} className={`inline-flex items-center gap-1 px-2 py-1 border-2 ${inkBorder} rounded-full text-[10px] font-black bg-gray-25 dark:bg-gray-800 text-gray-600 dark:text-gray-300`}>
-                                        <span className="w-3.5 h-3.5 rounded-full bg-purple-200 dark:bg-purple-500/30 flex items-center justify-center text-[8px]">
+                                    <span key={m.userId} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-white/60 border border-sky-surf-border text-sky-ink-2">
+                                        <span className="w-3.5 h-3.5 rounded-full bg-purple-100 flex items-center justify-center text-[8px] text-purple-700">
                                             {m.username.charAt(0).toUpperCase()}
                                         </span>
                                         {m.username}
@@ -421,35 +428,35 @@ export default function QuestForgeTab() {
                             </div>
                         </div>
                     )}
-                </div>
+                </SkyCard>
 
                 <LimitsPanel activeSub={activeSub} ranges={ranges} selectedDifficulty={form.difficulty} />
             </div>
 
             {/* ── Quest Forge form ──────────────────────────────────── */}
             <div className="lg:col-span-6 min-w-0">
-                <div className={`bg-gray-25 dark:bg-gray-800 border-4 ${inkBorder} rounded-2xl ${shadowMd} p-5 sm:p-6`}>
-                    <span className="inline-block text-[11px] font-black uppercase tracking-[0.14em] text-orange-600 dark:text-orange-300 mb-1">
+                <SkyCard variant="mentor" className="p-5 sm:p-6">
+                    <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-peach-deep mb-1">
                         {t("mentor.questCommand.forge.kicker")}
                     </span>
-                    <h2 className="inline-flex items-center gap-2 text-2xl font-black tracking-tight leading-tight mb-1">
+                    <h2 className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight leading-tight mb-1 text-sky-ink">
                         <img src="/icon/Main/Fire 2/64w/Fire 64px.png" alt="" className="w-6 h-6 object-contain" /> {t("mentor.questCommand.forge.title")}
                     </h2>
-                    <p className="text-xs text-gray-500 font-medium mb-5">{t("mentor.questCommand.forge.subtitle")}</p>
+                    <p className="text-xs text-sky-ink-2 font-medium mb-5">{t("mentor.questCommand.forge.subtitle")}</p>
 
-                    <p className="text-[11px] font-black uppercase tracking-wider text-gray-400 mb-2">{t("mentor.questCommand.forge.stepIntel")}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-ink-3 mb-2">{t("mentor.questCommand.forge.stepIntel")}</p>
                     <div className="space-y-4 mb-6">
                         <div>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.titleField")} *</label>
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">{t("mentor.questCommand.titleField")} *</label>
                             <input
                                 value={form.title}
                                 onChange={(e) => handleField("title", e.target.value)}
                                 placeholder={t("mentor.questCommand.titlePlaceholder")}
-                                className={`${inputCls} text-lg font-black`}
+                                className={`${inputCls} text-lg font-bold`}
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.description")}</label>
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">{t("mentor.questCommand.description")}</label>
                             <textarea
                                 value={form.description}
                                 onChange={(e) => handleField("description", e.target.value)}
@@ -460,10 +467,10 @@ export default function QuestForgeTab() {
                         </div>
                     </div>
 
-                    <p className="text-[11px] font-black uppercase tracking-wider text-gray-400 mb-2">{t("mentor.questCommand.forge.stepStakes")}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-ink-3 mb-2">{t("mentor.questCommand.forge.stepStakes")}</p>
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Difficulty *</label>
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-sky-ink-2">Difficulty *</label>
                             <div className="grid grid-cols-3 gap-2">
                                 {DIFFICULTIES.map((diff) => {
                                     const s = DIFF_STYLE[diff];
@@ -473,10 +480,8 @@ export default function QuestForgeTab() {
                                             key={diff}
                                             type="button"
                                             onClick={() => applyRangeDefaults(diff)}
-                                            className={`py-2.5 border-[3px] ${inkBorder} rounded-xl font-black text-sm transition-all duration-150 ${easeExpo} ${
-                                                isSelected
-                                                    ? `${s.active} shadow-none translate-x-0.5 translate-y-0.5`
-                                                    : `${s.inactive} ${shadowSm} hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75`
+                                            className={`py-2.5 rounded-sky-chip font-semibold text-sm transition-all duration-150 ${easeExpo} ${
+                                                isSelected ? `${s.active} ring-2 ${s.ring}` : s.inactive
                                             }`}
                                         >
                                             {s.label}
@@ -488,10 +493,10 @@ export default function QuestForgeTab() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="min-w-0">
-                                <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                                <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">
                                     {t("mentor.questCommand.damage")}
                                     {currentRange && (
-                                        <span className="ml-1 text-gray-400 font-medium normal-case">
+                                        <span className="ml-1 text-sky-ink-3 font-medium normal-case">
                                             ({currentRange.damageMin}–{currentRange.damageMax})
                                         </span>
                                     )}
@@ -509,10 +514,10 @@ export default function QuestForgeTab() {
                                 </div>
                             </div>
                             <div className="min-w-0">
-                                <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                                <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">
                                     M-Gold Reward
                                     {currentRange && (
-                                        <span className="ml-1 text-gray-400 font-medium normal-case">
+                                        <span className="ml-1 text-sky-ink-3 font-medium normal-case">
                                             ({currentRange.mGoldMin}–{currentRange.mGoldMax})
                                         </span>
                                     )}
@@ -532,10 +537,10 @@ export default function QuestForgeTab() {
                         </div>
 
                         <div>
-                            <p className="text-[11px] font-black uppercase tracking-wider text-gray-400 mb-2">{t("mentor.questCommand.forge.deploymentDetails")}</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-ink-3 mb-2">{t("mentor.questCommand.forge.deploymentDetails")}</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="min-w-0">
-                                    <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.proofType")}</label>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">{t("mentor.questCommand.proofType")}</label>
                                     <select
                                         value={form.proofType}
                                         onChange={(e) => handleField("proofType", e.target.value)}
@@ -547,7 +552,7 @@ export default function QuestForgeTab() {
                                     </select>
                                 </div>
                                 <div className="min-w-0">
-                                    <label className="block text-xs font-black uppercase tracking-wider mb-1">{t("mentor.questCommand.deadline")}</label>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">{t("mentor.questCommand.deadline")}</label>
                                     <input
                                         type="datetime-local"
                                         value={form.deadlineAt}
@@ -559,9 +564,9 @@ export default function QuestForgeTab() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">
                                 {t("mentor.questCommand.forge.howToSubmitLabel")}
-                                <span className="ml-1.5 text-[10px] font-normal normal-case text-gray-400">
+                                <span className="ml-1.5 text-[10px] font-normal normal-case text-sky-ink-3">
                                     {form.howToSubmit.length}/{HOW_TO_SUBMIT_MAX}
                                 </span>
                             </label>
@@ -576,7 +581,7 @@ export default function QuestForgeTab() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-sky-ink-2">
                                 {t("mentor.questCommand.forge.verificationTagsLabel")}
                             </label>
                             <div className="flex flex-wrap gap-2">
@@ -587,18 +592,18 @@ export default function QuestForgeTab() {
                                             key={tag}
                                             type="button"
                                             onClick={() => toggleTag(tag)}
-                                            className={`px-3 py-1.5 border-[3px] ${inkBorder} rounded-full text-xs font-black transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
                                         >
                                             {tag}
                                         </button>
                                     );
                                 })}
                             </div>
-                            <p className="text-[11px] text-gray-400 font-medium mt-1.5">{t("mentor.questCommand.forge.verificationTagsHint")}</p>
+                            <p className="text-[11px] text-sky-ink-3 font-medium mt-1.5">{t("mentor.questCommand.forge.verificationTagsHint")}</p>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-semibold uppercase tracking-wider mb-1 text-sky-ink-2">
                                 {t("mentor.questCommand.forge.cvQuestTypeLabel")}
                             </label>
                             <select
@@ -618,11 +623,11 @@ export default function QuestForgeTab() {
                                 type="checkbox"
                                 checked={form.isMandatory}
                                 onChange={(e) => handleField("isMandatory", e.target.checked)}
-                                className="w-4 h-4 accent-orange-500"
+                                className="w-4 h-4 accent-sky-deep"
                             />
-                            <span className="text-sm font-bold">{t("mentor.questCommand.mandatoryQuest")}</span>
+                            <span className="text-sm font-semibold text-sky-ink">{t("mentor.questCommand.mandatoryQuest")}</span>
                             {form.isMandatory && (
-                                <span className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-300 font-bold">
+                                <span className="inline-flex items-center gap-1 text-xs text-sky-peach-deep font-semibold">
                                     <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> Fail → Shared HP -20
                                 </span>
                             )}
@@ -630,15 +635,17 @@ export default function QuestForgeTab() {
                     </div>
 
                     {formError && (
-                        <div className="mt-4 p-3 bg-error-100 dark:bg-error-500/15 border-2 border-error-400 rounded-xl text-sm font-bold text-error-700 dark:text-error-300">
+                        <div className="mt-4 p-3 bg-error-100 border border-error-400 rounded-sky-chip text-sm font-semibold text-error-700">
                             {formError}
                         </div>
                     )}
 
-                    <button
+                    <SkyButton
+                        type="button"
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className={`mt-5 w-full py-3.5 border-[3px] ${inkBorder} rounded-full font-black text-lg bg-orange-500 text-white ${shadowMd} hover:shadow-[7px_9px_0_0_var(--color-game-outline)] dark:hover:shadow-[7px_9px_0_0_var(--color-brand-300)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0 transition-all duration-150 ${easeExpo} inline-flex items-center justify-center gap-2`}
+                        className="mt-5 w-full text-lg py-3.5"
                     >
                         {submitting ? (
                             <><Spinner size={16} /> {t("mentor.questCommand.assigning")}</>
@@ -647,8 +654,8 @@ export default function QuestForgeTab() {
                         ) : (
                             <span className="inline-flex items-center gap-1.5"><img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-5 h-5 object-contain" />{t("mentor.questCommand.fanOut")}</span>
                         )}
-                    </button>
-                </div>
+                    </SkyButton>
+                </SkyCard>
             </div>
 
             {/* ── Player Preview ──────────────────────────────────────── */}

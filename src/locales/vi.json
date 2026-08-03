@@ -110,6 +110,8 @@
     "searchPlaceholder": "Tìm kiếm hoặc nhập lệnh...",
     "switchToLight": "Chuyển sang chế độ sáng",
     "switchToDark": "Chuyển sang chế độ tối",
+    "themeDisabledMentor": "Chế độ tối chưa khả dụng cho khu vực Mentor",
+    "themeDisabledAdmin": "Chế độ tối chưa khả dụng cho khu vực Admin",
     "openMenu": "Mở menu"
   },
   "userDropdown": {

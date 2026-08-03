@@ -10,6 +10,8 @@ import { useAlert } from '../context/AlertContext';
 import { adminGoalApi } from '../api/adminGoalApi';
 import { adminPracticalTaskApi } from '../api/adminPracticalTaskApi';
 import { adminRecommendationRuleApi } from '../api/adminRecommendationRuleApi';
+import SkyCard from '../components/ui/card/SkyCard';
+import SkyButton from '../components/ui/button/SkyButton';
 import {
   GoalCategoryDto, GoalCategoryPayload,
   GoalDto, GoalPayload, MeasurementType,
@@ -21,8 +23,12 @@ import {
 } from '../types/adminGoal.types';
 
 // ─── Shared style helpers ─────────────────────────────────────────────────────
-const inputCls = 'w-full px-3 py-2 rounded-xl border-2 border-black bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 dark:border-gray-600 dark:placeholder:text-gray-500';
-const btnBase = 'inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-black font-black text-sm transition-all shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none';
+const inputCls = [
+  'w-full px-3 py-2 rounded-sky-chip border border-sky-surf-border bg-white',
+  'text-sky-ink text-sm font-medium',
+  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
+  'placeholder:text-sky-ink-3',
+].join(' ');
 
 const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
 const MEASUREMENT_TYPES: MeasurementType[] = ['CHECK_IN', 'COUNTABLE', 'FREQUENCY_BASED', 'QUALITY_BASED', 'SCHEDULE_BASED', 'TIME_BASED'];
@@ -40,20 +46,20 @@ function ConfirmDeleteModal({ title, body, onConfirm, onCancel, loading }: {
 }) {
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm p-6">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content w-full max-w-sm">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-            <h3 className="text-lg font-black text-red-700 dark:text-red-400">{title}</h3>
+            <AlertTriangle className="w-5 h-5 text-error-500 shrink-0" />
+            <h3 className="text-lg font-bold text-error-700">{title}</h3>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{body}</p>
+          <p className="text-sm text-sky-ink-2 mb-6">{body}</p>
           <div className="flex gap-3">
-            <button onClick={onCancel} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-            <button onClick={onConfirm} disabled={loading} className={`${btnBase} flex-1 justify-center bg-red-400 text-white`}>
+            <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancel</SkyButton>
+            <SkyButton type="button" variant="destructive" onClick={onConfirm} disabled={loading} className="flex-1">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
-            </button>
+            </SkyButton>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -85,48 +91,48 @@ function CategoryFormModal({ editing, onSave, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-amber-100 dark:bg-amber-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg dark:text-gray-100">{editing ? 'Edit Category' : 'New Category'}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Category' : 'New Category'}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Code *</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Code *</label>
                 <input value={code} onChange={e => setCode(e.target.value)} className={inputCls} placeholder="HEALTH" disabled={!!editing} />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Display Order</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Display Order</label>
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Name *</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Name *</label>
               <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="Health & Wellness" required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Description</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
               <input value={desc} onChange={e => setDesc(e.target.value)} className={inputCls} placeholder="Optional description" />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Icon Code (emoji/slug)</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Icon Code (emoji/slug)</label>
               <input value={icon} onChange={e => setIcon(e.target.value)} className={inputCls} placeholder="🏃 or health-icon" />
             </div>
             <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-amber-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Active (visible to players)</span>
+              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-sky-deep" />
+              <span className="text-sm font-semibold text-sky-ink-2">Active (visible to players)</span>
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-amber-300 dark:bg-amber-600 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {editing ? 'Save' : 'Create'}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -169,50 +175,50 @@ function GoalFormModal({ editing, defaultCategoryCode, onSave, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-lg">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-emerald-100 dark:bg-emerald-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg dark:text-gray-100">{editing ? 'Edit Goal' : 'New Goal'}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-lg">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-success-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Goal' : 'New Goal'}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Code *</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Code *</label>
                 <input value={code} onChange={e => setCode(e.target.value)} className={inputCls} placeholder="DRINK_WATER" disabled={!!editing} />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Display Order</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Display Order</label>
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Goal Name *</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Goal Name *</label>
               <input value={gname} onChange={e => setGname(e.target.value)} className={inputCls} placeholder="Drink 2L of water daily" required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Description</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} placeholder="Optional description" />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Measurement Type</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Measurement Type</label>
               <select value={mtype} onChange={e => setMtype(e.target.value as MeasurementType)} className={inputCls}>
                 {MEASUREMENT_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Active</span>
+              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-success-500" />
+              <span className="text-sm font-semibold text-sky-ink-2">Active</span>
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-emerald-300 dark:bg-emerald-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="submit" variant="success" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {editing ? 'Save' : 'Create'}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -243,40 +249,40 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-violet-100 dark:bg-violet-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg dark:text-gray-100">{editing ? 'Edit Task' : 'New Practical Task'}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-violet-200 dark:hover:bg-violet-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-purple-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Task' : 'New Practical Task'}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Title *</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Title *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Log water intake daily" required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Description</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Verification Type</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Verification Type</label>
               <select value={vtype} onChange={e => setVtype(e.target.value)} className={inputCls}>
                 {VERIFICATION_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
             <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-violet-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Active</span>
+              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-purple-500" />
+              <span className="text-sm font-semibold text-sky-ink-2">Active</span>
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-violet-300 dark:bg-violet-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {editing ? 'Save' : 'Create'}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -313,29 +319,29 @@ function RuleFormModal({ goalId, editing, onSave, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-blue-100 dark:bg-blue-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg dark:text-gray-100">{editing ? 'Edit Rule' : 'New Rule'}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-blue-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Rule' : 'New Rule'}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Rule Name *</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Rule Name *</label>
               <input value={rname} onChange={e => setRname(e.target.value)} className={inputCls} placeholder="e.g. Poor sleeper — under 6 hours" required />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Description</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
               <input value={desc} onChange={e => setDesc(e.target.value)} className={inputCls} placeholder="Optional description" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Priority (lower = first)</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Priority (lower = first)</label>
                 <input type="number" min={0} value={priority} onChange={e => setPriority(Number(e.target.value))} className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Match Mode</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Match Mode</label>
                 <select value={matchMode} onChange={e => setMatchMode(e.target.value as RuleMatchMode)} className={inputCls}>
                   {MATCH_MODES.map(m => <option key={m} value={m}>{m === 'AllConditions' ? 'ALL (AND)' : 'ANY (OR)'}</option>)}
                 </select>
@@ -344,17 +350,17 @@ function RuleFormModal({ goalId, editing, onSave, onClose }: {
             {!editing && (
               <label className="flex items-center gap-3 cursor-pointer select-none">
                 <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-blue-500" />
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Active</span>
+                <span className="text-sm font-semibold text-sky-ink-2">Active</span>
               </label>
             )}
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-blue-300 dark:bg-blue-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {editing ? 'Save' : 'Create'}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -386,37 +392,37 @@ function ConditionFormModal({ ruleId, editing, onSave, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-sm">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-indigo-100 dark:bg-indigo-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg dark:text-gray-100">{editing ? 'Edit Condition' : 'Add Condition'}</h2>
-            <button onClick={onClose} className="p-1 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-sm">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-blue-50">
+            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Condition' : 'Add Condition'}</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Question ID *</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Question ID *</label>
               <input type="number" value={questionId} onChange={e => setQuestionId(e.target.value)} className={inputCls} placeholder="Question ID from the Questionnaire Builder" required />
-              <p className="text-[10px] text-gray-400 mt-1">Find IDs in the Questionnaire Builder page.</p>
+              <p className="text-[10px] text-sky-ink-3 mt-1">Find IDs in the Questionnaire Builder page.</p>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Operator</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Operator</label>
               <select value={operator} onChange={e => setOperator(e.target.value as ConditionOperator)} className={inputCls}>
                 {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Value *</label>
+              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Value *</label>
               <input value={condValue} onChange={e => setCondValue(e.target.value)} className={inputCls} placeholder='e.g. "LOW" or "6"' required />
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button type="submit" disabled={saving} className={`${btnBase} flex-1 justify-center bg-indigo-300 dark:bg-indigo-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {editing ? 'Save' : 'Add'}
-              </button>
+              </SkyButton>
             </div>
           </form>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -450,18 +456,18 @@ function BindQuestionnaireModal({ goalId, onBound, onClose }: {
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="modal-content bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-orange-100 dark:bg-orange-900/30 rounded-t-3xl">
-            <h2 className="font-black text-lg dark:text-gray-100">Attach Questionnaire</h2>
-            <button onClick={onClose} className="p-1 hover:bg-orange-200 dark:hover:bg-orange-800 rounded-lg"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
+            <h2 className="font-bold text-lg text-sky-ink">Attach Questionnaire</h2>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
           </div>
           <div className="p-5 space-y-4">
-            {err && <p className="text-xs text-red-600 font-bold bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{err}</p>}
+            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
             {loading ? (
-              <div className="flex items-center gap-2 text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Loading templates…</div>
+              <div className="flex items-center gap-2 text-sky-ink-3"><Loader2 className="w-4 h-4 animate-spin" /> Loading templates…</div>
             ) : templates.length === 0 ? (
-              <p className="text-sm text-gray-500">No active templates found. Create one in the Questionnaire Builder.</p>
+              <p className="text-sm text-sky-ink-2">No active templates found. Create one in the Questionnaire Builder.</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {templates.map(tpl => (
@@ -469,22 +475,22 @@ function BindQuestionnaireModal({ goalId, onBound, onClose }: {
                     key={tpl.templateId}
                     type="button"
                     onClick={() => setSelected(tpl.templateId)}
-                    className={`w-full text-left px-4 py-3 rounded-2xl border-2 transition-all ${selected === tpl.templateId ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-black bg-white dark:bg-gray-800 hover:bg-orange-50/60 dark:hover:bg-orange-900/10'}`}
+                    className={`w-full text-left px-4 py-3 rounded-sky-chip transition-all ${selected === tpl.templateId ? 'ring-2 ring-warning-400 bg-warning-50' : 'bg-white border border-sky-surf-border hover:bg-warning-50/60'}`}
                   >
-                    <p className="font-black text-sm text-gray-900 dark:text-gray-100">{tpl.templateName}</p>
-                    {tpl.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tpl.description}</p>}
+                    <p className="font-bold text-sm text-sky-ink">{tpl.templateName}</p>
+                    {tpl.description && <p className="text-xs text-sky-ink-3 mt-0.5">{tpl.description}</p>}
                   </button>
                 ))}
               </div>
             )}
             <div className="flex gap-3 pt-1">
-              <button onClick={onClose} className={`${btnBase} flex-1 justify-center bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200`}>Cancel</button>
-              <button onClick={submit} disabled={saving || !selected} className={`${btnBase} flex-1 justify-center bg-orange-300 dark:bg-orange-700 text-gray-900 dark:text-white`}>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="button" variant="primary" onClick={submit} disabled={saving || !selected} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />} Attach
-              </button>
+              </SkyButton>
             </div>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );
@@ -531,57 +537,57 @@ function PracticalTasksTab({ goal }: { goal: GoalDto }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-gray-600 dark:text-gray-400">{tasks.length} task template{tasks.length !== 1 ? 's' : ''} for this goal</p>
-        <button onClick={() => setTaskModal({ editing: null })} className={`${btnBase} bg-violet-200 dark:bg-violet-800 text-violet-900 dark:text-violet-100 py-1.5`}>
+        <p className="text-sm font-bold text-sky-ink-3">{tasks.length} task template{tasks.length !== 1 ? 's' : ''} for this goal</p>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setTaskModal({ editing: null })}>
           <Plus className="w-4 h-4" /> Add Task
-        </button>
+        </SkyButton>
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+        <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : tasks.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+        <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
           <Zap className="w-10 h-10 mx-auto mb-2 opacity-40" />
           <p className="font-bold">No tasks yet</p>
           <p className="text-sm">Add practical task templates for this goal.</p>
         </div>
       ) : (
-        <div className="border-2 border-black dark:border-gray-600 rounded-2xl overflow-hidden shadow-[4px_4px_0_0_#1A1D20]">
+        <SkyCard variant="admin" className="p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b-2 border-gray-200 dark:border-white/10 bg-violet-50 dark:bg-violet-900/20">
+              <tr className="border-b border-gray-200 bg-purple-50">
                 {['#', 'Title', 'Verification', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-sky-ink-3">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+            <tbody>
               {tasks.map((t, i) => (
-                <tr key={t.taskId} className="hover:bg-violet-50/40 dark:hover:bg-violet-900/10 transition-colors">
-                  <td className="px-4 py-3 text-xs font-black text-gray-400">{i + 1}</td>
+                <tr key={t.taskId} className="sky-table-row">
+                  <td className="px-4 py-3 text-xs font-bold text-sky-ink-3">{i + 1}</td>
                   <td className="px-4 py-3 max-w-xs">
-                    <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{t.title}</p>
-                    {t.description && <p className="text-xs text-gray-400 truncate">{t.description}</p>}
+                    <p className="font-bold text-sky-ink truncate">{t.title}</p>
+                    {t.description && <p className="text-xs text-sky-ink-3 truncate">{t.description}</p>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs font-black bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full border border-violet-200 dark:border-violet-700">{t.verificationType}</span>
+                    <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{t.verificationType}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${t.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${t.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
                       {t.isActive ? 'Active' : 'Off'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => setTaskModal({ editing: t })} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg text-gray-400"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => setDelTask(t)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
+                      <SkyButton type="button" variant="ghost" size="icon" onClick={() => setTaskModal({ editing: t })} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
+                      <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelTask(t)} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </SkyCard>
       )}
 
       {taskModal !== null && <TaskFormModal goalId={goal.goalId} editing={taskModal.editing} onSave={handleSave} onClose={() => setTaskModal(null)} />}
@@ -655,16 +661,16 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-gray-600 dark:text-gray-400">{rules.length} rule{rules.length !== 1 ? 's' : ''} — sorted by priority</p>
-        <button onClick={() => setRuleModal({ editing: null })} className={`${btnBase} bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 py-1.5`}>
+        <p className="text-sm font-bold text-sky-ink-3">{rules.length} rule{rules.length !== 1 ? 's' : ''} — sorted by priority</p>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setRuleModal({ editing: null })}>
           <Plus className="w-4 h-4" /> Add Rule
-        </button>
+        </SkyButton>
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+        <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : rules.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+        <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
           <ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-40" />
           <p className="font-bold">No rules yet</p>
           <p className="text-sm">Rules decide which tasks to recommend based on player answers.</p>
@@ -672,62 +678,62 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
       ) : (
         <div className="space-y-3">
           {rules.map(rule => (
-            <div key={rule.ruleId} className="border-2 border-black dark:border-gray-600 rounded-2xl overflow-hidden shadow-[3px_3px_0_0_#1A1D20]">
+            <SkyCard key={rule.ruleId} variant="admin" className="p-0 overflow-hidden">
               {/* Rule header row */}
-              <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-800">
+              <div className="flex items-start gap-3 p-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-black bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-700">P{rule.priority}</span>
-                    <p className="font-black text-sm text-gray-900 dark:text-gray-100">{rule.ruleName}</p>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${rule.matchMode === 'AllConditions' ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700 dark:text-indigo-300' : 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300'}`}>
+                    <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">P{rule.priority}</span>
+                    <p className="font-bold text-sm text-sky-ink">{rule.ruleName}</p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rule.matchMode === 'AllConditions' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                       {rule.matchMode === 'AllConditions' ? 'AND' : 'OR'}
                     </span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${rule.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rule.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
                       {rule.isActive ? 'Active' : 'Off'}
                     </span>
                   </div>
-                  {rule.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{rule.description}</p>}
-                  <p className="text-[10px] text-gray-400 mt-1">{rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}</p>
+                  {rule.description && <p className="text-xs text-sky-ink-3 mt-1">{rule.description}</p>}
+                  <p className="text-[10px] text-sky-ink-3 mt-1">{rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => setExpandedRule(expandedRule === rule.ruleId ? null : rule.ruleId)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400" title="Conditions">
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpandedRule(expandedRule === rule.ruleId ? null : rule.ruleId)} title="Conditions" className="w-8 h-8">
                     <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
-                  </button>
-                  <button onClick={() => handleToggleRule(rule)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400">
-                    {rule.isActive ? <ToggleRight className="w-4 h-4 text-green-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                  </button>
-                  <button onClick={() => setRuleModal({ editing: rule })} className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-gray-400"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => setDelRule(rule)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-400"><Trash2 className="w-4 h-4" /></button>
+                  </SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggleRule(rule)} className="w-8 h-8">
+                    {rule.isActive ? <ToggleRight className="w-4 h-4 text-success-600" /> : <ToggleLeft className="w-4 h-4 text-sky-ink-3" />}
+                  </SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setRuleModal({ editing: rule })} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelRule(rule)} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
                 </div>
               </div>
 
               {/* Conditions panel */}
               {expandedRule === rule.ruleId && (
-                <div className="border-t-2 border-gray-100 dark:border-gray-700 bg-indigo-50/40 dark:bg-indigo-900/5 px-4 pb-4">
+                <div className="border-t border-gray-200 bg-blue-50/40 px-4 pb-4">
                   <div className="flex items-center justify-between pt-3 mb-2">
-                    <p className="text-[11px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Conditions</p>
-                    <button onClick={() => setCondModal({ ruleId: rule.ruleId, editing: null })} className={`${btnBase} bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-100 py-1 px-3 text-xs`}>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600">Conditions</p>
+                    <SkyButton type="button" variant="secondary" size="sm" onClick={() => setCondModal({ ruleId: rule.ruleId, editing: null })}>
                       <Plus className="w-3 h-3" /> Add Condition
-                    </button>
+                    </SkyButton>
                   </div>
                   {rule.conditions.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic py-2 text-center border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">No conditions — rule matches all players.</p>
+                    <p className="text-xs text-sky-ink-3 italic py-2 text-center border border-dashed border-sky-ink/15 rounded-sky-chip">No conditions — rule matches all players.</p>
                   ) : (
                     <div className="space-y-1.5">
                       {rule.conditions.map(c => (
-                        <div key={c.conditionId} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl">
-                          <span className="text-xs font-mono font-bold text-gray-600 dark:text-gray-300 shrink-0">Q#{c.questionId}</span>
-                          <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 shrink-0">{c.operator}</span>
-                          <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-lg flex-1 min-w-0 truncate">{c.conditionValue ?? '—'}</span>
-                          <button onClick={() => setCondModal({ ruleId: rule.ruleId, editing: c })} className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded text-gray-400"><Pencil className="w-3 h-3" /></button>
-                          <button onClick={() => setDelCond({ rule, cond: c })} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-400"><Trash2 className="w-3 h-3" /></button>
+                        <div key={c.conditionId} className="flex items-center gap-2 px-3 py-2 bg-white border border-blue-200 rounded-sky-chip">
+                          <span className="text-xs font-mono font-bold text-sky-ink-2 shrink-0">Q#{c.questionId}</span>
+                          <span className="text-xs font-bold text-blue-600 shrink-0">{c.operator}</span>
+                          <span className="text-xs font-mono bg-gray-100 text-sky-ink-2 px-2 py-0.5 rounded-md flex-1 min-w-0 truncate">{c.conditionValue ?? '—'}</span>
+                          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setCondModal({ ruleId: rule.ruleId, editing: c })} className="w-6 h-6"><Pencil className="w-3 h-3" /></SkyButton>
+                          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelCond({ rule, cond: c })} className="w-6 h-6 text-error-500 hover:bg-error-50"><Trash2 className="w-3 h-3" /></SkyButton>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </SkyCard>
           ))}
         </div>
       )}
@@ -786,19 +792,19 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-gray-600 dark:text-gray-400">{bindings.length} bound questionnaire{bindings.length !== 1 ? 's' : ''}</p>
-        <button onClick={() => setBindModal(true)} className={`${btnBase} bg-orange-200 dark:bg-orange-800 text-orange-900 dark:text-orange-100 py-1.5`}>
+        <p className="text-sm font-bold text-sky-ink-3">{bindings.length} bound questionnaire{bindings.length !== 1 ? 's' : ''}</p>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setBindModal(true)}>
           <LinkIcon className="w-4 h-4" /> Attach Template
-        </button>
+        </SkyButton>
       </div>
       {actionErr && (
-        <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{actionErr}</p>
+        <p className="text-xs font-bold text-error-600 bg-error-50 rounded-sky-chip px-3 py-2">{actionErr}</p>
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+        <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : bindings.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+        <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
           <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
           <p className="font-bold">No questionnaires attached</p>
           <p className="text-sm">Players can't start Goal Wizard until a questionnaire is active.</p>
@@ -806,45 +812,33 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
       ) : (
         <div className="space-y-3">
           {bindings.map(b => (
-            <div key={b.goalQuestionnaireId} className={`flex items-center gap-4 p-4 border-2 rounded-2xl shadow-[3px_3px_0_0_#1A1D20] ${b.isActive ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10' : 'border-black bg-white dark:bg-gray-800'}`}>
+            <SkyCard key={b.goalQuestionnaireId} variant="admin" className={`flex items-center gap-4 ${b.isActive ? 'ring-2 ring-warning-400 bg-warning-50' : ''}`}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-black text-sm text-gray-900 dark:text-gray-100">{b.templateName ?? `Template #${b.templateId}`}</p>
+                  <p className="font-bold text-sm text-sky-ink">{b.templateName ?? `Template #${b.templateId}`}</p>
                   {b.isActive && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black bg-orange-200 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-400 dark:border-orange-600 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-warning-200 text-warning-800 px-2 py-0.5 rounded-full">
                       <CheckCircle className="w-3 h-3" /> Active
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">Effective from: {new Date(b.effectiveFrom).toLocaleDateString()}</p>
+                <p className="text-xs text-sky-ink-3 mt-0.5">Effective from: {new Date(b.effectiveFrom).toLocaleDateString()}</p>
               </div>
-              <button
-                onClick={() => navigate(`/questionnaires?templateId=${b.templateId}`)}
-                className={`${btnBase} bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-1.5`}
-                title="View in Onboarding Eval"
-              >
+              <SkyButton type="button" variant="secondary" size="sm" onClick={() => navigate(`/questionnaires?templateId=${b.templateId}`)} title="View in Onboarding Eval">
                 <ExternalLink className="w-4 h-4" /> Detail
-              </button>
+              </SkyButton>
               {b.isActive ? (
-                <button
-                  onClick={() => handleDeactivate(b)}
-                  disabled={activating === b.goalQuestionnaireId}
-                  className={`${btnBase} bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-1.5`}
-                >
+                <SkyButton type="button" variant="secondary" size="sm" onClick={() => handleDeactivate(b)} disabled={activating === b.goalQuestionnaireId}>
                   {activating === b.goalQuestionnaireId ? <Loader2 className="w-4 h-4 animate-spin" /> : <ToggleLeft className="w-4 h-4" />}
                   Deactivate
-                </button>
+                </SkyButton>
               ) : (
-                <button
-                  onClick={() => handleActivate(b)}
-                  disabled={activating === b.goalQuestionnaireId}
-                  className={`${btnBase} bg-orange-300 dark:bg-orange-700 text-gray-900 dark:text-white py-1.5`}
-                >
+                <SkyButton type="button" variant="primary" size="sm" onClick={() => handleActivate(b)} disabled={activating === b.goalQuestionnaireId}>
                   {activating === b.goalQuestionnaireId ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   Activate
-                </button>
+                </SkyButton>
               )}
-            </div>
+            </SkyCard>
           ))}
         </div>
       )}
@@ -859,10 +853,10 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 type CommandTab = 'tasks' | 'rules' | 'questionnaires';
 
-const TABS: { id: CommandTab; label: string; icon: React.ReactNode; color: string }[] = [
-  { id: 'tasks',          label: 'Practical Tasks',       icon: <Zap className="w-4 h-4" />,          color: 'bg-violet-300 dark:bg-violet-700' },
-  { id: 'rules',          label: 'Recommendation Rules',  icon: <ShieldCheck className="w-4 h-4" />,   color: 'bg-blue-300 dark:bg-blue-700' },
-  { id: 'questionnaires', label: 'Questionnaires',         icon: <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-4 h-4 object-contain" />, color: 'bg-orange-300 dark:bg-orange-700' },
+const TABS: { id: CommandTab; label: string; icon: React.ReactNode; cls: string }[] = [
+  { id: 'tasks',          label: 'Practical Tasks',       icon: <Zap className="w-4 h-4" />,          cls: 'bg-purple-200 text-sky-ink' },
+  { id: 'rules',          label: 'Recommendation Rules',  icon: <ShieldCheck className="w-4 h-4" />,   cls: 'bg-blue-200 text-sky-ink' },
+  { id: 'questionnaires', label: 'Questionnaires',         icon: <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-4 h-4 object-contain" />, cls: 'bg-warning-200 text-sky-ink' },
 ];
 
 function GoalCommandCenter({ category, goal, onBack }: {
@@ -876,26 +870,26 @@ function GoalCommandCenter({ category, goal, onBack }: {
     <div className="flex flex-col gap-4 h-full">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={onBack} className={`${btnBase} bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-1.5 px-3 text-xs`}>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={onBack}>
           <ArrowLeft className="w-3.5 h-3.5" /> Categories
-        </button>
-        <ChevronRight className="w-4 h-4 text-gray-400" />
-        <span className="text-sm font-bold text-gray-500 dark:text-gray-400">{category.categoryName}</span>
-        <ChevronRight className="w-4 h-4 text-gray-400" />
-        <span className="text-sm font-black text-gray-900 dark:text-gray-100">{goal.goalName}</span>
-        <span className={`ml-1 text-[10px] font-black px-2 py-0.5 rounded-full border ${goal.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+        </SkyButton>
+        <ChevronRight className="w-4 h-4 text-sky-ink-3" />
+        <span className="text-sm font-bold text-sky-ink-3">{category.categoryName}</span>
+        <ChevronRight className="w-4 h-4 text-sky-ink-3" />
+        <span className="text-sm font-bold text-sky-ink">{goal.goalName}</span>
+        <span className={`ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${goal.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
           {goal.isActive ? 'Active' : 'Inactive'}
         </span>
       </div>
 
       {/* Goal info banner */}
-      <div className="flex items-center gap-4 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl">
-        <div className="w-10 h-10 rounded-xl bg-emerald-300 border-2 border-black flex items-center justify-center shrink-0">
+      <div className="flex items-center gap-4 px-4 py-3 bg-success-50 rounded-sky-card">
+        <div className="w-10 h-10 rounded-sky-chip bg-success-100 flex items-center justify-center shrink-0">
           <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-black text-gray-900 dark:text-gray-100">{goal.goalName}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{goal.goalCode} · {goal.measurementType}</p>
+          <p className="font-bold text-sky-ink">{goal.goalName}</p>
+          <p className="text-xs text-sky-ink-3">{goal.goalCode} · {goal.measurementType}</p>
         </div>
       </div>
 
@@ -905,7 +899,7 @@ function GoalCommandCenter({ category, goal, onBack }: {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`${btnBase} py-2 ${tab === t.id ? `${t.color} text-gray-900 dark:text-white` : 'bg-white dark:bg-gray-800 border-black/20 dark:border-white/20 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-sky-chip font-bold text-sm transition-all ${tab === t.id ? t.cls : 'bg-white border border-sky-surf-border text-sky-ink-3 hover:bg-gray-50'}`}
           >
             {t.icon} {t.label}
           </button>
@@ -913,11 +907,11 @@ function GoalCommandCenter({ category, goal, onBack }: {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 border-4 border-black dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-800 shadow-[4px_4px_0_0_#1A1D20] p-6 overflow-y-auto">
+      <SkyCard variant="admin" className="flex-1 overflow-y-auto">
         {tab === 'tasks'          && <PracticalTasksTab      goal={goal} />}
         {tab === 'rules'          && <RecommendationRulesTab goal={goal} />}
         {tab === 'questionnaires' && <QuestionnairesTab      goal={goal} />}
-      </div>
+      </SkyCard>
     </div>
   );
 }
@@ -1018,102 +1012,102 @@ function CategoryGoalExplorer({ onEnterGoal }: {
       {/* Split pane */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Left: Categories */}
-        <div className="w-72 shrink-0 flex flex-col gap-3 border-4 border-black dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-800 shadow-[4px_4px_0_0_#1A1D20] p-5 overflow-hidden">
+        <SkyCard variant="admin" className="w-72 shrink-0 flex flex-col gap-3 overflow-hidden">
           <div className="flex items-center justify-between shrink-0">
-            <h2 className="font-black text-gray-900 dark:text-gray-100">Categories</h2>
-            <button onClick={() => setCatModal({ editing: null })} className={`${btnBase} bg-amber-200 dark:bg-amber-700 text-amber-900 dark:text-amber-100 py-1 px-3 text-xs`}>
+            <h2 className="font-bold text-sky-ink">Categories</h2>
+            <SkyButton type="button" variant="secondary" size="sm" onClick={() => setCatModal({ editing: null })}>
               <Plus className="w-3 h-3" /> New
-            </button>
+            </SkyButton>
           </div>
           <div className="flex-1 overflow-y-auto space-y-2 -mr-1 pr-1">
             {catLoading ? (
-              <div className="flex items-center justify-center py-8 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+              <div className="flex items-center justify-center py-8 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /></div>
             ) : categories.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 text-sm">No categories yet</div>
+              <div className="text-center py-8 text-sky-ink-3 text-sm">No categories yet</div>
             ) : categories.map(cat => (
               <div
                 key={cat.categoryId}
                 onClick={() => setSelectedCat(cat)}
-                className={`cursor-pointer border-2 rounded-2xl p-3 transition-all ${selectedCat?.categoryId === cat.categoryId ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'border-black/30 dark:border-white/10 bg-gray-50 dark:bg-gray-700/50 hover:bg-amber-50/50 dark:hover:bg-amber-900/10'}`}
+                className={`cursor-pointer rounded-sky-chip p-3 transition-all ${selectedCat?.categoryId === cat.categoryId ? 'ring-2 ring-warning-400 bg-warning-50' : 'bg-gray-50 border border-sky-surf-border hover:bg-warning-50/50'}`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <div className="flex items-center gap-2 min-w-0">
                     {cat.iconCode && <span className="text-lg shrink-0">{cat.iconCode}</span>}
-                    <p className="font-black text-sm text-gray-900 dark:text-gray-100 truncate">{cat.categoryName}</p>
+                    <p className="font-bold text-sm text-sky-ink truncate">{cat.categoryName}</p>
                   </div>
-                  <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full border ${cat.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+                  <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cat.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
                     {cat.isActive ? '●' : '○'}
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-400 font-mono mt-1">{cat.categoryCode}</p>
+                <p className="text-[10px] text-sky-ink-3 font-mono mt-1">{cat.categoryCode}</p>
                 <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => handleToggleCat(cat)} className="p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded text-gray-400">
-                    {cat.isActive ? <ToggleRight className="w-3.5 h-3.5 text-green-600" /> : <ToggleLeft className="w-3.5 h-3.5" />}
-                  </button>
-                  <button onClick={() => setCatModal({ editing: cat })} className="p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded text-gray-400"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => setDelCat(cat)} className="p-0.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggleCat(cat)} className="w-6 h-6">
+                    {cat.isActive ? <ToggleRight className="w-3.5 h-3.5 text-success-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-sky-ink-3" />}
+                  </SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setCatModal({ editing: cat })} className="w-6 h-6"><Pencil className="w-3.5 h-3.5" /></SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelCat(cat)} className="w-6 h-6 text-error-500 hover:bg-error-50"><Trash2 className="w-3.5 h-3.5" /></SkyButton>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </SkyCard>
 
         {/* Right: Goals */}
-        <div className="flex-1 flex flex-col gap-3 border-4 border-black dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-800 shadow-[4px_4px_0_0_#1A1D20] p-5 overflow-hidden">
+        <SkyCard variant="admin" className="flex-1 flex flex-col gap-3 overflow-hidden">
           {!selectedCat ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div className="flex-1 flex flex-col items-center justify-center text-sky-ink-3">
               <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-16 h-16 object-contain opacity-20 mb-4" />
-              <p className="font-black text-lg text-gray-500 dark:text-gray-400">Select a Category</p>
+              <p className="font-bold text-lg text-sky-ink-2">Select a Category</p>
               <p className="text-sm">Choose a category on the left to view and manage its goals.</p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between shrink-0">
                 <div>
-                  <h2 className="font-black text-gray-900 dark:text-gray-100">{selectedCat.categoryName}</h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{goals.length} goal{goals.length !== 1 ? 's' : ''}</p>
+                  <h2 className="font-bold text-sky-ink">{selectedCat.categoryName}</h2>
+                  <p className="text-xs text-sky-ink-3">{goals.length} goal{goals.length !== 1 ? 's' : ''}</p>
                 </div>
-                <button onClick={() => setGoalModal({ editing: null })} className={`${btnBase} bg-emerald-200 dark:bg-emerald-700 text-emerald-900 dark:text-emerald-100 py-1 px-3 text-xs`}>
+                <SkyButton type="button" variant="success" size="sm" onClick={() => setGoalModal({ editing: null })}>
                   <Plus className="w-3 h-3" /> New Goal
-                </button>
+                </SkyButton>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 -mr-1 pr-1">
                 {goalLoading ? (
-                  <div className="flex items-center justify-center py-10 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+                  <div className="flex items-center justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /></div>
                 ) : goals.length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+                  <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
                     <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
                     <p className="font-bold">No goals in this category</p>
                     <p className="text-sm">Add the first goal using the button above.</p>
                   </div>
                 ) : goals.map(goal => (
-                  <div key={goal.goalId} className="border-2 border-black dark:border-gray-600 rounded-2xl p-4 bg-white dark:bg-gray-700/60 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+                  <div key={goal.goalId} className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint hover:bg-gray-50/60 transition-all">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-black text-sm text-gray-900 dark:text-gray-100">{goal.goalName}</p>
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${goal.isActive ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300' : 'bg-gray-100 border-gray-300 text-gray-500'}`}>
+                          <p className="font-bold text-sm text-sky-ink">{goal.goalName}</p>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${goal.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
                             {goal.isActive ? 'Active' : 'Off'}
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">{goal.goalCode} · {goal.measurementType}</p>
-                        {goal.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{goal.description}</p>}
+                        <p className="text-[10px] text-sky-ink-3 font-mono mt-0.5">{goal.goalCode} · {goal.measurementType}</p>
+                        {goal.description && <p className="text-xs text-sky-ink-3 mt-1 line-clamp-1">{goal.description}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      <button onClick={() => setGoalModal({ editing: goal })} className={`${btnBase} bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-1 px-2.5 text-xs`}><Pencil className="w-3 h-3" /> Edit</button>
-                      <button onClick={() => setDelGoal(goal)} className={`${btnBase} bg-white dark:bg-gray-600 text-red-600 py-1 px-2.5 text-xs`}><Trash2 className="w-3 h-3" /></button>
-                      <button onClick={() => onEnterGoal(selectedCat, goal)} className={`${btnBase} ml-auto bg-emerald-300 dark:bg-emerald-700 text-gray-900 dark:text-white py-1 px-3 text-xs`}>
+                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => setGoalModal({ editing: goal })}><Pencil className="w-3 h-3" /> Edit</SkyButton>
+                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => setDelGoal(goal)} className="text-error-600"><Trash2 className="w-3 h-3" /></SkyButton>
+                      <SkyButton type="button" variant="success" size="sm" onClick={() => onEnterGoal(selectedCat, goal)} className="ml-auto">
                         Configure <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
+                      </SkyButton>
                     </div>
                   </div>
                 ))}
               </div>
             </>
           )}
-        </div>
+        </SkyCard>
       </div>
 
       {/* Modals */}
@@ -1143,12 +1137,12 @@ export default function GoalTaskEngineHub() {
     <div className="h-full flex flex-col gap-4">
       {/* Page header */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-300 border-4 border-black flex items-center justify-center shadow-[3px_3px_0_0_#1A1D20] shrink-0">
+        <div className="w-12 h-12 rounded-sky-chip bg-success-100 flex items-center justify-center shrink-0">
           <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-6 h-6 object-contain" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Goal Engine Hub</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-sky-ink">Goal Engine Hub</h1>
+          <p className="text-sm text-sky-ink-2">
             {view === 'explorer' ? 'Category → Goal explorer' : `Configuring: ${activeGoal?.goalName}`}
           </p>
         </div>

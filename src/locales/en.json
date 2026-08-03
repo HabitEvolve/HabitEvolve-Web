@@ -110,6 +110,8 @@
     "searchPlaceholder": "Search or type command...",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
+    "themeDisabledMentor": "Dark mode isn't available in the Mentor portal yet",
+    "themeDisabledAdmin": "Dark mode isn't available in the Admin console yet",
     "openMenu": "Open menu"
   },
   "userDropdown": {

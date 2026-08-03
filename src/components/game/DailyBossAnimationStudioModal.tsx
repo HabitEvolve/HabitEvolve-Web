@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, Upload, Wand2, Trash2, X, ShieldAlert, Search } from 'lucide-react';
 import { adminDailyBossApi } from '../../api/adminDailyBossApi';
 import { Portal, inputCls, btnBase } from '../../pages/AdminDailyBossManagement';
+import SkyCard from '../ui/card/SkyCard';
+import SkyButton from '../ui/button/SkyButton';
 import type {
   DailyBossTemplateDto,
   DailyBossAnimationFrameDto,
@@ -121,30 +123,28 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white dark:bg-[#1e2a3a] border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] w-full max-w-2xl my-4">
-          <div className="flex items-center justify-between p-5 border-b-2 border-black dark:border-white/10 bg-orange-100 dark:bg-orange-900/30 rounded-t-3xl">
+      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-2xl my-4">
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-sky-admin-bg-deep">
             <div className="flex items-center gap-2 min-w-0">
-              <Wand2 className="w-5 h-5 shrink-0" />
-              <h2 className="font-black text-lg text-gray-900 dark:text-gray-100 truncate">
+              <Wand2 className="w-5 h-5 shrink-0 text-sky-ink" />
+              <h2 className="font-bold text-lg text-sky-ink truncate">
                 Animation Studio — {boss.name}
               </h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-orange-200 dark:hover:bg-orange-800 rounded-lg shrink-0">
-              <X className="w-5 h-5" />
-            </button>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} className="shrink-0"><X className="w-5 h-5" /></SkyButton>
           </div>
 
           <div className="p-5 space-y-5">
             {error && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2">{error}</p>
+              <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{error}</p>
             )}
 
             {/* ── PREVIEW ── */}
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-gray-500 mb-2">Preview hiện tại</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-ink-3 mb-2">Preview hiện tại</p>
               {loadingFrames ? (
-                <div className="flex items-center justify-center h-64 border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl text-gray-400">
+                <div className="flex items-center justify-center h-64 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
@@ -153,16 +153,16 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   {frames.length > 0 && (
                     confirmingDelete ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-red-600">Xoá toàn bộ animation này?</span>
-                        <button onClick={handleDelete} disabled={deleting} className={`${btnBase} py-1.5 px-3 bg-red-400 text-white`}>
+                        <span className="text-xs font-semibold text-error-600">Xoá toàn bộ animation này?</span>
+                        <SkyButton type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
                           {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Xác nhận
-                        </button>
-                        <button onClick={() => setConfirmingDelete(false)} className={`${btnBase} py-1.5 px-3 bg-white dark:bg-gray-700`}>Huỷ</button>
+                        </SkyButton>
+                        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setConfirmingDelete(false)}>Huỷ</SkyButton>
                       </div>
                     ) : (
-                      <button onClick={() => setConfirmingDelete(true)} className={`${btnBase} py-1.5 px-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300`}>
+                      <SkyButton type="button" variant="destructive" size="sm" onClick={() => setConfirmingDelete(true)}>
                         <Trash2 className="w-3.5 h-3.5" /> Xoá toàn bộ animation
-                      </button>
+                      </SkyButton>
                     )
                   )}
                 </div>
@@ -170,13 +170,13 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
             </div>
 
             {/* ── UPLOAD FORM ── */}
-            <div className="border-t-2 border-dashed border-gray-200 dark:border-gray-700 pt-5 space-y-4">
-              <p className="text-xs font-black uppercase tracking-wide text-gray-500">
+            <div className="border-t border-dashed border-sky-ink/15 pt-5 space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-ink-3">
                 Upload sprite sheet mới (sẽ thay thế toàn bộ frame hiện có)
               </p>
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">Sprite sheet *</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Sprite sheet *</label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -187,7 +187,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">
                   Tên state theo từng dòng (trên → dưới)
                 </label>
                 <input
@@ -196,7 +196,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   className={inputCls}
                   placeholder="idle,attack,hit,defeat"
                 />
-                <p className="text-[11px] text-gray-400 mt-1">
+                <p className="text-[11px] text-sky-ink-3 mt-1">
                   Cách nhau bởi dấu phẩy, theo đúng thứ tự dòng trong ảnh. Có thể ghi số frame tối đa mỗi dòng: <code>idle:4,attack:6</code>. Để trống nếu để hệ thống tự đặt tên ROW_1, ROW_2…
                 </p>
               </div>
@@ -205,14 +205,14 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                 <button
                   type="button"
                   onClick={() => setMode('auto')}
-                  className={`${btnBase} py-1.5 px-3 ${mode === 'auto' ? 'bg-orange-300 dark:bg-orange-600' : 'bg-white dark:bg-gray-700'}`}
+                  className={`${btnBase} ${mode === 'auto' ? 'bg-warning-100 text-warning-800' : 'bg-white border border-sky-surf-border text-sky-ink-2'}`}
                 >
                   Tự động dò (khuyên dùng)
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('grid')}
-                  className={`${btnBase} py-1.5 px-3 ${mode === 'grid' ? 'bg-orange-300 dark:bg-orange-600' : 'bg-white dark:bg-gray-700'}`}
+                  className={`${btnBase} ${mode === 'grid' ? 'bg-warning-100 text-warning-800' : 'bg-white border border-sky-surf-border text-sky-ink-2'}`}
                 >
                   Lưới cố định (cols × rows)
                 </button>
@@ -221,30 +221,30 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               {mode === 'auto' ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-500 mb-1">Margin</label>
+                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Margin</label>
                     <input type="number" min={0} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-500 mb-1">Min size</label>
+                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Min size</label>
                     <input type="number" min={1} value={minSize} onChange={(e) => setMinSize(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-500 mb-1">RGB ngưỡng</label>
+                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">RGB ngưỡng</label>
                     <input type="number" min={0} max={255} value={rgb} onChange={(e) => setRgb(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-500 mb-1">Alpha ngưỡng</label>
+                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Alpha ngưỡng</label>
                     <input type="number" min={0} max={255} value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-500 mb-1">Số cột</label>
+                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Số cột</label>
                     <input type="number" min={1} value={columns} onChange={(e) => setColumns(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-500 mb-1">Số dòng</label>
+                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Số dòng</label>
                     <input type="number" min={1} value={rows} onChange={(e) => setRows(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
@@ -252,18 +252,18 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
 
               <div className="flex flex-wrap gap-3">
                 {mode === 'auto' && (
-                  <button type="button" onClick={handleDetect} disabled={detecting || !file} className={`${btnBase} bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200`}>
+                  <SkyButton type="button" variant="secondary" onClick={handleDetect} disabled={detecting || !file}>
                     {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Dò thử (không lưu)
-                  </button>
+                  </SkyButton>
                 )}
-                <button type="button" onClick={handleUpload} disabled={uploading || !file} className={`${btnBase} bg-orange-300 dark:bg-orange-600 text-gray-900 dark:text-white ml-auto`}>
+                <SkyButton type="button" variant="primary" onClick={handleUpload} disabled={uploading || !file} className="ml-auto">
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Cắt & Lưu
-                </button>
+                </SkyButton>
               </div>
 
               {detection && (
-                <div className="bg-blue-50 dark:bg-blue-900/10 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-3 text-xs space-y-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-bold text-blue-800 dark:text-blue-200">
+                <div className="bg-blue-50 border border-blue-200 rounded-sky-chip p-3 text-xs space-y-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-blue-800">
                     <span>Ảnh: {detection.imageWidth}×{detection.imageHeight}px</span>
                     <span>Nền: {detection.backgroundMode}</span>
                     <span>Số dòng dò được: {detection.rowCount}</span>
@@ -272,16 +272,16 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="text-[10px] uppercase text-blue-600 dark:text-blue-300">
+                          <tr className="text-[10px] uppercase text-blue-600">
                             <th className="pr-3 py-1">#</th>
                             <th className="pr-3 py-1">Y0–Y1</th>
                             <th className="pr-3 py-1">Cao (px)</th>
                             <th className="pr-3 py-1">Số frame</th>
                           </tr>
                         </thead>
-                        <tbody className="text-gray-700 dark:text-gray-200 font-medium">
+                        <tbody className="text-sky-ink-2 font-medium">
                           {detection.rows.map((r) => (
-                            <tr key={r.index} className="border-t border-blue-100 dark:border-blue-800">
+                            <tr key={r.index} className="border-t border-blue-100">
                               <td className="pr-3 py-1">{r.index + 1}</td>
                               <td className="pr-3 py-1">{r.y0}–{r.y1}</td>
                               <td className="pr-3 py-1">{r.height}</td>
@@ -293,7 +293,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                     </div>
                   )}
                   {detection.rowCount !== statesInput.split(',').map((s) => s.trim()).filter(Boolean).length && statesInput.trim() && (
-                    <p className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-bold">
+                    <p className="flex items-center gap-1.5 text-warning-700 font-semibold">
                       <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                       Số dòng dò được ({detection.rowCount}) không khớp số nhãn state ({statesInput.split(',').map((s) => s.trim()).filter(Boolean).length}) — upload thật sẽ bị từ chối, hãy chỉnh lại nhãn hoặc ngưỡng dò.
                     </p>
@@ -302,7 +302,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               )}
             </div>
           </div>
-        </div>
+        </SkyCard>
       </div>
     </Portal>
   );

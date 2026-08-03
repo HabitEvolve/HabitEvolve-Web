@@ -5,6 +5,8 @@ import { RefreshCw } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import DatePicker from "../../components/form/date-picker";
 import { adminReportsApi } from "../../api/adminReportsApi";
+import SkyCard from "../../components/ui/card/SkyCard";
+import SkyButton from "../../components/ui/button/SkyButton";
 import type {
     EconomyReportDto,
     QuestCompletionReportDto,
@@ -12,9 +14,8 @@ import type {
 } from "../../types/adminReports.types";
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
-// Shared soft mint card used throughout this page — operational dashboard,
-// no neo-brutalism here (that's reserved for gamified mentor surfaces).
-const CARD = "bg-[#E6FAF3] dark:bg-gray-800 p-6 rounded-4xl shadow-sm";
+// SkyCard variant="admin" everywhere on this page (see MetricCard etc. below) —
+// restrained glass per PRODUCT.md, no neo-brutalism, no Mentor-strength mesh.
 const chartFont = { fontFamily: "Space Grotesk, sans-serif" };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -32,14 +33,14 @@ const defaultRange = () => {
 
 // ── SKELETONS ─────────────────────────────────────────────────────────────────
 const SkeletonLine = ({ className = "" }: { className?: string }) => (
-    <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-md ${className}`} />
+    <div className={`animate-pulse bg-gray-200 rounded-md ${className}`} />
 );
 
 const MetricSkeleton = () => (
-    <div className={`${CARD} flex flex-col justify-between`}>
+    <SkyCard variant="admin" className="flex flex-col justify-between">
         <SkeletonLine className="h-4 w-28 mb-4" />
         <SkeletonLine className="h-8 w-24" />
-    </div>
+    </SkyCard>
 );
 
 const ChartSkeleton = ({ height = 280 }: { height?: number }) => (
@@ -57,22 +58,22 @@ interface MetricCardProps {
     sub?: React.ReactNode;
 }
 const MetricCard = ({ icon, iconBg, label, value, sub }: MetricCardProps) => (
-    <div className={`${CARD} flex flex-col justify-between`}>
+    <SkyCard variant="admin" className="flex flex-col justify-between">
         <div className="flex items-center space-x-3 mb-4">
             <div className={`p-2 rounded-lg ${iconBg}`}>{icon}</div>
-            <span className="font-bold text-gray-700 dark:text-gray-200">{label}</span>
+            <span className="font-bold text-sky-ink-2">{label}</span>
         </div>
         <div>
-            <div className="text-3xl font-black text-gray-900 dark:text-gray-100 mb-1">{value}</div>
+            <div className="text-3xl font-black text-sky-ink mb-1">{value}</div>
             {sub && <div className="text-xs font-semibold">{sub}</div>}
         </div>
-    </div>
+    </SkyCard>
 );
 
 const CurrencyDelta = ({ label, delta }: { label: string; delta: number }) => (
     <div className="flex items-center justify-between text-xs font-bold">
-        <span className="text-gray-500 dark:text-gray-400">{label}</span>
-        <span className={delta >= 0 ? "text-emerald-500" : "text-red-500"}>
+        <span className="text-sky-ink-2">{label}</span>
+        <span className={delta >= 0 ? "text-success-600" : "text-error-600"}>
             {delta >= 0 ? "+" : ""}{delta.toLocaleString()}
         </span>
     </div>
@@ -169,8 +170,8 @@ export default function Home() {
                     <MetricSkeleton /><MetricSkeleton /><MetricSkeleton />
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className={CARD}><ChartSkeleton /></div>
-                    <div className={CARD}><ChartSkeleton /></div>
+                    <SkyCard variant="admin"><ChartSkeleton /></SkyCard>
+                    <SkyCard variant="admin"><ChartSkeleton /></SkyCard>
                 </div>
             </>
         );
@@ -186,8 +187,8 @@ export default function Home() {
             {/* Header + global date filter */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Dashboard</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                    <h1 className="text-2xl font-black text-sky-ink">Dashboard</h1>
+                    <p className="text-sm text-sky-ink-2 font-medium mt-0.5">
                         Economy, quest completion, and user activity for the selected range
                     </p>
                 </div>
@@ -205,20 +206,16 @@ export default function Home() {
                             }}
                         />
                     </div>
-                    <button
-                        onClick={fetchReports}
-                        disabled={loading}
-                        className="h-11 inline-flex items-center gap-2 px-4 font-bold text-sm rounded-lg bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 transition-colors"
-                    >
+                    <SkyButton type="button" variant="primary" onClick={fetchReports} disabled={loading} className="h-11">
                         <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-                    </button>
+                    </SkyButton>
                 </div>
             </div>
 
             {error && (
-                <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl font-bold text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
+                <div className="mb-8 p-4 bg-error-50 border border-error-200 rounded-sky-card font-bold text-error-700 text-sm flex items-center justify-between">
                     {error}
-                    <button onClick={fetchReports} className="underline underline-offset-2 shrink-0 ml-4">Retry</button>
+                    <button type="button" onClick={fetchReports} className="underline underline-offset-2 shrink-0 ml-4">Retry</button>
                 </div>
             )}
 
@@ -228,13 +225,13 @@ export default function Home() {
                     <MetricCard
                         label="Active Users"
                         value={(userActivity?.activeUsers ?? 0).toLocaleString()}
-                        iconBg="bg-blue-100 dark:bg-blue-900/30"
+                        iconBg="bg-blue-100"
                         icon={
-                            <svg className="w-6 h-6 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                             </svg>
                         }
-                        sub={<span className="text-gray-400">In selected range</span>}
+                        sub={<span className="text-sky-ink-3">In selected range</span>}
                     />
                 )}
 
@@ -242,42 +239,42 @@ export default function Home() {
                     <MetricCard
                         label="New Signups"
                         value={(userActivity?.newUsers ?? 0).toLocaleString()}
-                        iconBg="bg-orange-100 dark:bg-orange-900/30"
+                        iconBg="bg-orange-100"
                         icon={
-                            <svg className="w-6 h-6 text-orange-500 dark:text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3.005 3.005 0 013.75-2.906z" />
                             </svg>
                         }
-                        sub={<span className="text-gray-400">In selected range</span>}
+                        sub={<span className="text-sky-ink-3">In selected range</span>}
                     />
                 )}
 
                 {loading && !economy ? <MetricSkeleton /> : (
-                    <div className={`${CARD} flex flex-col justify-between`}>
+                    <SkyCard variant="admin" className="flex flex-col justify-between">
                         <div className="flex items-center space-x-3 mb-4">
-                            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="p-2 bg-yellow-100 rounded-lg">
+                                <svg className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
                                     <path clipRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" fillRule="evenodd" />
                                 </svg>
                             </div>
-                            <span className="font-bold text-gray-700 dark:text-gray-200">Net Economy (In − Out)</span>
+                            <span className="font-bold text-sky-ink-2">Net Economy (In − Out)</span>
                         </div>
                         <div className="space-y-1.5">
                             <CurrencyDelta label="Gold" delta={netGold} />
                             <CurrencyDelta label="Gems" delta={netGems} />
                             <CurrencyDelta label="M-Gold" delta={netMGold} />
                         </div>
-                    </div>
+                    </SkyCard>
                 )}
             </section>
 
             {/* Row 2 — Charts */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className={CARD}>
+                <SkyCard variant="admin">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Economy — Earned vs Spent</h3>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{range.startDate} → {range.endDate}</div>
+                        <h3 className="text-xl font-bold text-sky-ink">Economy — Earned vs Spent</h3>
+                        <div className="text-sm text-sky-ink-2">{range.startDate} → {range.endDate}</div>
                     </div>
                     {loading && !economy ? <ChartSkeleton /> : economyByCurrency.length > 0 ? (
                         <div className="max-w-full overflow-x-auto">
@@ -286,14 +283,14 @@ export default function Home() {
                             </div>
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-400 font-medium py-16 text-center">No economy data for this range.</p>
+                        <p className="text-sm text-sky-ink-3 font-medium py-16 text-center">No economy data for this range.</p>
                     )}
-                </div>
+                </SkyCard>
 
-                <div className={CARD}>
+                <SkyCard variant="admin">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Quest Completion Rate</h3>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">by Quest Type</div>
+                        <h3 className="text-xl font-bold text-sky-ink">Quest Completion Rate</h3>
+                        <div className="text-sm text-sky-ink-2">by Quest Type</div>
                     </div>
                     {loading && !questCompletion ? <ChartSkeleton /> : questByType.length > 0 ? (
                         <div className="max-w-full overflow-x-auto">
@@ -302,9 +299,9 @@ export default function Home() {
                             </div>
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-400 font-medium py-16 text-center">No quest completion data for this range.</p>
+                        <p className="text-sm text-sky-ink-3 font-medium py-16 text-center">No quest completion data for this range.</p>
                     )}
-                </div>
+                </SkyCard>
             </section>
         </>
     );

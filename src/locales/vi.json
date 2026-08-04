@@ -250,6 +250,12 @@
       "badge": "CỔNG MENTOR",
       "welcome": "Chào mừng trở lại, Mentor!",
       "enterHub": "Vào Hub",
+      "quickTools": {
+        "parties": "Quản Lý Party",
+        "createQuest": "Tạo Quest Mới",
+        "bossVault": "Kho Boss Tuần",
+        "wallet": "Ví Tài Nguyên"
+      },
       "hubs": {
         "parties": {
           "title": "Nhóm Của Tôi",

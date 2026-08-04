@@ -250,6 +250,12 @@
       "badge": "MENTOR PORTAL",
       "welcome": "Welcome back, Mentor!",
       "enterHub": "Enter Hub",
+      "quickTools": {
+        "parties": "Party Management",
+        "createQuest": "Create Quest",
+        "bossVault": "Boss Vault",
+        "wallet": "Resource Wallet"
+      },
       "hubs": {
         "parties": {
           "title": "My Parties",

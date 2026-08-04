@@ -383,20 +383,7 @@ export default function MentorDashboard() {
                         </SkyCard>
                     </section>
 
-                    {/* Quick Tools Grid */}
-                    <section>
-                        <h3 className="text-sm font-bold text-sky-ink-2 mb-3 uppercase tracking-wide">Quick Tools</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            {QUICK_TOOLS.map(tool => (
-                                <Link key={tool.path + tool.labelKey} to={tool.path} className="group block">
-                                    <SkyCard variant="mentor" className="flex flex-col items-center justify-center gap-2 py-6 text-center transition-transform hover:scale-[1.02]">
-                                        <div className="sky-glass-chip p-3">{tool.icon}</div>
-                                        <span className="text-sm font-semibold text-sky-ink">{t(tool.labelKey)}</span>
-                                    </SkyCard>
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
+
                 </>
             )}
         </>

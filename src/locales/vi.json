@@ -1142,7 +1142,9 @@
         "NumberInput": "Nhập Số",
         "TextInput": "Nhập Văn Bản",
         "RatingScale": "Thang Điểm",
-        "YesNo": "Có / Không"
+        "YesNo": "Có / Không",
+        "Time": "Giờ Trong Ngày",
+        "Duration": "Khoảng Thời Gian"
       },
       "templateForm": {
         "editTitle": "Chỉnh Sửa Mẫu",
@@ -1164,6 +1166,12 @@
         "orderLabel": "Thứ Tự Hiển Thị",
         "requiredLabel": "Bắt buộc trả lời",
         "textPlaceholder": "vd. Bạn ngủ bao nhiêu giờ mỗi đêm?",
+        "minLabel": "Giá trị nhỏ nhất",
+        "maxLabel": "Giá trị lớn nhất",
+        "minTimeLabel": "Giờ sớm nhất",
+        "maxTimeLabel": "Giờ muộn nhất",
+        "rangeHint": "Để trống nếu không giới hạn. Người dùng sẽ không nộp được câu trả lời ngoài khoảng này.",
+        "rangeInvalid": "Giá trị nhỏ nhất phải nhỏ hơn hoặc bằng giá trị lớn nhất.",
         "cancel": "Hủy",
         "save": "Lưu",
         "add": "Thêm",

@@ -1142,7 +1142,9 @@
         "NumberInput": "Number Input",
         "TextInput": "Text Input",
         "RatingScale": "Rating Scale",
-        "YesNo": "Yes / No"
+        "YesNo": "Yes / No",
+        "Time": "Time of Day",
+        "Duration": "Duration"
       },
       "templateForm": {
         "editTitle": "Edit Template",
@@ -1164,6 +1166,12 @@
         "orderLabel": "Display Order",
         "requiredLabel": "Required answer",
         "textPlaceholder": "e.g. How many hours do you sleep each night?",
+        "minLabel": "Min value",
+        "maxLabel": "Max value",
+        "minTimeLabel": "Earliest time",
+        "maxTimeLabel": "Latest time",
+        "rangeHint": "Leave blank for no limit. Players will be blocked from submitting an answer outside this range.",
+        "rangeInvalid": "Min value must be less than or equal to Max value.",
         "cancel": "Cancel",
         "save": "Save",
         "add": "Add",

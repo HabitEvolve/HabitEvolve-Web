@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Plus, Pencil, Trash2, ChevronRight, X,
   Loader2, ToggleLeft, ToggleRight, HelpCircle, List, CheckSquare,
-  Hash, AlignLeft, Star, ChevronDown, ChevronUp
+  Hash, AlignLeft, Star, ChevronDown, ChevronUp, Clock, Timer
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { adminGoalApi } from '../api/adminGoalApi';
@@ -31,9 +31,30 @@ const QUESTION_TYPES: { value: QuestionType; label: string; icon: React.ReactNod
   { value: 'TextInput',      label: 'Text Input',      icon: <AlignLeft   className="w-4 h-4" /> },
   { value: 'RatingScale',    label: 'Rating Scale',    icon: <Star        className="w-4 h-4" /> },
   { value: 'YesNo',          label: 'Yes / No',        icon: <HelpCircle  className="w-4 h-4" /> },
+  { value: 'Time',           label: 'Time of Day',     icon: <Clock       className="w-4 h-4" /> },
+  { value: 'Duration',       label: 'Duration',        icon: <Timer       className="w-4 h-4" /> },
 ];
 const CHOICE_TYPES: QuestionType[] = ['SingleChoice', 'MultipleChoice'];
 const isChoiceType = (t: QuestionType) => CHOICE_TYPES.includes(t);
+
+// Question types where a Min/Max answer range is meaningful (see BE Question.MinValue/MaxValue).
+const RANGE_TYPES: QuestionType[] = ['NumberInput', 'RatingScale', 'Duration'];
+const isRangeType = (t: QuestionType) => RANGE_TYPES.includes(t);
+
+/** "HH:mm" → minutes-since-midnight, matching BE TimeOfDayHelper.ParseMinutes exactly. */
+function timeToMinutes(hhmm: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!m) return null;
+  const h = Number(m[1]), min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+/** minutes-since-midnight → "HH:mm", matching BE TimeOfDayHelper.FormatMinutes. */
+function minutesToTime(minutes: number): string {
+  const m = ((minutes % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+}
 
 // ─── Portal wrapper ───────────────────────────────────────────────────────────
 const Portal = ({ children }: { children: React.ReactNode }) =>
@@ -141,16 +162,37 @@ function QuestionFormModal({
   const [type, setType] = useState<QuestionType>(editing?.questionType ?? 'SingleChoice');
   const [required, setRequired] = useState(editing?.isRequired ?? true);
   const [order, setOrder] = useState(editing?.displayOrder ?? 1);
+  // Range inputs — numeric for NumberInput/RatingScale/Duration, "HH:mm" strings for Time
+  // (converted to minutes-since-midnight on submit, matching BE Question.MinValue/MaxValue).
+  const [minValue, setMinValue] = useState(editing?.minValue != null ? String(editing.minValue) : '');
+  const [maxValue, setMaxValue] = useState(editing?.maxValue != null ? String(editing.maxValue) : '');
+  const [minTime, setMinTime] = useState(editing?.minValue != null ? minutesToTime(editing.minValue) : '');
+  const [maxTime, setMaxTime] = useState(editing?.maxValue != null ? minutesToTime(editing.maxValue) : '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) { setErr(t('admin.questionnaire.questionForm.textRequired')); return; }
+
+    let min: number | null = null;
+    let max: number | null = null;
+    if (type === 'Time') {
+      min = minTime ? timeToMinutes(minTime) : null;
+      max = maxTime ? timeToMinutes(maxTime) : null;
+    } else if (isRangeType(type)) {
+      min = minValue.trim() === '' ? null : Number(minValue);
+      max = maxValue.trim() === '' ? null : Number(maxValue);
+    }
+    if (min != null && max != null && min > max) {
+      setErr(t('admin.questionnaire.questionForm.rangeInvalid'));
+      return;
+    }
+
     setSaving(true); setErr('');
     const payload = editing
-      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order }
-      : { templateId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order };
+      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order, minValue: min, maxValue: max }
+      : { templateId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order, minValue: min, maxValue: max };
     try { await onSave(payload); }
     catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
@@ -182,6 +224,35 @@ function QuestionFormModal({
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
+            {type === 'Time' ? (
+              <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.minTimeLabel')}</label>
+                    <input type="time" value={minTime} onChange={e => setMinTime(e.target.value)} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.maxTimeLabel')}</label>
+                    <input type="time" value={maxTime} onChange={e => setMaxTime(e.target.value)} className={inputCls} />
+                  </div>
+                </div>
+                <p className="text-[10px] text-sky-ink-3 mt-1">{t('admin.questionnaire.questionForm.rangeHint')}</p>
+              </div>
+            ) : isRangeType(type) ? (
+              <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.minLabel')}</label>
+                    <input type="number" value={minValue} onChange={e => setMinValue(e.target.value)} className={inputCls} placeholder="—" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">{t('admin.questionnaire.questionForm.maxLabel')}</label>
+                    <input type="number" value={maxValue} onChange={e => setMaxValue(e.target.value)} className={inputCls} placeholder="—" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-sky-ink-3 mt-1">{t('admin.questionnaire.questionForm.rangeHint')}</p>
+              </div>
+            ) : null}
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="w-4 h-4 accent-sky-deep" />
               <span className="text-sm font-semibold text-sky-ink-2">{t('admin.questionnaire.questionForm.requiredLabel')}</span>
@@ -412,6 +483,13 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
                   <span className="text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{q.questionType}</span>
                   {q.isRequired && <span className="text-[10px] font-semibold bg-error-100 text-error-600 px-2 py-0.5 rounded-full">{t('admin.questionnaire.requiredBadge')}</span>}
                   {isChoiceType(q.questionType) && <span className="text-[10px] text-sky-ink-3">{q.options.length} option{q.options.length !== 1 ? 's' : ''}</span>}
+                  {(q.minValue != null || q.maxValue != null) && (
+                    <span className="text-[10px] font-mono text-sky-ink-3">
+                      {q.questionType === 'Time'
+                        ? `${q.minValue != null ? minutesToTime(q.minValue) : '…'}–${q.maxValue != null ? minutesToTime(q.maxValue) : '…'}`
+                        : `${q.minValue ?? '…'}–${q.maxValue ?? '…'}`}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">

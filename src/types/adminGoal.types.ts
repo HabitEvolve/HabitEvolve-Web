@@ -3,7 +3,7 @@
 // ==========================================
 
 // Matches BE QuestionType enum (PascalCase)
-export type QuestionType = "SingleChoice" | "MultipleChoice" | "NumberInput" | "TextInput" | "RatingScale" | "YesNo" | "Time";
+export type QuestionType = "SingleChoice" | "MultipleChoice" | "NumberInput" | "TextInput" | "RatingScale" | "YesNo" | "Time" | "Duration";
 
 // 1. Goal Category
 // Matches BE CategoryDto
@@ -95,6 +95,10 @@ export interface QuestionDto {
     // BE: QuestionDto.AnswerGuidance — optional hint shown to the player next to the
     // question (display-only, not a proof/evidence upload). New field, no FE consumer yet.
     answerGuidance: string | null;
+    // BE: QuestionDto.MinValue/MaxValue — valid answer range for NumberInput/RatingScale/
+    // Duration/Time (null = unbounded). For Time, both are minutes-since-midnight.
+    minValue: number | null;
+    maxValue: number | null;
     options: QuestionOptionDto[];
 }
 

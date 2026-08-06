@@ -54,6 +54,65 @@ const GemIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
     />
 );
 
+// ── PRICING CARD PIECES ───────────────────────────────────────────────────────
+// The old card printed all seven features as one flat bulleted list at 12px, so
+// "20 members" and "Proof: PHOTO,VIDEO,GPS,STEP_COUNTER" carried identical
+// weight and the eye had nowhere to land. Two kinds of information are mixed in
+// there, and they now get two different treatments:
+//
+//   QUOTAS  — three numbers a mentor actually compares across tiers. Promoted to
+//             a 3-up row of large display numerals; scanning the row reads
+//             "3 / 6 / 20 members" down the grid without reading any prose.
+//   TRAITS  — capability strings (boss modes, proof types, AI). Demoted to chips,
+//             since their value is "which ones", not "how many".
+//
+// Comma-joined API strings ("EASY,NORMAL,HARD") were being printed raw; they are
+// split so each mode is its own chip.
+
+/** One quota figure: big numeral over a quiet caption. */
+const QuotaStat = ({ value, caption }: { value: number | string; caption: string }) => (
+    <div className="min-w-0 text-center">
+        <div className="font-display text-xl font-semibold text-sky-ink tabular-nums leading-none">{value}</div>
+        <div className="mt-1 text-[10px] font-medium leading-tight text-sky-ink-3">{caption}</div>
+    </div>
+);
+
+/** A capability group: tiny label, then one chip per comma-separated value. */
+const TraitRow = ({
+    label,
+    value,
+    tone = "neutral",
+    icon,
+}: {
+    label: string;
+    value: string;
+    tone?: "neutral" | "violet";
+    icon?: ReactNode;
+}) => {
+    const chip =
+        tone === "violet"
+            ? "bg-sky-violet/12 text-sky-violet-deep ring-sky-violet/22"
+            : "bg-sky-deep/8 text-sky-deep ring-sky-deep/16";
+    return (
+        <div className="flex items-start gap-2">
+            <span className="mt-0.5 inline-flex w-[4.5rem] shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-ink-3">
+                {icon}
+                {label}
+            </span>
+            <span className="flex flex-wrap gap-1">
+                {value.split(",").map((v) => (
+                    <span
+                        key={v}
+                        className={`rounded-sky-chip px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${chip}`}
+                    >
+                        {v.trim().replace(/_/g, " ")}
+                    </span>
+                ))}
+            </span>
+        </div>
+    );
+};
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getMentorId = () => {
     const id = localStorage.getItem("user_id");
@@ -928,14 +987,14 @@ export default function SubscriptionWallet() {
             <div>
                 <p className={eyebrow}>{t("mentor.subscriptionWallet.gemStore")}</p>
                 <h2 className="font-display text-sky-h2 font-semibold text-sky-ink mb-4 mt-1">{t("mentor.subscriptionWallet.availablePlans")}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sky-stagger">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-stretch sky-stagger">
                     {packages.map((pkg) => {
                         const isCurrent = activeSub?.package.packageId === pkg.packageId;
                         return (
                             <SkyCard
                                 key={pkg.packageId}
                                 variant="mentor"
-                                className={`relative flex flex-col gap-4 overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${
+                                className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${
                                     isCurrent ? "ring-1 ring-sky-teal/35" : ""
                                 }`}
                             >
@@ -951,45 +1010,64 @@ export default function SubscriptionWallet() {
                                         </span>
                                     </>
                                 )}
+
+                                {/* Name + blurb. min-h keeps one- and two-line
+                                    descriptions from shifting the price line
+                                    between cards in the same row. */}
                                 <div className="relative pr-24">
                                     <h3 className="font-display text-sky-h3 font-semibold text-sky-ink">{pkg.name}</h3>
-                                    <p className="text-xs text-sky-ink-2 mt-0.5">{pkg.description}</p>
+                                    <p className="mt-0.5 min-h-8 text-xs leading-snug text-sky-ink-2">{pkg.description}</p>
                                 </div>
-                                <div className="relative font-display text-sky-h2 font-semibold text-sky-peach-deep tabular-nums">
-                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-sky-ink-2 inline-flex items-center gap-0.5"><GemIcon className="w-3.5 h-3.5" /> / {pkg.durationDays}d</span>
+
+                                {/* Price is the decision the card exists to support, so it
+                                    is the largest thing on it — was tied with the button. */}
+                                <div className="relative mt-4 flex items-baseline gap-1.5">
+                                    <span className="font-display text-[2rem] font-semibold leading-none text-sky-peach-deep tabular-nums">
+                                        {pkg.price.toLocaleString()}
+                                    </span>
+                                    <GemIcon className="w-4 h-4" />
+                                    <span className="text-xs font-medium text-sky-ink-3">/ {pkg.durationDays}d</span>
                                 </div>
-                                <ul className="relative text-xs space-y-1.5 text-sky-ink-2 font-medium">
-                                    {[
-                                        <>{t("mentor.subscriptionWallet.upToParties", { count: pkg.maxParties })}</>,
-                                        <><strong className="text-sky-ink font-semibold tabular-nums">{pkg.maxMembersPerParty}</strong> {t("mentor.subscriptionWallet.membersPerParty")}</>,
-                                        <><strong className="text-sky-ink font-semibold tabular-nums">{pkg.questsPerMemberPerDay}</strong> {t("mentor.subscriptionWallet.questsPerMemberDay")}</>,
-                                        <>{t("mentor.subscriptionWallet.bossModes")}: <strong className="text-sky-ink font-semibold">{pkg.bossModes}</strong></>,
-                                        <>{t("mentor.subscriptionWallet.rewardTier")}: <strong className="text-sky-ink font-semibold">{pkg.rewardTier}</strong></>,
-                                        ...(pkg.proofTypes ? [<>Proof: <strong className="text-sky-ink font-semibold">{pkg.proofTypes}</strong></>] : []),
-                                    ].map((node, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <Check className="w-3.5 h-3.5 mt-px shrink-0 text-sky-teal" />
-                                            <span>{node}</span>
-                                        </li>
-                                    ))}
+
+                                {/* Quotas — the three comparable numbers, in a fixed row so
+                                    they line up across cards. */}
+                                <div className="relative mt-4 grid grid-cols-3 gap-1 rounded-sky-md bg-sky-deep/5 px-2 py-3 ring-1 ring-sky-deep/8">
+                                    <QuotaStat value={pkg.maxParties} caption={t("mentor.subscriptionWallet.usageParties")} />
+                                    <QuotaStat value={pkg.maxMembersPerParty} caption={t("mentor.subscriptionWallet.membersPerParty")} />
+                                    <QuotaStat value={pkg.questsPerMemberPerDay} caption={t("mentor.subscriptionWallet.questsPerMemberDay")} />
+                                </div>
+
+                                {/* Traits — what you get, not how much. */}
+                                <div className="relative mt-4 space-y-2">
+                                    <TraitRow label={t("mentor.subscriptionWallet.bossModes")} value={pkg.bossModes} />
+                                    <TraitRow label={t("mentor.subscriptionWallet.rewardTier")} value={pkg.rewardTier} />
+                                    {pkg.proofTypes && <TraitRow label="Proof" value={pkg.proofTypes} />}
                                     {pkg.aiVerificationBossModes ? (
-                                        <li className="flex items-start gap-2">
-                                            <Bot className="w-3.5 h-3.5 mt-px shrink-0 text-sky-violet-deep" />
-                                            <span>AI verify: <strong className="text-sky-ink font-semibold">{pkg.aiVerificationBossModes}</strong></span>
-                                        </li>
+                                        <TraitRow
+                                            label="AI"
+                                            value={pkg.aiVerificationBossModes}
+                                            tone="violet"
+                                            icon={<Bot className="w-3 h-3 shrink-0" aria-hidden="true" />}
+                                        />
                                     ) : (
-                                        <li className="flex items-start gap-2 text-sky-ink-3">
-                                            <Minus className="w-3.5 h-3.5 mt-px shrink-0" />
-                                            <span>No AI verification</span>
-                                        </li>
+                                        <div className="flex items-center gap-2 text-[10px] font-medium text-sky-ink-3">
+                                            <span className="inline-flex w-[4.5rem] shrink-0 items-center gap-1 uppercase tracking-[0.08em]">
+                                                <Minus className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                                AI
+                                            </span>
+                                            <span>Not included</span>
+                                        </div>
                                     )}
-                                </ul>
+                                </div>
+
+                                {/* mt-auto pins every button to the same baseline regardless
+                                    of how many trait rows a tier has. */}
                                 <SkyButton
                                     type="button"
-                                    variant="primary"
+                                    variant={isCurrent ? "secondary" : "primary"}
                                     disabled={isCurrent}
                                     onClick={() => setPurchasePkg(pkg)}
-                                    className="relative mt-auto"
+                                    className="relative mt-6"
                                 >
                                     {isCurrent ? t("mentor.subscriptionWallet.currentPlanBtn") : t("mentor.subscriptionWallet.buyUpgrade")}
                                 </SkyButton>

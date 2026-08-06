@@ -3,17 +3,19 @@ import { useParams, useNavigate } from "react-router";
 import {
   ArrowLeft, Users, ClipboardList, Swords, UserCog, UserRoundCog,
   Loader2, Trash2, Copy, Check, KeyRound,
-  Archive, CircleSlash, Globe, Lock, UserCheck, Play, Send, X, Clock,
-  CalendarClock, Trophy, Skull, Minus, AlertTriangle, Ticket,
+  Archive, CircleSlash, Globe, Lock, UserCheck, Play, X, Clock,
+  CalendarClock, Skull, Minus, AlertTriangle, Ticket,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import adminPartyApi from "../api/adminPartyApi";
 import adminUserApi from "../api/adminUserApi";
 import { useAlert } from "../context/AlertContext";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import SharedStatusBadge, { type StatusTone } from "../components/common/StatusBadge";
 import { PartyItem, PartyMember, JoinRequestItem, JoinPolicy, UserItem } from "../types/api.types";
 import { PartyRaidDto } from "../types/adminParty.types";
 import { UserQuestDto } from "../types/userWorkspace.types";
@@ -71,15 +73,26 @@ const StatePill = ({ value, map, tiny = false }: { value: string; map: Record<st
   );
 };
 
-const STATUS_PILL: Record<string, PillCfg> = {
-  Active:    { tone: "teal",    Icon: Check },
+// Party/Quest/Raid statuses now delegate to the shared lifecycle StatusBadge.
+// Most values already resolve to the same tone the old local StatePill used;
+// where this file's own reading diverges from the shared default (e.g. a
+// party being "Disbanded" reads neutral here, not danger — and a raid that's
+// "Active" reads peach/pending, not success, since a live raid still needs
+// attention) an explicit override keeps the original visual intact.
+type StatusOverride = { tone: StatusTone; Icon: LucideIcon };
+
+const PARTY_STATUS_OVERRIDES: Record<string, StatusOverride> = {
   Disbanded: { tone: "neutral", Icon: CircleSlash },
-  Archived:  { tone: "peach",   Icon: Archive },
+  Archived:  { tone: "pending", Icon: Archive },
 };
-const StatusBadge = ({ status }: { status: string }) => <StatePill value={status} map={STATUS_PILL} />;
+const StatusBadge = ({ status }: { status: string }) => {
+  const o = PARTY_STATUS_OVERRIDES[status];
+  return <SharedStatusBadge status={status} toneOverride={o?.tone} iconOverride={o?.Icon} />;
+};
 
 // A join policy is a *setting*, not a verdict — so the three hues are picked for
 // separation (open / gated / closed) and none of them means "good" or "bad".
+// Out of scope for the StatusBadge migration (categorical, not lifecycle).
 const POLICY_PILL: Record<string, PillCfg> = {
   PUBLIC:            { tone: "deep",   Icon: Globe },
   APPROVAL_REQUIRED: { tone: "peach",  Icon: UserCheck },
@@ -87,26 +100,25 @@ const POLICY_PILL: Record<string, PillCfg> = {
 };
 const PolicyBadge = ({ policy }: { policy: string }) => <StatePill value={policy} map={POLICY_PILL} tiny />;
 
-const QUEST_STATUS_PILL: Record<string, PillCfg> = {
-  InProgress: { tone: "deep",    Icon: Play },
-  Submitted:  { tone: "peach",   Icon: Send },
-  Approved:   { tone: "teal",    Icon: Check },
-  Rejected:   { tone: "rose",    Icon: X },
+const QUEST_STATUS_OVERRIDES: Record<string, StatusOverride> = {
+  InProgress: { tone: "info",    Icon: Play },
   Expired:    { tone: "neutral", Icon: Clock },
-  Failed:     { tone: "rose",    Icon: X },
   NotStarted: { tone: "neutral", Icon: Minus },
 };
-const QuestStatusBadge = ({ status }: { status: string }) => <StatePill value={status} map={QUEST_STATUS_PILL} />;
-
-const RAID_STATUS_PILL: Record<string, PillCfg> = {
-  Upcoming: { tone: "deep",    Icon: CalendarClock },
-  Active:   { tone: "peach",   Icon: Swords },
-  Defeated: { tone: "teal",    Icon: Trophy },
-  Failed:   { tone: "rose",    Icon: X },
-  Expired:  { tone: "neutral", Icon: Clock },
-  WipeOut:  { tone: "rose",    Icon: Skull },
+const QuestStatusBadge = ({ status }: { status: string }) => {
+  const o = QUEST_STATUS_OVERRIDES[status];
+  return <SharedStatusBadge status={status} toneOverride={o?.tone} iconOverride={o?.Icon} />;
 };
-const RaidStatusBadge = ({ status }: { status: string }) => <StatePill value={status} map={RAID_STATUS_PILL} />;
+
+const RAID_STATUS_OVERRIDES: Record<string, StatusOverride> = {
+  Upcoming: { tone: "info",    Icon: CalendarClock },
+  Active:   { tone: "pending", Icon: Swords },
+  Expired:  { tone: "neutral", Icon: Clock },
+};
+const RaidStatusBadge = ({ status }: { status: string }) => {
+  const o = RAID_STATUS_OVERRIDES[status];
+  return <SharedStatusBadge status={status} toneOverride={o?.tone} iconOverride={o?.Icon} />;
+};
 
 // ── SKELETONS ─────────────────────────────────────────────────────────────────
 const SkeletonBlock = ({ className = "" }: { className?: string }) => (
@@ -618,24 +630,23 @@ export default function AdminPartyDetail() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-4 sky-in">
+          <div>
             {/* A party is a game/social object, so its plate is violet — the same
                 hue the party concept carries everywhere else in the console. */}
-            <div className="grid place-items-center w-16 h-16 shrink-0 rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
-              <Users className="w-7 h-7" strokeWidth={2} aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <p className={eyebrow}>Party</p>
-              <p className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">{party.name}</p>
-              {party.description && <p className="mt-0.5 text-sm font-medium text-sky-ink-2">{party.description}</p>}
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                <StatusBadge status={party.status} />
-                <PolicyBadge policy={party.joinPolicy} />
-                <span className="inline-flex items-center gap-1.5 rounded-sky-chip bg-white/62 ring-1 ring-white/85 px-2 py-0.5 text-xs font-medium text-sky-ink-2">
-                  <UserRoundCog className="w-3 h-3" strokeWidth={2.4} aria-hidden="true" />
-                  Mentor: <span className="font-semibold text-sky-ink">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>
-                </span>
-              </div>
+            <PageHeader
+              icon={<Users className="w-7 h-7" strokeWidth={2} aria-hidden="true" />}
+              tone="violet"
+              eyebrow="Party"
+              title={party.name}
+              description={party.description}
+            />
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 pl-16">
+              <StatusBadge status={party.status} />
+              <PolicyBadge policy={party.joinPolicy} />
+              <span className="inline-flex items-center gap-1.5 rounded-sky-chip bg-white/62 ring-1 ring-white/85 px-2 py-0.5 text-xs font-medium text-sky-ink-2">
+                <UserRoundCog className="w-3 h-3" strokeWidth={2.4} aria-hidden="true" />
+                Mentor: <span className="font-semibold text-sky-ink">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>
+              </span>
             </div>
           </div>
         )}

@@ -8,6 +8,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import playerProfileApi from "../api/userProfileApi";
 import { PlayerProfile } from "../types/api.types";
 
@@ -211,25 +212,22 @@ export default function UserProfiles() {
 
               {/* Info */}
               <div className="flex-1 min-w-0 text-center sm:text-left">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                  <h2 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em] truncate">{profile.username}</h2>
-                  <span className="sky-badge sky-badge-neutral self-center tabular-nums">
+                <PageHeader title={profile.username} description={profile.email} />
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2.5">
+                  <span className="sky-badge sky-badge-neutral tabular-nums">
                     <User className="w-3 h-3 shrink-0" />
                     #{profile.userId}
                   </span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
-                  <p className="text-sm font-medium text-sky-ink-2 truncate">{profile.email}</p>
                   {/* Verified is the only teal state here; unverified is a real
                       gap in account security, so it takes destructive rose. */}
                   {profile.emailVerified ? (
-                    <span className="sky-badge sky-badge-success self-center">
+                    <span className="sky-badge sky-badge-success">
                       <ShieldCheck className="w-3 h-3 shrink-0" />
                       {t("profile.verified")}
                     </span>
                   ) : (
-                    <span className="sky-badge sky-badge-danger self-center">
+                    <span className="sky-badge sky-badge-danger">
                       <AlertCircle className="w-3 h-3 shrink-0" />
                       {t("profile.unverified")}
                     </span>

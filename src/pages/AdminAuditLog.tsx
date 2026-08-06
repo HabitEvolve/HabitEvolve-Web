@@ -4,21 +4,17 @@ import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminAuditApi } from "../api/adminAuditApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import { FilterDropdown } from "../components/common/FilterDropdown";
+import type { FilterField } from "../hooks/useTableFilters";
 import type { AuditLogDto } from "../types/adminAudit.types";
 
 const PAGE_SIZE = 20;
 
 const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
-
-const inputCls = [
-  "px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80",
-  "text-sky-ink text-sm font-medium transition-shadow",
-  "focus:outline-none focus:ring-2 focus:ring-sky-deep/45",
-  "placeholder:text-sky-ink-3",
-].join(" ");
 
 // The action string is free-form on the BE, so the badge classifies by keyword
 // rather than an enum: anything that takes something away from a user reads
@@ -71,7 +67,24 @@ export default function AdminAuditLog() {
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
-  const applyFilters = (e: React.FormEvent) => { e.preventDefault(); setPage(1); fetchLogs(); };
+  // Filters were previously commit-on-submit; switched to live-on-change to
+  // match every other filter surface in the app (simple GET, no rate limiting
+  // concerns). fetchLogs already re-runs via the effect above whenever
+  // actorFilter/actionFilter/page change, so updating state here is enough.
+  const handleFilterChange = (key: string, value: string) => {
+    if (key === "actor") setActorFilter(value);
+    else if (key === "action") setActionFilter(value);
+    setPage(1);
+  };
+  const handleClearFilters = () => {
+    setActorFilter("");
+    setActionFilter("");
+    setPage(1);
+  };
+  const auditFilterFields: FilterField[] = [
+    { key: "actor", label: "Actor User ID", type: "text", placeholder: "Actor User ID" },
+    { key: "action", label: "Action", type: "text", placeholder: "e.g. BAN_USER" },
+  ];
 
   return (
     <>
@@ -79,32 +92,34 @@ export default function AdminAuditLog() {
       <PageBreadcrumb pageTitle="Audit Log" />
 
       <div className="space-y-6 p-1">
-        <div className="sky-in flex items-center gap-4">
-          <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-violet/14 text-sky-violet-deep shrink-0">
-            <FileClock className="w-6 h-6" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">Audit Log</h1>
-            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Trace sensitive operations performed across the platform.</p>
-          </div>
-          {totalRecords > 0 && (
-            <span className="hidden sm:inline-flex items-baseline gap-1.5 shrink-0 ml-auto rounded-sky-chip bg-white/55 ring-1 ring-white/80 px-3.5 py-2">
+        <PageHeader
+          icon={<FileClock className="w-6 h-6" />}
+          tone="violet"
+          title="Audit Log"
+          description="Trace sensitive operations performed across the platform."
+          actions={totalRecords > 0 && (
+            <span className="hidden sm:inline-flex items-baseline gap-1.5 shrink-0 rounded-sky-chip bg-white/55 ring-1 ring-white/80 px-3.5 py-2">
               <span className="font-display text-lg font-semibold text-sky-ink tabular-nums leading-none">{totalRecords.toLocaleString()}</span>
               <span className={eyebrow}>entries</span>
             </span>
           )}
-        </div>
+        />
 
         <SkyCard variant="admin" className="p-4">
-          <form onSubmit={applyFilters} className="flex flex-wrap items-center gap-2.5 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2.5">
             <span className={`${eyebrow} shrink-0 pl-1`}>Narrow by</span>
-            <input value={actorFilter} onChange={e => setActorFilter(e.target.value)} aria-label="Actor user ID" placeholder="Actor User ID" className={`${inputCls} w-36 tabular-nums`} />
-            <input value={actionFilter} onChange={e => setActionFilter(e.target.value)} aria-label="Action" placeholder="Action (e.g. BAN_USER)" className={`${inputCls} w-56`} />
-            <SkyButton type="submit" variant="primary" size="sm"><Search className="w-3.5 h-3.5" /> Filter</SkyButton>
+            <FilterDropdown<{ actor: string; action: string }>
+              fields={auditFilterFields}
+              filters={{ actor: actorFilter, action: actionFilter }}
+              onFilterChange={handleFilterChange}
+              onClear={handleClearFilters}
+              hasActiveFilters={actorFilter !== "" || actionFilter !== ""}
+              align="left"
+            />
             <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs} disabled={loading} className="ml-auto">
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} {loading ? "Loading…" : "Refresh"}
             </SkyButton>
-          </form>
+          </div>
         </SkyCard>
 
         <SkyCard variant="admin" className="p-0 overflow-hidden">

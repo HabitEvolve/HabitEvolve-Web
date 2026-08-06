@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
+import StatusBadge from "../../../components/common/StatusBadge";
+import { FilterDropdown } from "../../../components/common/FilterDropdown";
+import type { FilterField } from "../../../hooks/useTableFilters";
 import { easeExpo, Spinner } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
 
@@ -256,25 +259,17 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
 };
 
 // ── AI STATUS BADGE ───────────────────────────────────────────────────────────
-// Teal approve / peach suspicious / rose reject — never green. Each carries a
-// glyph so the verdict survives without colour.
-const AI_STATUS_STYLES: Record<AiVerdict, { cls: string; Icon: typeof Check | null }> = {
-    "Not Used": { cls: "bg-sky-ink/8 text-sky-ink-2", Icon: null },
-    "Approved": { cls: "bg-sky-teal-bg text-sky-teal", Icon: Check },
-    "Suspicious": { cls: "bg-sky-peach/22 text-sky-peach-deep", Icon: AlertTriangle },
-    "Rejected": { cls: "bg-sky-rose/16 text-sky-rose-deep", Icon: X },
-};
-
-const AiStatusBadge = ({ status }: { status: AiVerdict }) => {
-    const s = AI_STATUS_STYLES[status];
-    return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-sky-chip ${s.cls}`}>
-            <Bot className="w-3 h-3" aria-hidden="true" />
-            {s.Icon && <s.Icon className="w-3 h-3" aria-hidden="true" />}
-            {status}
-        </span>
-    );
-};
+// Delegates to the shared lifecycle StatusBadge. "Suspicious" isn't in its
+// default STATUS_MAP (falls back to neutral), so tone/icon are pinned here to
+// keep the original peach/AlertTriangle "needs a look" read instead of a flat
+// neutral chip.
+const AiStatusBadge = ({ status }: { status: AiVerdict }) => (
+    <StatusBadge
+        status={status}
+        toneOverride={status === "Suspicious" ? "pending" : undefined}
+        iconOverride={status === "Suspicious" ? AlertTriangle : undefined}
+    />
+);
 
 // ── PROOF CARD ────────────────────────────────────────────────────────────────
 interface ProofCardProps {
@@ -437,33 +432,26 @@ type QueueFilter = "all" | "flagged" | "recent";
 
 const FilterBar = ({ filter, onChange }: { filter: QueueFilter; onChange: (f: QueueFilter) => void }) => {
     const { t } = useTranslation();
-    const options: { key: QueueFilter; label: string; icon: React.ReactNode }[] = [
-        { key: "all", label: t("mentor.proofQueue.grid.filterAll"), icon: null },
-        { key: "flagged", label: t("mentor.proofQueue.grid.filterFlagged"), icon: <Bot className="w-3.5 h-3.5" aria-hidden="true" /> },
-        { key: "recent", label: t("mentor.proofQueue.grid.filterRecent"), icon: <Clock className="w-3.5 h-3.5" aria-hidden="true" /> },
+    const fields: FilterField[] = [
+        {
+            key: "queue",
+            label: t("mentor.proofQueue.grid.filterAll"),
+            type: "select",
+            options: [
+                { label: t("mentor.proofQueue.grid.filterFlagged"), value: "flagged" },
+                { label: t("mentor.proofQueue.grid.filterRecent"), value: "recent" },
+            ],
+        },
     ];
     return (
-        <div className="flex flex-wrap gap-2">
-            {options.map((o) => {
-                const isActive = filter === o.key;
-                return (
-                    <button
-                        key={o.key}
-                        type="button"
-                        onClick={() => onChange(o.key)}
-                        aria-pressed={isActive}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-sky-chip text-xs font-semibold transition-all duration-150 ${easeExpo} ${
-                            isActive
-                                ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill"
-                                : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
-                        }`}
-                    >
-                        {o.icon}
-                        {o.label}
-                    </button>
-                );
-            })}
-        </div>
+        <FilterDropdown<{ queue: string }>
+            fields={fields}
+            filters={{ queue: filter === "all" ? "" : filter }}
+            onFilterChange={(_, value) => onChange((value || "all") as QueueFilter)}
+            onClear={() => onChange("all")}
+            hasActiveFilters={filter !== "all"}
+            align="left"
+        />
     );
 };
 

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import PageHeader from "../../components/common/PageHeader";
 import Pagination from "../../components/common/SkyPagination";
 import mentorApi from "../../api/mentorApi";
 import mentorWalletApi, { submitSepayForm } from "../../api/mentorWalletApi";
@@ -879,6 +880,14 @@ export default function SubscriptionWallet() {
         <>
             <PageMeta title="Subscription & Wallet — HabitEvolve" description="Manage your plan and gems" />
             <PageBreadcrumb pageTitle={t("mentor.subscriptionWallet.pageTitle")} />
+
+            <PageHeader
+                className="mb-6"
+                icon={<CreditCard className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+                tone="violet"
+                title={t("mentor.subscriptionWallet.pageTitle")}
+                description="Manage your plan and gems."
+            />
 
             {error && (
                 <Notice tone="danger" icon={<AlertTriangle className="w-5 h-5" />}>

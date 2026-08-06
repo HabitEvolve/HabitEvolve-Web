@@ -3,11 +3,12 @@ import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft, Save, ImageIcon, Clock, Bell, Lock, Loader2,
-  CheckCircle2, AlertTriangle, ChevronDown,
+  CheckCircle2, AlertTriangle, ChevronDown, UserCog,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import playerProfileApi from "../api/userProfileApi";
 import { UpdatePlayerProfilePayload } from "../types/api.types";
 import { uploadApi } from "../api/uploadApi";
@@ -193,6 +194,14 @@ export default function EditProfile() {
       ) : (
         <div className="max-w-2xl justify-self-center w-full">
 
+          <PageHeader
+            className="mb-5"
+            icon={<UserCog className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+            tone="deep"
+            title={t("editProfile.title")}
+            description="Update your avatar, schedule time, and notification preferences."
+          />
+
           {/* ── SUCCESS BANNER ──────────────────────────────────────────────── */}
           {/* teal is the only success hue in the system — never green (§4). */}
           {success && (
@@ -219,13 +228,6 @@ export default function EditProfile() {
 
           {/* ── FORM CARD ───────────────────────────────────────────────────── */}
           <form onSubmit={handleSubmit} className="sky-glass-admin rounded-sky-card overflow-hidden">
-            {/* Card header — a tinted strip so the title reads as chrome, not content */}
-            <div className="px-6 pt-5 pb-4 bg-white/45 border-b border-white/70">
-              <h2 className="font-display text-lg font-semibold text-sky-ink tracking-[-0.01em]">{t("editProfile.title")}</h2>
-              <p className="text-xs font-medium text-sky-ink-2 mt-0.5">
-                Update your avatar, schedule time, and notification preferences.
-              </p>
-            </div>
 
             <div className="px-6 py-6 space-y-6">
 

@@ -3,17 +3,20 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   Settings2, RefreshCw, Loader2, X, Pencil,
-  Bot, Gavel, Target, CalendarCheck, Gauge, Filter,
-  Check, Minus, AlertTriangle, LayoutGrid,
+  Bot, Gavel, Target, CalendarCheck, Gauge,
+  Check, Minus, AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminConfigApi } from "../api/adminConfigApi";
 import type { SystemConfigDto } from "../types/adminConfig.types";
 import { useAlert } from "../context/AlertContext";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import { FilterDropdown } from "../components/common/FilterDropdown";
+import type { FilterField } from "../hooks/useTableFilters";
 
 // ── TONE TAXONOMY ─────────────────────────────────────────────────────────────
 // Config groups are a *taxonomy of subsystems*, not a severity ramp — so the
@@ -473,79 +476,55 @@ export default function AdminConfigPage() {
       <PageBreadcrumb pageTitle={t("admin.configPage.pageTitle")} />
 
       {/* ── PAGE HEADER ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sky-in">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-deep/12 ring-1 ring-sky-deep/22 text-sky-deep">
-            <Settings2 className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className={eyebrow}>Platform</p>
-            <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">{t("admin.configPage.pageTitle")}</h1>
-            <p className="mt-0.5 text-xs font-medium text-sky-ink-2">
-              <span className="tabular-nums">{totalCount}</span> configs across <span className="tabular-nums">{orderedGroups.length}</span> groups — {t("admin.configPage.subtitle")}
-            </p>
-          </div>
-        </div>
+      <PageHeader
+        className="mb-6"
+        icon={<Settings2 className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+        tone="deep"
+        eyebrow="Platform"
+        title={t("admin.configPage.pageTitle")}
+        description={
+          <>
+            <span className="tabular-nums">{totalCount}</span> configs across <span className="tabular-nums">{orderedGroups.length}</span> groups — {t("admin.configPage.subtitle")}
+          </>
+        }
+        actions={
+          <>
+            {/* Refresh list */}
+            <SkyButton type="button" variant="secondary" size="icon" onClick={fetchAll} disabled={loading} title="Refresh config list" aria-label="Refresh config list">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </SkyButton>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Refresh list */}
-          <SkyButton type="button" variant="secondary" size="icon" onClick={fetchAll} disabled={loading} title="Refresh config list" aria-label="Refresh config list">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          </SkyButton>
-
-          {/* Reload cache */}
-          <SkyButton type="button" variant="primary" onClick={handleReloadCache} disabled={reloading || loading}>
-            {reloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            {t("admin.configPage.reloadCache")}
-          </SkyButton>
-        </div>
-      </div>
+            {/* Reload cache */}
+            <SkyButton type="button" variant="primary" onClick={handleReloadCache} disabled={reloading || loading}>
+              {reloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {t("admin.configPage.reloadCache")}
+            </SkyButton>
+          </>
+        }
+      />
 
       {/* ── FILTER PILLS ───────────────────────────────────────────────────── */}
       {/* The whole pill row sits in one recessed glass track, so it reads as a
           single control rather than a scatter of loose buttons — and the
           selected pill is the only thing that lifts out of it. */}
       {filterGroups.length > 1 && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-6 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
-          <span className={`mr-1 ml-1.5 inline-flex items-center gap-1.5 ${eyebrow}`}>
-            <Filter className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" /> {t("admin.configPage.groupFilter")}
-          </span>
-
-          {/* "All" pill */}
-          <button
-            onClick={() => setGroupFilter("")}
-            aria-pressed={groupFilter === ""}
-            className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs font-semibold transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              groupFilter === ""
-                ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
-                : "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink"
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} aria-hidden="true" />
-            {t("admin.configPage.groups.all")}
-          </button>
-
-          {filterGroups.map(g => {
-            const d = getGroupDisplay(g);
-            const active = groupFilter === g;
-            const DIcon = d.Icon;
-            return (
-              <button
-                key={g}
-                onClick={() => setGroupFilter(active ? "" : g)}
-                aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs font-semibold transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  active
-                    ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
-                    : "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink"
-                }`}
-              >
-                <DIcon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} aria-hidden="true" />
-                {t(`admin.configPage.groups.${GROUP_I18N[g] ?? "other"}`)}
-                <span className={`text-[10px] tabular-nums ${active ? "opacity-70" : "text-sky-ink-3"}`}>({groupedMap.get(g)?.length ?? 0})</span>
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap items-center gap-1.5 mb-6">
+          <FilterDropdown<{ group: string }>
+            fields={[{
+              key: "group",
+              label: t("admin.configPage.groupFilter"),
+              type: "select",
+              options: filterGroups.map(g => ({
+                label: `${t(`admin.configPage.groups.${GROUP_I18N[g] ?? "other"}`)} (${groupedMap.get(g)?.length ?? 0})`,
+                value: g,
+              })),
+            } satisfies FilterField]}
+            filters={{ group: groupFilter }}
+            onFilterChange={(_, value) => setGroupFilter(value)}
+            onClear={() => setGroupFilter("")}
+            hasActiveFilters={groupFilter !== ""}
+            align="left"
+          />
         </div>
       )}
 

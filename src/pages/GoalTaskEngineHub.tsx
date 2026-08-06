@@ -8,6 +8,7 @@ import {
   Target, ScrollText, BookOpen, Layers, Check, Minus, type LucideIcon,
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
+import PageHeader from '../components/common/PageHeader';
 import { adminGoalApi } from '../api/adminGoalApi';
 import { adminPracticalTaskApi } from '../api/adminPracticalTaskApi';
 import { adminRecommendationRuleApi } from '../api/adminRecommendationRuleApi';
@@ -1234,18 +1235,14 @@ export default function GoalTaskEngineHub() {
   return (
     <div className="h-full flex flex-col gap-4">
       {/* Page header */}
-      <div className="flex items-center gap-3.5">
-        <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-deep/10 ring-1 ring-sky-deep/20 text-sky-deep">
-          <Target className="w-6 h-6" strokeWidth={2.2} aria-hidden="true" />
-        </span>
-        <div>
-          <p className={eyebrow}>Admin · content engine</p>
-          <h1 className="font-display text-sky-h1 font-semibold text-sky-ink leading-tight">Goal Engine Hub</h1>
-          <p className="text-sm font-medium text-sky-ink-3">
-            {view === 'explorer' ? 'Category → Goal explorer' : `Configuring: ${activeGoal?.goalName}`}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={<Target className="w-6 h-6" strokeWidth={2.2} aria-hidden="true" />}
+        tone="deep"
+        size="h1"
+        eyebrow="Admin · content engine"
+        title="Goal Engine Hub"
+        description={view === 'explorer' ? 'Category → Goal explorer' : `Configuring: ${activeGoal?.goalName}`}
+      />
 
       {/* View switcher */}
       <div className="flex-1 min-h-0">

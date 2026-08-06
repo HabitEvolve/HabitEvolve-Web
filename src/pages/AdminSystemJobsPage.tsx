@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Cog, Play, Zap, Loader2, CheckCircle2, XCircle, RefreshCw, AlertTriangle, Inbox, Terminal } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Cog, Play, Zap, Loader2, RefreshCw, AlertTriangle, Inbox, Terminal } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import Pagination from "../components/common/SkyPagination";
 import { adminJobsApi } from "../api/adminJobsApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import SharedStatusBadge from "../components/common/StatusBadge";
 import type { JobExecutionLogDto } from "../types/adminJobs.types";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -30,18 +31,11 @@ const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animat
 
 // BE JobExecutionLogDto only exposes a `success` boolean (no "Running" state — the log row is
 // written after the job finishes), so the badge collapses to Success/Failed.
-// teal is the one success hue in the console; a failed run is a real fault, so it
-// takes destructive rose rather than the warm attention accent. Glyph + word mean
-// the outcome survives greyscale.
-const STATUS_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
-    Success: { cls: "sky-badge-success", Icon: CheckCircle2 },
-    Failed: { cls: "sky-badge-danger", Icon: XCircle },
-};
-const StatusBadge = ({ success }: { success: boolean }) => {
-    const status = success ? "Success" : "Failed";
-    const c = STATUS_CFG[status];
-    return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3 h-3 shrink-0" /> {status}</span>;
-};
+// Thin adapter over the shared StatusBadge — "success"/"failed" already
+// resolve to the same success/danger tones the old bespoke badge used.
+const StatusBadge = ({ success }: { success: boolean }) => (
+    <SharedStatusBadge status={success ? "Success" : "Failed"} />
+);
 
 const fmtDateTime = (d: string | null) =>
     d ? new Date(d).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -168,20 +162,17 @@ export default function AdminSystemJobsPage() {
 
             <div className="space-y-6 p-1">
                 {/* Header */}
-                <div className="sky-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-peach/18 text-sky-peach-deep shrink-0">
-                            <Cog className="w-6 h-6" />
-                        </span>
-                        <div>
-                            <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">System Jobs</h1>
-                            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Trigger background jobs and review recent execution logs</p>
-                        </div>
-                    </div>
-                    <SkyButton type="button" variant="primary" onClick={() => setConfirmRunAll(true)} disabled={running} className="shrink-0">
-                        <Zap className="w-3.5 h-3.5" /> Run All Jobs
-                    </SkyButton>
-                </div>
+                <PageHeader
+                    icon={<Cog className="w-6 h-6" />}
+                    tone="peach"
+                    title="System Jobs"
+                    description="Trigger background jobs and review recent execution logs"
+                    actions={
+                        <SkyButton type="button" variant="primary" onClick={() => setConfirmRunAll(true)} disabled={running} className="shrink-0">
+                            <Zap className="w-3.5 h-3.5" /> Run All Jobs
+                        </SkyButton>
+                    }
+                />
 
                 {/* Run specific job */}
                 <SkyCard variant="admin" className="p-0 overflow-hidden">

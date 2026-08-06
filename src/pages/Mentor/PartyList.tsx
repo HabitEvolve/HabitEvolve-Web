@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowRight, Plus, Tent } from "lucide-react";
 import { useAlert } from "../../context/AlertContext";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import PageHeader from "../../components/common/PageHeader";
 import partyMentorApi from "../../api/mentorPartyApi";
 import SkyCard from "../../components/ui/card/SkyCard";
 import SkyButton from "../../components/ui/button/SkyButton";
@@ -87,18 +88,14 @@ export default function PartyList() {
       <PageBreadcrumb pageTitle={t("admin.partyManagement.pageTitle")} />
 
       <div>
-        {/* Header — left-aligned, editorial */}
-        <div className="mb-7 max-w-[70ch]">
-          <span className="inline-block text-xs font-semibold uppercase tracking-[0.16em] text-sky-deep mb-2">
-            {t("admin.partyManagement.hub.kicker")}
-          </span>
-          <h1 className="font-display text-3xl sm:text-4xl font-semibold text-sky-ink tracking-tight leading-[1.05]">
-            {t("admin.partyManagement.pageTitle")}
-          </h1>
-          <p className="text-sm sm:text-base text-sky-ink-2 font-medium mt-2">
-            {t("admin.partyManagement.hub.heroLede")}
-          </p>
-        </div>
+        <PageHeader
+          className="mb-7"
+          icon={<Tent className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+          tone="deep"
+          eyebrow={t("admin.partyManagement.hub.kicker")}
+          title={t("admin.partyManagement.pageTitle")}
+          description={t("admin.partyManagement.hub.heroLede")}
+        />
 
         {/* Massive "Create New Party" tile — a rich icon+title+subtitle+arrow
             layout that doesn't fit SkyButton's centered single-line shape, so

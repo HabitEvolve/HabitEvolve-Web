@@ -9,9 +9,10 @@ import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminTargetRuleApi } from "../api/adminTargetRuleApi";
 import { useTableFilters } from "../hooks/useTableFilters";
-import { SkyTableFilterBar } from "../components/common/SkyTableFilterBar";
+import { FilterDropdown } from "../components/common/FilterDropdown";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import type { FilterField } from "../hooks/useTableFilters";
@@ -404,24 +405,21 @@ export default function TargetRuleManagement() {
       <PageBreadcrumb pageTitle={t("admin.targetRules.pageTitle")} />
 
       {/* ── TOP ACTION BAR ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sky-in">
-        <div className="flex items-center gap-4 min-w-0">
-          <span className={`grid place-items-center w-12 h-12 shrink-0 rounded-sky-md ring-1 ${TONE.deep.chip}`}>
-            <SlidersHorizontal className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className={eyebrow}>Goal engine</p>
-            <h1 className="font-display text-sky-h1 font-semibold leading-tight text-sky-ink">{t("admin.targetRules.pageTitle")}</h1>
-            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">
-              {t("admin.targetRules.subtitle")}
-            </p>
-          </div>
-        </div>
-        <SkyButton type="button" variant="primary" onClick={openCreate} className="whitespace-nowrap">
-          <Plus className="w-4 h-4" />
-          {t("admin.targetRules.createRule")}
-        </SkyButton>
-      </div>
+      <PageHeader
+        className="mb-6"
+        icon={<SlidersHorizontal className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+        tone="deep"
+        size="h1"
+        eyebrow="Goal engine"
+        title={t("admin.targetRules.pageTitle")}
+        description={t("admin.targetRules.subtitle")}
+        actions={
+          <SkyButton type="button" variant="primary" onClick={openCreate} className="whitespace-nowrap">
+            <Plus className="w-4 h-4" />
+            {t("admin.targetRules.createRule")}
+          </SkyButton>
+        }
+      />
 
       {/* ── TABLE CARD ──────────────────────────────────────────────────── */}
       <SkyCard variant="admin" className="p-0 overflow-hidden">
@@ -432,25 +430,25 @@ export default function TargetRuleManagement() {
             <BarChart2 className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
           </span>
           <span className="font-display text-sm font-semibold text-sky-ink">{t("admin.targetRules.allRules")}</span>
-          {/* The count switches to "shown / total" while a filter is on, so a
-              short list never gets mistaken for a short table. */}
-          {!loading && (
-            <span className={`ml-auto rounded-sky-chip ring-1 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${
-              ruleHasActiveFilters ? TONE.peach.chip : TONE.neutral.chip
-            }`}>
-              {ruleHasActiveFilters ? `${filteredRules.length} / ${rules.length}` : rules.length}
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-2.5">
+            <FilterDropdown<RuleFilters>
+              fields={RULE_FILTER_FIELDS}
+              filters={ruleFilters}
+              onFilterChange={setRuleFilter}
+              onClear={clearRuleFilters}
+              hasActiveFilters={ruleHasActiveFilters}
+            />
+            {/* The count switches to "shown / total" while a filter is on, so a
+                short list never gets mistaken for a short table. */}
+            {!loading && (
+              <span className={`rounded-sky-chip ring-1 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${
+                ruleHasActiveFilters ? TONE.peach.chip : TONE.neutral.chip
+              }`}>
+                {ruleHasActiveFilters ? `${filteredRules.length} / ${rules.length}` : rules.length}
+              </span>
+            )}
+          </div>
         </div>
-
-        {/* Filter bar */}
-        <SkyTableFilterBar<RuleFilters>
-          fields={RULE_FILTER_FIELDS}
-          filters={ruleFilters}
-          onFilterChange={setRuleFilter}
-          onClear={clearRuleFilters}
-          hasActiveFilters={ruleHasActiveFilters}
-        />
 
         {/* Fetch error */}
         {fetchError && (

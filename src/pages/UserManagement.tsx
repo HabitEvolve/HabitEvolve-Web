@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { Users } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import Pagination from "../components/common/SkyPagination";
 import adminUserApi from "../api/adminUserApi";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
 import { useAlert } from "../context/AlertContext";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import SharedStatusBadge from "../components/common/StatusBadge";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 type ModalType = "create" | "update" | "delete" | null;
@@ -132,23 +135,11 @@ export const RoleBadge = ({ role }: { role: string }) => (
 );
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
-// Active = TEAL, never green (§4). Dot + label together, so status never rests
-// on colour alone.
-const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
-  Active:  { badge: "bg-sky-teal-bg text-sky-teal",         dot: "bg-sky-teal"      },
-  Banned:  { badge: "bg-sky-rose/16 text-sky-rose-deep",    dot: "bg-sky-rose"      },
-  Deleted: { badge: "bg-sky-ink/7 text-sky-ink-2",          dot: "bg-sky-ink-3"     },
-};
-// Exported: reused by UserDetail.tsx (Admin 360 view).
-export const StatusBadge = ({ status }: { status: string }) => {
-  const s = STATUS_STYLES[status] ?? { badge: "bg-sky-ink/7 text-sky-ink-2", dot: "bg-sky-ink-3" };
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${s.badge}`}>
-      <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
-      {status}
-    </span>
-  );
-};
+// Re-exported from the shared centralized StatusBadge — Active/Banned/Deleted
+// already resolve to the same success/danger/neutral tones the old bespoke
+// badge used. Kept under this name so this file's own table and UserDetail.tsx
+// (Admin 360 view) keep importing it unchanged.
+export const StatusBadge = SharedStatusBadge;
 
 // ── SKY-PASTEL TABLE ATOMS ────────────────────────────────────────────────────
 // These were forked from UserAvatar/RoleBadge/StatusBadge above while
@@ -757,6 +748,13 @@ export default function UserManagement() {
       <PageBreadcrumb pageTitle={t("admin.userManagement.pageTitle")} />
 
       <div className="space-y-5">
+        <PageHeader
+          icon={<Users className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+          tone="deep"
+          title={t("admin.userManagement.pageTitle")}
+          description="Manage all users on the HabitEvolve platform."
+        />
+
         {/* ── TOP ACTION BAR ────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           {/* Search */}

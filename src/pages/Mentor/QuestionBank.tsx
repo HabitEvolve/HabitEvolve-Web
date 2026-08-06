@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import PageHeader from "../../components/common/PageHeader";
 import partyCallApi from "../../api/partyCallApi";
 import type { ChallengeMode, ImportBankResultDto, LiveChallengeBankItemDto } from "../../types/partyCall.types";
 
@@ -107,6 +108,14 @@ export default function QuestionBank() {
         <>
             <PageMeta title="Question Bank — HabitEvolve" description="Prepare Live Challenge Arena prompts ahead of time" />
             <PageBreadcrumb pageTitle="Question Bank" />
+
+            <PageHeader
+                className="mb-6"
+                icon={<Library className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+                tone="violet"
+                title="Question Bank"
+                description="Prepare Live Challenge Arena prompts ahead of time."
+            />
 
             {error && (
                 <div className="relative overflow-hidden sky-glass mb-6 rounded-sky-card pl-5 pr-4 py-4">

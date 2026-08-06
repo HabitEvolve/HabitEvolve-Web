@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminSystemOpsApi } from "../api/adminSystemOpsApi";
 import adminUserApi from "../api/adminUserApi";
 import adminSearchApi from "../api/adminSearchApi";
@@ -1106,18 +1107,14 @@ export default function AdminSystemOpsPage() {
                 {/* These controls fire real jobs at real users, so the page title
                     says so plainly and the icon chip carries the warm attention
                     tone rather than the neutral operational blue. */}
-                <div className="flex items-center gap-3.5">
-                    <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-peach/20 ring-1 ring-sky-peach/32 text-sky-peach-deep">
-                        <Zap className="w-6 h-6" strokeWidth={2.2} aria-hidden="true" />
-                    </span>
-                    <div>
-                        <p className={eyebrow}>Admin · live operations</p>
-                        <h1 className="font-display text-sky-h1 font-semibold text-sky-ink leading-tight">System Operations</h1>
-                        <p className="text-sm text-sky-ink-3 font-medium">
-                            Trigger daily tasks and send notifications
-                        </p>
-                    </div>
-                </div>
+                <PageHeader
+                    icon={<Zap className="w-6 h-6" strokeWidth={2.2} aria-hidden="true" />}
+                    tone="peach"
+                    size="h1"
+                    eyebrow="Admin · live operations"
+                    title="System Operations"
+                    description="Trigger daily tasks and send notifications"
+                />
 
                 <section>
                     <SectionRule label="Daily Tasks" />

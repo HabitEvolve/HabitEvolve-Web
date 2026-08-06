@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
+import PageHeader from '../components/common/PageHeader';
 import { adminGoalApi } from '../api/adminGoalApi';
 import SkyCard from '../components/ui/card/SkyCard';
 import SkyButton from '../components/ui/button/SkyButton';
@@ -730,19 +731,18 @@ export default function QuestionnaireManagement() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-4 flex-wrap sky-in">
-        <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
-          <ScrollText className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className={eyebrow}>Content</p>
-          <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">{t('admin.questionnaire.pageTitle')}</h1>
-          <p className="mt-0.5 text-sm font-medium text-sky-ink-2">{t('admin.questionnaire.subtitle')}</p>
-        </div>
-        <SkyButton type="button" variant="primary" onClick={() => setTplModal({ editing: null })} className="ml-auto">
-          <Plus className="w-4 h-4" /> {t('admin.questionnaire.newTemplate')}
-        </SkyButton>
-      </div>
+      <PageHeader
+        icon={<ScrollText className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+        tone="violet"
+        eyebrow="Content"
+        title={t('admin.questionnaire.pageTitle')}
+        description={t('admin.questionnaire.subtitle')}
+        actions={
+          <SkyButton type="button" variant="primary" onClick={() => setTplModal({ editing: null })}>
+            <Plus className="w-4 h-4" /> {t('admin.questionnaire.newTemplate')}
+          </SkyButton>
+        }
+      />
 
       {/* Body: split pane */}
       <div className="flex-1 flex gap-4 min-h-0">

@@ -7,12 +7,16 @@ import {
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import Pagination from "../components/common/SkyPagination";
 import adminPartyApi from "../api/adminPartyApi";
 import adminUserApi from "../api/adminUserApi";
 import { useAlert } from "../context/AlertContext";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import StatusBadge from "../components/common/StatusBadge";
+import { FilterDropdown } from "../components/common/FilterDropdown";
+import type { FilterField } from "../hooks/useTableFilters";
 import { PartyItem, PartyStatus, JoinPolicy, UserItem } from "../types/api.types";
 
 const PAGE_SIZE = 10;
@@ -36,20 +40,6 @@ const inputCls = [
 const overlayCls = "fixed inset-0 bg-sky-abyss/45 backdrop-blur-md";
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
-// Every state carries a glyph as well as a hue — the lifecycle stays readable in
-// greyscale. teal is reserved for the one state that is genuinely running; rose
-// marks the party an admin deliberately tore down, so it reads differently from
-// a party that was merely filed away (neutral).
-const STATUS_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
-  Active:    { cls: "sky-badge-success", Icon: Check },
-  Disbanded: { cls: "sky-badge-danger",  Icon: CircleSlash },
-  Archived:  { cls: "sky-badge-neutral", Icon: Archive },
-};
-const StatusBadge = ({ status }: { status: PartyStatus }) => {
-  const c = STATUS_CFG[status] ?? { cls: "sky-badge-neutral", Icon: CircleSlash };
-  return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3 h-3 shrink-0" /> {status}</span>;
-};
-
 // Join policy is a gate, not a severity: cool for the open door, peach for the
 // one that parks people in a queue a human has to clear, violet for closed.
 const POLICY_CFG: Record<string, { cls: string; Icon: LucideIcon; label: string }> = {
@@ -275,6 +265,13 @@ export default function AdminPartyManagement() {
       <PageBreadcrumb pageTitle="Party Management" />
 
       <div className="space-y-5">
+        <PageHeader
+          icon={<Users className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+          tone="deep"
+          title="Party Management"
+          description="Manage every party (group) on the platform."
+        />
+
         <div className="sky-in flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-72">
@@ -288,28 +285,19 @@ export default function AdminPartyManagement() {
                 className={`${inputCls} pl-10`}
               />
             </div>
-            {/* One recessed well instead of a dropdown: four states is few enough
-                to show at once, and only the chosen segment is allowed to lift. */}
-            <div className="flex flex-wrap gap-1 rounded-sky-chip bg-white/42 ring-1 ring-white/70 p-1 shrink-0">
-              {STATUS_FILTERS.map(({ value, label, Icon }) => {
-                const on = statusFilter === value;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => { setStatusFilter(value); setCurrentPage(1); }}
-                    className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs transition ${
-                      on
-                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white font-semibold shadow-sky-chip"
-                        : "text-sky-ink-2 font-medium hover:bg-white/70 hover:text-sky-ink"
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" /> {label}
-                  </button>
-                );
-              })}
-            </div>
+            <FilterDropdown<{ status: string }>
+              fields={[{
+                key: "status",
+                label: "Status",
+                type: "select",
+                options: STATUS_FILTERS.filter(f => f.value !== "").map(f => ({ label: f.label, value: f.value })),
+              } satisfies FilterField]}
+              filters={{ status: statusFilter }}
+              onFilterChange={(_, value) => { setStatusFilter(value as PartyStatus | ""); setCurrentPage(1); }}
+              onClear={() => { setStatusFilter(""); setCurrentPage(1); }}
+              hasActiveFilters={statusFilter !== ""}
+              align="left"
+            />
           </div>
 
           <SkyButton type="button" variant="primary" onClick={() => openModal("create")} className="whitespace-nowrap">

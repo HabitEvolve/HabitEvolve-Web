@@ -12,6 +12,9 @@ import type { GoalCategoryDto } from '../types/adminGoal.types';
 import DailyBossAnimationStudioModal from '../components/game/DailyBossAnimationStudioModal';
 import SkyCard from '../components/ui/card/SkyCard';
 import SkyButton from '../components/ui/button/SkyButton';
+import PageHeader from '../components/common/PageHeader';
+import { FilterDropdown } from '../components/common/FilterDropdown';
+import type { FilterField } from '../hooks/useTableFilters';
 
 /** icon field is either an emoji ("🐉") or a Supabase https:// URL uploaded via /icon. */
 const isIconUrl = (icon: string | null | undefined): icon is string => !!icon && /^https?:\/\//.test(icon);
@@ -483,32 +486,36 @@ export default function AdminDailyBossManagement() {
       <Flash alert={alert} />
 
       {/* Header */}
-      <div className="sky-in flex items-center gap-4 flex-wrap">
-        <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-dmg/12 ring-1 ring-sky-dmg/22 text-sky-dmg-deep">
-          <Flame className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className={eyebrow}>Game content</p>
-          <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">Daily Boss Pool</h1>
-          <p className="mt-0.5 text-sm font-medium text-sky-ink-2">
-            Each player gets one boss per day drawn from the active pool (stable hash per user/date).
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <label className="flex cursor-pointer select-none items-center gap-2 rounded-sky-chip bg-white/58 ring-1 ring-white/80 px-3 py-2 transition-colors hover:bg-white/74">
-            <input
-              type="checkbox"
-              checked={activeOnly}
-              onChange={e => setActiveOnly(e.target.checked)}
-              className="w-4 h-4 accent-sky-deep"
+      <PageHeader
+        icon={<Flame className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+        tone="dmg"
+        eyebrow="Game content"
+        title="Daily Boss Pool"
+        description="Each player gets one boss per day drawn from the active pool (stable hash per user/date)."
+        actions={
+          <>
+            <FilterDropdown<{ activeState: string }>
+              fields={[{
+                key: 'activeState',
+                label: 'Status',
+                type: 'select',
+                options: [
+                  { label: 'Active only', value: 'true' },
+                  { label: 'Show all', value: 'false' },
+                ],
+              } satisfies FilterField]}
+              filters={{ activeState: String(activeOnly) }}
+              onFilterChange={(_, value) => setActiveOnly(value === 'true')}
+              onClear={() => setActiveOnly(false)}
+              hasActiveFilters={activeOnly}
+              align="left"
             />
-            <span className="text-sm font-semibold text-sky-ink">Active only</span>
-          </label>
-          <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })}>
-            <Plus className="w-4 h-4" /> Add Boss
-          </SkyButton>
-        </div>
-      </div>
+            <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })}>
+              <Plus className="w-4 h-4" /> Add Boss
+            </SkyButton>
+          </>
+        }
+      />
 
       {/* Stats bar */}
       {/* Active is the only count that changes what players get, so it is the

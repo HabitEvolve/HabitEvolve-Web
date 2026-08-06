@@ -8,12 +8,15 @@ import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminItemApi } from "../api/adminItemApi";
 import { adminShopListingApi } from "../api/adminShopListingApi";
 import { adminLootTableApi } from "../api/adminLootTableApi";
 import { adminGachaBannerApi } from "../api/adminGachaBannerApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import { FilterDropdown } from "../components/common/FilterDropdown";
+import type { FilterField } from "../hooks/useTableFilters";
 import type {
   ItemDefinitionDto, CreateItemPayload,
   ShopListingDto, CreateShopListingPayload,
@@ -206,11 +209,19 @@ function ItemCatalogTab({ onAlert }: { onAlert: (a: { type: "success" | "error";
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 rounded-sky-chip bg-white/42 ring-1 ring-white/70 p-2.5">
-        <span className={`${eyebrow} shrink-0 pl-1`}>Type</span>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} aria-label="Filter by item type" className={`${inputCls} w-auto`}>
-          <option value="">All types</option>
-          {ITEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
+        <FilterDropdown<{ type: string }>
+          fields={[{
+            key: "type",
+            label: "Type",
+            type: "select",
+            options: ITEM_TYPES.map(t => ({ label: t, value: t })),
+          } satisfies FilterField]}
+          filters={{ type: typeFilter }}
+          onFilterChange={(_, value) => setTypeFilter(value)}
+          onClear={() => setTypeFilter("")}
+          hasActiveFilters={typeFilter !== ""}
+          align="left"
+        />
         {!loading && (
           <span className="inline-flex items-baseline gap-1">
             <span className="font-display text-sm font-semibold text-sky-ink tabular-nums">{items.length}</span>
@@ -644,7 +655,9 @@ function GachaBannersTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
                 <tr key={b.gachaBannerId} className="sky-table-row group">
                   <td className="px-3 py-2 font-mono text-xs font-semibold tracking-[0.06em] text-sky-ink-2">{b.code}</td>
                   <td className="px-3 py-2 font-display text-sm font-semibold text-sky-ink">{b.name}</td>
-                  <td className="px-3 py-2 font-mono text-xs font-medium text-sky-ink-3">#{b.lootTableId}</td>
+                  <td className="px-3 py-2 font-mono text-xs font-medium text-sky-ink-3">
+                    {lootTables.find(t => t.lootTableId === b.lootTableId)?.code ?? "—"}
+                  </td>
                   <td className="px-3 py-2"><PriceTag amount={b.pullCostGems} currency="GEMS" /></td>
                   <td className="px-3 py-2"><StatusPill active={b.isActive} /></td>
                   <td className="px-3 py-2">
@@ -700,15 +713,12 @@ export default function AdminEconomyHub() {
       <PageBreadcrumb pageTitle="Economy Hub" />
 
       <div className="space-y-6 p-1">
-        <div className="sky-in flex items-center gap-4">
-          <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-peach/18 text-sky-peach-deep shrink-0">
-            <Coins className="w-6 h-6" />
-          </span>
-          <div>
-            <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">Economy Hub</h1>
-            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Author items, shop listings, loot tables, and gacha banners.</p>
-          </div>
-        </div>
+        <PageHeader
+          icon={<Coins className="w-6 h-6" />}
+          tone="peach"
+          title="Economy Hub"
+          description="Author items, shop listings, loot tables, and gacha banners."
+        />
 
         {/* A recessed well with one lifted segment, rather than four tabs sitting on
             a hairline: the group reads as a single control and the selection is

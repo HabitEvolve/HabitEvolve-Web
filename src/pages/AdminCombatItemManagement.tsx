@@ -4,8 +4,9 @@ import { Swords, Plus, Pencil, X, Save, Loader2, Image as ImageIcon } from "luci
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import Pagination from "../components/common/SkyPagination";
-import { TableFilterBar } from "../components/common/TableFilterBar";
+import { FilterDropdown } from "../components/common/FilterDropdown";
 import { useTableFilters, type FilterField } from "../hooks/useTableFilters";
 import { adminCombatItemApi } from "../api/adminCombatItemApi";
 import type { CombatItemDefinitionDto, CreateCombatItemPayload, CombatItemKind } from "../types/adminCombatItem.types";
@@ -303,24 +304,23 @@ export default function AdminCombatItemManagement() {
 
             <div className="space-y-6 p-1">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-sky-md bg-sky-violet/12 text-sky-violet-deep flex items-center justify-center shrink-0">
-                            <Swords className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="font-display text-2xl font-semibold text-sky-ink">Combat Items</h1>
-                            <p className="text-sm text-sky-ink-2 mt-0.5">Character / Spell ("chưởng lực") — damage bonus when equipped. Separate from cosmetic Item Catalog.</p>
-                        </div>
-                    </div>
-                    <button type="button" onClick={() => setEditingItem("new")} className={`${btnBase} ${btnPrimary} shrink-0`}>
-                        <Plus className="w-3.5 h-3.5" /> New Combat Item
-                    </button>
-                </div>
+                <PageHeader
+                    icon={<Swords className="w-6 h-6" />}
+                    tone="violet"
+                    title="Combat Items"
+                    description={'Character / Spell ("chưởng lực") — damage bonus when equipped. Separate from cosmetic Item Catalog.'}
+                    actions={
+                        <button type="button" onClick={() => setEditingItem("new")} className={`${btnBase} ${btnPrimary} shrink-0`}>
+                            <Plus className="w-3.5 h-3.5" /> New Combat Item
+                        </button>
+                    }
+                />
 
                 {/* Table */}
                 <div className="sky-glass-admin rounded-sky-card overflow-hidden">
-                    <TableFilterBar fields={FILTER_FIELDS} filters={filters} onFilterChange={setFilter} onClear={clearFilters} hasActiveFilters={hasActiveFilters} />
+                    <div className="flex justify-end px-5 py-3 border-b border-white/60 bg-white/35">
+                        <FilterDropdown fields={FILTER_FIELDS} filters={filters} onFilterChange={setFilter} onClear={clearFilters} hasActiveFilters={hasActiveFilters} />
+                    </div>
 
                     {error ? (
                         <div className="relative flex flex-col items-center gap-3 py-16">

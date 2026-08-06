@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Scale, CheckCircle, XCircle, Loader2, X, AlertTriangle, Inbox, MessageSquareQuote, RefreshCw, Hourglass } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Scale, CheckCircle, XCircle, Loader2, X, AlertTriangle, Inbox, MessageSquareQuote, RefreshCw } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminAppealApi } from "../api/adminAppealApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import StatusBadge from "../components/common/StatusBadge";
 import type { AppealDto, AppealDecision } from "../types/adminAppeal.types";
 
 const errMsg = (e: unknown) =>
@@ -18,16 +19,6 @@ const fmtDateTime = (d: string) =>
 
 const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 const fieldLabel = `block mb-1.5 ${eyebrow}`;
-
-// Pending is warm because it is work waiting on a human; accepted is the one teal
-// state (the player got their proof back); rejected is a decision that goes
-// against them, so it takes destructive rose. Each carries a glyph too, so the
-// outcome is readable without colour.
-const STATUS_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
-  Pending: { cls: "sky-badge-pending", Icon: Hourglass },
-  Accepted: { cls: "sky-badge-success", Icon: CheckCircle },
-  Rejected: { cls: "sky-badge-danger", Icon: XCircle },
-};
 
 function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealDto; onClose: () => void; onResolved: () => void }) {
   const [decision, setDecision] = useState<AppealDecision | "">("");
@@ -157,26 +148,27 @@ export default function AdminAppealQueue() {
       <PageBreadcrumb pageTitle="Appeal Queue" />
 
       <div className="space-y-6 p-1">
-        <div className="sky-in flex items-center gap-4">
-          <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-peach/18 text-sky-peach-deep shrink-0">
-            <Scale className="w-6 h-6" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">Appeal Queue</h1>
-            <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Review player appeals submitted for rejected proofs.</p>
-          </div>
-          {/* The outstanding count is the reason to be on this screen, so it reads
-              as a quantity next to the title rather than hiding in the table. */}
-          {appeals.length > 0 && (
-            <span className="hidden sm:inline-flex items-baseline gap-1.5 shrink-0 rounded-sky-chip bg-white/55 ring-1 ring-white/80 px-3.5 py-2">
-              <span className="font-display text-lg font-semibold text-sky-ink tabular-nums leading-none">{appeals.length}</span>
-              <span className={eyebrow}>in queue</span>
-            </span>
-          )}
-          <SkyButton type="button" variant="secondary" size="sm" onClick={fetchQueue} disabled={loading} className="ml-auto shrink-0">
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} {loading ? "Loading…" : "Refresh"}
-          </SkyButton>
-        </div>
+        <PageHeader
+          icon={<Scale className="w-6 h-6" />}
+          tone="peach"
+          title="Appeal Queue"
+          description="Review player appeals submitted for rejected proofs."
+          actions={
+            <>
+              {/* The outstanding count is the reason to be on this screen, so it reads
+                  as a quantity next to the title rather than hiding in the table. */}
+              {appeals.length > 0 && (
+                <span className="hidden sm:inline-flex items-baseline gap-1.5 shrink-0 rounded-sky-chip bg-white/55 ring-1 ring-white/80 px-3.5 py-2">
+                  <span className="font-display text-lg font-semibold text-sky-ink tabular-nums leading-none">{appeals.length}</span>
+                  <span className={eyebrow}>in queue</span>
+                </span>
+              )}
+              <SkyButton type="button" variant="secondary" size="sm" onClick={fetchQueue} disabled={loading} className="shrink-0">
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} {loading ? "Loading…" : "Refresh"}
+              </SkyButton>
+            </>
+          }
+        />
 
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           {error ? (
@@ -207,7 +199,7 @@ export default function AdminAppealQueue() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="sky-table-head">
-                    {["#", "Proof", "User", "Reason", "Status", "Submitted", "Action"].map(h => (
+                    {["Reason", "Status", "Submitted", "Action"].map(h => (
                       <th key={h} className={`px-4 py-3 ${h === "Action" ? "text-right" : "text-left"}`}>{h}</th>
                     ))}
                   </tr>
@@ -215,15 +207,9 @@ export default function AdminAppealQueue() {
                 <tbody className="sky-stagger">
                   {appeals.map(a => (
                     <tr key={a.appealId} className="sky-table-row group">
-                      <td className="px-4 py-3 font-mono text-xs font-medium text-sky-ink-3 tabular-nums">{a.appealId}</td>
-                      <td className="px-4 py-3 font-mono text-xs font-medium text-sky-ink-2 tabular-nums">#{a.proofId}</td>
-                      <td className="px-4 py-3 text-xs font-medium text-sky-ink-2 tabular-nums whitespace-nowrap">User #{a.userId}</td>
                       <td className="px-4 py-3 max-w-xs truncate text-xs font-medium text-sky-ink" title={a.reason}>{a.reason}</td>
                       <td className="px-4 py-3">
-                        {(() => {
-                          const c = STATUS_CFG[a.status] ?? STATUS_CFG.Pending;
-                          return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3 h-3 shrink-0" /> {a.status}</span>;
-                        })()}
+                        <StatusBadge status={a.status} />
                       </td>
                       <td className="px-4 py-3 text-xs font-medium text-sky-ink-2 whitespace-nowrap tabular-nums">{fmtDateTime(a.createdAt)}</td>
                       <td className="px-4 py-3 text-right">

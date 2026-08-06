@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { useAlert } from "../context/AlertContext";
 import { adminPracticalTaskApi } from "../api/adminPracticalTaskApi";
 import { adminGoalApi } from "../api/adminGoalApi";
 import { useTableFilters } from "../hooks/useTableFilters";
-import { TableFilterBar } from "../components/common/TableFilterBar";
+import { FilterDropdown } from "../components/common/FilterDropdown";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
   AdminTaskTemplateDto as PracticalTaskDto,
@@ -676,23 +677,22 @@ export default function AdminPracticalTaskManagement() {
       <PageBreadcrumb pageTitle="Practical Task Templates" />
 
       {/* ── PAGE HEADER ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-sky-ink">Task Templates</h1>
-          <p className="text-sm text-sky-ink-2 mt-0.5">
-            Define reusable practical tasks scoped to a specific Goal.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          disabled={!selectedGoalId}
-          className={`${btnBase} ${btnPrimary} whitespace-nowrap`}
-          title={!selectedGoalId ? "Select a Goal first" : undefined}
-        >
-          <PlusIcon /> New Template
-        </button>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Task Templates"
+        description="Define reusable practical tasks scoped to a specific Goal."
+        actions={
+          <button
+            type="button"
+            onClick={openCreate}
+            disabled={!selectedGoalId}
+            className={`${btnBase} ${btnPrimary} whitespace-nowrap`}
+            title={!selectedGoalId ? "Select a Goal first" : undefined}
+          >
+            <PlusIcon /> New Template
+          </button>
+        }
+      />
 
       {/* ── GOAL SELECTOR ────────────────────────────────────────────────── */}
       {/* Step 1 of a two-step flow, so it carries a deep top rail and a
@@ -791,21 +791,21 @@ export default function AdminPracticalTaskManagement() {
                 Tasks for{" "}
                 <span className="text-sky-deep">{selectedGoal?.goalName}</span>
               </span>
-              {!loading && (
-                <span className="font-display ml-auto bg-sky-deep/12 text-sky-deep text-xs font-semibold px-2.5 py-0.5 rounded-full tabular-nums">
-                  {tasks.length}
-                </span>
-              )}
+              <div className="ml-auto flex items-center gap-2.5">
+                <FilterDropdown<TaskFilters>
+                  fields={FILTER_FIELDS}
+                  filters={filters}
+                  onFilterChange={setFilter}
+                  onClear={clearFilters}
+                  hasActiveFilters={hasActiveFilters}
+                />
+                {!loading && (
+                  <span className="font-display bg-sky-deep/12 text-sky-deep text-xs font-semibold px-2.5 py-0.5 rounded-full tabular-nums">
+                    {tasks.length}
+                  </span>
+                )}
+              </div>
             </div>
-
-            {/* Filter bar */}
-            <TableFilterBar<TaskFilters>
-              fields={FILTER_FIELDS}
-              filters={filters}
-              onFilterChange={setFilter}
-              onClear={clearFilters}
-              hasActiveFilters={hasActiveFilters}
-            />
 
             {/* Error state */}
             {error && (

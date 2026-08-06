@@ -6,9 +6,13 @@ import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminCourtApi } from "../api/adminCourtApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import StatusBadge from "../components/common/StatusBadge";
+import { FilterDropdown } from "../components/common/FilterDropdown";
+import type { FilterField } from "../hooks/useTableFilters";
 import type {
   CourtCaseDto,
   ResolveVerdictPayload,
@@ -70,15 +74,13 @@ const ChevronRightIcon = () => <ChevronRight className="w-3.5 h-3.5" />;
 const Spinner = ({ size = 20 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
 const ImgOffIcon = () => <ImageOff className="w-7 h-7 text-sky-ink-3" />;
 
-// ── STATUS BADGE ──────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }: { status: string }) => {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG["Rejected"];
-  return (
-    <span className={`sky-badge gap-1.5 ${cfg.cls}`}>
-      <cfg.Icon className="w-3 h-3 shrink-0" /> {status}
-    </span>
-  );
-};
+// ExpiredAutoApproved is a benign auto-resolution, not a failure — the shared
+// StatusBadge's default map treats "expired*" strings as danger, so override
+// tone/icon at the call site to keep the original neutral/SkipForward read.
+const statusBadgeOverrides = (status: string) =>
+  status === "ExpiredAutoApproved"
+    ? { toneOverride: "neutral" as const, iconOverride: SkipForward }
+    : {};
 
 // ── PROOF TYPE BADGE ──────────────────────────────────────────────────────────
 // Proof type is a taxonomy, not a status — so it never borrows the success/danger
@@ -241,7 +243,7 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                 <p className="text-xs text-sky-ink-3">
                   {t("admin.courtManagement.reviewModal.submittedBy", "Submitted by")} <span className="font-semibold text-sky-ink-2">{data.proofOwnerUsername}</span>
                 </p>
-                <StatusBadge status={data.status} />
+                <StatusBadge status={data.status} {...statusBadgeOverrides(data.status)} />
               </div>
             </div>
           </div>
@@ -631,17 +633,12 @@ export default function CourtManagement() {
       <div className="space-y-6 p-1">
 
         {/* Page Header */}
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-sky-md bg-sky-peach/20 flex items-center justify-center shrink-0">
-            <GavelIcon size={22} />
-          </div>
-          <div>
-            <h1 className="font-display text-2xl font-semibold text-sky-ink">{t("admin.courtManagement.pageTitle")}</h1>
-            <p className="text-sm text-sky-ink-2 mt-0.5">
-              {t("admin.courtManagement.pageSubtitle")}
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          icon={<GavelIcon size={22} />}
+          tone="peach"
+          title={t("admin.courtManagement.pageTitle")}
+          description={t("admin.courtManagement.pageSubtitle")}
+        />
 
         {/* Tab Strip — segmented control on glass, deep fill for the active tab */}
         <div className="inline-flex gap-1 p-1 rounded-sky-chip sky-glass-chip">
@@ -667,26 +664,22 @@ export default function CourtManagement() {
 
             {/* Filter Bar */}
             <SkyCard variant="admin" className="p-4 flex flex-wrap items-center gap-2">
-              <span className="relative text-sm font-medium text-sky-ink-2 flex items-center gap-1.5 mr-1 shrink-0">
-                <Filter className="w-4 h-4" /> {t("admin.courtManagement.filterStatus")}
-              </span>
-              <div className="relative flex flex-wrap gap-1.5 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-1.5">
-                {STATUS_KEYS.map(key => {
-                  const cfg = STATUS_CONFIG[key];
-                  const on = statusFilter === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => handleStatusChange(key)}
-                      className={`sky-badge gap-1.5 px-3 py-1.5 transition ${cfg.cls} ${on ? "shadow-sky-chip ring-2 ring-sky-deep/70" : "opacity-65 hover:opacity-100"}`}
-                    >
-                      <cfg.Icon className="w-3 h-3 shrink-0" /> {cfg.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <FilterDropdown<{ status: string }>
+                fields={[{
+                  key: "status",
+                  label: "Status",
+                  type: "select",
+                  options: STATUS_KEYS.filter(key => key !== "").map(key => ({
+                    label: STATUS_CONFIG[key].label,
+                    value: key,
+                  })),
+                } satisfies FilterField]}
+                filters={{ status: statusFilter }}
+                onFilterChange={(_, value) => handleStatusChange(value)}
+                onClear={() => handleStatusChange("")}
+                hasActiveFilters={statusFilter !== ""}
+                align="left"
+              />
               <SkyButton type="button" variant="secondary" size="sm" onClick={fetchCases} disabled={casesLoading} className="relative ml-auto">
                 {casesLoading ? <><Spinner size={13} /> {t("admin.courtManagement.loading")}</> : t("admin.courtManagement.refresh")}
               </SkyButton>
@@ -770,7 +763,7 @@ export default function CourtManagement() {
                             <ProofTypeBadge type={c.proofType} />
                           </td>
                           <td className="px-4 py-3">
-                            <StatusBadge status={c.status} />
+                            <StatusBadge status={c.status} {...statusBadgeOverrides(c.status)} />
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2 text-xs font-semibold whitespace-nowrap tabular-nums">
@@ -917,7 +910,7 @@ export default function CourtManagement() {
                           return (
                             <tr key={entry.userId} className={`sky-table-row ${rowBg}`}>
                               <td className="px-4 py-3"><MedalRank rank={entry.rank} /></td>
-                              <td className="px-4 py-3 font-medium text-sky-ink">User #{entry.userId}</td>
+                              <td className="px-4 py-3 font-medium text-sky-ink">{entry.username}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                   <Sparkles className="w-3.5 h-3.5 text-sky-peach-deep shrink-0" />

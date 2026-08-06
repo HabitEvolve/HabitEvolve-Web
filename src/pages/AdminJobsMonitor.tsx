@@ -3,6 +3,7 @@ import { Cpu, Play, PlayCircle, Loader2, CheckCircle2, XCircle, RefreshCw, Inbox
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminJobsApi } from "../api/adminJobsApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
@@ -68,20 +69,17 @@ export default function AdminJobsMonitor() {
       <PageBreadcrumb pageTitle="Jobs Monitor" />
 
       <div className="space-y-6 p-1">
-        <div className="sky-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-deep/12 text-sky-deep shrink-0">
-              <Cpu className="w-6 h-6" />
-            </span>
-            <div>
-              <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">Jobs Monitor</h1>
-              <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Trigger scheduled jobs manually and inspect execution history.</p>
-            </div>
-          </div>
-          <SkyButton type="button" variant="primary" onClick={handleRunAll} disabled={runningAll} className="shrink-0">
-            {runningAll ? <><Loader2 className="w-4 h-4 animate-spin" /> Running…</> : <><PlayCircle className="w-4 h-4" /> Run All Jobs</>}
-          </SkyButton>
-        </div>
+        <PageHeader
+          icon={<Cpu className="w-6 h-6" />}
+          tone="deep"
+          title="Jobs Monitor"
+          description="Trigger scheduled jobs manually and inspect execution history."
+          actions={
+            <SkyButton type="button" variant="primary" onClick={handleRunAll} disabled={runningAll} className="shrink-0">
+              {runningAll ? <><Loader2 className="w-4 h-4 animate-spin" /> Running…</> : <><PlayCircle className="w-4 h-4" /> Run All Jobs</>}
+            </SkyButton>
+          }
+        />
 
         <SkyCard variant="admin" className="p-4 space-y-3">
           <p className={eyebrow}>Trigger manually</p>

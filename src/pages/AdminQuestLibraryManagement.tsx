@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
+import PageHeader from '../components/common/PageHeader';
 import Pagination from '../components/common/SkyPagination';
 import { adminQuestLibraryApi } from '../api/adminQuestLibraryApi';
 import { adminGoalApi } from '../api/adminGoalApi';
@@ -804,21 +805,18 @@ export default function AdminQuestLibraryManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 flex-wrap sky-in">
-        <div className={`w-12 h-12 rounded-sky-md ring-1 flex items-center justify-center shrink-0 ${TONE.violet.chip}`}>
-          <Library className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
-        </div>
-        <div className="min-w-0">
-          <p className={eyebrow}>Content library</p>
-          <h1 className="font-display text-sky-h1 font-semibold leading-tight text-sky-ink">System Quest Library</h1>
-          <p className="text-sm text-sky-ink-2 mt-0.5">
-            Manage reusable quest templates — publish to make available to players via goal mapping.
-          </p>
-        </div>
-        <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })} className="ml-auto">
-          <Plus className="w-4 h-4" /> New Quest
-        </SkyButton>
-      </div>
+      <PageHeader
+        icon={<Library className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+        tone="violet"
+        eyebrow="Content library"
+        title="System Quest Library"
+        description="Manage reusable quest templates — publish to make available to players via goal mapping."
+        actions={
+          <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })}>
+            <Plus className="w-4 h-4" /> New Quest
+          </SkyButton>
+        }
+      />
 
       {/* Stats + Filters */}
       <div className="flex gap-3 flex-wrap items-center">

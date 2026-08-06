@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Outlet } from "react-router";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, ArrowLeft, Pencil, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Pencil, Save, Users } from "lucide-react";
 import { useAlert } from "../../../context/AlertContext";
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
+import PageHeader from "../../../components/common/PageHeader";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import TabBar from "./TabBar";
 import SkyButton from "../../../components/ui/button/SkyButton";
@@ -130,30 +131,28 @@ export default function PartyWorkspace() {
           {t("admin.partyManagement.backToList")}
         </SkyButton>
 
-        {/* Huge party name + meta, distinct hierarchy */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="min-w-0">
-            <span className="inline-block text-xs font-semibold uppercase tracking-[0.16em] text-sky-deep mb-2">
-              {t("admin.partyManagement.hub.commandKicker")}
-            </span>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold text-sky-ink tracking-tight leading-[0.95] wrap-break-word">
-              {party.name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3 mt-4">
-              <JoinPolicyBadge policy={party.joinPolicy} />
-              <CapacityMeter current={party.memberCount ?? 0} max={party.maxMembers || 1} />
-              {party.description && (
-                <span className="text-sm text-sky-ink-2 font-medium truncate max-w-[40ch]">
-                  {party.description}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <SkyButton type="button" variant="secondary" onClick={openEditModal}>
-              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-              {t("admin.partyManagement.editParty")}
-            </SkyButton>
+        {/* Party name + meta */}
+        <div>
+          <PageHeader
+            icon={<Users className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+            tone="deep"
+            eyebrow={t("admin.partyManagement.hub.commandKicker")}
+            title={party.name}
+            actions={
+              <SkyButton type="button" variant="secondary" onClick={openEditModal}>
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                {t("admin.partyManagement.editParty")}
+              </SkyButton>
+            }
+          />
+          <div className="flex flex-wrap items-center gap-3 mt-2.5 pl-16">
+            <JoinPolicyBadge policy={party.joinPolicy} />
+            <CapacityMeter current={party.memberCount ?? 0} max={party.maxMembers || 1} />
+            {party.description && (
+              <span className="text-sm text-sky-ink-2 font-medium truncate max-w-[40ch]">
+                {party.description}
+              </span>
+            )}
           </div>
         </div>
 

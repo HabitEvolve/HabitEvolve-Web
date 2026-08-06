@@ -5,9 +5,10 @@ import type { ApexOptions } from "apexcharts";
 import {
     RefreshCw, ShieldAlert, Swords, Users, ChevronRight, ExternalLink,
     UserPlus, Coins, GraduationCap, ArrowUp, ArrowDown, AlertTriangle,
-    Check, Clock, X, Receipt, ScrollText,
+    Check, Clock, X, Receipt, ScrollText, LayoutDashboard,
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
+import PageHeader from "../../components/common/PageHeader";
 import DatePicker from "../../components/form/date-picker";
 import { adminDashboardApi } from "../../api/adminDashboardApi";
 import SkyCard from "../../components/ui/card/SkyCard";
@@ -417,33 +418,34 @@ export default function Home() {
             />
 
             {/* Header + global date filter */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
-                <div>
-                    <span className={eyebrow}>Admin console</span>
-                    <h1 className="font-display text-2xl sm:text-3xl font-semibold text-sky-ink tracking-tight mt-1">Dashboard</h1>
-                    <p className="text-sm text-sky-ink-2 mt-1">
-                        Economy, quest completion, and user activity for the selected range
-                    </p>
-                </div>
-                <div className="flex items-end gap-3">
-                    <div className="w-56">
-                        <DatePicker
-                            id="dashboard-date-range"
-                            mode="range"
-                            label="Date Range"
-                            defaultDate={[range.startDate, range.endDate]}
-                            onChange={(dates) => {
-                                if (dates.length === 2) {
-                                    setRange({ startDate: toIso(dates[0]), endDate: toIso(dates[1]) });
-                                }
-                            }}
-                        />
-                    </div>
-                    <SkyButton type="button" variant="primary" onClick={fetchSummary} disabled={loading} className="h-11">
-                        <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-                    </SkyButton>
-                </div>
-            </div>
+            <PageHeader
+                className="mb-7 items-end"
+                icon={<LayoutDashboard className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+                tone="deep"
+                eyebrow="Admin console"
+                title="Dashboard"
+                description="Economy, quest completion, and user activity for the selected range"
+                actions={
+                    <>
+                        <div className="w-56">
+                            <DatePicker
+                                id="dashboard-date-range"
+                                mode="range"
+                                label="Date Range"
+                                defaultDate={[range.startDate, range.endDate]}
+                                onChange={(dates) => {
+                                    if (dates.length === 2) {
+                                        setRange({ startDate: toIso(dates[0]), endDate: toIso(dates[1]) });
+                                    }
+                                }}
+                            />
+                        </div>
+                        <SkyButton type="button" variant="primary" onClick={fetchSummary} disabled={loading} className="h-11">
+                            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+                        </SkyButton>
+                    </>
+                }
+            />
 
             {error && (
                 <div className="relative overflow-hidden mb-7 p-4 rounded-sky-card sky-glass-admin flex items-center justify-between gap-4">

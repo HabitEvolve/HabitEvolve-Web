@@ -2,14 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Plus, X, ChevronLeft, ChevronRight, Check, Minus, AlertTriangle,
+  Plus, X, ChevronLeft, ChevronRight, AlertTriangle,
   Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
 import { useAlert } from '../context/AlertContext';
+import PageHeader from '../components/common/PageHeader';
 import SkyCard from '../components/ui/card/SkyCard';
 import SkyButton from '../components/ui/button/SkyButton';
+import SharedStatusBadge from '../components/common/StatusBadge';
+import { FilterDropdown } from '../components/common/FilterDropdown';
+import type { FilterField } from '../hooks/useTableFilters';
 import type {
   SubscriptionPackageDto,
   RewardTier,
@@ -124,21 +128,17 @@ const labelCls = `block mb-1.5 ${eyebrow}`;
 
 // ─── Micro-components ────────────────────────────────────────────────────────
 
-// Live-or-not is a real state, so it carries a glyph as well as a hue — and off
-// is not a failure, so it takes neutral rather than red.
+// Live-or-not maps onto the shared lifecycle StatusBadge. "Archived" already
+// resolves to a neutral tone + MinusCircle icon there — off isn't a failure,
+// so that reads the same as the old bespoke neutral chip. The i18n label is
+// passed straight through so translated text is preserved.
 const StatusBadge = ({ isActive }: { isActive: boolean }) => {
   const { t } = useTranslation();
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-sky-chip ring-1 px-2.5 py-1 text-xs font-semibold ${
-        isActive ? TONE.teal.chip : TONE.neutral.chip
-      }`}
-    >
-      {isActive
-        ? <Check className="w-3 h-3" strokeWidth={3} aria-hidden="true" />
-        : <Minus className="w-3 h-3" strokeWidth={3} aria-hidden="true" />}
-      {isActive ? t('admin.subscriptionPage.statusActive') : t('admin.subscriptionPage.statusInactive')}
-    </span>
+    <SharedStatusBadge
+      status={isActive ? 'Active' : 'Archived'}
+      label={isActive ? t('admin.subscriptionPage.statusActive') : t('admin.subscriptionPage.statusInactive')}
+    />
   );
 };
 
@@ -672,42 +672,40 @@ export default function AdminSubscriptionPage() {
     <div className="p-6 space-y-6">
 
       {/* ── Page header ── */}
-      <div className="sky-in flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
-            <Package className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className={eyebrow}>Monetisation</p>
-            <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">
-              {t('admin.subscriptionPage.pageTitle')}
-            </h1>
-            <p className="mt-0.5 text-sm font-medium text-sky-ink-2">
-              {t('admin.subscriptionPage.pageSubtitle')}
-            </p>
-          </div>
-        </div>
-        <SkyButton type="button" variant="primary" onClick={() => setFormModal({ mode: 'create' })} className="whitespace-nowrap shrink-0">
-          <Plus className="w-4 h-4" />
-          {t('admin.subscriptionPage.newPackage')}
-        </SkyButton>
-      </div>
+      <PageHeader
+        icon={<Package className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+        tone="violet"
+        eyebrow="Monetisation"
+        title={t('admin.subscriptionPage.pageTitle')}
+        description={t('admin.subscriptionPage.pageSubtitle')}
+        actions={
+          <SkyButton type="button" variant="primary" onClick={() => setFormModal({ mode: 'create' })} className="whitespace-nowrap shrink-0">
+            <Plus className="w-4 h-4" />
+            {t('admin.subscriptionPage.newPackage')}
+          </SkyButton>
+        }
+      />
 
       {/* ── Filter bar ── */}
       {/* The filter and the resulting count sit in one recessed strip, so the
           number is read as a consequence of the switch beside it. */}
       <div className="flex flex-wrap items-center gap-3 rounded-sky-md bg-white/42 ring-1 ring-white/70 px-3 py-2">
-        <label className="flex cursor-pointer select-none items-center gap-2 rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-3 py-1.5 transition-colors hover:bg-white/78">
-          <input
-            type="checkbox"
-            checked={showInactive}
-            onChange={e => setShowInactive(e.target.checked)}
-            className="w-4 h-4 accent-sky-deep cursor-pointer"
-          />
-          <span className="text-sm font-semibold text-sky-ink">
-            {t('admin.subscriptionPage.showInactive')}
-          </span>
-        </label>
+        <FilterDropdown<{ activeState: string }>
+          fields={[{
+            key: 'activeState',
+            label: 'Status',
+            type: 'select',
+            options: [
+              { label: 'Active only', value: 'false' },
+              { label: 'Show inactive', value: 'true' },
+            ],
+          } satisfies FilterField]}
+          filters={{ activeState: String(showInactive) }}
+          onFilterChange={(_, value) => setShowInactive(value === 'true')}
+          onClear={() => setShowInactive(true)}
+          hasActiveFilters={!showInactive}
+          align="left"
+        />
         <span className="text-xs font-medium text-sky-ink-2 tabular-nums">
           {t(`admin.subscriptionPage.packageCount_${packages.length !== 1 ? 'other' : 'one'}`, { count: packages.length })}
         </span>

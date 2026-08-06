@@ -7,6 +7,7 @@ import {
     Gem, Coins, AlertTriangle, CalendarClock, Activity,
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
+import PageHeader from "../../components/common/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { mentorDashboardApi } from "../../api/mentorDashboardApi";
 import SkyCard from "../../components/ui/card/SkyCard";
@@ -283,43 +284,43 @@ export default function MentorDashboard() {
             <PageMeta title="Mentor Dashboard — HabitEvolve" description="Your guild command centre" />
 
             {/* Header — Welcome + Resource Stash */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
-                <div>
-                    <span className="sky-badge sky-badge-epic mb-2.5">
-                        {t("mentor.dashboard.badge")}
-                    </span>
-                    <h1 className="font-display text-sky-h1 font-semibold text-sky-ink tracking-[-0.015em]">
-                        Chào mừng Quản trò {user?.username ?? ""} trở lại Sảnh chỉ huy!
-                    </h1>
-                    {guildStatus && (
-                        <p className="text-sky-body font-medium text-sky-ink-2 mt-1.5">
-                            Đang dẫn dắt <span className="font-display font-semibold tabular-nums text-sky-violet-deep">{guildStatus.totalManagedParties}</span> Party với{" "}
-                            <span className="font-display font-semibold tabular-nums text-sky-violet-deep">{guildStatus.totalPartyMembers}</span> học viên
-                        </p>
-                    )}
-                </div>
-                <div className="flex items-center gap-2.5 shrink-0">
-                    {resourceStash && (
-                        <>
-                            <ResourceBadge
-                                icon={<Gem className="w-4 h-4" />}
-                                value={resourceStash.gemsBalance}
-                                label="Gems"
-                                tint="bg-sky-violet/18 text-sky-violet-deep"
-                            />
-                            <ResourceBadge
-                                icon={<Coins className="w-4 h-4" />}
-                                value={resourceStash.mGoldBalance}
-                                label="M-Gold"
-                                tint="bg-sky-peach/25 text-sky-peach-deep"
-                            />
-                        </>
-                    )}
-                    <SkyButton type="button" variant="secondary" size="icon" onClick={fetchSummary} disabled={loading} title="Refresh">
-                        <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                    </SkyButton>
-                </div>
-            </div>
+            <PageHeader
+                className="mb-8 items-start"
+                icon={<Swords className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
+                tone="violet"
+                size="h1"
+                eyebrow={<span className="sky-badge sky-badge-epic">{t("mentor.dashboard.badge")}</span>}
+                title={`Chào mừng Quản trò ${user?.username ?? ""} trở lại Sảnh chỉ huy!`}
+                description={guildStatus && (
+                    <>
+                        Đang dẫn dắt <span className="font-display font-semibold tabular-nums text-sky-violet-deep">{guildStatus.totalManagedParties}</span> Party với{" "}
+                        <span className="font-display font-semibold tabular-nums text-sky-violet-deep">{guildStatus.totalPartyMembers}</span> học viên
+                    </>
+                )}
+                actions={
+                    <>
+                        {resourceStash && (
+                            <>
+                                <ResourceBadge
+                                    icon={<Gem className="w-4 h-4" />}
+                                    value={resourceStash.gemsBalance}
+                                    label="Gems"
+                                    tint="bg-sky-violet/18 text-sky-violet-deep"
+                                />
+                                <ResourceBadge
+                                    icon={<Coins className="w-4 h-4" />}
+                                    value={resourceStash.mGoldBalance}
+                                    label="M-Gold"
+                                    tint="bg-sky-peach/25 text-sky-peach-deep"
+                                />
+                            </>
+                        )}
+                        <SkyButton type="button" variant="secondary" size="icon" onClick={fetchSummary} disabled={loading} title="Refresh">
+                            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                        </SkyButton>
+                    </>
+                }
+            />
 
             {error && (
                 <div className="relative overflow-hidden sky-glass mb-8 rounded-sky-card pl-5 pr-4 py-4 flex items-center justify-between gap-4">

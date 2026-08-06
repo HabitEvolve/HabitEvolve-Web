@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   Swords, Plus, Pencil, Settings2, X, Save,
-  ChevronLeft, ChevronRight, Loader2, Filter, Users,
+  ChevronLeft, ChevronRight, Loader2, Users,
   CalendarDays, Trash2, CalendarClock,
   Upload, Archive, AlertTriangle, CheckCircle2,
-  ScrollText, Package, Leaf, Sword, Flame, Shield, Medal, Crown,
+  Package, Leaf, Sword, Flame, Shield, Medal, Crown,
   Star, Trophy, Zap, Activity, Coins, CalendarRange, Clock,
   BookOpen, Skull, Check,
 } from "lucide-react";
@@ -14,16 +14,19 @@ import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { adminBossApi } from "../api/adminBossApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import StatusBadge from "../components/common/StatusBadge";
+import { FilterDropdown } from "../components/common/FilterDropdown";
+import type { FilterField } from "../hooks/useTableFilters";
 import type {
   BossTemplateDto,
   CreateBossTemplatePayload,
   BossModeInput,
   UpdateBossTemplatePayload,
   BossModePayload,
-  BossTemplateStatus,
   BossModeType,
   PackageTier,
   RewardTierType,
@@ -103,21 +106,7 @@ const SwordsIcon = ({ size = 20 }: { size?: number }) => <Swords width={size} he
 const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
-// Each status carries a glyph as well as a hue, so the lifecycle stays readable
-// without colour: a draft is still being written, published is the only teal
-// state on the screen, archived is boxed away.
-const STATUS_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
-  "":        { cls: "sky-badge-neutral", Icon: Filter },
-  Draft:     { cls: "sky-badge-pending", Icon: ScrollText },
-  Published: { cls: "sky-badge-success", Icon: Check },
-  Archived:  { cls: "sky-badge-neutral", Icon: Package },
-};
 const STATUS_KEYS = ["", "Draft", "Published", "Archived"] as const;
-
-const StatusBadge = ({ status }: { status: BossTemplateStatus }) => {
-  const c = STATUS_CFG[status] ?? STATUS_CFG.Draft;
-  return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3.5 h-3.5 shrink-0" /> {status}</span>;
-};
 
 // Difficulty is a temperature ramp, not a good/bad axis: pale cool → saturated
 // cool → hot, with a distinct glyph at each step. teal is deliberately absent —
@@ -1002,50 +991,33 @@ export default function AdminBossManagement() {
 
       <div className="space-y-6 p-1">
         {/* Page Header */}
-        <div className="sky-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-violet/12 text-sky-violet-deep shrink-0">
-              <SwordsIcon size={22} />
-            </span>
-            <div>
-              <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">{t("admin.bossManagement.pageTitle")}</h1>
-              <p className="text-sm text-sky-ink-2 font-medium mt-0.5">{t("admin.bossManagement.subtitle")}</p>
-            </div>
-          </div>
-          <SkyButton type="button" variant="primary" onClick={() => setEditingTemplate("new")} className="shrink-0">
-            <Plus className="w-3.5 h-3.5" /> {t("admin.bossManagement.newTemplate")}
-          </SkyButton>
-        </div>
+        <PageHeader
+          icon={<SwordsIcon size={22} />}
+          tone="violet"
+          title={t("admin.bossManagement.pageTitle")}
+          description={t("admin.bossManagement.subtitle")}
+          actions={
+            <SkyButton type="button" variant="primary" onClick={() => setEditingTemplate("new")} className="shrink-0">
+              <Plus className="w-3.5 h-3.5" /> {t("admin.bossManagement.newTemplate")}
+            </SkyButton>
+          }
+        />
 
         {/* Filter Bar */}
         <SkyCard variant="admin" className="p-4 flex flex-wrap items-center gap-3">
-          <span className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5 shrink-0">
-            <Filter className="w-3.5 h-3.5" /> {t("admin.bossManagement.filterStatus")}
-          </span>
-          {/* A single recessed track rather than four floating pills: the group
-              reads as one control and only the chosen segment is allowed to lift. */}
-          <div className="flex flex-wrap gap-1 rounded-sky-chip bg-white/42 ring-1 ring-white/70 p-1">
-            {STATUS_KEYS.map(key => {
-              const cfg = STATUS_CFG[key];
-              const label = key === "" ? t("admin.bossManagement.filterAll") : key;
-              const on = statusFilter === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => handleStatusFilterChange(key)}
-                  className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs transition ${
-                    on
-                      ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white font-semibold shadow-sky-chip"
-                      : "text-sky-ink-2 font-medium hover:bg-white/70 hover:text-sky-ink"
-                  }`}
-                >
-                  <cfg.Icon className="w-3.5 h-3.5 shrink-0" /> {label}
-                </button>
-              );
-            })}
-          </div>
+          <FilterDropdown<{ status: string }>
+            fields={[{
+              key: "status",
+              label: "Status",
+              type: "select",
+              options: STATUS_KEYS.filter(key => key !== "").map(key => ({ label: key, value: key })),
+            } satisfies FilterField]}
+            filters={{ status: statusFilter }}
+            onFilterChange={(_, value) => handleStatusFilterChange(value)}
+            onClear={() => handleStatusFilterChange("")}
+            hasActiveFilters={statusFilter !== ""}
+            align="left"
+          />
           <SkyButton type="button" variant="secondary" size="sm" onClick={fetchTemplates} disabled={loading} className="ml-auto">
             {loading ? <><Spinner size={13} /> {t("admin.bossManagement.loading")}</> : t("admin.bossManagement.refresh")}
           </SkyButton>

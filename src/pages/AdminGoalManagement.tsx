@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import { useAlert } from "../context/AlertContext";
 import { adminGoalApi } from "../api/adminGoalApi";
 import { useTableFilters } from "../hooks/useTableFilters";
-import { TableFilterBar } from "../components/common/TableFilterBar";
+import { FilterDropdown } from "../components/common/FilterDropdown";
 import { DynamicIcon } from "../components/ui/DynamicIcon";
 import { useNavigate } from "react-router";
 import type { FilterField } from "../hooks/useTableFilters";
@@ -506,25 +507,28 @@ export default function AdminGoalManagement() {
       {/* ════════════════════ TAB 1: CATEGORIES ════════════════════════ */}
       {activeTab === "categories" && (
         <div className="space-y-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="font-display text-2xl font-semibold text-sky-ink">Goal Categories</h1>
-              <p className="text-sm text-sky-ink-2 mt-0.5">Organise habits into top-level categories.</p>
-            </div>
-            <button type="button" onClick={openCreateCat} className={`${btnBase} ${btnPrimary} whitespace-nowrap`}>
-              <PlusIcon /> Create Category
-            </button>
-          </div>
+          <PageHeader
+            icon={<FolderIcon />}
+            title="Goal Categories"
+            description="Organise habits into top-level categories."
+            actions={
+              <button type="button" onClick={openCreateCat} className={`${btnBase} ${btnPrimary} whitespace-nowrap`}>
+                <PlusIcon /> Create Category
+              </button>
+            }
+          />
 
           <TableCard loading={catLoading} count={categories.length} title="All Categories" icon={<FolderIcon />}>
-            {/* Filter bar — adding a new filter = one entry in CAT_FILTER_FIELDS */}
-            <TableFilterBar<CatFilters>
-              fields={CAT_FILTER_FIELDS}
-              filters={catFilters}
-              onFilterChange={setCatFilter}
-              onClear={clearCatFilters}
-              hasActiveFilters={catHasActiveFilters}
-            />
+            {/* Filter dropdown — adding a new filter = one entry in CAT_FILTER_FIELDS */}
+            <div className="flex justify-end px-5 py-3 border-b border-white/60 bg-white/35">
+              <FilterDropdown<CatFilters>
+                fields={CAT_FILTER_FIELDS}
+                filters={catFilters}
+                onFilterChange={setCatFilter}
+                onClear={clearCatFilters}
+                hasActiveFilters={catHasActiveFilters}
+              />
+            </div>
 
             {catError && (
               <div className={errorBanner}>
@@ -611,25 +615,28 @@ export default function AdminGoalManagement() {
       {/* ════════════════════ TAB 2: GOALS ═════════════════════════════ */}
       {activeTab === "goals" && (
         <div className="space-y-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="font-display text-2xl font-semibold text-sky-ink">Goals</h1>
-              <p className="text-sm text-sky-ink-2 mt-0.5">Define individual habit goals within categories.</p>
-            </div>
-            <button type="button" onClick={openCreateGoal} className={`${btnBase} ${btnPrimary} whitespace-nowrap`}>
-              <PlusIcon /> Create Goal
-            </button>
-          </div>
+          <PageHeader
+            icon={<TargetIcon />}
+            title="Goals"
+            description="Define individual habit goals within categories."
+            actions={
+              <button type="button" onClick={openCreateGoal} className={`${btnBase} ${btnPrimary} whitespace-nowrap`}>
+                <PlusIcon /> Create Goal
+              </button>
+            }
+          />
 
           <TableCard loading={goalLoading} count={goals.length} title="All Goals" icon={<TargetIcon />}>
-            {/* Filter bar — goalFilterFields computed above with dynamic category options */}
-            <TableFilterBar<GoalFilters>
-              fields={goalFilterFields}
-              filters={goalFilters}
-              onFilterChange={setGoalFilter}
-              onClear={clearGoalFilters}
-              hasActiveFilters={goalHasActiveFilters}
-            />
+            {/* Filter dropdown — goalFilterFields computed above with dynamic category options */}
+            <div className="flex justify-end px-5 py-3 border-b border-white/60 bg-white/35">
+              <FilterDropdown<GoalFilters>
+                fields={goalFilterFields}
+                filters={goalFilters}
+                onFilterChange={setGoalFilter}
+                onClear={clearGoalFilters}
+                hasActiveFilters={goalHasActiveFilters}
+              />
+            </div>
 
             {goalError && (
               <div className={errorBanner}>

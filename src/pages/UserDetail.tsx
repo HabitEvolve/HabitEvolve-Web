@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
+import PageHeader from "../components/common/PageHeader";
 import Pagination from "../components/common/SkyPagination";
 import adminUserApi from "../api/adminUserApi";
 import playerDataApi from "../api/playerDataApi";
@@ -20,6 +21,7 @@ import { WalletDto, DailyStreakDto, UserProofDto } from "../types/userDetail.typ
 import { UserQuestDto, UserQuestsDto, UserStatsDto, UserActivityDto } from "../types/userWorkspace.types";
 import type { AuditLogDto } from "../types/adminAudit.types";
 import { UserAvatar, StatusBadge, RoleBadge, RolesEditor, formatDate } from "./UserManagement";
+import SharedStatusBadge, { type StatusTone } from "../components/common/StatusBadge";
 import { skyChartBase, skyAreaFill, skyBarPlotOptions, SKY_SEMANTIC, SKY } from "../utils/skyChart";
 
 const AUDIT_PAGE_SIZE = 10;
@@ -31,35 +33,34 @@ const fmtDateTime = (d: string) =>
   new Date(d).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 // ── PROOF STATUS BADGE (small, for the Overview proof gallery) ──────────────
-// Approved is teal — never green. AiChecking rides the neutral cool accent
-// because "a machine is looking at it" is a state of progress, not a verdict.
-const PROOF_STATUS_STYLES: Record<string, string> = {
-  Approved: "sky-badge-success",
-  Rejected: "sky-badge-danger",
-  Pending: "sky-badge-pending",
-  Suspicious: "sky-badge-pending",
-  AiChecking: "sky-badge-info",
+// Delegates to the shared lifecycle StatusBadge. "Suspicious" isn't in its
+// default map (falls back neutral) and "AiChecking" reads info/deep here
+// rather than the shared default peach/pending, so both get pinned overrides
+// to keep the original tones.
+const PROOF_STATUS_OVERRIDES: Record<string, StatusTone> = {
+  Suspicious: "pending",
+  AiChecking: "info",
 };
 const ProofStatusBadge = ({ status }: { status: string }) => (
-  <span className={`sky-badge ${PROOF_STATUS_STYLES[status] ?? "sky-badge-neutral"} text-[10px] px-2 py-0.5 shadow-[0_1px_4px_rgba(36,52,77,0.18)]`}>
-    {status}
-  </span>
+  <SharedStatusBadge
+    status={status}
+    toneOverride={PROOF_STATUS_OVERRIDES[status]}
+    className="shadow-[0_1px_4px_rgba(36,52,77,0.18)]"
+  />
 );
 
 // ── QUEST STATUS BADGE ───────────────────────────────────────────────────────
-const QUEST_STATUS_STYLES: Record<string, string> = {
-  InProgress: "sky-badge-info",
-  Submitted: "sky-badge-pending",
-  Approved: "sky-badge-success",
-  Rejected: "sky-badge-danger",
-  Expired: "sky-badge-neutral",
-  Failed: "sky-badge-danger",
-  NotStarted: "sky-badge-neutral",
+// Same shared delegation. InProgress/Expired/NotStarted read differently here
+// than the shared map's defaults (info/neutral/neutral vs. pending/danger/
+// pending), so those three get pinned overrides — matches the same quest
+// status semantics used on AdminPartyDetail.tsx.
+const QUEST_STATUS_OVERRIDES: Record<string, StatusTone> = {
+  InProgress: "info",
+  Expired: "neutral",
+  NotStarted: "neutral",
 };
 const QuestStatusBadge = ({ status }: { status: string }) => (
-  <span className={`sky-badge ${QUEST_STATUS_STYLES[status] ?? "sky-badge-neutral"}`}>
-    {status}
-  </span>
+  <SharedStatusBadge status={status} toneOverride={QUEST_STATUS_OVERRIDES[status]} />
 );
 // Difficulty is a cool→warm ramp, not a good/bad axis — HARD borrows the warm
 // "damage" accent rather than destructive rose.
@@ -767,9 +768,8 @@ export default function UserDetail() {
         ) : (
           <div className="sky-glass-admin rounded-sky-card p-5 flex flex-wrap items-center gap-4">
             <div className="relative"><UserAvatar username={user.username} userId={user.userId} size="lg" /></div>
-            <div className="relative min-w-0">
-              <h1 className="font-display text-xl font-semibold text-sky-ink tracking-[-0.01em]">{user.username}</h1>
-              <p className="text-sm font-medium text-sky-ink-2 mt-0.5">{user.email}</p>
+            <div className="relative min-w-0 flex-1">
+              <PageHeader title={user.username} description={user.email} />
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <StatusBadge status={user.status} />
                 {user.roles.map((r) => <RoleBadge key={r} role={r} />)}

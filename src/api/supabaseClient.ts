@@ -1,6 +1,5 @@
 // src/api/supabaseClient.ts
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { mockSupabase } from './supabaseClient.mock';
 
 // Vite only reads .env from the project root (default envDir) — a .env inside
 // src/ is NOT picked up. Copy .env.example to ./.env at the repo root.
@@ -16,7 +15,6 @@ const resolveClient = (): SupabaseClient => {
         console.info(
             '[supabase] MOCK mode (VITE_USE_MOCK_SUPABASE=true) — no requests will be sent to Supabase.',
         );
-        return mockSupabase as unknown as SupabaseClient;
     }
 
     if (!supabaseUrl || !supabaseAnonKey) {

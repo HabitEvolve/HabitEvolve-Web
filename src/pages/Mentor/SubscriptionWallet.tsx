@@ -83,9 +83,8 @@ const GemIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 const QuotaHero = ({ value, caption, big }: { value: number | string; caption: string; big: boolean }) => (
     <div className="flex items-baseline gap-2">
         <span
-            className={`font-display font-semibold leading-none tabular-nums text-sky-ink ${
-                big ? "text-[2.5rem]" : "text-[2rem]"
-            }`}
+            className={`font-display font-semibold leading-none tabular-nums text-sky-ink ${big ? "text-[2.5rem]" : "text-[2rem]"
+                }`}
         >
             {value}
         </span>
@@ -205,9 +204,8 @@ const UsageBar = ({ label, used, max }: { label: string; used: number; max: numb
             <div className="flex items-baseline justify-between gap-2 mb-2">
                 <span className="text-xs font-semibold text-sky-ink truncate">{label}</span>
                 <span
-                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${
-                        critical ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
-                    }`}
+                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${critical ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
+                        }`}
                 >
                     {critical && <AlertTriangle className="w-3.5 h-3.5" />}
                     {used}
@@ -308,9 +306,8 @@ const TransactionLogbook = ({
                 return (
                     <div
                         key={tx.gemTransactionId}
-                        className={`group flex gap-4 py-3.5 px-2 -mx-2 rounded-sky-chip transition-colors duration-150 hover:bg-white/55 ${
-                            isLast ? "" : "border-b border-sky-ink/8"
-                        }`}
+                        className={`group flex gap-4 py-3.5 px-2 -mx-2 rounded-sky-chip transition-colors duration-150 hover:bg-white/55 ${isLast ? "" : "border-b border-sky-ink/8"
+                            }`}
                     >
                         <span className={`inline-grid place-items-center w-10 h-10 rounded-full shrink-0 ring-1 ring-white/70 ${meta.ring}`}>
                             {meta.icon}
@@ -436,7 +433,7 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 // Tier hues are a product axis, not a status one — peach for the popular tier,
 // violet (epic) for the top tier. Neither borrows teal/rose.
 const GEM_PACKAGES = [
-    { gems: 5000,  label: "Guild",  face: "bg-sky-peach/16",  accent: "text-sky-peach-deep",  badge: "POPULAR" },
+    { gems: 5000, label: "Guild", face: "bg-sky-peach/16", accent: "text-sky-peach-deep", badge: "POPULAR" },
     { gems: 10000, label: "Legend", face: "bg-sky-violet/14", accent: "text-sky-violet-deep", badge: "BEST VALUE" },
 ] as const;
 
@@ -561,11 +558,10 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                                 key={pkg.gems}
                                 aria-pressed={isSelected}
                                 onClick={() => selectPackage(pkg)}
-                                className={`relative text-left p-4 rounded-sky-chip ${pkg.face} transition-all duration-150 ${easeExpo} motion-safe:hover:-translate-y-px ${
-                                    isSelected
+                                className={`relative text-left p-4 rounded-sky-chip ${pkg.face} transition-all duration-150 ${easeExpo} motion-safe:hover:-translate-y-px ${isSelected
                                         ? "ring-2 ring-sky-deep shadow-sky-chip"
                                         : "ring-1 ring-white/70 hover:ring-sky-deep/35"
-                                }`}
+                                    }`}
                             >
                                 {/* Selection is not colour-only: the ring is joined by a tick. */}
                                 {isSelected && (
@@ -597,11 +593,10 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                         {t("mentor.subscriptionWallet.customAmount", "Or enter a custom amount")}
                     </label>
                     <div
-                        className={`relative rounded-sky-chip bg-white/60 transition-all duration-150 ${
-                            !selected && customAmount
+                        className={`relative rounded-sky-chip bg-white/60 transition-all duration-150 ${!selected && customAmount
                                 ? "ring-2 ring-sky-deep shadow-sky-chip"
                                 : "ring-1 ring-white/80"
-                        }`}
+                            }`}
                     >
                         <input
                             type="number"
@@ -632,11 +627,10 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                                 key={m}
                                 aria-pressed={isOn}
                                 onClick={() => setMethod(m)}
-                                className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-full font-semibold text-xs transition-all duration-150 ${easeExpo} ${
-                                    isOn
+                                className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-full font-semibold text-xs transition-all duration-150 ${easeExpo} ${isOn
                                         ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
                                         : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
-                                }`}
+                                    }`}
                             >
                                 {m === 'SEPAY' ? <CreditCard className="w-3.5 h-3.5" /> : <FlaskConical className="w-3.5 h-3.5" />}
                                 {m === 'SEPAY' ? 'SePay (Real)' : 'DEMO (Dev)'}
@@ -1060,18 +1054,17 @@ export default function SubscriptionWallet() {
                             <SkyCard
                                 key={pkg.packageId}
                                 variant="mentor"
-                                className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${
-                                    isFeatured
+                                className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${isFeatured
                                         ? // The featured tier physically outweighs its neighbours:
-                                          // taller box, violet ring, deeper shadow — a lift that
-                                          // survives at rest rather than only on hover.
-                                          "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
+                                        // taller box, violet ring, deeper shadow — a lift that
+                                        // survives at rest rather than only on hover.
+                                        "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
                                         : isCurrent
-                                          ? "ring-1 ring-sky-teal/35"
-                                          : // Unfeatured tiers recede so the featured one has
+                                            ? "ring-1 ring-sky-teal/35"
+                                            : // Unfeatured tiers recede so the featured one has
                                             // something to be louder than.
                                             "ring-1 ring-white/60 opacity-[0.94]"
-                                }`}
+                                    }`}
                             >
                                 {/* Current plan gets three cues: a teal rail, a teal wash
                                     and the badge — never the tint alone. */}
@@ -1095,9 +1088,8 @@ export default function SubscriptionWallet() {
                                     room for two. */}
                                 {(isCurrent || isFeatured) && (
                                     <span
-                                        className={`absolute top-3 right-3 sky-badge ${
-                                            isCurrent ? "sky-badge-success" : "sky-badge-epic"
-                                        }`}
+                                        className={`absolute top-3 right-3 sky-badge ${isCurrent ? "sky-badge-success" : "sky-badge-epic"
+                                            }`}
                                     >
                                         {isCurrent ? <Check className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
                                         {isCurrent
@@ -1111,9 +1103,8 @@ export default function SubscriptionWallet() {
                                     between cards in the same row. */}
                                 <div className="relative pr-24">
                                     <h3
-                                        className={`font-display font-semibold text-sky-ink ${
-                                            isFeatured ? "text-sky-h2" : "text-sky-h3"
-                                        }`}
+                                        className={`font-display font-semibold text-sky-ink ${isFeatured ? "text-sky-h2" : "text-sky-h3"
+                                            }`}
                                     >
                                         {pkg.name}
                                     </h3>
@@ -1125,9 +1116,8 @@ export default function SubscriptionWallet() {
                                     featured. */}
                                 <div className="relative mt-4 flex items-baseline gap-1.5">
                                     <span
-                                        className={`font-display font-semibold leading-none text-sky-peach-deep tabular-nums ${
-                                            isFeatured ? "text-[2.75rem]" : "text-[2rem]"
-                                        }`}
+                                        className={`font-display font-semibold leading-none text-sky-peach-deep tabular-nums ${isFeatured ? "text-[2.75rem]" : "text-[2rem]"
+                                            }`}
                                     >
                                         {pkg.price.toLocaleString()}
                                     </span>

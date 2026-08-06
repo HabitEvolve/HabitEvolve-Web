@@ -1030,13 +1030,20 @@ export default function SubscriptionWallet() {
 
             {/* Available Packages */}
             <div>
-                <p className={eyebrow}>{t("mentor.subscriptionWallet.gemStore")}</p>
-                <h2 className="font-display text-sky-h2 font-semibold text-sky-ink mb-4 mt-1">{t("mentor.subscriptionWallet.availablePlans")}</h2>
-                {/* items-end, not items-stretch: the featured card is deliberately
-                    taller (pb-8, -mt-2), and stretching the row would erase the very
-                    size difference that marks it. Bottom-aligning instead keeps every
-                    CTA on one line while letting the featured card grow upward. */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-end sky-stagger">
+                {/* Eyebrow was "Gem Store", which belongs to the top-up modal, not to a
+                    list of plans — it told the mentor they were somewhere they weren't. */}
+                <p className={eyebrow}>{t("mentor.subscriptionWallet.plansEyebrow")}</p>
+                <h2 className="font-display text-sky-h2 font-semibold text-sky-ink mt-1">{t("mentor.subscriptionWallet.availablePlans")}</h2>
+                <p className="mb-8 mt-1 text-sky-small font-medium text-sky-ink-2">
+                    {t("mentor.subscriptionWallet.plansHint")}
+                </p>
+                {/* items-stretch keeps all three the same height so the grid stays
+                    tidy; the featured card then breaks out of that row with -my-3,
+                    growing equally above and below. Doing it with negative margin
+                    rather than align-end is deliberate — the cards carry h-full, and
+                    height:100% resolves against the full grid area, so align-end
+                    would have been silently cancelled. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-stretch sky-stagger">
                     {packages.map((pkg) => {
                         const isCurrent = activeSub?.package.packageId === pkg.packageId;
                         const isFeatured = !isCurrent && pkg.packageId === featuredPkgId;
@@ -1047,9 +1054,9 @@ export default function SubscriptionWallet() {
                                 className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${
                                     isFeatured
                                         ? // The featured tier physically outweighs its neighbours:
-                                          // taller box, violet ring, deeper shadow, a lift that
+                                          // taller box, violet ring, deeper shadow — a lift that
                                           // survives at rest rather than only on hover.
-                                          "z-10 pb-8 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-mt-2"
+                                          "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
                                         : isCurrent
                                           ? "ring-1 ring-sky-teal/35"
                                           : // Unfeatured tiers recede so the featured one has
@@ -1165,23 +1172,31 @@ export default function SubscriptionWallet() {
                                     )}
                                 </div>
 
-                                {/* Only the featured card carries a filled CTA — three
+                                {/* mt-auto lives on a wrapper, not the button: SkyButton
+                                    merges className through twMerge, so mt-auto and mt-6
+                                    would collide and one would be dropped. The wrapper
+                                    absorbs the flex push, the margin stays a plain gap.
+                                    Only the featured card carries a filled CTA — three
                                     primary buttons in a row is three cards asking equally
                                     loudly, which is no ask at all. */}
-                                <SkyButton
-                                    type="button"
-                                    variant={isCurrent || !isFeatured ? "secondary" : "primary"}
-                                    disabled={isCurrent}
-                                    onClick={() => setPurchasePkg(pkg)}
-                                    className="relative mt-6"
-                                >
-                                    {isCurrent ? t("mentor.subscriptionWallet.currentPlanBtn") : t("mentor.subscriptionWallet.buyUpgrade")}
-                                </SkyButton>
+                                <div className="relative mt-auto pt-6">
+                                    <SkyButton
+                                        type="button"
+                                        variant={isCurrent || !isFeatured ? "secondary" : "primary"}
+                                        disabled={isCurrent}
+                                        onClick={() => setPurchasePkg(pkg)}
+                                        className="w-full"
+                                    >
+                                        {isCurrent ? t("mentor.subscriptionWallet.currentPlanBtn") : t("mentor.subscriptionWallet.buyUpgrade")}
+                                    </SkyButton>
+                                </div>
                             </SkyCard>
                         );
                     })}
                     {packages.length === 0 && (
-                        <p className="col-span-3 text-sky-ink-3 font-medium text-center py-12">
+                        // col-span-full, not col-span-3: the grid is 1 column on mobile and
+                        // 2 at sm:, so a hardcoded 3 overflowed the row at both sizes.
+                        <p className="col-span-full text-sky-ink-3 font-medium text-center py-12">
                             {t("mentor.subscriptionWallet.noPackages")}
                         </p>
                     )}

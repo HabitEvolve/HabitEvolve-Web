@@ -425,6 +425,8 @@
       "noUsageData": "No usage data",
       "cancelSubscription": "Cancel Subscription",
       "availablePlans": "Available Plans",
+      "plansEyebrow": "UPGRADE",
+      "plansHint": "Prices are charged in gems for the full period.",
       "noPackages": "No packages available.",
       "currentBadge": "CURRENT",
       "freeBadge": "FREE",

@@ -425,6 +425,8 @@
       "noUsageData": "Không có dữ liệu sử dụng",
       "cancelSubscription": "Hủy Đăng Ký",
       "availablePlans": "Các Gói Có Sẵn",
+      "plansEyebrow": "NÂNG CẤP",
+      "plansHint": "Giá được tính bằng gem cho toàn bộ chu kỳ.",
       "noPackages": "Không có gói nào.",
       "currentBadge": "HIỆN TẠI",
       "freeBadge": "MIỄN PHÍ",

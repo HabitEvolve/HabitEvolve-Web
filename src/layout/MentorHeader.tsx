@@ -15,11 +15,11 @@ const chipBase =
   "border border-white/80 bg-white/55 backdrop-blur-[14px] shadow-sky-chip";
 const easeExpo = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 
-// Center nav + its toggles only appear from `xl:` up. At `lg:` the right
-// cluster (gem chip + language + theme + user dropdown w/ name) realistically
-// runs ~400px wide, which would collide with an absolutely-centered nav —
-// so the breakpoint is pushed out one step to guarantee no overlap, and the
-// hamburger overlay covers everything below it instead.
+// Center nav + its toggles appear from `lg:` up. They used to wait for `xl:`,
+// which left 1024–1279px hiding the three primary destinations behind a
+// hamburger on a screen with room to spare. The pills tighten (smaller text,
+// less padding, smaller gap) below `xl:` so all three still clear the right
+// cluster at 1024px instead of colliding with it.
 // Icons are lucide line glyphs, not the 64px pixel-art PNGs: at the 22px these
 // pills render they turned to mush, and the crisp stroke reads far better next
 // to Bricolage. The game art stays where it can be shown large.
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
 ] as const;
 
 const pillBase =
-  `group relative inline-flex items-center gap-2.5 px-6 py-3 rounded-sky-sm text-lg font-semibold whitespace-nowrap ` +
+  `group relative inline-flex items-center gap-2 px-4 xl:px-6 py-2.5 rounded-sky-sm text-base xl:text-lg font-semibold whitespace-nowrap ` +
   `transition-all duration-150 ${easeExpo}`;
 
 const GemBalance = () => {
@@ -90,7 +90,7 @@ const MentorHeader: React.FC = () => {
 
       {/* CENTER — 3 chunky pill nav links, absolutely centered so left/right weight can't push them off-axis */}
       <nav
-        className="hidden xl:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-x-6"
+        className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-x-2 xl:gap-x-6"
         aria-label={t("nav.mentor.myParties")}
       >
         {NAV_ITEMS.map(({ to, labelKey, Icon }) => (
@@ -133,7 +133,7 @@ const MentorHeader: React.FC = () => {
         <div className="hidden sm:block">
           <GemBalance />
         </div>
-        <div className="hidden xl:flex items-center gap-x-3">
+        <div className="hidden lg:flex items-center gap-x-3">
           <LanguageToggle />
           <ThemeToggleInline />
         </div>
@@ -143,7 +143,7 @@ const MentorHeader: React.FC = () => {
           onClick={() => setNavOpen((v) => !v)}
           aria-label={navOpen ? t("header.closeNav") : t("header.openNav")}
           aria-expanded={navOpen}
-          className={`xl:hidden flex items-center justify-center w-10 h-10 shrink-0 ${chipBase} rounded-sky-sm text-sky-ink-2 hover:text-sky-ink active:scale-95 transition-all duration-150 ${easeExpo}`}
+          className={`lg:hidden flex items-center justify-center w-10 h-10 shrink-0 ${chipBase} rounded-sky-sm text-sky-ink-2 hover:text-sky-ink active:scale-95 transition-all duration-150 ${easeExpo}`}
         >
           {navOpen
             ? <X className="w-5 h-5" strokeWidth={2.4} aria-hidden="true" />
@@ -155,11 +155,15 @@ const MentorHeader: React.FC = () => {
       {navOpen && (
         <>
           <div
-            className="fixed inset-0 top-24 bg-sky-ink/45 backdrop-blur-[18px] z-30 xl:hidden"
+            className="fixed inset-0 top-24 bg-sky-ink/45 backdrop-blur-[18px] z-40 lg:hidden"
             onClick={() => setNavOpen(false)}
           />
+          {/* Sits in the main area as a lifted card rather than a strip welded to
+              the ribbon: at bg-white/60 the dashboard read straight through the
+              links. sky-glass-menu gives it a near-opaque floor, and z-50 clears
+              both the scrim and the sticky header (both z-40). */}
           <div
-            className="nav-overlay-in xl:hidden absolute top-full left-0 z-40 w-full border-b border-white/70 bg-white/60 backdrop-blur-[18px] backdrop-saturate-150 px-4 py-4 space-y-2 shadow-[0_14px_30px_-18px_rgba(36,52,77,0.32)]"
+            className="nav-overlay-in lg:hidden absolute top-full left-0 right-0 z-50 mx-3 mt-3 sky-glass-menu p-3 space-y-1.5"
           >
             {NAV_ITEMS.map(({ to, labelKey, Icon }) => (
               <NavLink
@@ -172,7 +176,7 @@ const MentorHeader: React.FC = () => {
                     `transition-all duration-150 ${easeExpo}`,
                     isActive
                       ? `bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25`
-                      : `text-sky-ink-2 hover:bg-white/55 hover:text-sky-ink`,
+                      : `text-sky-ink hover:bg-sky-violet/10 hover:text-sky-violet-deep`,
                   ].join(" ")
                 }
               >

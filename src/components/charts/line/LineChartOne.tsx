@@ -1,64 +1,47 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { SKY, skyChartBase, skyAreaFill } from "../../../utils/skyChart";
 
 export default function LineChartOne() {
+  // Palette + typography come from utils/skyChart — the two series are the cool
+  // primary and its lighter sibling, so neither reads as a status colour.
   const options: ApexOptions = {
+    ...skyChartBase,
     legend: {
+      ...skyChartBase.legend,
       show: false, // Hide legend
       position: "top",
       horizontalAlign: "left",
     },
-    colors: ["#465FFF", "#9CB9FF"], // Define line colors
+    colors: [SKY.deep, SKY.sky1], // Define line colors
     chart: {
-      fontFamily: "Space Grotesk, sans-serif",
+      ...skyChartBase.chart,
       height: 310,
       type: "line", // Set the chart type to 'line'
-      toolbar: {
-        show: false, // Hide chart toolbar
-      },
     },
     stroke: {
-      curve: "straight", // Define the line style (straight, smooth, or step)
+      curve: "smooth", // Define the line style (straight, smooth, or step)
       width: [2, 2], // Line width for each dataset
     },
 
-    fill: {
-      type: "gradient",
-      gradient: {
-        opacityFrom: 0.55,
-        opacityTo: 0,
-      },
-    },
+    fill: skyAreaFill,
     markers: {
       size: 0, // Size of the marker points
-      strokeColors: "#fff", // Marker border color
+      strokeColors: SKY.white, // Marker border color
       strokeWidth: 2,
       hover: {
         size: 6, // Marker size on hover
       },
     },
-    grid: {
-      xaxis: {
-        lines: {
-          show: false, // Hide grid lines on x-axis
-        },
-      },
-      yaxis: {
-        lines: {
-          show: true, // Show grid lines on y-axis
-        },
-      },
-    },
-    dataLabels: {
-      enabled: false, // Disable data labels
-    },
     tooltip: {
+      ...skyChartBase.tooltip,
       enabled: true, // Enable tooltip
       x: {
         format: "dd MMM yyyy", // Format for x-axis tooltip
       },
     },
     xaxis: {
+      ...skyChartBase.xaxis,
       type: "category", // Category-based x-axis
       categories: [
         "Jan",
@@ -74,23 +57,12 @@ export default function LineChartOne() {
         "Nov",
         "Dec",
       ],
-      axisBorder: {
-        show: false, // Hide x-axis border
-      },
-      axisTicks: {
-        show: false, // Hide x-axis ticks
-      },
       tooltip: {
         enabled: false, // Disable tooltip for x-axis points
       },
     },
     yaxis: {
-      labels: {
-        style: {
-          fontSize: "12px", // Adjust font size for y-axis labels
-          colors: ["#6B7280"], // Color of the labels
-        },
-      },
+      ...skyChartBase.yaxis,
       title: {
         text: "", // Remove y-axis title
         style: {

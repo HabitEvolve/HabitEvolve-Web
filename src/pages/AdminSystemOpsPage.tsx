@@ -5,6 +5,7 @@ import {
     Zap, Flame, RotateCcw, Bell, User, Loader2,
     CheckCircle2, AlertCircle, ShieldAlert, HeartPulse,
     TrendingDown, TrendingUp, Search, X, Swords,
+    Check, Users, Info, Skull, type LucideIcon,
 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -58,17 +59,115 @@ function useDebouncedUserSearch(query: string) {
     return { results, searching };
 }
 
-const pickerInputCls = [
-    "w-full rounded-sky-chip border border-sky-surf-border bg-white pl-9 pr-3 py-2",
-    "text-sm font-medium text-sky-ink",
-    "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20",
+// ── SHARED SKY-PASTEL ATOMS ─────────────────────────────────────────────────
+// This page is a wall of operator forms, so every field, label, panel header and
+// result banner is defined once here. Left to per-panel copies they drift within
+// a single screen — which is exactly what makes a console feel machine-generated.
+
+// Glass field, not a bordered box: the surface itself carries the affordance
+// (translucent fill + white hairline ring) and focus deepens the ring rather
+// than swapping a border colour.
+const fieldInputCls = [
+    "w-full rounded-sky-chip bg-white/70 ring-1 ring-white/80 px-3.5 py-2.5",
+    "text-sm font-medium text-sky-ink transition-shadow",
+    "focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3",
 ].join(" ");
 
-const fieldInputCls = [
-    "w-full rounded-sky-chip border border-sky-surf-border bg-white px-3 py-2",
-    "text-sm font-medium text-sky-ink",
-    "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20",
-].join(" ");
+const pickerInputCls = fieldInputCls.replace("px-3.5 py-2.5", "pl-10 pr-3.5 py-2.5");
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
+
+// Dropdown surface shared by all three pickers.
+const menuCls = "absolute z-20 mt-1.5 w-full rounded-sky-md bg-white/92 backdrop-blur-xl ring-1 ring-white/80 shadow-sky-glass max-h-48 overflow-y-auto p-1";
+const menuRowCls = "w-full text-left px-3 py-2 rounded-sky-chip text-sm transition-colors hover:bg-sky-deep/8";
+
+/** Selected-entity chip: the picker collapses into a confirmation, not a form field. */
+const pickedCls = "relative flex items-center justify-between gap-2 rounded-sky-chip bg-sky-deep/8 ring-1 ring-sky-deep/20 pl-4 pr-2 py-2 overflow-hidden";
+
+// Panel accent tones. These are a *taxonomy of what the panel does*, not a
+// severity ramp — so teal (success) and rose (destructive) are only handed to
+// the panels that genuinely mean those things (§4).
+type Tone = "deep" | "peach" | "teal" | "violet" | "rose";
+const TONE: Record<Tone, { wash: string; rail: string; chip: string }> = {
+    deep: { wash: "bg-sky-deep/8", rail: "bg-sky-deep", chip: "bg-sky-deep/12 ring-sky-deep/22 text-sky-deep" },
+    peach: { wash: "bg-sky-peach/14", rail: "bg-sky-peach", chip: "bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep" },
+    teal: { wash: "bg-sky-teal/10", rail: "bg-sky-teal", chip: "bg-sky-teal-bg ring-sky-teal/26 text-sky-teal" },
+    violet: { wash: "bg-sky-violet/10", rail: "bg-sky-violet", chip: "bg-sky-violet/14 ring-sky-violet/24 text-sky-violet-deep" },
+    rose: { wash: "bg-sky-rose/10", rail: "bg-sky-rose", chip: "bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep" },
+};
+
+/**
+ * Panel header — a tinted strip with a colour rail down its left edge and the
+ * icon in a matching chip. The rail is what lets an operator find a panel again
+ * at a glance in a page this dense, without the tint having to shout.
+ */
+function PanelHead({ Icon, title, subtitle, tone }: {
+    Icon: LucideIcon; title: string; subtitle: string; tone: Tone;
+}) {
+    const t = TONE[tone];
+    return (
+        <div className={`relative ${t.wash} px-5 py-4 flex items-center gap-3 border-b border-white/70 overflow-hidden`}>
+            <span aria-hidden="true" className={`absolute left-0 top-0 bottom-0 w-1.5 ${t.rail}`} />
+            <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${t.chip}`}>
+                <Icon className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+                <h3 className="font-display text-lg font-semibold text-sky-ink leading-tight truncate">{title}</h3>
+                <p className="text-xs font-medium text-sky-ink-3 truncate">{subtitle}</p>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Result / error banner. Every variant carries a rail, a glyph AND wording, so
+ * the outcome never rests on hue alone — teal for done, rose for failed, peach
+ * for "look at this before continuing".
+ */
+const NOTICE: Record<"success" | "danger" | "attention", { box: string; text: string; rail: string; Icon: LucideIcon }> = {
+    success: { box: "bg-sky-teal/10 ring-sky-teal/26", text: "text-sky-teal", rail: "bg-sky-teal", Icon: CheckCircle2 },
+    danger: { box: "bg-sky-rose/10 ring-sky-rose/26", text: "text-sky-rose-deep", rail: "bg-sky-rose", Icon: AlertCircle },
+    attention: { box: "bg-sky-peach/16 ring-sky-peach/30", text: "text-sky-peach-deep", rail: "bg-sky-peach", Icon: Info },
+};
+
+function Notice({ variant, title, children }: {
+    variant: keyof typeof NOTICE; title?: string; children?: React.ReactNode;
+}) {
+    const n = NOTICE[variant];
+    const { Icon } = n;
+    return (
+        <div className={`relative overflow-hidden rounded-sky-chip ring-1 ${n.box} pl-4 pr-4 py-3`}>
+            <span aria-hidden="true" className={`absolute left-0 top-0 bottom-0 w-1 ${n.rail}`} />
+            {title && (
+                <div className={`flex items-center gap-2 ${n.text}`}>
+                    <Icon className="w-4 h-4 shrink-0" strokeWidth={2.4} aria-hidden="true" />
+                    <span className="text-sm font-semibold">{title}</span>
+                </div>
+            )}
+            {children && <div className={title ? "mt-2" : ""}>{children}</div>}
+        </div>
+    );
+}
+
+/** Section rule — hairline, centred label, no heavy divider. */
+function SectionRule({ label }: { label: string }) {
+    return (
+        <div className="flex items-center gap-3 mb-5">
+            <span aria-hidden="true" className="h-px flex-1 bg-linear-to-r from-transparent to-sky-ink/14" />
+            <span className={`${eyebrow} px-1`}>{label}</span>
+            <span aria-hidden="true" className="h-px flex-1 bg-linear-to-l from-transparent to-sky-ink/14" />
+        </div>
+    );
+}
+
+/** Key/value read-out used inside result banners. */
+const kv = "text-xs font-medium text-sky-ink-2";
+const kvKey = "font-semibold text-sky-ink-3";
+
+/** Segmented-control button shared by the Target and Decision pickers. */
+const segBase = "relative inline-flex items-center justify-center gap-1.5 rounded-sky-chip text-xs font-semibold transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)]";
+const segOff = "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink";
 
 // ── User Picker (single-select) ─────────────────────────────────────────────
 function UserPicker({
@@ -84,12 +183,13 @@ function UserPicker({
 
     if (value) {
         return (
-            <div className="flex items-center justify-between gap-2 rounded-sky-chip border border-sky-surf-border px-3 py-2 bg-blue-50">
+            <div className={pickedCls}>
+                <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />
                 <div className="min-w-0">
-                    <p className="text-sm font-bold text-sky-ink truncate">{value.username}</p>
+                    <p className="text-sm font-semibold text-sky-ink truncate">{value.username}</p>
                     <p className="text-xs text-sky-ink-3 truncate">{value.email}</p>
                 </div>
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => onChange(null)} className="w-6 h-6 shrink-0">
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => onChange(null)} className="w-7 h-7 shrink-0">
                     <X className="w-3.5 h-3.5" />
                 </SkyButton>
             </div>
@@ -99,7 +199,7 @@ function UserPicker({
     return (
         <div className="relative">
             <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-sky-ink-3" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
                 <input
                     value={query}
                     onChange={e => { setQuery(e.target.value); setOpen(true); }}
@@ -110,21 +210,21 @@ function UserPicker({
                 />
             </div>
             {open && query.trim() && (
-                <div className="absolute z-20 mt-1 w-full bg-white rounded-sky-chip border border-sky-surf-border shadow-sky-glass max-h-48 overflow-y-auto">
+                <div className={menuCls}>
                     {searching ? (
-                        <div className="px-3 py-2 text-xs text-sky-ink-3 flex items-center gap-2">
+                        <div className="px-3 py-2 text-xs font-medium text-sky-ink-3 flex items-center gap-2">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching...
                         </div>
                     ) : results.length === 0 ? (
-                        <div className="px-3 py-2 text-xs text-sky-ink-3">No users found.</div>
+                        <div className="px-3 py-2 text-xs font-medium text-sky-ink-3">No users found.</div>
                     ) : results.map(u => (
                         <button
                             type="button"
                             key={u.userId}
                             onMouseDown={() => { onChange(u); setQuery(""); setOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-warning-50 border-b border-gray-100 last:border-0"
+                            className={menuRowCls}
                         >
-                            <div className="font-bold text-sky-ink">{u.username}</div>
+                            <div className="font-semibold text-sky-ink">{u.username}</div>
                             <div className="text-xs text-sky-ink-3">{u.email}</div>
                         </button>
                     ))}
@@ -161,15 +261,16 @@ function UserMultiPicker({
                     {value.map(u => (
                         <span
                             key={u.userId}
-                            className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-sky-chip border border-sky-surf-border bg-blue-50 text-xs font-bold text-sky-ink"
+                            className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full bg-sky-deep/10 ring-1 ring-sky-deep/20 text-xs font-semibold text-sky-ink"
                         >
                             {u.username}
                             <button
                                 type="button"
                                 onClick={() => removeUser(u.userId)}
-                                className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/10"
+                                aria-label={`Remove ${u.username}`}
+                                className="w-5 h-5 grid place-items-center rounded-full text-sky-ink-2 hover:bg-sky-ink/12 hover:text-sky-ink transition-colors"
                             >
-                                <X className="w-3 h-3" />
+                                <X className="w-3 h-3" strokeWidth={2.6} />
                             </button>
                         </span>
                     ))}
@@ -177,7 +278,7 @@ function UserMultiPicker({
             )}
             <div className="relative">
                 <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-sky-ink-3" />
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
                     <input
                         value={query}
                         onChange={e => { setQuery(e.target.value); setOpen(true); }}
@@ -188,25 +289,32 @@ function UserMultiPicker({
                     />
                 </div>
                 {open && query.trim() && (
-                    <div className="absolute z-20 mt-1 w-full bg-white rounded-sky-chip border border-sky-surf-border shadow-sky-glass max-h-48 overflow-y-auto">
+                    <div className={menuCls}>
                         {searching ? (
-                            <div className="px-3 py-2 text-xs text-sky-ink-3 flex items-center gap-2">
+                            <div className="px-3 py-2 text-xs font-medium text-sky-ink-3 flex items-center gap-2">
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching...
                             </div>
                         ) : results.length === 0 ? (
-                            <div className="px-3 py-2 text-xs text-sky-ink-3">No users found.</div>
-                        ) : results.map(u => (
-                            <button
-                                type="button"
-                                key={u.userId}
-                                onMouseDown={() => addUser(u)}
-                                disabled={selectedIds.has(u.userId)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-warning-50 border-b border-gray-100 last:border-0 disabled:opacity-40"
-                            >
-                                <div className="font-bold text-sky-ink">{u.username}</div>
-                                <div className="text-xs text-sky-ink-3">{u.email}</div>
-                            </button>
-                        ))}
+                            <div className="px-3 py-2 text-xs font-medium text-sky-ink-3">No users found.</div>
+                        ) : results.map(u => {
+                            const already = selectedIds.has(u.userId);
+                            return (
+                                <button
+                                    type="button"
+                                    key={u.userId}
+                                    onMouseDown={() => addUser(u)}
+                                    disabled={already}
+                                    className={`${menuRowCls} disabled:opacity-45 disabled:hover:bg-transparent`}
+                                >
+                                    <div className="flex items-center gap-1.5 font-semibold text-sky-ink">
+                                        {/* Already-added rows say so with a tick, not just dimming. */}
+                                        {already && <Check className="w-3.5 h-3.5 shrink-0 text-sky-teal" strokeWidth={2.6} aria-hidden="true" />}
+                                        {u.username}
+                                    </div>
+                                    <div className="text-xs text-sky-ink-3">{u.email}</div>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -246,12 +354,13 @@ function PartyPicker({
 
     if (value) {
         return (
-            <div className="flex items-center justify-between gap-2 rounded-sky-chip border border-sky-surf-border px-3 py-2 bg-blue-50">
+            <div className={pickedCls}>
+                <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />
                 <div className="min-w-0">
-                    <p className="text-sm font-bold text-sky-ink truncate">{value.name}</p>
+                    <p className="text-sm font-semibold text-sky-ink truncate">{value.name}</p>
                     {value.status && <p className="text-xs text-sky-ink-3 truncate">{value.status}</p>}
                 </div>
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => onChange(null)} className="w-6 h-6 shrink-0">
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => onChange(null)} className="w-7 h-7 shrink-0">
                     <X className="w-3.5 h-3.5" />
                 </SkyButton>
             </div>
@@ -261,7 +370,7 @@ function PartyPicker({
     return (
         <div className="relative">
             <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-sky-ink-3" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
                 <input
                     value={query}
                     onChange={e => { setQuery(e.target.value); setOpen(true); }}
@@ -272,21 +381,21 @@ function PartyPicker({
                 />
             </div>
             {open && query.trim() && (
-                <div className="absolute z-20 mt-1 w-full bg-white rounded-sky-chip border border-sky-surf-border shadow-sky-glass max-h-48 overflow-y-auto">
+                <div className={menuCls}>
                     {searching ? (
-                        <div className="px-3 py-2 text-xs text-sky-ink-3 flex items-center gap-2">
+                        <div className="px-3 py-2 text-xs font-medium text-sky-ink-3 flex items-center gap-2">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching...
                         </div>
                     ) : results.length === 0 ? (
-                        <div className="px-3 py-2 text-xs text-sky-ink-3">No parties found.</div>
+                        <div className="px-3 py-2 text-xs font-medium text-sky-ink-3">No parties found.</div>
                     ) : results.map(p => (
                         <button
                             type="button"
                             key={p.partyId}
                             onMouseDown={() => { onChange(p); setQuery(""); setOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-warning-50 border-b border-gray-100 last:border-0"
+                            className={menuRowCls}
                         >
-                            <div className="font-bold text-sky-ink">{p.name}</div>
+                            <div className="font-semibold text-sky-ink">{p.name}</div>
                             {p.status && <div className="text-xs text-sky-ink-3">{p.status}</div>}
                         </button>
                     ))}
@@ -298,14 +407,14 @@ function PartyPicker({
 
 // ── Daily Task Panel ────────────────────────────────────────────────────────
 interface DailyTaskPanelProps {
-    icon: React.ReactNode;
+    Icon: LucideIcon;
     title: string;
     subtitle: string;
-    accentBg: string;
+    tone: Tone;
     onRun: (date?: string) => Promise<number>;
 }
 
-function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPanelProps) {
+function DailyTaskPanel({ Icon, title, subtitle, tone, onRun }: DailyTaskPanelProps) {
     const alert = useAlert();
     const [date, setDate] = useState("");
     const [running, setRunning] = useState(false);
@@ -327,16 +436,10 @@ function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPan
 
     return (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
-            <div className={`${accentBg} px-5 py-4 flex items-center gap-3 border-b border-gray-200`}>
-                {icon}
+            <PanelHead Icon={Icon} title={title} subtitle={subtitle} tone={tone} />
+            <div className="relative px-5 py-5 space-y-4">
                 <div>
-                    <h3 className="font-bold text-lg text-sky-ink">{title}</h3>
-                    <p className="text-xs font-medium text-sky-ink-3">{subtitle}</p>
-                </div>
-            </div>
-            <div className="bg-white px-5 py-5 space-y-4">
-                <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">
+                    <label className={fieldLabel}>
                         Date — optional, defaults to today
                     </label>
                     <input
@@ -351,12 +454,14 @@ function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPan
                     {running ? "Running..." : "Run Now"}
                 </SkyButton>
                 {result !== null && (
-                    <div className="flex items-center gap-3 bg-success-100 rounded-sky-chip px-4 py-3">
-                        <CheckCircle2 className="w-5 h-5 text-success-700 shrink-0" />
-                        <span className="text-sm font-bold text-success-800">
-                            Done — <span className="text-xl">{result}</span> record(s) affected
-                        </span>
-                    </div>
+                    <Notice variant="success" title="Run complete">
+                        {/* The count is the payload of this panel, so it gets display
+                            type and its own line rather than being buried in prose. */}
+                        <p className="flex items-baseline gap-2">
+                            <span className="font-display text-2xl font-semibold text-sky-ink tabular-nums leading-none">{result}</span>
+                            <span className={kv}>record(s) affected</span>
+                        </p>
+                    </Notice>
                 )}
             </div>
         </SkyCard>
@@ -364,6 +469,12 @@ function DailyTaskPanel({ icon, title, subtitle, accentBg, onRun }: DailyTaskPan
 }
 
 // ── Broadcast Panel ─────────────────────────────────────────────────────────
+const TARGET_ICON: Record<BroadcastTarget, LucideIcon> = {
+    ALL: Bell,
+    ROLE: ShieldAlert,
+    USERS: Users,
+};
+
 function BroadcastPanel() {
     const alert = useAlert();
     const [target, setTarget] = useState<BroadcastTarget>("ALL");
@@ -402,34 +513,41 @@ function BroadcastPanel() {
 
     return (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
-            <div className="bg-purple-50 px-5 py-4 flex items-center gap-3 border-b border-gray-200">
-                <Bell className="w-6 h-6 shrink-0 text-purple-600" />
+            <PanelHead
+                Icon={Bell}
+                title="Broadcast Notification"
+                subtitle="Send to ALL users, a ROLE group, or specific users"
+                tone="violet"
+            />
+            <div className="relative px-5 py-5 space-y-4">
                 <div>
-                    <h3 className="font-bold text-lg text-sky-ink">Broadcast Notification</h3>
-                    <p className="text-xs font-medium text-sky-ink-3">Send to ALL users, a ROLE group, or specific users</p>
-                </div>
-            </div>
-            <div className="bg-white px-5 py-5 space-y-4">
-                <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-2">Target</label>
-                    <div className="flex gap-2">
-                        {(["ALL", "ROLE", "USERS"] as BroadcastTarget[]).map(t => (
-                            <button
-                                key={t}
-                                onClick={() => setTarget(t)}
-                                className={`px-4 py-1.5 rounded-sky-chip text-xs font-bold transition-all ${target === t
-                                    ? "bg-sky-deep text-white"
-                                    : "bg-white border border-sky-surf-border text-sky-ink-2 hover:bg-gray-50"
-                                    }`}
-                            >
-                                {t}
-                            </button>
-                        ))}
+                    <label className={fieldLabel}>Target</label>
+                    {/* One glass track with the live segment filled, so the three
+                        options read as a single switch instead of loose buttons. */}
+                    <div className="inline-flex gap-1 p-1 rounded-sky-chip bg-white/58 ring-1 ring-white/80">
+                        {(["ALL", "ROLE", "USERS"] as BroadcastTarget[]).map(t => {
+                            const on = target === t;
+                            const TIcon = TARGET_ICON[t];
+                            return (
+                                <button
+                                    key={t}
+                                    onClick={() => setTarget(t)}
+                                    aria-pressed={on}
+                                    className={`${segBase} px-3.5 py-1.5 ${on
+                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25"
+                                        : segOff
+                                        }`}
+                                >
+                                    <TIcon className={`w-3.5 h-3.5 shrink-0 ${on ? "text-white" : "text-sky-ink-3"}`} strokeWidth={2.4} aria-hidden="true" />
+                                    {t}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
                 {target === "ROLE" && (
                     <div>
-                        <label className="block text-xs font-bold text-sky-ink-2 mb-1">Role *</label>
+                        <label className={fieldLabel}>Role *</label>
                         <select
                             value={role}
                             onChange={e => setRole(e.target.value)}
@@ -444,12 +562,12 @@ function BroadcastPanel() {
                 )}
                 {target === "USERS" && (
                     <div>
-                        <label className="block text-xs font-bold text-sky-ink-2 mb-1">Users *</label>
+                        <label className={fieldLabel}>Users *</label>
                         <UserMultiPicker value={selectedUsers} onChange={setSelectedUsers} />
                     </div>
                 )}
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Type (optional)</label>
+                    <label className={fieldLabel}>Type (optional)</label>
                     <input
                         value={type}
                         onChange={e => setType(e.target.value)}
@@ -458,7 +576,7 @@ function BroadcastPanel() {
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Title *</label>
+                    <label className={fieldLabel}>Title *</label>
                     <input
                         value={title}
                         onChange={e => setTitle(e.target.value)}
@@ -467,7 +585,7 @@ function BroadcastPanel() {
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Body (optional)</label>
+                    <label className={fieldLabel}>Body (optional)</label>
                     <textarea
                         value={body}
                         onChange={e => setBody(e.target.value)}
@@ -481,20 +599,23 @@ function BroadcastPanel() {
                     {running ? "Sending..." : "Broadcast"}
                 </SkyButton>
                 {result && (
-                    <div className="grid grid-cols-3 gap-3 bg-success-50 rounded-sky-chip p-4">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-sky-ink">{result.totalRecipients}</div>
-                            <div className="text-xs font-bold text-sky-ink-3 mt-0.5">Total Recipients</div>
+                    <Notice variant="success" title="Broadcast sent">
+                        {/* Delivered is teal (it worked), skipped is peach (a fact to
+                            notice, not a failure), and the total stays neutral — it's
+                            a denominator, not an outcome. */}
+                        <div className="grid grid-cols-3 gap-2">
+                            {([
+                                { n: result.totalRecipients, label: "Recipients", cls: "text-sky-ink" },
+                                { n: result.notificationsCreated, label: "Sent", cls: "text-sky-teal" },
+                                { n: result.skippedByPreference, label: "Skipped", cls: "text-sky-peach-deep" },
+                            ] as const).map(s => (
+                                <div key={s.label} className="rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-2 py-2.5 text-center">
+                                    <div className={`font-display text-xl font-semibold tabular-nums leading-none ${s.cls}`}>{s.n}</div>
+                                    <div className={`${eyebrow} mt-1`}>{s.label}</div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="text-center border-x border-sky-ink/10">
-                            <div className="text-2xl font-bold text-success-700">{result.notificationsCreated}</div>
-                            <div className="text-xs font-bold text-sky-ink-3 mt-0.5">Sent</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-warning-700">{result.skippedByPreference}</div>
-                            <div className="text-xs font-bold text-sky-ink-3 mt-0.5">Skipped</div>
-                        </div>
-                    </div>
+                    </Notice>
                 )}
             </div>
         </SkyCard>
@@ -536,20 +657,19 @@ function InAppPanel() {
 
     return (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
-            <div className="bg-warning-50 px-5 py-4 flex items-center gap-3 border-b border-gray-200">
-                <User className="w-6 h-6 shrink-0 text-warning-700" />
+            <PanelHead
+                Icon={User}
+                title="Send In-App Notification"
+                subtitle="Direct notification to a single user"
+                tone="peach"
+            />
+            <div className="relative px-5 py-5 space-y-4">
                 <div>
-                    <h3 className="font-bold text-lg text-sky-ink">Send In-App Notification</h3>
-                    <p className="text-xs font-medium text-sky-ink-3">Direct notification to a single user</p>
-                </div>
-            </div>
-            <div className="bg-white px-5 py-5 space-y-4">
-                <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">User *</label>
+                    <label className={fieldLabel}>User *</label>
                     <UserPicker value={user} onChange={setUser} />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Type (optional)</label>
+                    <label className={fieldLabel}>Type (optional)</label>
                     <input
                         value={type}
                         onChange={e => setType(e.target.value)}
@@ -558,7 +678,7 @@ function InAppPanel() {
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Title *</label>
+                    <label className={fieldLabel}>Title *</label>
                     <input
                         value={title}
                         onChange={e => setTitle(e.target.value)}
@@ -567,7 +687,7 @@ function InAppPanel() {
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Body (optional)</label>
+                    <label className={fieldLabel}>Body (optional)</label>
                     <textarea
                         value={body}
                         onChange={e => setBody(e.target.value)}
@@ -576,32 +696,27 @@ function InAppPanel() {
                         className={`${fieldInputCls} resize-none`}
                     />
                 </div>
-                {err && (
-                    <div className="flex items-center gap-2 bg-error-100 rounded-sky-chip px-4 py-2">
-                        <AlertCircle className="w-4 h-4 text-error-700 shrink-0" />
-                        <span className="text-xs font-bold text-error-800">{err}</span>
-                    </div>
-                )}
+                {err && <Notice variant="danger" title={err} />}
                 <SkyButton type="button" variant="primary" onClick={handleSend} disabled={running} className="w-full">
                     {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
                     {running ? "Sending..." : "Send Notification"}
                 </SkyButton>
                 {result && (
-                    <div className="bg-success-50 rounded-sky-chip p-4 space-y-1">
-                        <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-success-700" />
-                            <span className="text-sm font-bold text-success-800">Sent Successfully</span>
+                    <Notice variant="success" title="Sent Successfully">
+                        <div className="space-y-1.5">
+                            <div className={`${kv} flex flex-wrap gap-x-3 gap-y-0.5`}>
+                                <span><span className={kvKey}>ID</span> <span className="tabular-nums">{result.notificationId}</span></span>
+                                <span><span className={kvKey}>User</span> {user?.username}</span>
+                                <span><span className={kvKey}>Type</span> {result.type}</span>
+                            </div>
+                            {/* The delivered notification is echoed back as a quote so
+                                the operator can proof-read exactly what landed. */}
+                            <div className="pl-2.5 border-l-2 border-sky-teal/40">
+                                <div className="text-xs font-semibold text-sky-ink">{result.title}</div>
+                                {result.body && <div className="text-xs text-sky-ink-3">{result.body}</div>}
+                            </div>
                         </div>
-                        <div className="text-xs font-medium text-sky-ink-2 space-x-2">
-                            <span><span className="font-bold">ID:</span> {result.notificationId}</span>
-                            <span>·</span>
-                            <span><span className="font-bold">User:</span> {user?.username}</span>
-                            <span>·</span>
-                            <span><span className="font-bold">Type:</span> {result.type}</span>
-                        </div>
-                        <div className="text-xs font-bold text-sky-ink">{result.title}</div>
-                        {result.body && <div className="text-xs text-sky-ink-3">{result.body}</div>}
-                    </div>
+                    </Notice>
                 )}
             </div>
         </SkyCard>
@@ -656,79 +771,93 @@ function ProofOverridePanel() {
 
     return (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
-            <div className="bg-error-50 px-5 py-4 flex items-center gap-3 border-b border-gray-200">
-                <ShieldAlert className="w-6 h-6 shrink-0 text-error-600" />
+            <PanelHead
+                Icon={ShieldAlert}
+                title="Override Proof Verdict"
+                subtitle="Admin final verdict — overrides AI/Mentor review"
+                tone="rose"
+            />
+            <div className="relative px-5 py-5 space-y-4">
                 <div>
-                    <h3 className="font-bold text-lg text-sky-ink">Override Proof Verdict</h3>
-                    <p className="text-xs font-medium text-sky-ink-3">Admin final verdict — overrides AI/Mentor review</p>
-                </div>
-            </div>
-            <div className="bg-white px-5 py-5 space-y-4">
-                <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Proof Submitter *</label>
+                    <label className={fieldLabel}>Proof Submitter *</label>
                     <UserPicker value={targetUser} onChange={setTargetUser} placeholder="Search the user who submitted the proof..." />
                 </div>
 
                 {targetUser && (
                     <div>
-                        <label className="block text-xs font-bold text-sky-ink-2 mb-1">Proof *</label>
+                        <label className={fieldLabel}>Proof *</label>
                         {proofsLoading ? (
-                            <div className="flex items-center gap-2 text-xs text-sky-ink-3 py-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-sky-ink-3 py-2">
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading proofs...
                             </div>
                         ) : !proofs || proofs.length === 0 ? (
-                            <div className="text-xs text-sky-ink-3 py-2">No proofs found for this user.</div>
+                            <div className="text-xs font-medium text-sky-ink-3 py-2">No proofs found for this user.</div>
                         ) : (
-                            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 border border-sky-surf-border rounded-sky-chip p-2">
-                                {proofs.map(p => (
-                                    <button
-                                        type="button"
-                                        key={p.proofId}
-                                        onClick={() => setSelectedProofId(p.proofId)}
-                                        className={`w-full text-left px-3 py-2 rounded-sky-chip transition-all ${selectedProofId === p.proofId
-                                            ? "ring-2 ring-warning-400 bg-warning-50"
-                                            : "hover:bg-gray-50"
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-sm font-bold text-sky-ink truncate">
-                                                {p.questTitle ?? p.proofType}
-                                            </span>
-                                            <span className="text-[10px] font-bold uppercase text-sky-ink-3 shrink-0">
-                                                {p.status}
-                                            </span>
-                                        </div>
-                                        <div className="text-[10px] text-sky-ink-3">
-                                            {new Date(p.submittedAt).toLocaleString()}
-                                        </div>
-                                    </button>
-                                ))}
+                            <div className="space-y-1 max-h-48 overflow-y-auto rounded-sky-md bg-white/50 ring-1 ring-white/78 p-1.5">
+                                {proofs.map(p => {
+                                    const picked = selectedProofId === p.proofId;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={p.proofId}
+                                            onClick={() => setSelectedProofId(p.proofId)}
+                                            aria-pressed={picked}
+                                            className={`relative w-full text-left px-3 py-2 pl-4 rounded-sky-chip overflow-hidden transition-all duration-150 ${picked
+                                                ? "bg-sky-deep/12 ring-1 ring-sky-deep/26"
+                                                : "hover:bg-white/70"
+                                                }`}
+                                        >
+                                            {/* Selection carries a rail and a tick as well as
+                                                the tint, so the choice is never colour-only. */}
+                                            {picked && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="flex items-center gap-1.5 min-w-0 text-sm font-semibold text-sky-ink">
+                                                    {picked && <Check className="w-3.5 h-3.5 shrink-0 text-sky-deep" strokeWidth={2.6} aria-hidden="true" />}
+                                                    <span className="truncate">{p.questTitle ?? p.proofType}</span>
+                                                </span>
+                                                <span className={`${eyebrow} shrink-0`}>
+                                                    {p.status}
+                                                </span>
+                                            </div>
+                                            <div className="text-[10px] font-medium text-sky-ink-3 tabular-nums">
+                                                {new Date(p.submittedAt).toLocaleString()}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
                 )}
 
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-2">Decision</label>
-                    <div className="flex gap-2">
-                        {(["approve", "reject"] as ProofDecision[]).map(d => (
-                            <button
-                                key={d}
-                                onClick={() => setDecision(d)}
-                                className={`flex-1 py-2 rounded-sky-chip text-xs font-bold transition-all capitalize ${decision === d
-                                    ? d === "approve"
-                                        ? "bg-success-600 text-white"
-                                        : "bg-error-600 text-white"
-                                    : "bg-white border border-sky-surf-border text-sky-ink-2 hover:bg-gray-50"
-                                    }`}
-                            >
-                                {d === "approve" ? "✓ Approve" : "✕ Reject"}
-                            </button>
-                        ))}
+                    <label className={fieldLabel}>Decision</label>
+                    <div className="flex gap-1 p-1 rounded-sky-chip bg-white/58 ring-1 ring-white/80">
+                        {(["approve", "reject"] as ProofDecision[]).map(d => {
+                            const on = decision === d;
+                            const DIcon = d === "approve" ? Check : X;
+                            return (
+                                <button
+                                    key={d}
+                                    onClick={() => setDecision(d)}
+                                    aria-pressed={on}
+                                    className={`${segBase} flex-1 py-2 capitalize ${on
+                                        ? d === "approve"
+                                            // Teal, never green (§4) — approve is success.
+                                            ? "bg-sky-teal text-white shadow-sky-fill ring-1 ring-inset ring-white/25"
+                                            : "bg-linear-to-b from-sky-rose to-sky-rose-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25"
+                                        : segOff
+                                        }`}
+                                >
+                                    <DIcon className={`w-3.5 h-3.5 shrink-0 ${on ? "text-white" : "text-sky-ink-3"}`} strokeWidth={2.6} aria-hidden="true" />
+                                    {d}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Reason (optional)</label>
+                    <label className={fieldLabel}>Reason (optional)</label>
                     <textarea
                         value={reason}
                         onChange={e => setReason(e.target.value)}
@@ -737,15 +866,13 @@ function ProofOverridePanel() {
                         className={`${fieldInputCls} resize-none`}
                     />
                 </div>
-                <p className="text-[10px] font-semibold text-sky-ink-3">
-                    Acting as: <span className="font-bold text-sky-ink-2">{currentAdmin?.username ?? "—"}</span> (you)
+                {/* This action is attributed and irreversible, so who is acting is
+                    stated on the panel rather than assumed from the session. */}
+                <p className="flex items-center gap-1.5 text-[10px] font-semibold text-sky-ink-3">
+                    <ShieldAlert className="w-3 h-3 shrink-0" strokeWidth={2.4} aria-hidden="true" />
+                    Acting as <span className="font-semibold text-sky-ink-2">{currentAdmin?.username ?? "—"}</span> (you)
                 </p>
-                {err && (
-                    <div className="flex items-center gap-2 bg-error-100 rounded-sky-chip px-4 py-2">
-                        <AlertCircle className="w-4 h-4 text-error-700 shrink-0" />
-                        <span className="text-xs font-bold text-error-800">{err}</span>
-                    </div>
-                )}
+                {err && <Notice variant="danger" title={err} />}
                 <SkyButton
                     type="button"
                     variant={decision === "approve" ? "success" : "destructive"}
@@ -757,23 +884,20 @@ function ProofOverridePanel() {
                     {running ? "Overriding..." : `Override — ${decision}`}
                 </SkyButton>
                 {result && (
-                    <div className="bg-success-50 rounded-sky-chip p-4 space-y-1">
-                        <div className="flex items-center gap-2 mb-1">
-                            <CheckCircle2 className="w-4 h-4 text-success-700" />
-                            <span className="text-sm font-bold text-success-800">Override Applied</span>
+                    <Notice variant="success" title="Override Applied">
+                        <div className="space-y-1">
+                            <div className={`${kv} flex flex-wrap gap-x-3 gap-y-0.5`}>
+                                <span><span className={kvKey}>Status</span> {result.status}</span>
+                                <span><span className={kvKey}>Route</span> {result.reviewRoute}</span>
+                            </div>
+                            {result.questTitle && (
+                                <div className="text-xs text-sky-ink-3">Quest: {result.questTitle}</div>
+                            )}
+                            {result.rejectReason && (
+                                <div className="text-xs text-sky-ink-3">Reason: {result.rejectReason}</div>
+                            )}
                         </div>
-                        <div className="text-xs font-medium text-sky-ink-2 space-x-2">
-                            <span><span className="font-bold">Status:</span> {result.status}</span>
-                            <span>·</span>
-                            <span><span className="font-bold">Route:</span> {result.reviewRoute}</span>
-                        </div>
-                        {result.questTitle && (
-                            <div className="text-xs text-sky-ink-3">Quest: {result.questTitle}</div>
-                        )}
-                        {result.rejectReason && (
-                            <div className="text-xs text-sky-ink-3">Reason: {result.rejectReason}</div>
-                        )}
-                    </div>
+                    </Notice>
                 )}
             </div>
         </SkyCard>
@@ -781,6 +905,18 @@ function ProofOverridePanel() {
 }
 
 // ── Shared HP Panel ─────────────────────────────────────────────────────────
+// Risk ramp, matching the Mentor Rally screen exactly so one concept doesn't get
+// two colour languages: teal is the only genuinely safe end, deep is the neutral
+// middle, then it heats through peach to damage-orange, and rose is held back
+// for WIPED so the ramp never spends its loudest hue early.
+const RISK_META: Record<string, { text: string; bar: string; Icon: LucideIcon }> = {
+    SAFE: { text: "text-sky-teal", bar: "bg-sky-teal", Icon: Check },
+    LOW: { text: "text-sky-deep", bar: "bg-sky-deep", Icon: Info },
+    MEDIUM: { text: "text-sky-peach-deep", bar: "bg-sky-peach", Icon: Info },
+    HIGH: { text: "text-sky-dmg-deep", bar: "bg-sky-dmg", Icon: AlertCircle },
+    WIPED: { text: "text-sky-rose-deep", bar: "bg-sky-rose", Icon: Skull },
+};
+
 function SharedHpPanel() {
     const [party, setParty] = useState<PartyOption | null>(null);
     const [bossStatus, setBossStatus] = useState<WeeklyBossStatusDto | null>(null);
@@ -834,66 +970,56 @@ function SharedHpPanel() {
         }
     };
 
-    const RISK_COLOR: Record<string, string> = {
-        SAFE: "text-success-700",
-        LOW: "text-success-600",
-        MEDIUM: "text-warning-600",
-        HIGH: "text-orange-600",
-        WIPED: "text-error-700",
-    };
-    const RISK_BAR: Record<string, string> = {
-        SAFE: "bg-success-600",
-        LOW: "bg-success-600",
-        MEDIUM: "bg-warning-500",
-        HIGH: "bg-orange-500",
-        WIPED: "bg-error-600",
-    };
+    const risk = result ? (RISK_META[result.riskLevel] ?? RISK_META.LOW) : null;
+    const RiskIcon = risk?.Icon;
 
     return (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
-            <div className="bg-blue-50 px-5 py-4 flex items-center gap-3 border-b border-gray-200">
-                <HeartPulse className="w-6 h-6 shrink-0 text-blue-600" />
+            <PanelHead
+                Icon={HeartPulse}
+                title="Shared HP Management"
+                subtitle="Manually apply penalty or restore HP for a party's raid"
+                tone="deep"
+            />
+            <div className="relative px-5 py-5 space-y-4">
                 <div>
-                    <h3 className="font-bold text-lg text-sky-ink">Shared HP Management</h3>
-                    <p className="text-xs font-medium text-sky-ink-3">Manually apply penalty or restore HP for a party's raid</p>
-                </div>
-            </div>
-            <div className="bg-white px-5 py-5 space-y-4">
-                <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Party *</label>
+                    <label className={fieldLabel}>Party *</label>
                     <PartyPicker value={party} onChange={setParty} />
                 </div>
 
                 {party && (
                     statusLoading ? (
-                        <div className="flex items-center gap-2 text-xs text-sky-ink-3 py-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-sky-ink-3 py-2">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading raid status...
                         </div>
                     ) : statusError ? (
-                        <div className="flex items-center gap-2 bg-error-100 rounded-sky-chip px-4 py-2">
-                            <AlertCircle className="w-4 h-4 text-error-700 shrink-0" />
-                            <span className="text-xs font-bold text-error-800">{statusError}</span>
-                        </div>
+                        /* No active raid isn't an error the operator caused — it's a
+                           precondition to notice, so peach rather than rose. */
+                        <Notice variant="attention" title={statusError} />
                     ) : bossStatus ? (
-                        <div className="bg-blue-50/60 rounded-sky-chip p-3 space-y-2">
+                        <div className="relative overflow-hidden rounded-sky-chip bg-sky-deep/7 ring-1 ring-sky-deep/16 p-3.5 pl-4 space-y-2">
+                            <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep/45" />
                             <div className="flex items-center gap-2">
-                                <Swords className="w-4 h-4 text-sky-ink-3" />
-                                <span className="text-sm font-bold text-sky-ink">{bossStatus.bossName}</span>
-                                <span className="text-[10px] font-bold text-sky-ink-3 uppercase">Raid #{bossStatus.raidId}</span>
+                                <Swords className="w-4 h-4 shrink-0 text-sky-deep" strokeWidth={2.3} aria-hidden="true" />
+                                <span className="font-display text-sm font-semibold text-sky-ink truncate">{bossStatus.bossName}</span>
+                                <span className={`${eyebrow} shrink-0 tabular-nums`}>Raid #{bossStatus.raidId}</span>
                             </div>
-                            <div className="flex justify-between text-xs font-medium text-sky-ink-2">
+                            <div className="flex justify-between items-baseline text-xs font-medium text-sky-ink-2">
                                 <span>HP</span>
-                                <span className="font-bold">{bossStatus.currentHp} / {bossStatus.maxHp}</span>
+                                <span className="font-display font-semibold text-sky-ink tabular-nums">
+                                    {bossStatus.currentHp} / {bossStatus.maxHp}
+                                    <span className="ml-1.5 text-sky-ink-3">({Math.round(bossStatus.hpPercent)}%)</span>
+                                </span>
                             </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-success-600 rounded-full" style={{ width: `${bossStatus.hpPercent}%` }} />
+                            <div className="w-full h-2 bg-sky-ink/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-linear-to-r from-sky-deep-lo to-sky-deep rounded-full" style={{ width: `${bossStatus.hpPercent}%` }} />
                             </div>
                         </div>
                     ) : null
                 )}
 
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Amount (optional)</label>
+                    <label className={fieldLabel}>Amount (optional)</label>
                     <input
                         type="number"
                         value={amount}
@@ -903,7 +1029,7 @@ function SharedHpPanel() {
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-sky-ink-2 mb-1">Reason (optional)</label>
+                    <label className={fieldLabel}>Reason (optional)</label>
                     <input
                         value={reason}
                         onChange={e => setReason(e.target.value)}
@@ -911,12 +1037,7 @@ function SharedHpPanel() {
                         className={fieldInputCls}
                     />
                 </div>
-                {err && (
-                    <div className="flex items-center gap-2 bg-error-100 rounded-sky-chip px-4 py-2">
-                        <AlertCircle className="w-4 h-4 text-error-700 shrink-0" />
-                        <span className="text-xs font-bold text-error-800">{err}</span>
-                    </div>
-                )}
+                {err && <Notice variant="danger" title={err} />}
                 <div className="grid grid-cols-2 gap-3">
                     <SkyButton type="button" variant="destructive" onClick={() => handleAction("penalty")} disabled={running !== null || !bossStatus}>
                         {running === "penalty" ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingDown className="w-4 h-4" />}
@@ -927,34 +1048,36 @@ function SharedHpPanel() {
                         {running === "restore" ? "Restoring..." : "Restore"}
                     </SkyButton>
                 </div>
-                {result && (
-                    <div className="bg-success-50 rounded-sky-chip p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-success-700" />
-                                <span className="text-sm font-bold text-success-800">Updated</span>
+                {result && risk && RiskIcon && (
+                    <Notice variant="success" title="Updated">
+                        <div className="space-y-2">
+                            {/* The risk level gets a glyph next to its label, so the
+                                severity reads even where the hue can't be told apart. */}
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={kv}>Risk level</span>
+                                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] ${risk.text}`}>
+                                    <RiskIcon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                                    {result.riskLevel}
+                                </span>
                             </div>
-                            <span className={`text-xs font-bold uppercase ${RISK_COLOR[result.riskLevel] ?? "text-sky-ink"}`}>
-                                {result.riskLevel}
-                            </span>
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-xs font-medium text-sky-ink-2">
+                                    <span>Shared HP</span>
+                                    <span className="font-display font-semibold text-sky-ink tabular-nums">{result.sharedHpCurrent} / {result.sharedHpMax}</span>
+                                </div>
+                                <div className="w-full h-3 bg-sky-ink/10 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all ${risk.bar}`}
+                                        style={{ width: `${Math.min(100, Math.max(0, Number(result.percentage)))}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between text-xs font-medium text-sky-ink-3 tabular-nums">
+                                    <span>Raid #{result.raidId} · Party #{result.partyId}</span>
+                                    <span>{Number(result.percentage).toFixed(1)}%</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between text-xs font-medium text-sky-ink-2">
-                                <span>Shared HP</span>
-                                <span className="font-bold">{result.sharedHpCurrent} / {result.sharedHpMax}</span>
-                            </div>
-                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-all ${RISK_BAR[result.riskLevel] ?? "bg-success-600"}`}
-                                    style={{ width: `${Math.min(100, Math.max(0, Number(result.percentage)))}%` }}
-                                />
-                            </div>
-                            <div className="flex justify-between text-xs text-sky-ink-3">
-                                <span>Raid #{result.raidId} · Party #{result.partyId}</span>
-                                <span>{Number(result.percentage).toFixed(1)}%</span>
-                            </div>
-                        </div>
-                    </div>
+                    </Notice>
                 )}
             </div>
         </SkyCard>
@@ -980,12 +1103,16 @@ export default function AdminSystemOpsPage() {
             <PageMeta title="System Operations | HabitEvolve Admin" description="Trigger daily tasks and broadcast notifications" />
             <PageBreadcrumb pageTitle="System Operations" />
             <div className="space-y-8 p-1">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-warning-100 rounded-sky-chip">
-                        <Zap className="w-6 h-6 text-warning-600" />
-                    </div>
+                {/* These controls fire real jobs at real users, so the page title
+                    says so plainly and the icon chip carries the warm attention
+                    tone rather than the neutral operational blue. */}
+                <div className="flex items-center gap-3.5">
+                    <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-peach/20 ring-1 ring-sky-peach/32 text-sky-peach-deep">
+                        <Zap className="w-6 h-6" strokeWidth={2.2} aria-hidden="true" />
+                    </span>
                     <div>
-                        <h1 className="text-2xl font-bold text-sky-ink">System Operations</h1>
+                        <p className={eyebrow}>Admin · live operations</p>
+                        <h1 className="font-display text-sky-h1 font-semibold text-sky-ink leading-tight">System Operations</h1>
                         <p className="text-sm text-sky-ink-3 font-medium">
                             Trigger daily tasks and send notifications
                         </p>
@@ -993,54 +1120,36 @@ export default function AdminSystemOpsPage() {
                 </div>
 
                 <section>
-                    <div className="flex items-center gap-2 mb-5">
-                        <div className="h-px flex-1 bg-sky-ink/10" />
-                        <span className="text-[10px] font-bold text-sky-ink-3 uppercase tracking-widest px-2">
-                            Daily Tasks
-                        </span>
-                        <div className="h-px flex-1 bg-sky-ink/10" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SectionRule label="Daily Tasks" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sky-stagger">
                         <DailyTaskPanel
-                            icon={<Flame className="w-6 h-6 text-warning-600" />}
+                            Icon={Flame}
                             title="Spawn Daily Monsters"
                             subtitle="POST /api/admin/daily-monsters/spawn"
-                            accentBg="bg-warning-50"
+                            tone="peach"
                             onRun={spawnMonsters}
                         />
                         <DailyTaskPanel
-                            icon={<RotateCcw className="w-6 h-6 text-success-700" />}
+                            Icon={RotateCcw}
                             title="Finalize Daily Streak"
                             subtitle="POST /api/admin/daily-streak/finalize"
-                            accentBg="bg-success-50"
+                            tone="teal"
                             onRun={finalizeStreak}
                         />
                     </div>
                 </section>
 
                 <section>
-                    <div className="flex items-center gap-2 mb-5">
-                        <div className="h-px flex-1 bg-sky-ink/10" />
-                        <span className="text-[10px] font-bold text-sky-ink-3 uppercase tracking-widest px-2">
-                            Notifications
-                        </span>
-                        <div className="h-px flex-1 bg-sky-ink/10" />
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SectionRule label="Notifications" />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sky-stagger">
                         <BroadcastPanel />
                         <InAppPanel />
                     </div>
                 </section>
 
                 <section>
-                    <div className="flex items-center gap-2 mb-5">
-                        <div className="h-px flex-1 bg-sky-ink/10" />
-                        <span className="text-[10px] font-bold text-sky-ink-3 uppercase tracking-widest px-2">
-                            Proof & Raid Management
-                        </span>
-                        <div className="h-px flex-1 bg-sky-ink/10" />
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SectionRule label="Proof & Raid Management" />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sky-stagger">
                         <ProofOverridePanel />
                         <SharedHpPanel />
                     </div>

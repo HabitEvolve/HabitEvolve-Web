@@ -1,3 +1,4 @@
+import { Check, Clock, X, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -5,7 +6,8 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import Badge from "../ui/badge/Badge";
+import SkyCard from "../ui/card/SkyCard";
+import SkyButton from "../ui/button/SkyButton";
 
 // Define the TypeScript interface for the table rows
 interface Product {
@@ -68,141 +70,97 @@ const tableData: Product[] = [
   },
 ];
 
+// Every status carries a glyph as well as a tint, so the outcome is legible
+// without colour (§4). Delivered is teal — never green.
+const STATUS_META: Record<Product["status"], { cls: string; Icon: LucideIcon }> = {
+  Delivered: { cls: "sky-badge-success", Icon: Check },
+  Pending: { cls: "sky-badge-pending", Icon: Clock },
+  Canceled: { cls: "sky-badge-danger", Icon: X },
+};
+
+const headCell = "py-3 text-start text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-ink-3";
+
 export default function RecentOrders() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
-      <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+    <SkyCard variant="admin" className="px-4 pb-3 pt-5 sm:px-6">
+      <div className="relative flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">
+            Latest activity
+          </p>
+          <h3 className="mt-1 font-display text-sky-h3 font-semibold text-sky-ink leading-tight">
             Recent Orders
           </h3>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
-            <svg
-              className="stroke-current fill-white dark:fill-gray-800"
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.29004 5.90393H17.7067"
-                stroke=""
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M17.7075 14.0961H2.29085"
-                stroke=""
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12.0826 3.33331C13.5024 3.33331 14.6534 4.48431 14.6534 5.90414C14.6534 7.32398 13.5024 8.47498 12.0826 8.47498C10.6627 8.47498 9.51172 7.32398 9.51172 5.90415C9.51172 4.48432 10.6627 3.33331 12.0826 3.33331Z"
-                fill=""
-                stroke=""
-                strokeWidth="1.5"
-              />
-              <path
-                d="M7.91745 11.525C6.49762 11.525 5.34662 12.676 5.34662 14.0959C5.34661 15.5157 6.49762 16.6667 7.91745 16.6667C9.33728 16.6667 10.4883 15.5157 10.4883 14.0959C10.4883 12.676 9.33728 11.525 7.91745 11.525Z"
-                fill=""
-                stroke=""
-                strokeWidth="1.5"
-              />
-            </svg>
+        <div className="flex items-center gap-2 shrink-0">
+          <SkyButton type="button" variant="secondary" size="sm">
+            <SlidersHorizontal className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
             Filter
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+          </SkyButton>
+          <SkyButton type="button" variant="ghost" size="sm">
             See all
-          </button>
+          </SkyButton>
         </div>
       </div>
-      <div className="max-w-full overflow-x-auto">
+      <div className="relative max-w-full overflow-x-auto">
         <Table>
           {/* Table Header */}
-          <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
+          <TableHeader className="border-y border-sky-ink/8">
             <TableRow>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Products
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Category
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Price
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Status
-              </TableCell>
+              <TableCell isHeader className={headCell}>Products</TableCell>
+              <TableCell isHeader className={headCell}>Category</TableCell>
+              <TableCell isHeader className={headCell}>Price</TableCell>
+              <TableCell isHeader className={headCell}>Status</TableCell>
             </TableRow>
           </TableHeader>
 
           {/* Table Body */}
 
-          <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {tableData.map((product) => (
-              <TableRow key={product.id} className="">
-                <TableCell className="py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-[50px] w-[50px] overflow-hidden rounded-md">
-                      <img
-                        src={product.image}
-                        className="h-[50px] w-[50px]"
-                        alt={product.name}
-                      />
+          <TableBody className="divide-y divide-sky-ink/7">
+            {tableData.map((product) => {
+              const { cls, Icon } = STATUS_META[product.status];
+              return (
+                <TableRow key={product.id} className="sky-table-row">
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-3">
+                      {/* Product shots get a hairline ring so a light photo
+                          doesn't dissolve into the glass behind it. */}
+                      <div className="h-13 w-13 shrink-0 overflow-hidden rounded-sky-chip ring-1 ring-white/85 bg-white/60">
+                        <img
+                          src={product.image}
+                          className="h-full w-full object-cover"
+                          alt={product.name}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-sky-ink truncate">
+                          {product.name}
+                        </p>
+                        <span className="text-xs font-medium text-sky-ink-3">
+                          {product.variants}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                        {product.name}
-                      </p>
-                      <span className="text-gray-500 text-theme-xs dark:text-gray-400">
-                        {product.variants}
-                      </span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {product.price}
-                </TableCell>
-                <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {product.category}
-                </TableCell>
-                <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  <Badge
-                    size="sm"
-                    color={
-                      product.status === "Delivered"
-                        ? "success"
-                        : product.status === "Pending"
-                        ? "warning"
-                        : "error"
-                    }
-                  >
-                    {product.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-sky-ink-2 tabular-nums">
+                    {product.price}
+                  </TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-sky-ink-2">
+                    {product.category}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className={`sky-badge ${cls}`}>
+                      <Icon className="w-3 h-3 shrink-0" strokeWidth={2.6} aria-hidden="true" />
+                      {product.status}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
-    </div>
+    </SkyCard>
   );
 }

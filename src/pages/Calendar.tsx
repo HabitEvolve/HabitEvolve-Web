@@ -4,9 +4,24 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import { Check } from "lucide-react";
 import { Modal } from "../components/ui/modal";
 import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
+const inputCls =
+  "w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sky-ink text-sm font-medium transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3";
+
+// Mirrors the .fc-bg-* rails in index.css so the picker previews the exact
+// colour the event will wear on the grid.
+const SWATCH: Record<string, string> = {
+  Danger: "bg-sky-rose-deep",
+  Success: "bg-sky-teal",
+  Primary: "bg-sky-deep",
+  Warning: "bg-sky-peach-deep",
+};
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -121,7 +136,7 @@ const Calendar: React.FC = () => {
         title="React.js Calendar Dashboard | TailAdmin - Next.js Admin Dashboard Template"
         description="This is React.js Calendar Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
       />
-      <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="sky-glass-admin rounded-sky-card overflow-hidden">
         <div className="custom-calendar">
           <FullCalendar
             ref={calendarRef}
@@ -152,10 +167,10 @@ const Calendar: React.FC = () => {
         >
           <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
             <div>
-              <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              <h5 className="mb-2 font-display modal-title text-sky-h3 font-semibold text-sky-ink lg:text-2xl">
                 {selectedEvent ? "Edit Event" : "Add Event"}
               </h5>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm font-medium text-sky-ink-2">
                 Plan your next big moment: schedule or edit an event to stay on
                 track
               </p>
@@ -163,22 +178,20 @@ const Calendar: React.FC = () => {
             <div className="mt-8">
               <div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Event Title
-                  </label>
+                  <label className={fieldLabel}>Event Title</label>
                   <input
                     id="event-title"
                     type="text"
                     value={eventTitle}
                     onChange={(e) => setEventTitle(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    className={inputCls}
                   />
                 </div>
               </div>
               <div className="mt-6">
-                <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Event Color
-                </label>
+                <label className={`${fieldLabel} !mb-3`}>Event Color</label>
+                {/* Each swatch shows the exact rail colour the event will carry on
+                    the grid, so the choice is previewed rather than named. */}
                 <div className="flex flex-wrap items-center gap-4 sm:gap-5">
                   {Object.entries(calendarsEvents).map(([key, value]) => (
                     <div key={key} className="n-chk">
@@ -186,7 +199,7 @@ const Calendar: React.FC = () => {
                         className={`form-check form-check-${value} form-check-inline`}
                       >
                         <label
-                          className="flex items-center text-sm text-gray-700 form-check-label dark:text-gray-400"
+                          className="flex items-center gap-1 text-sm font-medium text-sky-ink-2 form-check-label cursor-pointer"
                           htmlFor={`modal${key}`}
                         >
                           <span className="relative">
@@ -199,7 +212,7 @@ const Calendar: React.FC = () => {
                               checked={eventLevel === key}
                               onChange={() => setEventLevel(key)}
                             />
-                            <span className="flex items-center justify-center w-5 h-5 mr-2 border border-gray-300 rounded-full box dark:border-gray-700">
+                            <span className="flex items-center justify-center w-5 h-5 mr-2 border border-sky-ink/20 bg-white/70 rounded-full box">
                               <span
                                 className={`h-2 w-2 rounded-full bg-white ${
                                   eventLevel === key ? "block" : "hidden"
@@ -207,6 +220,10 @@ const Calendar: React.FC = () => {
                               ></span>
                             </span>
                           </span>
+                          <span
+                            aria-hidden="true"
+                            className={`w-2.5 h-2.5 rounded-full shrink-0 ${SWATCH[key] ?? "bg-sky-deep"}`}
+                          />
                           {key}
                         </label>
                       </div>
@@ -216,48 +233,45 @@ const Calendar: React.FC = () => {
               </div>
 
               <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Enter Start Date
-                </label>
+                <label className={fieldLabel}>Enter Start Date</label>
                 <div className="relative">
                   <input
                     id="event-start-date"
                     type="date"
                     value={eventStartDate}
                     onChange={(e) => setEventStartDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    className={inputCls}
                   />
                 </div>
               </div>
 
               <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Enter End Date
-                </label>
+                <label className={fieldLabel}>Enter End Date</label>
                 <div className="relative">
                   <input
                     id="event-end-date"
                     type="date"
                     value={eventEndDate}
                     onChange={(e) => setEventEndDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    className={inputCls}
                   />
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <div className="flex items-center gap-3 mt-8 modal-footer sm:justify-end">
               <button
                 onClick={closeModal}
                 type="button"
-                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+                className="flex w-full justify-center rounded-sky-chip bg-white/65 ring-1 ring-white/85 px-5 py-2.5 text-sm font-semibold text-sky-ink-2 shadow-sky-chip transition-colors hover:bg-white/85 hover:text-sky-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45 sm:w-auto"
               >
                 Close
               </button>
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
-                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+                className="btn btn-success btn-update-event flex w-full justify-center items-center gap-2 rounded-sky-chip bg-linear-to-b from-sky-deep-lo to-sky-deep px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-sky-deep/30 shadow-sky-chip transition-all hover:-translate-y-px active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/50 sm:w-auto"
               >
+                <Check className="w-4 h-4 shrink-0" aria-hidden="true" />
                 {selectedEvent ? "Update Changes" : "Add Event"}
               </button>
             </div>

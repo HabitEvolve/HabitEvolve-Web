@@ -1,31 +1,23 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { MoreHorizontal } from "lucide-react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { MoreDotIcon } from "../../icons";
 import { useState } from "react";
+import { SKY, skyChartBase, skyBarPlotOptions } from "../../utils/skyChart";
 
 export default function MonthlySalesChart() {
+  // Palette + typography come from utils/skyChart — no hexes, no local font name.
   const options: ApexOptions = {
-    colors: ["#465fff"],
+    ...skyChartBase,
+    colors: [SKY.deep],
     chart: {
-      fontFamily: "Space Grotesk, sans-serif",
+      ...skyChartBase.chart,
       type: "bar",
       height: 180,
-      toolbar: {
-        show: false,
-      },
     },
     plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "39%",
-        borderRadius: 5,
-        borderRadiusApplication: "end",
-      },
-    },
-    dataLabels: {
-      enabled: false,
+      bar: { ...skyBarPlotOptions.bar, horizontal: false, columnWidth: "39%" },
     },
     stroke: {
       show: true,
@@ -33,6 +25,7 @@ export default function MonthlySalesChart() {
       colors: ["transparent"],
     },
     xaxis: {
+      ...skyChartBase.xaxis,
       categories: [
         "Jan",
         "Feb",
@@ -47,29 +40,17 @@ export default function MonthlySalesChart() {
         "Nov",
         "Dec",
       ],
-      axisBorder: {
-        show: false,
-      },
-      axisTicks: {
-        show: false,
-      },
     },
     legend: {
+      ...skyChartBase.legend,
       show: true,
       position: "top",
       horizontalAlign: "left",
-      fontFamily: "Space Grotesk",
     },
     yaxis: {
+      ...skyChartBase.yaxis,
       title: {
         text: undefined,
-      },
-    },
-    grid: {
-      yaxis: {
-        lines: {
-          show: true,
-        },
       },
     },
     fill: {
@@ -77,6 +58,7 @@ export default function MonthlySalesChart() {
     },
 
     tooltip: {
+      ...skyChartBase.tooltip,
       x: {
         show: false,
       },
@@ -100,38 +82,39 @@ export default function MonthlySalesChart() {
   function closeDropdown() {
     setIsOpen(false);
   }
+  const menuItem =
+    "flex w-full font-medium text-left text-sky-ink-2 rounded-sky-chip hover:bg-white/70 hover:text-sky-ink transition-colors";
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+    <div className="overflow-hidden rounded-sky-card sky-glass-admin px-5 pt-5 sm:px-6 sm:pt-6">
+      <div className="relative flex items-center justify-between">
+        <h3 className="font-display text-base font-semibold text-sky-ink">
           Monthly Sales
         </h3>
         <div className="relative inline-block">
-          <button className="dropdown-toggle" onClick={toggleDropdown}>
-            <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
+          <button
+            type="button"
+            aria-label="Chart options"
+            className="dropdown-toggle inline-grid place-items-center w-8 h-8 rounded-sky-chip text-sky-ink-3 hover:bg-white/70 hover:text-sky-ink transition-colors"
+            onClick={toggleDropdown}
+          >
+            <MoreHorizontal className="w-4 h-4" aria-hidden="true" />
           </button>
           <Dropdown
             isOpen={isOpen}
             onClose={closeDropdown}
             className="w-40 p-2"
           >
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-            >
+            <DropdownItem onItemClick={closeDropdown} className={menuItem}>
               View More
             </DropdownItem>
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-            >
+            <DropdownItem onItemClick={closeDropdown} className={menuItem}>
               Delete
             </DropdownItem>
           </Dropdown>
         </div>
       </div>
 
-      <div className="max-w-full overflow-x-auto custom-scrollbar">
+      <div className="relative max-w-full overflow-x-auto custom-scrollbar">
         <div className="-ml-5 min-w-[650px] xl:min-w-full pl-2">
           <Chart options={options} series={series} type="bar" height={180} />
         </div>

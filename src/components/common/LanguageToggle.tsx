@@ -13,28 +13,28 @@ export default function LanguageToggle() {
     localStorage.setItem(LANGUAGE_KEY, lang);
   };
 
+  // Segmented control: one glass track, the active segment carries the deep
+  // fill. The flag emoji are gone (§4 forbids emoji-as-icon) — "EN"/"VI" is
+  // the whole message, and the two-letter codes keep the control compact.
   const baseBtn =
-    'flex items-center justify-center gap-1.5 px-3 py-1.5 font-bold text-sm border-2 border-black transition-all duration-100 select-none cursor-pointer';
+    'flex items-center justify-center px-3 py-1.5 font-display font-semibold text-sm ' +
+    'rounded-sky-chip transition select-none cursor-pointer';
 
   const activeStyle =
-    'bg-black text-white translate-x-[2px] translate-y-[2px] shadow-none';
+    'bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill';
 
-  const inactiveStyle =
-    'bg-white text-black shadow-[3px_3px_0_0_#1A1D20] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#1A1D20] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none';
+  const inactiveStyle = 'text-sky-ink-2 hover:text-sky-deep hover:bg-white/60';
 
   return (
-    <div className="inline-flex rounded-lg border-2 border-black shadow-[3px_3px_0_0_#1A1D20] overflow-hidden">
+    <div className="inline-flex gap-0.5 p-1 sky-glass-chip">
       <button
         type="button"
         aria-pressed={current === 'en'}
         onClick={() => handleSelect('en')}
         className={`${baseBtn} ${current === 'en' ? activeStyle : inactiveStyle}`}
       >
-        <span aria-hidden="true">🇺🇸</span>
-        <span>EN</span>
+        EN
       </button>
-
-      <div className="w-[2px] bg-black shrink-0" aria-hidden="true" />
 
       <button
         type="button"
@@ -42,8 +42,7 @@ export default function LanguageToggle() {
         onClick={() => handleSelect('vi')}
         className={`${baseBtn} ${current === 'vi' ? activeStyle : inactiveStyle}`}
       >
-        <span aria-hidden="true">🇻🇳</span>
-        <span>VI</span>
+        VI
       </button>
     </div>
   );

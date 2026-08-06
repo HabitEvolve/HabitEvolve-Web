@@ -106,7 +106,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   return (
     <div className="w-full" ref={dropdownRef}>
       <label
-        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+        className="mb-1.5 block text-sm font-medium text-sky-ink-2"
         id={`${label}-label`}
       >
         {label}
@@ -126,9 +126,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             tabIndex={disabled ? -1 : 0}
           >
             <div
-              className={`mb-2 flex min-h-11  rounded-lg border border-gray-300 py-1.5 pl-3 pr-3 shadow-theme-xs outline-hidden transition focus:border-brand-300 focus:shadow-focus-ring dark:border-gray-700 dark:bg-gray-900 dark:focus:border-brand-300 ${
+              className={`mb-2 flex min-h-11 rounded-sky-chip border border-white/80 bg-white/60 py-1.5 pl-3 pr-3 outline-hidden transition focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/18 ${
                 disabled
-                  ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800"
+                  ? "opacity-50 cursor-not-allowed bg-sky-ink/5"
                   : "cursor-pointer"
               }`}
             >
@@ -140,7 +140,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                     return (
                       <div
                         key={value}
-                        className="group flex items-center justify-center rounded-full border-[0.7px] border-transparent bg-gray-100 py-1 pl-2.5 pr-2 text-sm text-gray-800 hover:border-gray-200 dark:bg-gray-800 dark:text-white/90 dark:hover:border-gray-800"
+                        className="group flex items-center justify-center rounded-full border-[0.7px] border-sky-deep/25 bg-sky-deep/10 py-1 pl-2.5 pr-2 text-sm text-sky-deep hover:border-sky-deep/40"
                       >
                         <span className="flex-initial max-w-full">{text}</span>
                         <button
@@ -150,7 +150,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                             if (!disabled) removeOption(value);
                           }}
                           disabled={disabled}
-                          className="pl-2 text-gray-500 cursor-pointer group-hover:text-gray-400 dark:text-gray-400 disabled:cursor-not-allowed"
+                          className="pl-2 text-sky-deep/70 cursor-pointer group-hover:text-sky-deep disabled:cursor-not-allowed"
                           aria-label={`Remove ${text}`}
                         >
                           <svg
@@ -171,7 +171,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                     );
                   })
                 ) : (
-                  <div className="w-full h-full p-1 pr-2 text-sm text-gray-400 dark:text-gray-500 pointer-events-none">
+                  <div className="w-full h-full p-1 pr-2 text-sm text-sky-ink-3 pointer-events-none">
                     {placeholder}
                   </div>
                 )}
@@ -184,7 +184,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                     toggleDropdown();
                   }}
                   disabled={disabled}
-                  className="w-5 h-5 text-gray-700 outline-hidden cursor-pointer focus:outline-hidden dark:text-gray-400 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-sky-ink-2 outline-hidden cursor-pointer focus:outline-hidden disabled:cursor-not-allowed"
                 >
                   <svg
                     className={`stroke-current transition-transform ${
@@ -211,7 +211,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
           {isOpen && (
             <div
-              className="absolute left-0 z-40 w-full overflow-y-auto bg-white rounded-lg shadow-sm top-full max-h-select dark:bg-gray-900"
+              className="absolute left-0 z-40 w-full overflow-y-auto rounded-sky-sm sky-glass top-full max-h-select"
               onClick={(e) => e.stopPropagation()}
               role="listbox"
               aria-label={label}
@@ -223,15 +223,15 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                 return (
                   <div
                     key={option.value}
-                    className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800 ${
-                      isFocused ? "bg-primary/5" : ""
-                    } ${isSelected ? "bg-primary/10" : ""}`}
+                    className={`hover:bg-sky-deep/5 w-full cursor-pointer border-b border-white/60 last:border-b-0 ${
+                      isFocused ? "bg-sky-deep/5" : ""
+                    } ${isSelected ? "bg-sky-deep/10" : ""}`}
                     onClick={() => handleSelect(option.value)}
                     role="option"
                     aria-selected={isSelected}
                   >
                     <div className="relative flex w-full items-center p-2 pl-2">
-                      <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
+                      <div className="mx-2 leading-6 text-sky-ink">
                         {option.text}
                       </div>
                     </div>

@@ -1,19 +1,18 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
+import { LayoutDashboard, Users, Wallet, Menu, X, Moon } from "lucide-react";
 import { useWallet } from "../context/WalletContext";
 import UserDropdown from "../components/header/UserDropdown";
 import LanguageToggle from "../components/common/LanguageToggle";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
-// Same "Guild Command Center" neo-brutalism system used across the Mentor
-// portal this session: tinted ink (game-outline / brand-300 in dark) instead
-// of pure black, so the ribbon reads consistently with the party workspace.
-const inkBorder = "border-game-outline dark:border-brand-300";
-const shadowSm = "shadow-[2px_2px_0_0_var(--color-game-outline)] dark:shadow-[2px_2px_0_0_var(--color-brand-300)]";
-const shadowMd = "shadow-[3px_3px_0_0_var(--color-game-outline)] dark:shadow-[3px_3px_0_0_var(--color-brand-300)]";
-const shadowLg = "shadow-[5px_5px_0_0_var(--color-game-outline)] dark:shadow-[5px_5px_0_0_var(--color-brand-300)]";
-const hoverInkBorder = "hover:border-game-outline dark:hover:border-brand-300";
+// Sky-Pastel (design-system §5). Neo-brutalism's hard offset shadows and 3–5px
+// ink borders are retired (§7); the ribbon is now glass with hairline white
+// borders and soft navy shadows. Mentor identity comes from the violet active
+// pill, mirroring how the Admin sidebar uses the deep-blue one.
+const chipBase =
+  "border border-white/80 bg-white/55 backdrop-blur-[14px] shadow-sky-chip";
 const easeExpo = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 
 // Center nav + its toggles only appear from `xl:` up. At `lg:` the right
@@ -21,25 +20,18 @@ const easeExpo = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 // runs ~400px wide, which would collide with an absolutely-centered nav —
 // so the breakpoint is pushed out one step to guarantee no overlap, and the
 // hamburger overlay covers everything below it instead.
+// Icons are lucide line glyphs, not the 64px pixel-art PNGs: at the 22px these
+// pills render they turned to mush, and the crisp stroke reads far better next
+// to Bricolage. The game art stays where it can be shown large.
 const NAV_ITEMS = [
-  { to: "/mentor/dashboard", labelKey: "nav.mentor.dashboard", icon: "/icon/Main/House/64px/Green House 1st 64px.png" },
-  { to: "/mentor/parties", labelKey: "nav.mentor.myParties", icon: "/icon/Player/Friend/64px/Friend 1st 64px.png" },
-  { to: "/mentor/wallet", labelKey: "nav.mentor.wallet", icon: "/icon/Currency/Premium/64px/Premium 1st 64px.png" },
+  { to: "/mentor/dashboard", labelKey: "nav.mentor.dashboard", Icon: LayoutDashboard },
+  { to: "/mentor/parties", labelKey: "nav.mentor.myParties", Icon: Users },
+  { to: "/mentor/wallet", labelKey: "nav.mentor.wallet", Icon: Wallet },
 ] as const;
 
 const pillBase =
-  `inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-lg font-extrabold whitespace-nowrap ` +
+  `group relative inline-flex items-center gap-2.5 px-6 py-3 rounded-sky-sm text-lg font-semibold whitespace-nowrap ` +
   `transition-all duration-150 ${easeExpo}`;
-
-const HamburgerIcon = ({ open }: { open: boolean }) => (
-  <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {open ? (
-      <path d="M1 1L19 15M19 1L1 15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    ) : (
-      <path d="M0 1H20M0 8H20M0 15H20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    )}
-  </svg>
-);
 
 const GemBalance = () => {
   // Shared with the Wallet page via WalletContext — one fetch, both places update
@@ -51,10 +43,14 @@ const GemBalance = () => {
   return (
     <Link
       to="/mentor/wallet"
-      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-25 dark:bg-gray-800 border-[3px] ${inkBorder} ${shadowSm} hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-150 ${easeExpo}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full ${chipBase} sky-lift transition-all duration-150 ${easeExpo}`}
     >
+      {/* The gem stays pixel art: it's the same brand asset the mobile app and
+          the Wallet page use, and currency should look identical everywhere. */}
       <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
-      <span className="text-sm font-black text-gray-900 dark:text-white">{wallet.gemsBalance.toLocaleString()}</span>
+      <span className="font-display text-sm font-semibold text-sky-ink tabular-nums">
+        {wallet.gemsBalance.toLocaleString()}
+      </span>
     </Link>
   );
 };
@@ -71,11 +67,9 @@ const ThemeToggleInline = () => {
       disabled
       aria-label={t("header.themeDisabledMentor")}
       title={t("header.themeDisabledMentor")}
-      className={`flex items-center justify-center w-10 h-10 shrink-0 bg-gray-25 dark:bg-gray-800 border-[3px] ${inkBorder} rounded-xl opacity-40 cursor-not-allowed text-gray-800 dark:text-gray-200`}
+      className={`flex items-center justify-center w-10 h-10 shrink-0 ${chipBase} rounded-sky-sm opacity-40 cursor-not-allowed text-sky-ink-2`}
     >
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <Moon className="w-4 h-4" strokeWidth={2.2} aria-hidden="true" />
     </button>
   );
 };
@@ -85,12 +79,11 @@ const MentorHeader: React.FC = () => {
   const [navOpen, setNavOpen] = useState(false);
 
   return (
-    <header className={`sticky top-0 z-40 flex items-center justify-between h-24 w-full px-4 sm:px-6 bg-white dark:bg-gray-900 border-b-4 ${inkBorder}`}>
+    <header className="sticky top-0 z-40 flex items-center justify-between h-24 w-full px-4 sm:px-6 border-b border-white/70 bg-white/45 backdrop-blur-[18px] backdrop-saturate-150 shadow-[0_10px_24px_-18px_rgba(36,52,77,0.30)]">
       {/* LEFT — logo + mascot, stable width so it never shrinks when the center/right clusters grow */}
       <Link to="/mentor/dashboard" className="flex items-center gap-4 min-w-44 sm:min-w-60 shrink-0">
-        <img className="h-16 w-auto dark:hidden" src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png" alt="HabitEvolve" />
-        <img className="hidden h-16 w-auto dark:block" src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png" alt="HabitEvolve" />
-        <span className="hidden sm:block text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none">
+        <img className="h-16 w-auto" src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png" alt="HabitEvolve" />
+        <span className="hidden sm:block font-display text-2xl font-semibold tracking-tight text-sky-ink leading-none">
           HabitEvolve
         </span>
       </Link>
@@ -100,21 +93,37 @@ const MentorHeader: React.FC = () => {
         className="hidden xl:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-x-6"
         aria-label={t("nav.mentor.myParties")}
       >
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.map(({ to, labelKey, Icon }) => (
           <NavLink
-            key={item.to}
-            to={item.to}
+            key={to}
+            to={to}
             className={({ isActive }) =>
               [
                 pillBase,
                 isActive
-                  ? `bg-brand-200 dark:bg-brand-500/30 border-4 ${inkBorder} ${shadowLg} text-gray-900 dark:text-white hover:-translate-y-0.5`
-                  : `border-2 border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-4 ${hoverInkBorder}`,
+                  ? `bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25`
+                  : `text-sky-ink-2 hover:bg-white/55 hover:text-sky-ink motion-safe:hover:-translate-y-px active:translate-y-0`,
               ].join(" ")
             }
           >
-            <img src={item.icon} alt="" className="w-6 h-6 object-contain" />
-            {t(item.labelKey)}
+            {({ isActive }) => (
+              <>
+                <Icon
+                  className={`w-5 h-5 shrink-0 transition-colors duration-150 ${isActive ? "text-white" : "text-sky-ink-3 group-hover:text-sky-violet"}`}
+                  strokeWidth={2.2}
+                  aria-hidden="true"
+                />
+                {t(labelKey)}
+                {/* Third cue past fill + weight: a short underline pinned under
+                    the live section, so the current page survives without hue. */}
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-6 right-6 bottom-1.5 h-0.5 rounded-full bg-white/55"
+                  />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -134,9 +143,11 @@ const MentorHeader: React.FC = () => {
           onClick={() => setNavOpen((v) => !v)}
           aria-label={navOpen ? t("header.closeNav") : t("header.openNav")}
           aria-expanded={navOpen}
-          className={`xl:hidden flex items-center justify-center w-10 h-10 shrink-0 bg-gray-25 dark:bg-gray-800 border-[3px] ${inkBorder} rounded-xl ${shadowSm} text-gray-800 dark:text-gray-200`}
+          className={`xl:hidden flex items-center justify-center w-10 h-10 shrink-0 ${chipBase} rounded-sky-sm text-sky-ink-2 hover:text-sky-ink active:scale-95 transition-all duration-150 ${easeExpo}`}
         >
-          <HamburgerIcon open={navOpen} />
+          {navOpen
+            ? <X className="w-5 h-5" strokeWidth={2.4} aria-hidden="true" />
+            : <Menu className="w-5 h-5" strokeWidth={2.4} aria-hidden="true" />}
         </button>
       </div>
 
@@ -144,29 +155,45 @@ const MentorHeader: React.FC = () => {
       {navOpen && (
         <>
           <div
-            className="fixed inset-0 top-24 bg-game-outline/50 z-30 xl:hidden"
+            className="fixed inset-0 top-24 bg-sky-ink/45 backdrop-blur-[18px] z-30 xl:hidden"
             onClick={() => setNavOpen(false)}
           />
           <div
-            className={`nav-overlay-in xl:hidden absolute top-full left-0 z-40 w-full bg-white dark:bg-gray-900 border-b-4 ${inkBorder} px-4 py-4 space-y-2`}
+            className="nav-overlay-in xl:hidden absolute top-full left-0 z-40 w-full border-b border-white/70 bg-white/60 backdrop-blur-[18px] backdrop-saturate-150 px-4 py-4 space-y-2 shadow-[0_14px_30px_-18px_rgba(36,52,77,0.32)]"
           >
-            {NAV_ITEMS.map((item) => (
+            {NAV_ITEMS.map(({ to, labelKey, Icon }) => (
               <NavLink
-                key={item.to}
-                to={item.to}
+                key={to}
+                to={to}
                 onClick={() => setNavOpen(false)}
                 className={({ isActive }) =>
                   [
-                    "flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-base font-black border-[3px]",
+                    "group relative flex items-center gap-3 w-full px-4 py-3 rounded-sky-sm text-base font-semibold",
                     `transition-all duration-150 ${easeExpo}`,
                     isActive
-                      ? `bg-brand-200 dark:bg-brand-500/30 ${inkBorder} ${shadowMd} text-gray-900 dark:text-white`
-                      : `border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800`,
+                      ? `bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25`
+                      : `text-sky-ink-2 hover:bg-white/55 hover:text-sky-ink`,
                   ].join(" ")
                 }
               >
-                <img src={item.icon} alt="" className="w-6 h-6 object-contain" />
-                {t(item.labelKey)}
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : "text-sky-ink-3 group-hover:text-sky-violet"}`}
+                      strokeWidth={2.2}
+                      aria-hidden="true"
+                    />
+                    {t(labelKey)}
+                    {/* On a stacked list the underline has nowhere useful to go,
+                        so the non-colour cue is a leading rail instead. */}
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-white/60"
+                      />
+                    )}
+                  </>
+                )}
               </NavLink>
             ))}
             <div className="flex items-center gap-2 pt-2 sm:hidden">

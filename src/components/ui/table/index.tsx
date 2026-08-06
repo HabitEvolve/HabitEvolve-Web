@@ -31,14 +31,21 @@ interface TableCellProps {
   className?: string; // Optional className for styling
 }
 
+// ── Sky-Pastel data table (design-system §5, "Bảng dữ liệu") ────────────────
+// Defaults encode the spec so call-sites don't restate it:
+//   header  → faint ink wash, small-caps ink2  (sky-table-head)
+//   rows    → very light zebra, deep-tinted hover  (sky-table-row)
+// Callers still pass className freely; theirs is appended so it wins.
+// The whole table is expected to sit inside one .sky-glass wrapper.
+
 // Table Component
 const Table: React.FC<TableProps> = ({ children, className }) => {
-  return <table className={`min-w-full  ${className}`}>{children}</table>;
+  return <table className={`min-w-full ${className ?? ""}`}>{children}</table>;
 };
 
 // TableHeader Component
 const TableHeader: React.FC<TableHeaderProps> = ({ children, className }) => {
-  return <thead className={className}>{children}</thead>;
+  return <thead className={`sky-table-head ${className ?? ""}`}>{children}</thead>;
 };
 
 // TableBody Component

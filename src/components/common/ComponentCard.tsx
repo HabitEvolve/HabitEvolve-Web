@@ -3,6 +3,11 @@ interface ComponentCardProps {
   children: React.ReactNode;
   className?: string;
   desc?: string;
+  /**
+   * Legacy neo-brutalism flag. Neo-brutalism is retired (design-system §7), so
+   * this no longer switches surfaces — both branches are glass now. Kept in the
+   * signature so existing `neo` call-sites keep compiling.
+   */
   neo?: boolean;
 }
 
@@ -11,28 +16,19 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   children,
   className = "",
   desc = "",
-  neo = false,
 }) => {
-  const containerClass = neo
-    ? `neo-card ${className}`
-    : `rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] ${className}`;
-
   return (
-    <div className={containerClass}>
+    <div className={`sky-glass rounded-sky-card ${className}`}>
       {/* Card Header */}
       <div className="px-6 py-5">
-        <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+        <h3 className="font-display text-base font-semibold text-sky-ink">
           {title}
         </h3>
-        {desc && (
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {desc}
-          </p>
-        )}
+        {desc && <p className="mt-1 text-sm text-sky-ink-2">{desc}</p>}
       </div>
 
       {/* Card Body */}
-      <div className="p-4 border-t border-gray-100 dark:border-gray-800 sm:p-6">
+      <div className="p-4 border-t border-white/60 sm:p-6">
         <div className="space-y-6">{children}</div>
       </div>
     </div>

@@ -25,19 +25,20 @@ const sizeClasses: Record<SkyButtonSize, string> = {
   icon: "w-10 h-10 p-2 shrink-0",
 };
 
-// `sky-glass-fill` (index.css) bakes in rounded-sky-card (20px) — right for a
-// hero/CTA card, wrong for a 14px button — so primary is composed from the
-// raw sky-deep-lo/sky-deep/shadow-sky-fill tokens instead of that utility,
-// keeping the button's own 14px radius intact.
+// Design-system §5. `primary` is composed from the raw sky-deep-lo/sky-deep/
+// shadow-sky-fill tokens rather than the sky-glass-fill utility, because that
+// utility bakes in the 26px card radius — right for a hero card, wrong for a
+// 14px button.
 const variantClasses: Record<SkyButtonVariant, string> = {
-  primary: "bg-linear-to-br from-sky-deep-lo to-sky-deep text-white shadow-sky-fill hover:scale-[1.02]",
-  secondary: "sky-glass-chip text-sky-ink hover:scale-[1.02]",
-  destructive: "bg-sky-rose text-white shadow-sky-chip hover:scale-[1.02]",
-  ghost: "bg-transparent text-sky-ink hover:bg-sky-surf",
-  // Uses the app's existing --color-success-* scale (already used everywhere
-  // else for approve/positive state — TX_META, badges, etc.) rather than a
-  // parallel emerald-* reference, so "success" means the same green app-wide.
-  success: "bg-success-500 text-white shadow-sky-chip hover:bg-success-600 hover:scale-[1.02]",
+  primary: "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill sky-lift",
+  secondary: "sky-glass-chip text-sky-deep sky-lift",
+  // §5: "Nút phá huỷ: chữ roseDeep, nền rose 14% trên trắng" — a tinted
+  // low-emphasis destructive, not a saturated red slab.
+  destructive: "bg-sky-rose/14 text-sky-rose-deep border border-sky-rose/30 sky-lift",
+  ghost: "bg-transparent text-sky-ink hover:bg-white/50",
+  // TEAL, not green (§4). Same token the success badge uses, so "approved"
+  // reads identically whether it's a button or a chip.
+  success: "bg-sky-teal text-white shadow-sky-chip sky-lift",
 };
 
 const SkyButton: React.FC<SkyButtonProps> = ({

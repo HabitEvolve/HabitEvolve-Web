@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import {
+  Clock, Bell, Pencil, User, ShieldCheck, AlertCircle,
+  Check, Minus, Mail, MailX, CalendarDays, Hash, RefreshCw, AlertTriangle, Sparkles,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import playerProfileApi from "../api/userProfileApi";
@@ -26,81 +31,68 @@ const formatDate = (dateStr: string) =>
     day: "numeric",
   });
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const ClockIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-  </svg>
-);
-const BellIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-  </svg>
-);
-const CheckCircleIcon = ({ filled }: { filled?: boolean }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
-const PencilIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-const UserIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-  </svg>
-);
-const ShieldCheckIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" />
-  </svg>
-);
-const AlertCircleIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-  </svg>
-);
+// ── SHARED STYLES ─────────────────────────────────────────────────────────────
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 
-// ── REMINDER BADGE STYLES ─────────────────────────────────────────────────────
-const REMINDER_BADGE: Record<string, string> = {
-  NONE:  "bg-gray-100 border-gray-400 text-gray-600",
-  EMAIL: "bg-blue-100 border-blue-400 text-blue-800",
-  PUSH:  "bg-emerald-100 border-emerald-400 text-emerald-800",
-  BOTH:  "bg-purple-100 border-purple-400 text-purple-800",
+// ── REMINDER BADGE ────────────────────────────────────────────────────────────
+// Delivery channel is a taxonomy, not a status — nothing here is better or worse
+// than the neighbouring option, so it rides the cool/violet accents with a glyph
+// carrying the distinction. NONE stays neutral: an unset preference is not a fault.
+const REMINDER_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
+  NONE: { cls: "sky-badge-neutral", Icon: Minus },
+  EMAIL: { cls: "sky-badge-info", Icon: Mail },
+  PUSH: { cls: "sky-badge-info", Icon: Bell },
+  BOTH: { cls: "sky-badge-epic", Icon: Sparkles },
 };
 
 // ── LOADING SKELETON ──────────────────────────────────────────────────────────
+// Mirrors the real layout's rhythm so the page doesn't reflow when data lands.
 const ProfileSkeleton = () => (
   <div className="space-y-5 animate-pulse">
-    <div className="bg-white border-4 border-gray-200 rounded-3xl p-6">
+    <div className="sky-glass-admin rounded-sky-card p-6">
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-        <div className="w-24 h-24 rounded-full bg-gray-200 flex-shrink-0" />
+        <div className="w-32 h-32 rounded-full bg-sky-ink/8 shrink-0" />
         <div className="flex-1 space-y-3 w-full">
-          <div className="h-7 w-48 bg-gray-200 rounded-full mx-auto sm:mx-0" />
-          <div className="h-4 w-64 bg-gray-200 rounded-full mx-auto sm:mx-0" />
-          <div className="h-4 w-32 bg-gray-200 rounded-full mx-auto sm:mx-0" />
+          <div className="h-7 w-48 rounded-full bg-sky-ink/8 mx-auto sm:mx-0" />
+          <div className="h-4 w-64 rounded-full bg-sky-ink/8 mx-auto sm:mx-0" />
+          <div className="h-4 w-32 rounded-full bg-sky-ink/8 mx-auto sm:mx-0" />
         </div>
       </div>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-      <div className="bg-white border-4 border-gray-200 rounded-3xl p-6 h-32" />
-      <div className="bg-white border-4 border-gray-200 rounded-3xl p-6 h-32" />
+      <div className="sky-glass-admin rounded-sky-card p-6 h-32" />
+      <div className="sky-glass-admin rounded-sky-card p-6 h-32" />
     </div>
-    <div className="bg-white border-4 border-gray-200 rounded-3xl p-6 h-28" />
+    <div className="sky-glass-admin rounded-sky-card p-6 h-28" />
   </div>
 );
 
 // ── COMPLETION ITEM ───────────────────────────────────────────────────────────
+// A checklist row, not a pass/fail verdict: done is teal, and an outstanding step
+// is a hollow circle in quiet ink rather than a warning — the user hasn't done
+// anything wrong, they just haven't finished yet.
 const CompletionItem = ({ done, label }: { done: boolean; label: string }) => (
-  <div className={`flex items-center gap-2.5 text-sm font-semibold ${done ? "text-green-700" : "text-amber-700"}`}>
-    <span className={done ? "text-green-500" : "text-amber-500"}>
-      <CheckCircleIcon filled={done} />
+  <div className="flex items-center gap-2.5 text-sm">
+    <span
+      className={`grid place-items-center w-5 h-5 rounded-full shrink-0 ${
+        done ? "bg-sky-teal text-white" : "border border-dashed border-sky-ink/25 text-transparent"
+      }`}
+    >
+      <Check className="w-3 h-3" />
     </span>
-    {label}
+    <span className={done ? "font-medium text-sky-ink-2 line-through decoration-sky-ink/25" : "font-semibold text-sky-ink"}>
+      {label}
+    </span>
+  </div>
+);
+
+// ── STAT TILE ─────────────────────────────────────────────────────────────────
+const DetailTile = ({ Icon, label, value }: { Icon: LucideIcon; label: string; value: string }) => (
+  <div className="rounded-sky-md bg-white/55 ring-1 ring-white/75 p-3.5">
+    <p className={`${eyebrow} flex items-center gap-1.5`}>
+      <Icon className="w-3 h-3 shrink-0" /> {label}
+    </p>
+    <p className="font-display text-sm font-semibold text-sky-ink mt-1 tabular-nums">{value}</p>
   </div>
 );
 
@@ -143,47 +135,62 @@ export default function UserProfiles() {
       {loading ? (
         <ProfileSkeleton />
       ) : error ? (
-        <div className="bg-red-50 border-4 border-red-400 rounded-3xl shadow-[6px_6px_0_0_#1A1D20] p-8 text-center">
-          <p className="font-black text-red-800 text-lg mb-2">{t("profile.failedToLoad")}</p>
-          <p className="text-red-600 text-sm mb-5">{error}</p>
+        <div className="sky-in relative overflow-hidden rounded-sky-card bg-sky-rose/10 ring-1 ring-sky-rose/25 shadow-sky-glass p-8 text-center">
+          <span className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-rose to-sky-rose-deep" />
+          <span className="grid place-items-center w-14 h-14 mx-auto mb-3 rounded-full bg-sky-rose/15 text-sky-rose-deep">
+            <AlertTriangle className="w-6 h-6" />
+          </span>
+          <p className="font-display text-lg font-semibold text-sky-rose-deep mb-1">{t("profile.failedToLoad")}</p>
+          <p className="text-sm font-medium text-sky-ink-2 mb-5">{error}</p>
           <button
             onClick={fetchProfile}
-            className="px-6 py-2.5 bg-red-400 text-white border-2 border-black rounded-full font-black text-sm shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-sky-chip bg-linear-to-b from-sky-rose to-sky-rose-deep text-white text-sm font-semibold shadow-sky-chip transition hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-rose/50"
           >
-            {t("profile.retry")}
+            <RefreshCw className="w-3.5 h-3.5" /> {t("profile.retry")}
           </button>
         </div>
       ) : profile ? (
-        <div className="space-y-5">
+        <div className="space-y-5 sky-stagger">
 
           {/* ── PROFILE INCOMPLETE BANNER ──────────────────────────────────── */}
+          {/* Warm rail: an unfinished profile needs attention, but it isn't an
+              error — so it never borrows the destructive hue. */}
           {!profile.isProfileCreated && (
-            <div className="bg-amber-50 border-4 border-amber-400 rounded-3xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-              <p className="font-black text-amber-900 mb-1">{t("profile.completeYourProfile")}</p>
-              <p className="text-xs text-amber-700 mb-4">
-                Finish setting up your account to get the most out of HabitEvolve!
-              </p>
-              <div className="space-y-2">
-                <CompletionItem done={profile.hasAvatar}              label={t("profile.completionItems.avatar")}    />
-                <CompletionItem done={profile.hasDailySchedule}       label={t("profile.completionItems.schedule")}  />
-                <CompletionItem done={profile.hasReminderPreference}  label={t("profile.completionItems.reminder")}  />
+            <div className="relative overflow-hidden rounded-sky-card bg-sky-peach/12 ring-1 ring-sky-peach/30 shadow-sky-glass pl-6 pr-5 py-5">
+              <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-linear-to-b from-sky-peach to-sky-peach-deep" />
+              <div className="flex items-start gap-3">
+                <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-sky-peach/22 text-sky-peach-deep shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-base font-semibold text-sky-ink">{t("profile.completeYourProfile")}</p>
+                  <p className="text-xs font-medium text-sky-ink-2 mt-1 mb-4">
+                    Finish setting up your account to get the most out of HabitEvolve!
+                  </p>
+                  <div className="space-y-2.5 rounded-sky-md bg-white/50 ring-1 ring-white/70 px-4 py-3.5">
+                    <CompletionItem done={profile.hasAvatar}              label={t("profile.completionItems.avatar")}    />
+                    <CompletionItem done={profile.hasDailySchedule}       label={t("profile.completionItems.schedule")}  />
+                    <CompletionItem done={profile.hasReminderPreference}  label={t("profile.completionItems.reminder")}  />
+                  </div>
+                  <Link
+                    to="/edit-profile"
+                    className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-sky-chip bg-linear-to-b from-sky-peach to-sky-peach-deep text-white text-sm font-semibold shadow-sky-chip transition hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-peach/50"
+                  >
+                    {t("profile.completeNow")}
+                  </Link>
+                </div>
               </div>
-              <Link
-                to="/edit-profile"
-                className="mt-4 inline-flex items-center gap-2 px-5 py-2 bg-amber-400 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
-              >
-                {t("profile.completeNow")}
-              </Link>
             </div>
           )}
 
           {/* ── HERO CARD ──────────────────────────────────────────────────── */}
-          <div className="bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] p-6">
+          <div className="sky-glass-admin rounded-sky-card p-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-              {/* Avatar */}
-              <div className="flex-shrink-0">
+              {/* Avatar — a soft cool halo instead of a hard outline, so the
+                  portrait sits on the glass rather than being stamped onto it. */}
+              <div className="shrink-0">
                 {profile.hasAvatar && profile.avatarUrl ? (
-                  <div className="w-32 h-32 rounded-full border-4 border-black overflow-hidden shadow-[4px_4px_0_0_#1A1D20]">
+                  <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/85 shadow-sky-glass">
                     <img
                       src={profile.avatarUrl}
                       alt={profile.username}
@@ -194,8 +201,8 @@ export default function UserProfiles() {
                     />
                   </div>
                 ) : (
-                  <div className="w-32 h-32 rounded-full border-4 border-black flex items-center justify-center bg-gradient-to-br from-orange-200 to-pink-300 shadow-[4px_4px_0_0_#1A1D20]">
-                    <span className="text-4xl font-black text-gray-800">
+                  <div className="grid place-items-center w-32 h-32 rounded-full ring-4 ring-white/85 bg-linear-to-br from-sky-2 to-sky-violet/45 shadow-sky-glass">
+                    <span className="font-display text-4xl font-semibold text-white drop-shadow-[0_2px_6px_rgba(36,52,77,0.35)]">
                       {getInitials(profile.username)}
                     </span>
                   </div>
@@ -203,41 +210,43 @@ export default function UserProfiles() {
               </div>
 
               {/* Info */}
-              <div className="flex-1 text-center sm:text-left">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                  <h2 className="text-2xl font-black text-gray-900">{profile.username}</h2>
-                  <span className="inline-flex items-center gap-1 self-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 bg-gray-100 border-gray-400 text-gray-600">
-                    <UserIcon />
+                  <h2 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em] truncate">{profile.username}</h2>
+                  <span className="sky-badge sky-badge-neutral self-center tabular-nums">
+                    <User className="w-3 h-3 shrink-0" />
                     #{profile.userId}
                   </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
-                  <p className="text-gray-500 text-sm font-medium">{profile.email}</p>
+                  <p className="text-sm font-medium text-sky-ink-2 truncate">{profile.email}</p>
+                  {/* Verified is the only teal state here; unverified is a real
+                      gap in account security, so it takes destructive rose. */}
                   {profile.emailVerified ? (
-                    <span className="inline-flex items-center gap-1 self-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 bg-green-100 border-green-400 text-green-800">
-                      <ShieldCheckIcon />
+                    <span className="sky-badge sky-badge-success self-center">
+                      <ShieldCheck className="w-3 h-3 shrink-0" />
                       {t("profile.verified")}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 self-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 bg-red-100 border-red-400 text-red-700">
-                      <AlertCircleIcon />
+                    <span className="sky-badge sky-badge-danger self-center">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
                       {t("profile.unverified")}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-gray-400 font-medium mt-2">
+                <p className="text-xs font-medium text-sky-ink-3 mt-2.5">
                   {t("profile.memberSince")} {formatDate(profile.createdAt)}
                 </p>
               </div>
 
-              {/* Edit button */}
+              {/* Edit button — the one primary action on the page */}
               <Link
                 to="/edit-profile"
-                className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-orange-300 border-2 border-black rounded-full font-black text-sm text-gray-900 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all whitespace-nowrap"
+                className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-sky-chip bg-linear-to-b from-sky-deep-lo to-sky-deep text-white text-sm font-semibold shadow-sky-fill whitespace-nowrap transition hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45"
               >
-                <PencilIcon />
+                <Pencil className="w-3.5 h-3.5" />
                 {t("profile.editProfileBtn")}
               </Link>
             </div>
@@ -246,78 +255,80 @@ export default function UserProfiles() {
           {/* ── SETTINGS GRID ──────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Daily Schedule */}
-            <div className="bg-white border-4 border-black rounded-3xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-9 h-9 flex items-center justify-center rounded-2xl border-2 border-black bg-sky-200 text-gray-800">
-                  <ClockIcon />
+            <div className="sky-glass-admin rounded-sky-card p-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-sky-deep/12 text-sky-deep shrink-0">
+                  <Clock className="w-4 h-4" />
                 </span>
-                <span className="text-xs font-black text-gray-400 uppercase tracking-wide">
+                <span className={eyebrow}>
                   {t("profile.sections.dailySchedule")}
                 </span>
               </div>
               {profile.hasDailySchedule ? (
-                <p className="text-2xl font-black text-gray-900">
+                <p className="font-display text-2xl font-semibold text-sky-ink tabular-nums">
                   {formatTime(profile.dailyScheduleTime)}
                 </p>
               ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-lg font-bold text-gray-400">{t("profile.notSet")}</p>
+                <div className="flex items-center gap-2.5">
+                  <p className="font-display text-lg font-semibold text-sky-ink-3">{t("profile.notSet")}</p>
                   <Link
                     to="/edit-profile"
-                    className="text-xs font-black text-orange-600 underline hover:no-underline"
+                    className="text-xs font-semibold text-sky-deep underline decoration-sky-deep/35 underline-offset-2 hover:decoration-sky-deep"
                   >
                     {t("profile.setNow")}
                   </Link>
                 </div>
               )}
-              <p className="text-xs text-gray-400 mt-1">{t("profile.dailyScheduleDesc")}</p>
+              <p className="text-xs font-medium text-sky-ink-3 mt-1.5">{t("profile.dailyScheduleDesc")}</p>
             </div>
 
             {/* Reminder Preference */}
-            <div className="bg-white border-4 border-black rounded-3xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-9 h-9 flex items-center justify-center rounded-2xl border-2 border-black bg-purple-200 text-gray-800">
-                  <BellIcon />
+            <div className="sky-glass-admin rounded-sky-card p-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-sky-violet/14 text-sky-violet-deep shrink-0">
+                  <Bell className="w-4 h-4" />
                 </span>
-                <span className="text-xs font-black text-gray-400 uppercase tracking-wide">
+                <span className={eyebrow}>
                   {t("profile.sections.reminders")}
                 </span>
               </div>
               {profile.hasReminderPreference && profile.reminderPreference ? (
-                <span className={`inline-flex items-center px-3 py-1.5 text-sm font-black rounded-full border-2 ${REMINDER_BADGE[profile.reminderPreference] ?? "bg-gray-100 border-gray-400 text-gray-600"}`}>
-                  {profile.reminderPreference}
-                </span>
+                (() => {
+                  const c = REMINDER_CFG[profile.reminderPreference] ?? REMINDER_CFG.NONE;
+                  return (
+                    <span className={`sky-badge ${c.cls} px-3 py-1.5 text-sm`}>
+                      <c.Icon className="w-3.5 h-3.5 shrink-0" /> {profile.reminderPreference}
+                    </span>
+                  );
+                })()
               ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-lg font-bold text-gray-400">{t("profile.notSet")}</p>
+                <div className="flex items-center gap-2.5">
+                  <p className="font-display text-lg font-semibold text-sky-ink-3">{t("profile.notSet")}</p>
                   <Link
                     to="/edit-profile"
-                    className="text-xs font-black text-orange-600 underline hover:no-underline"
+                    className="text-xs font-semibold text-sky-deep underline decoration-sky-deep/35 underline-offset-2 hover:decoration-sky-deep"
                   >
                     {t("profile.setNow")}
                   </Link>
                 </div>
               )}
-              <p className="text-xs text-gray-400 mt-2">{t("profile.remindersDesc")}</p>
+              <p className="text-xs font-medium text-sky-ink-3 mt-2.5">{t("profile.remindersDesc")}</p>
             </div>
           </div>
 
           {/* ── ACCOUNT DETAILS ────────────────────────────────────────────── */}
-          <div className="bg-white border-4 border-black rounded-3xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-            <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-4">
+          <div className="sky-glass-admin rounded-sky-card p-5">
+            <p className={`${eyebrow} mb-4`}>
               {t("profile.sections.accountDetails")}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: t("profile.details.userId"),      value: `#${profile.userId}` },
-                { label: t("profile.details.verified"),    value: profile.emailVerified ? t("profile.emailVerifiedYes") : t("profile.emailVerifiedNo") },
-                { label: t("profile.details.joined"),      value: formatDate(profile.createdAt) },
-                { label: t("profile.details.lastUpdated"), value: profile.updatedAt ? formatDate(profile.updatedAt) : "—" },
-              ].map(({ label, value }) => (
-                <div key={label} className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-3">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{label}</p>
-                  <p className="text-sm font-semibold text-gray-800 mt-0.5">{value}</p>
-                </div>
+                { Icon: Hash,         label: t("profile.details.userId"),      value: `#${profile.userId}` },
+                { Icon: profile.emailVerified ? ShieldCheck : MailX, label: t("profile.details.verified"), value: profile.emailVerified ? t("profile.emailVerifiedYes") : t("profile.emailVerifiedNo") },
+                { Icon: CalendarDays, label: t("profile.details.joined"),      value: formatDate(profile.createdAt) },
+                { Icon: RefreshCw,    label: t("profile.details.lastUpdated"), value: profile.updatedAt ? formatDate(profile.updatedAt) : "—" },
+              ].map(({ Icon, label, value }) => (
+                <DetailTile key={label} Icon={Icon} label={label} value={value} />
               ))}
             </div>
           </div>

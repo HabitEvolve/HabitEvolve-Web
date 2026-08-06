@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Plus, X, ChevronLeft, ChevronRight, Check, Minus, AlertTriangle,
+  Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
 import { useAlert } from '../context/AlertContext';
 import SkyCard from '../components/ui/card/SkyCard';
@@ -90,51 +94,71 @@ const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
   aiVerificationBossModes: csvToArr(pkg.aiVerificationBossModes),
 });
 
+// ─── Tone taxonomy ───────────────────────────────────────────────────────────
+// One hue per meaning. teal is spent only on a package that is genuinely live,
+// rose only on switching one off, peach on money and on the top of a value ramp,
+// deep on the operational default, cool as the second wayfinding hue.
+type Tone = 'deep' | 'cool' | 'peach' | 'violet' | 'teal' | 'rose' | 'neutral';
+const TONE: Record<Tone, { chip: string; wash: string; rail: string }> = {
+  deep:    { chip: 'bg-sky-deep/12 ring-sky-deep/22 text-sky-deep',            wash: 'bg-sky-deep/8',    rail: 'bg-sky-deep' },
+  cool:    { chip: 'bg-sky-deep-lo/14 ring-sky-deep-lo/24 text-sky-deep-lo',   wash: 'bg-sky-deep-lo/9', rail: 'bg-sky-deep-lo' },
+  peach:   { chip: 'bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep',    wash: 'bg-sky-peach/14',  rail: 'bg-sky-peach' },
+  violet:  { chip: 'bg-sky-violet/14 ring-sky-violet/26 text-sky-violet-deep', wash: 'bg-sky-violet/10', rail: 'bg-sky-violet' },
+  teal:    { chip: 'bg-sky-teal-bg ring-sky-teal/26 text-sky-teal',            wash: 'bg-sky-teal/10',   rail: 'bg-sky-teal' },
+  rose:    { chip: 'bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep',       wash: 'bg-sky-rose/10',   rail: 'bg-sky-rose' },
+  neutral: { chip: 'bg-white/72 ring-white/85 text-sky-ink-2',                 wash: 'bg-white/48',      rail: 'bg-sky-ink/22' },
+};
+
 // ─── Shared style tokens ─────────────────────────────────────────────────────
 
+const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3';
+
 const inputCls = [
-  'w-full rounded-sky-chip border border-sky-surf-border px-3 py-2',
-  'bg-white text-sm font-medium text-sky-ink',
-  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
+  'w-full rounded-sky-chip bg-white/70 ring-1 ring-white/80 px-3.5 py-2.5',
+  'text-sm font-medium text-sky-ink transition-shadow',
+  'focus:outline-none focus:ring-2 focus:ring-sky-deep/45',
+  'placeholder:text-sky-ink-3',
 ].join(' ');
 
-const labelCls =
-  'block text-[10px] font-bold text-sky-ink-3 mb-1 uppercase tracking-widest';
+const labelCls = `block mb-1.5 ${eyebrow}`;
 
 // ─── Micro-components ────────────────────────────────────────────────────────
 
+// Live-or-not is a real state, so it carries a glyph as well as a hue — and off
+// is not a failure, so it takes neutral rather than red.
 const StatusBadge = ({ isActive }: { isActive: boolean }) => {
   const { t } = useTranslation();
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-        isActive ? 'bg-success-100 text-success-800' : 'bg-error-100 text-error-800'
+      className={`inline-flex items-center gap-1.5 rounded-sky-chip ring-1 px-2.5 py-1 text-xs font-semibold ${
+        isActive ? TONE.teal.chip : TONE.neutral.chip
       }`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-success-500' : 'bg-error-500'}`} />
+      {isActive
+        ? <Check className="w-3 h-3" strokeWidth={3} aria-hidden="true" />
+        : <Minus className="w-3 h-3" strokeWidth={3} aria-hidden="true" />}
       {isActive ? t('admin.subscriptionPage.statusActive') : t('admin.subscriptionPage.statusInactive')}
     </span>
   );
 };
 
-const tierColors: Record<string, string> = {
-  Basic: 'bg-sky-deep/10 text-sky-deep',
-  Standard: 'bg-violet-100 text-violet-800',
-  Premium: 'bg-warning-100 text-warning-800',
-};
+// Tiers are a value ramp, not a severity ramp, so the hues escalate towards the
+// reward colour: operational deep → violet → peach at the top.
+const TIER_TONE: Record<string, Tone> = { Basic: 'deep', Standard: 'violet', Premium: 'peach' };
 const RewardTierBadge = ({ tier }: { tier: string }) => (
-  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${tierColors[tier] ?? 'bg-gray-100 text-gray-700'}`}>
+  <span className={`inline-block rounded-sky-chip ring-1 px-2 py-0.5 text-[11px] font-semibold tracking-[0.06em] ${TONE[TIER_TONE[tier] ?? 'neutral'].chip}`}>
     {tier.toUpperCase()}
   </span>
 );
 
 const ModeChip = ({ label }: { label: string }) => (
-  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-sky-ink-2">
+  <span className="rounded-[8px] bg-white/68 ring-1 ring-white/85 px-2 py-0.5 text-[10px] font-semibold text-sky-ink-2">
     {label}
   </span>
 );
 
-// Multi-select toggle chip group
+// Multi-select toggle chip group. The whole row sits in one recessed well so it
+// reads as a single control, and only the chosen chips lift out of it.
 const ChipGroup = ({
   options,
   selected,
@@ -144,18 +168,19 @@ const ChipGroup = ({
   selected: string[];
   onChange: (v: string[]) => void;
 }) => (
-  <div className="flex flex-wrap gap-2 mt-1">
+  <div className="mt-1 flex flex-wrap gap-1.5 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
     {options.map(opt => {
       const active = selected.includes(opt);
       return (
         <button
           key={opt}
           type="button"
+          aria-pressed={active}
           onClick={() => onChange(active ? selected.filter(s => s !== opt) : [...selected, opt])}
-          className={`px-3 py-1 text-xs font-bold rounded-sky-chip transition-all select-none ${
+          className={`select-none rounded-sky-chip px-3 py-1.5 text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             active
-              ? 'bg-warning-300 text-sky-ink'
-              : 'bg-white border border-sky-surf-border text-sky-ink-3 hover:border-sky-deep hover:text-sky-ink'
+              ? 'bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip'
+              : 'text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink'
           }`}
         >
           {opt}
@@ -165,13 +190,17 @@ const ChipGroup = ({
   </div>
 );
 
-const SectionHeader = ({ label }: { label: string }) => (
-  <div className="flex items-center gap-3 mb-4">
-    <div className="h-4 w-1.5 bg-warning-400 rounded-full shrink-0" />
-    <h3 className="text-xs font-bold text-sky-ink uppercase tracking-widest whitespace-nowrap">
+// A long form needs wayfinding, so each section keeps its own rail hue and glyph
+// — an operator can then say "the party block" and mean a colour.
+const SectionHeader = ({ label, Icon, tone }: { label: string; Icon: LucideIcon; tone: Tone }) => (
+  <div className="flex items-center gap-2.5 mb-4">
+    <span className={`grid place-items-center w-7 h-7 shrink-0 rounded-[10px] ring-1 ${TONE[tone].chip}`}>
+      <Icon className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" />
+    </span>
+    <h3 className="whitespace-nowrap font-display text-xs font-semibold uppercase tracking-[0.14em] text-sky-ink">
       {label}
     </h3>
-    <div className="flex-1 h-px bg-sky-ink/10" />
+    <div className="h-px flex-1 bg-sky-ink/10" />
   </div>
 );
 
@@ -259,18 +288,27 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
 
   return createPortal(
     <div
-      className="modal-content fixed inset-0 z-[99999] bg-sky-ink/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="modal-content fixed inset-0 z-[99999] bg-sky-abyss/45 backdrop-blur-md flex items-center justify-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <SkyCard variant="admin" className="sky-in p-0 overflow-hidden w-full max-w-2xl max-h-[90vh] flex flex-col">
 
         {/* ── Modal header ── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-warning-50 shrink-0">
-          <h2 className="text-base font-bold text-sky-ink uppercase tracking-widest">
-            {mode === 'create'
-              ? t('admin.subscriptionPage.form.newTitle')
-              : t('admin.subscriptionPage.form.editTitle', { code: initial?.code })}
-          </h2>
+        {/* Which package is being edited is the fact that must not be misread, so
+            the code is the title and the modal's purpose is demoted to an eyebrow. */}
+        <div className={`relative flex shrink-0 items-center gap-3 overflow-hidden border-b border-white/65 px-6 py-4 ${TONE.violet.wash}`}>
+          <span className={`absolute left-0 top-0 h-full w-[3px] ${TONE.violet.rail}`} aria-hidden="true" />
+          <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${TONE.violet.chip}`}>
+            <Package className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className={eyebrow}>{mode === 'create' ? 'New package' : 'Edit package'}</p>
+            <h2 className="truncate font-display text-base font-semibold leading-tight text-sky-ink">
+              {mode === 'create'
+                ? t('admin.subscriptionPage.form.newTitle')
+                : t('admin.subscriptionPage.form.editTitle', { code: initial?.code })}
+            </h2>
+          </div>
           <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close modal">
             <X className="w-4 h-4" />
           </SkyButton>
@@ -280,11 +318,11 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         <form
           id="pkg-form"
           onSubmit={handleSubmit}
-          className="overflow-y-auto flex-1 px-6 py-5 space-y-7 bg-white"
+          className="overflow-y-auto flex-1 px-6 py-5 space-y-7 bg-white/34"
         >
           {/* Section A: Basic Info */}
           <div>
-            <SectionHeader label={t('admin.subscriptionPage.form.sectionBasic')} />
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionBasic')} Icon={Info} tone="deep" />
             <div className="grid grid-cols-2 gap-3">
               {mode === 'create' && (
                 <Field label={t('admin.subscriptionPage.form.codeLabel')}>
@@ -292,7 +330,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                     required
                     maxLength={50}
                     placeholder={t('admin.subscriptionPage.form.codePlaceholder')}
-                    className={inputCls}
+                    className={`${inputCls} font-mono tracking-[0.08em]`}
                     value={form.code}
                     onChange={e => set('code', e.target.value.toUpperCase())}
                   />
@@ -324,7 +362,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   type="number"
                   min={0}
                   step={1}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.price}
                   onChange={e => set('price', +e.target.value || 0)}
                 />
@@ -336,7 +374,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   min={0}
                   step={1}
                   placeholder={t('admin.subscriptionPage.form.unlimitedHint')}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.durationDays}
                   onChange={e => set('durationDays', +e.target.value || 0)}
                 />
@@ -357,14 +395,14 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
 
           {/* Section B: Party & Member Limits */}
           <div>
-            <SectionHeader label={t('admin.subscriptionPage.form.sectionParty')} />
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionParty')} Icon={Users} tone="cool" />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('admin.subscriptionPage.form.maxPartiesLabel')}>
                 <input
                   required
                   type="number"
                   min={1}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.maxParties}
                   onChange={e => set('maxParties', +e.target.value || 1)}
                 />
@@ -374,7 +412,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   required
                   type="number"
                   min={1}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.maxMembersPerParty}
                   onChange={e => set('maxMembersPerParty', +e.target.value || 1)}
                 />
@@ -384,7 +422,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   required
                   type="number"
                   min={0}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.partyQuestsPerWeek}
                   onChange={e => set('partyQuestsPerWeek', +e.target.value || 0)}
                 />
@@ -394,14 +432,14 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
 
           {/* Section C: Quest & Boss Limits */}
           <div>
-            <SectionHeader label={t('admin.subscriptionPage.form.sectionQuest')} />
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionQuest')} Icon={Swords} tone="violet" />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('admin.subscriptionPage.form.memberQuestsLabel')}>
                 <input
                   required
                   type="number"
                   min={0}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.questsPerMemberPerDay}
                   onChange={e => set('questsPerMemberPerDay', +e.target.value || 0)}
                 />
@@ -411,7 +449,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   required
                   type="number"
                   min={0}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.maxDamagePerQuest}
                   onChange={e => set('maxDamagePerQuest', +e.target.value || 0)}
                 />
@@ -421,7 +459,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   required
                   type="number"
                   min={0}
-                  className={inputCls}
+                  className={`${inputCls} tabular-nums`}
                   value={form.maxMGoldRewardPerQuest}
                   onChange={e => set('maxMGoldRewardPerQuest', +e.target.value || 0)}
                 />
@@ -435,7 +473,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                 />
               </Field>
               <Field label={t('admin.subscriptionPage.form.aiModesLabel')} span>
-                <p className="text-[10px] text-sky-ink-3 mb-1">{t('admin.subscriptionPage.form.aiModesHint')}</p>
+                <p className="mb-1 text-[10px] font-medium text-sky-ink-3">{t('admin.subscriptionPage.form.aiModesHint')}</p>
                 <ChipGroup
                   options={BOSS_MODE_OPTIONS}
                   selected={form.aiVerificationBossModes}
@@ -453,14 +491,16 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
           </div>
 
           {error && (
-            <div className="bg-error-50 text-error-700 px-4 py-2.5 rounded-sky-chip text-sm font-bold">
-              ⚠ {error}
+            <div className="relative flex items-start gap-2.5 overflow-hidden rounded-sky-chip bg-sky-rose/10 pl-4 pr-4 py-2.5 text-sm font-semibold text-sky-rose-deep">
+              <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+              <span className="min-w-0">{error}</span>
             </div>
           )}
         </form>
 
         {/* ── Modal footer (button binds to form via form="pkg-form") ── */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0 bg-white">
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-white/65 bg-white/44 px-6 py-4">
           <SkyButton type="button" variant="secondary" onClick={onClose}>
             {t('admin.subscriptionPage.form.cancel')}
           </SkyButton>
@@ -491,19 +531,30 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) => 
   const { t } = useTranslation();
   return createPortal(
     <div
-      className="modal-content fixed inset-0 z-[99999] bg-sky-ink/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="modal-content fixed inset-0 z-[99999] bg-sky-abyss/45 backdrop-blur-md flex items-center justify-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md">
-        <div className={`px-6 py-4 border-b border-gray-200 ${pkg.isActive ? 'bg-error-100' : 'bg-success-100'}`}>
-          <h2 className="text-base font-bold text-sky-ink uppercase tracking-widest">
+      <SkyCard variant="admin" className="sky-in p-0 overflow-hidden w-full max-w-md">
+        {/* Switching a package off takes a paid tier away from users, so this
+            header states the direction in colour, glyph and words at once. */}
+        <div className={`relative flex items-center gap-3 overflow-hidden border-b border-white/65 px-6 py-4 ${pkg.isActive ? TONE.rose.wash : TONE.teal.wash}`}>
+          <span className={`absolute left-0 top-0 h-full w-[3px] ${pkg.isActive ? TONE.rose.rail : TONE.teal.rail}`} aria-hidden="true" />
+          <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${pkg.isActive ? TONE.rose.chip : TONE.teal.chip}`}>
             {pkg.isActive
-              ? t('admin.subscriptionPage.toggleModal.deactivateTitle')
-              : t('admin.subscriptionPage.toggleModal.activateTitle')}
-          </h2>
+              ? <PowerOff className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+              : <Power className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />}
+          </span>
+          <div className="min-w-0">
+            <p className={eyebrow}>{pkg.code}</p>
+            <h2 className="truncate font-display text-base font-semibold leading-tight text-sky-ink">
+              {pkg.isActive
+                ? t('admin.subscriptionPage.toggleModal.deactivateTitle')
+                : t('admin.subscriptionPage.toggleModal.activateTitle')}
+            </h2>
+          </div>
         </div>
         <div className="px-6 py-5">
-          <p className="text-sm text-sky-ink-2 font-medium leading-relaxed">
+          <p className="text-sm font-medium leading-relaxed text-sky-ink-2">
             {t('admin.subscriptionPage.toggleModal.areYouSure', {
               action: pkg.isActive
                 ? t('admin.subscriptionPage.toggleModal.actionDeactivate')
@@ -512,12 +563,14 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) => 
             })}
           </p>
           {pkg.isActive && (
-            <p className="mt-2 text-xs font-bold text-error-500">
-              {t('admin.subscriptionPage.toggleModal.deactivateMessage')}
+            <p className="relative mt-3 flex items-start gap-2 overflow-hidden rounded-sky-chip bg-sky-peach/14 pl-4 pr-3 py-2 text-xs font-semibold text-sky-peach-deep">
+              <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+              <span className="min-w-0">{t('admin.subscriptionPage.toggleModal.deactivateMessage')}</span>
             </p>
           )}
         </div>
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <div className="flex justify-end gap-3 border-t border-white/65 bg-white/44 px-6 py-4">
           <SkyButton type="button" variant="secondary" onClick={onClose}>
             {t('admin.subscriptionPage.toggleModal.cancel')}
           </SkyButton>
@@ -619,14 +672,20 @@ export default function AdminSubscriptionPage() {
     <div className="p-6 space-y-6">
 
       {/* ── Page header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-sky-ink uppercase tracking-tight">
-            {t('admin.subscriptionPage.pageTitle')}
-          </h1>
-          <p className="text-sm text-sky-ink-3 mt-1 font-medium">
-            {t('admin.subscriptionPage.pageSubtitle')}
-          </p>
+      <div className="sky-in flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
+            <Package className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className={eyebrow}>Monetisation</p>
+            <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">
+              {t('admin.subscriptionPage.pageTitle')}
+            </h1>
+            <p className="mt-0.5 text-sm font-medium text-sky-ink-2">
+              {t('admin.subscriptionPage.pageSubtitle')}
+            </p>
+          </div>
         </div>
         <SkyButton type="button" variant="primary" onClick={() => setFormModal({ mode: 'create' })} className="whitespace-nowrap shrink-0">
           <Plus className="w-4 h-4" />
@@ -635,19 +694,21 @@ export default function AdminSubscriptionPage() {
       </div>
 
       {/* ── Filter bar ── */}
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+      {/* The filter and the resulting count sit in one recessed strip, so the
+          number is read as a consequence of the switch beside it. */}
+      <div className="flex flex-wrap items-center gap-3 rounded-sky-md bg-white/42 ring-1 ring-white/70 px-3 py-2">
+        <label className="flex cursor-pointer select-none items-center gap-2 rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-3 py-1.5 transition-colors hover:bg-white/78">
           <input
             type="checkbox"
             checked={showInactive}
             onChange={e => setShowInactive(e.target.checked)}
             className="w-4 h-4 accent-sky-deep cursor-pointer"
           />
-          <span className="text-sm font-bold text-sky-ink-2">
+          <span className="text-sm font-semibold text-sky-ink">
             {t('admin.subscriptionPage.showInactive')}
           </span>
         </label>
-        <span className="text-xs text-sky-ink-3 font-medium">
+        <span className="text-xs font-medium text-sky-ink-2 tabular-nums">
           {t(`admin.subscriptionPage.packageCount_${packages.length !== 1 ? 'other' : 'one'}`, { count: packages.length })}
         </span>
       </div>
@@ -656,20 +717,31 @@ export default function AdminSubscriptionPage() {
       <SkyCard variant="admin" className="p-0 overflow-hidden">
         {loading ? (
           <div className="py-24 text-center">
-            <p className="text-sky-ink-3 font-bold uppercase tracking-widest text-sm animate-pulse">
+            <p className={`animate-pulse ${eyebrow}`}>
               {t('admin.subscriptionPage.loading')}
             </p>
           </div>
         ) : fetchError ? (
-          <div className="py-24 text-center">
-            <p className="text-error-500 font-bold text-sm">{fetchError}</p>
-            <SkyButton type="button" variant="primary" size="sm" onClick={fetchPackages} className="mt-4">
-              {t('admin.subscriptionPage.retry')}
-            </SkyButton>
+          <div className="p-6">
+            {/* A failed fetch is the operator's own request being rejected, so it
+                keeps the same rose rail every error banner in the console uses. */}
+            <div className="relative flex items-start gap-3 overflow-hidden rounded-sky-md bg-sky-rose/10 pl-4 pr-4 py-3.5">
+              <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-sky-rose-deep" strokeWidth={2.5} aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-sky-rose-deep">{fetchError}</p>
+                <SkyButton type="button" variant="secondary" size="sm" onClick={fetchPackages} className="mt-3">
+                  {t('admin.subscriptionPage.retry')}
+                </SkyButton>
+              </div>
+            </div>
           </div>
         ) : packages.length === 0 ? (
-          <div className="py-24 text-center">
-            <p className="text-sky-ink-3 font-bold text-sm">
+          <div className="flex flex-col items-center gap-3 py-24">
+            <span className="grid place-items-center w-14 h-14 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">
+              <Inbox className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />
+            </span>
+            <p className="font-display text-sm font-semibold text-sky-ink">
               {t('admin.subscriptionPage.noPackages')}
             </p>
           </div>
@@ -678,11 +750,11 @@ export default function AdminSubscriptionPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[780px]">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50/60">
+                  <tr className="sky-table-head border-b border-white/65">
                     {tableHeaders.map((h, idx) => (
                       <th
                         key={idx}
-                        className={`px-4 py-3 font-bold uppercase tracking-widest text-xs whitespace-nowrap text-sky-ink-3 ${
+                        className={`whitespace-nowrap px-4 py-3 ${
                           [t('admin.subscriptionPage.table.price'), t('admin.subscriptionPage.table.duration')].includes(h)
                             ? 'text-right'
                             : 'text-center'
@@ -693,31 +765,36 @@ export default function AdminSubscriptionPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="sky-stagger">
                   {pagedRows.map((pkg) => (
                     <tr key={pkg.packageId} className="sky-table-row">
                       {/* Code */}
+                      {/* The code is the identifier an operator searches for, so it
+                          is set in mono — a look-alike character has to be spottable. */}
                       <td className="px-4 py-3">
-                        <span className="font-bold text-sky-deep tracking-wider">{pkg.code}</span>
+                        <span className="font-mono text-[13px] font-semibold tracking-[0.06em] text-sky-deep">{pkg.code}</span>
                       </td>
                       {/* Name + description */}
                       <td className="px-4 py-3 max-w-50">
-                        <div className="font-bold text-sky-ink truncate">{pkg.name}</div>
+                        <div className="truncate font-display font-semibold text-sky-ink">{pkg.name}</div>
                         {pkg.description && (
-                          <div className="text-xs text-sky-ink-3 truncate mt-0.5">
+                          <div className="mt-0.5 truncate text-xs font-medium text-sky-ink-3">
                             {pkg.description}
                           </div>
                         )}
                       </td>
                       {/* Price */}
+                      {/* Price is money, so it takes the reward hue and the display
+                          face — it's the number this table is scanned for. */}
                       <td className="px-4 py-3 text-right">
-                        <span className="font-bold text-success-600 whitespace-nowrap">
-                          💎 {pkg.price.toLocaleString()}
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap font-display font-semibold text-sky-peach-deep tabular-nums">
+                          <Gem className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} aria-hidden="true" />
+                          {pkg.price.toLocaleString()}
                         </span>
                       </td>
                       {/* Duration */}
                       <td className="px-4 py-3 text-right">
-                        <span className="font-bold text-sky-ink-2">
+                        <span className="font-display font-semibold text-sky-ink-2 tabular-nums">
                           {pkg.durationDays === 0 ? t('admin.subscriptionPage.unlimited') : `${pkg.durationDays}d`}
                         </span>
                       </td>
@@ -763,27 +840,33 @@ export default function AdminSubscriptionPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                <span className="text-xs font-bold text-sky-ink-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/65 px-4 py-3">
+                <span className="text-xs font-medium text-sky-ink-2 tabular-nums">
                   {t('admin.subscriptionPage.paginationInfo', { page, totalPages, total: packages.length })}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <SkyButton type="button" variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
                     <ChevronLeft className="w-3.5 h-3.5" /> {t('admin.subscriptionPage.prevPage')}
                   </SkyButton>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-sky-chip transition-all ${
-                        p === page
-                          ? 'bg-sky-deep text-white'
-                          : 'border border-sky-surf-border text-sky-ink-2 hover:bg-gray-50'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {/* The page numbers share one recessed track, so the current page
+                      is the only thing lifting out of a row of look-alike digits. */}
+                  <div className="flex items-center gap-1 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        aria-current={p === page ? 'page' : undefined}
+                        aria-label={`Page ${p}`}
+                        className={`rounded-sky-chip px-3 py-1.5 text-xs font-semibold tabular-nums transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                          p === page
+                            ? 'bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip'
+                            : 'text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
                   <SkyButton type="button" variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
                     {t('admin.subscriptionPage.nextPage')} <ChevronRight className="w-3.5 h-3.5" />
                   </SkyButton>

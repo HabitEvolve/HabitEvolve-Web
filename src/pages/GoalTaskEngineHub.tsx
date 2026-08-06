@@ -5,6 +5,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
   Zap, ToggleLeft, ToggleRight,
   ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle, ExternalLink,
+  Target, ScrollText, BookOpen, Layers, Check, Minus, type LucideIcon,
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { adminGoalApi } from '../api/adminGoalApi';
@@ -23,12 +24,106 @@ import {
 } from '../types/adminGoal.types';
 
 // ─── Shared style helpers ─────────────────────────────────────────────────────
+// Glass field rather than a bordered box: the surface carries the affordance and
+// focus deepens the ring instead of swapping a border colour.
 const inputCls = [
-  'w-full px-3 py-2 rounded-sky-chip border border-sky-surf-border bg-white',
-  'text-sky-ink text-sm font-medium',
-  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
-  'placeholder:text-sky-ink-3',
+  'w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80',
+  'text-sky-ink text-sm font-medium transition-shadow',
+  'focus:outline-none focus:ring-2 focus:ring-sky-deep/45',
+  'placeholder:text-sky-ink-3 disabled:opacity-55',
 ].join(' ');
+
+const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3';
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
+
+// This screen is a four-level hierarchy (category → goal → task/rule/questionnaire),
+// so each level gets one hue and keeps it everywhere it appears — modal header,
+// tab, badge. Category=peach, goal=deep, task=violet, rule=deep, questionnaire=peach.
+// Teal is reserved for the one thing that genuinely means success: the Active
+// state of a record (§4 — never green).
+type Tone = 'deep' | 'peach' | 'violet' | 'teal' | 'rose';
+const TONE: Record<Tone, { wash: string; rail: string; chip: string }> = {
+  deep: { wash: 'bg-sky-deep/8', rail: 'bg-sky-deep', chip: 'bg-sky-deep/12 ring-sky-deep/22 text-sky-deep' },
+  peach: { wash: 'bg-sky-peach/14', rail: 'bg-sky-peach', chip: 'bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep' },
+  violet: { wash: 'bg-sky-violet/10', rail: 'bg-sky-violet', chip: 'bg-sky-violet/14 ring-sky-violet/24 text-sky-violet-deep' },
+  teal: { wash: 'bg-sky-teal/10', rail: 'bg-sky-teal', chip: 'bg-sky-teal-bg ring-sky-teal/26 text-sky-teal' },
+  rose: { wash: 'bg-sky-rose/10', rail: 'bg-sky-rose', chip: 'bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep' },
+};
+
+/** Modal chrome — tinted strip, colour rail, icon chip, eyebrow + display title. */
+function ModalHead({ Icon, eyebrowText, title, tone, onClose }: {
+  Icon: LucideIcon; eyebrowText: string; title: string; tone: Tone; onClose(): void;
+}) {
+  const t = TONE[tone];
+  return (
+    <div className={`relative flex items-center gap-3 p-5 ${t.wash} border-b border-white/70 overflow-hidden`}>
+      <span aria-hidden="true" className={`absolute left-0 top-0 bottom-0 w-1.5 ${t.rail}`} />
+      <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${t.chip}`}>
+        <Icon className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className={eyebrow}>{eyebrowText}</p>
+        <h2 className="font-display text-lg font-semibold text-sky-ink leading-tight truncate">{title}</h2>
+      </div>
+      <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} className="shrink-0"><X className="w-5 h-5" /></SkyButton>
+    </div>
+  );
+}
+
+/** Form error — rose rail plus a glyph, so the failure never rests on hue alone. */
+function FormError({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/10 ring-1 ring-sky-rose/26 pl-4 pr-3 py-2.5 flex items-center gap-2">
+      <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-sky-rose-deep" strokeWidth={2.4} aria-hidden="true" />
+      <span className="text-xs font-semibold text-sky-rose-deep">{children}</span>
+    </div>
+  );
+}
+
+/**
+ * Active/Off pill. Active is teal with a tick, Off is neutral ink with a dash —
+ * the glyph does the work so the two read apart without colour (§4).
+ */
+function StatusPill({ active, onLabel = 'Active', offLabel = 'Off', compact }: {
+  active: boolean; onLabel?: string; offLabel?: string; compact?: boolean;
+}) {
+  const Glyph = active ? Check : Minus;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 shrink-0 rounded-full ring-1 font-semibold ${compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[10px]'} ${active
+        ? 'bg-sky-teal-bg text-sky-teal ring-sky-teal/26'
+        : 'bg-sky-ink/7 text-sky-ink-3 ring-sky-ink/12'
+        }`}
+    >
+      <Glyph className="w-2.5 h-2.5 shrink-0" strokeWidth={3} aria-hidden="true" />
+      {active ? onLabel : offLabel}
+    </span>
+  );
+}
+
+/** Empty state — dashed well, muted glyph, one instruction. */
+function EmptyState({ Icon, title, hint }: { Icon: LucideIcon; title: string; hint: string }) {
+  return (
+    <div className="text-center py-12 border border-dashed border-sky-ink/16 rounded-sky-card bg-white/40">
+      <Icon className="w-10 h-10 mx-auto mb-2.5 text-sky-ink-3 opacity-45" strokeWidth={1.6} aria-hidden="true" />
+      <p className="font-display font-semibold text-sky-ink-2">{title}</p>
+      <p className="text-sm text-sky-ink-3 mt-0.5">{hint}</p>
+    </div>
+  );
+}
+
+/** Checkbox row — one recipe so all six forms agree. */
+function CheckRow({ checked, onChange, label }: {
+  checked: boolean; onChange(v: boolean): void; label: string;
+}) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer select-none">
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="w-4 h-4 rounded accent-sky-deep" />
+      <span className="text-sm font-semibold text-sky-ink-2">{label}</span>
+    </label>
+  );
+}
 
 const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
 const MEASUREMENT_TYPES: MeasurementType[] = ['CHECK_IN', 'COUNTABLE', 'FREQUENCY_BASED', 'QUALITY_BASED', 'SCHEDULE_BASED', 'TIME_BASED'];
@@ -48,11 +143,18 @@ function ConfirmDeleteModal({ title, body, onConfirm, onCancel, loading }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-error-500 shrink-0" />
-            <h3 className="text-lg font-bold text-error-700">{title}</h3>
+          <div className="flex items-start gap-3 mb-3">
+            <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-rose/14 ring-1 ring-sky-rose/26 text-sky-rose-deep">
+              <AlertTriangle className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className={eyebrow}>Irreversible</p>
+              <h3 className="font-display text-lg font-semibold text-sky-ink leading-tight">{title}</h3>
+            </div>
           </div>
           <p className="text-sm text-sky-ink-2 mb-6">{body}</p>
+          {/* Cancel sits first so the safe choice is the one under the cursor,
+              to the left of the irreversible one. */}
           <div className="flex gap-3">
             <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancel</SkyButton>
             <SkyButton type="button" variant="destructive" onClick={onConfirm} disabled={loading} className="flex-1">
@@ -93,38 +195,32 @@ function CategoryFormModal({ editing, onSave, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
-            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Category' : 'New Category'}</h2>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={Layers} eyebrowText="Goal category" title={editing ? 'Edit Category' : 'New Category'} tone="peach" onClose={onClose} />
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
+            {err && <FormError>{err}</FormError>}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Code *</label>
+                <label className={fieldLabel}>Code *</label>
                 <input value={code} onChange={e => setCode(e.target.value)} className={inputCls} placeholder="HEALTH" disabled={!!editing} />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Display Order</label>
+                <label className={fieldLabel}>Display Order</label>
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Name *</label>
+              <label className={fieldLabel}>Name *</label>
               <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="Health & Wellness" required />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
+              <label className={fieldLabel}>Description</label>
               <input value={desc} onChange={e => setDesc(e.target.value)} className={inputCls} placeholder="Optional description" />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Icon Code (emoji/slug)</label>
-              <input value={icon} onChange={e => setIcon(e.target.value)} className={inputCls} placeholder="🏃 or health-icon" />
+              <label className={fieldLabel}>Icon Code (slug)</label>
+              <input value={icon} onChange={e => setIcon(e.target.value)} className={inputCls} placeholder="health-icon" />
             </div>
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-sky-deep" />
-              <span className="text-sm font-semibold text-sky-ink-2">Active (visible to players)</span>
-            </label>
+            <CheckRow checked={active} onChange={setActive} label="Active (visible to players)" />
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
               <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
@@ -177,40 +273,34 @@ function GoalFormModal({ editing, defaultCategoryCode, onSave, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-lg">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-success-50">
-            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Goal' : 'New Goal'}</h2>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={Target} eyebrowText="Goal" title={editing ? 'Edit Goal' : 'New Goal'} tone="deep" onClose={onClose} />
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
+            {err && <FormError>{err}</FormError>}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Code *</label>
+                <label className={fieldLabel}>Code *</label>
                 <input value={code} onChange={e => setCode(e.target.value)} className={inputCls} placeholder="DRINK_WATER" disabled={!!editing} />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Display Order</label>
+                <label className={fieldLabel}>Display Order</label>
                 <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Goal Name *</label>
+              <label className={fieldLabel}>Goal Name *</label>
               <input value={gname} onChange={e => setGname(e.target.value)} className={inputCls} placeholder="Drink 2L of water daily" required />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
+              <label className={fieldLabel}>Description</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} placeholder="Optional description" />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Measurement Type</label>
+              <label className={fieldLabel}>Measurement Type</label>
               <select value={mtype} onChange={e => setMtype(e.target.value as MeasurementType)} className={inputCls}>
                 {MEASUREMENT_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-success-500" />
-              <span className="text-sm font-semibold text-sky-ink-2">Active</span>
-            </label>
+            <CheckRow checked={active} onChange={setActive} label="Active" />
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
               <SkyButton type="submit" variant="success" disabled={saving} className="flex-1">
@@ -251,30 +341,24 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-purple-50">
-            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Task' : 'New Practical Task'}</h2>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={Zap} eyebrowText="Practical task" title={editing ? 'Edit Task' : 'New Practical Task'} tone="violet" onClose={onClose} />
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
+            {err && <FormError>{err}</FormError>}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Title *</label>
+              <label className={fieldLabel}>Title *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Log water intake daily" required />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
+              <label className={fieldLabel}>Description</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Verification Type</label>
+              <label className={fieldLabel}>Verification Type</label>
               <select value={vtype} onChange={e => setVtype(e.target.value)} className={inputCls}>
                 {VERIFICATION_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-purple-500" />
-              <span className="text-sm font-semibold text-sky-ink-2">Active</span>
-            </label>
+            <CheckRow checked={active} onChange={setActive} label="Active" />
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
               <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
@@ -321,37 +405,31 @@ function RuleFormModal({ goalId, editing, onSave, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-blue-50">
-            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Rule' : 'New Rule'}</h2>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={ShieldCheck} eyebrowText="Recommendation rule" title={editing ? 'Edit Rule' : 'New Rule'} tone="deep" onClose={onClose} />
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
+            {err && <FormError>{err}</FormError>}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Rule Name *</label>
+              <label className={fieldLabel}>Rule Name *</label>
               <input value={rname} onChange={e => setRname(e.target.value)} className={inputCls} placeholder="e.g. Poor sleeper — under 6 hours" required />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
+              <label className={fieldLabel}>Description</label>
               <input value={desc} onChange={e => setDesc(e.target.value)} className={inputCls} placeholder="Optional description" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Priority (lower = first)</label>
+                <label className={fieldLabel}>Priority (lower = first)</label>
                 <input type="number" min={0} value={priority} onChange={e => setPriority(Number(e.target.value))} className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Match Mode</label>
+                <label className={fieldLabel}>Match Mode</label>
                 <select value={matchMode} onChange={e => setMatchMode(e.target.value as RuleMatchMode)} className={inputCls}>
                   {MATCH_MODES.map(m => <option key={m} value={m}>{m === 'AllConditions' ? 'ALL (AND)' : 'ANY (OR)'}</option>)}
                 </select>
               </div>
             </div>
             {!editing && (
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="w-4 h-4 accent-blue-500" />
-                <span className="text-sm font-semibold text-sky-ink-2">Active</span>
-              </label>
+              <CheckRow checked={active} onChange={setActive} label="Active" />
             )}
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
@@ -394,25 +472,22 @@ function ConditionFormModal({ ruleId, editing, onSave, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-sm">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-blue-50">
-            <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Condition' : 'Add Condition'}</h2>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={BookOpen} eyebrowText="Rule condition" title={editing ? 'Edit Condition' : 'Add Condition'} tone="deep" onClose={onClose} />
           <form onSubmit={submit} className="p-5 space-y-3">
-            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
+            {err && <FormError>{err}</FormError>}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Question ID *</label>
+              <label className={fieldLabel}>Question ID *</label>
               <input type="number" value={questionId} onChange={e => setQuestionId(e.target.value)} className={inputCls} placeholder="Question ID from the Questionnaire Builder" required />
               <p className="text-[10px] text-sky-ink-3 mt-1">Find IDs in the Questionnaire Builder page.</p>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Operator</label>
+              <label className={fieldLabel}>Operator</label>
               <select value={operator} onChange={e => setOperator(e.target.value as ConditionOperator)} className={inputCls}>
                 {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-sky-ink-2 mb-1">Value *</label>
+              <label className={fieldLabel}>Value *</label>
               <input value={condValue} onChange={e => setCondValue(e.target.value)} className={inputCls} placeholder='e.g. "LOW" or "6"' required />
             </div>
             <div className="flex gap-3 pt-2">
@@ -458,12 +533,9 @@ function BindQuestionnaireModal({ goalId, onBound, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
-            <h2 className="font-bold text-lg text-sky-ink">Attach Questionnaire</h2>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={ScrollText} eyebrowText="Questionnaire binding" title="Attach Questionnaire" tone="peach" onClose={onClose} />
           <div className="p-5 space-y-4">
-            {err && <p className="text-xs text-error-600 font-bold bg-error-50 rounded-sky-chip px-3 py-2">{err}</p>}
+            {err && <FormError>{err}</FormError>}
             {loading ? (
               <div className="flex items-center gap-2 text-sky-ink-3"><Loader2 className="w-4 h-4 animate-spin" /> Loading templates…</div>
             ) : templates.length === 0 ? (
@@ -475,9 +547,18 @@ function BindQuestionnaireModal({ goalId, onBound, onClose }: {
                     key={tpl.templateId}
                     type="button"
                     onClick={() => setSelected(tpl.templateId)}
-                    className={`w-full text-left px-4 py-3 rounded-sky-chip transition-all ${selected === tpl.templateId ? 'ring-2 ring-warning-400 bg-warning-50' : 'bg-white border border-sky-surf-border hover:bg-warning-50/60'}`}
+                    aria-pressed={selected === tpl.templateId}
+                    className={`relative w-full text-left px-4 py-3 pl-4 rounded-sky-chip overflow-hidden transition-all duration-150 ${selected === tpl.templateId
+                      ? 'bg-sky-peach/16 ring-1 ring-sky-peach/32'
+                      : 'bg-white/62 ring-1 ring-white/80 hover:bg-white/80'}`}
                   >
-                    <p className="font-bold text-sm text-sky-ink">{tpl.templateName}</p>
+                    {/* Selection carries a rail and a tick beside the name, so the
+                        chosen template reads without depending on the tint. */}
+                    {selected === tpl.templateId && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" />}
+                    <p className="flex items-center gap-1.5 font-semibold text-sm text-sky-ink">
+                      {selected === tpl.templateId && <Check className="w-3.5 h-3.5 shrink-0 text-sky-peach-deep" strokeWidth={2.6} aria-hidden="true" />}
+                      {tpl.templateName}
+                    </p>
                     {tpl.description && <p className="text-xs text-sky-ink-3 mt-0.5">{tpl.description}</p>}
                   </button>
                 ))}
@@ -537,7 +618,9 @@ function PracticalTasksTab({ goal }: { goal: GoalDto }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-sky-ink-3">{tasks.length} task template{tasks.length !== 1 ? 's' : ''} for this goal</p>
+        <p className="text-sm font-medium text-sky-ink-3">
+          <span className="font-display font-semibold text-sky-ink tabular-nums">{tasks.length}</span> task template{tasks.length !== 1 ? 's' : ''} for this goal
+        </p>
         <SkyButton type="button" variant="secondary" size="sm" onClick={() => setTaskModal({ editing: null })}>
           <Plus className="w-4 h-4" /> Add Task
         </SkyButton>
@@ -546,41 +629,37 @@ function PracticalTasksTab({ goal }: { goal: GoalDto }) {
       {loading ? (
         <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : tasks.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
-          <Zap className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p className="font-bold">No tasks yet</p>
-          <p className="text-sm">Add practical task templates for this goal.</p>
-        </div>
+        <EmptyState Icon={Zap} title="No tasks yet" hint="Add practical task templates for this goal." />
       ) : (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-purple-50">
+              <tr className="sky-table-head">
                 {['#', 'Title', 'Verification', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-sky-ink-3">{h}</th>
+                  <th key={h} className={`px-4 py-3 text-left ${eyebrow}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {tasks.map((t, i) => (
                 <tr key={t.taskId} className="sky-table-row">
-                  <td className="px-4 py-3 text-xs font-bold text-sky-ink-3">{i + 1}</td>
+                  <td className="px-4 py-3 text-xs font-semibold text-sky-ink-3 tabular-nums">{i + 1}</td>
                   <td className="px-4 py-3 max-w-xs">
-                    <p className="font-bold text-sky-ink truncate">{t.title}</p>
+                    <p className="font-semibold text-sky-ink truncate">{t.title}</p>
                     {t.description && <p className="text-xs text-sky-ink-3 truncate">{t.description}</p>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{t.verificationType}</span>
+                    {/* Verification method is a category, not a verdict, so it stays
+                        on the game/violet tone rather than borrowing a status hue. */}
+                    <span className="inline-block text-[10px] font-semibold bg-sky-violet/12 text-sky-violet-deep ring-1 ring-sky-violet/22 px-2 py-0.5 rounded-full">{t.verificationType}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${t.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {t.isActive ? 'Active' : 'Off'}
-                    </span>
+                    <StatusPill active={t.isActive} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <SkyButton type="button" variant="ghost" size="icon" onClick={() => setTaskModal({ editing: t })} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
-                      <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelTask(t)} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
+                      <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelTask(t)} className="w-8 h-8 text-sky-rose-deep hover:bg-sky-rose/10"><Trash2 className="w-4 h-4" /></SkyButton>
                     </div>
                   </td>
                 </tr>
@@ -661,7 +740,9 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-sky-ink-3">{rules.length} rule{rules.length !== 1 ? 's' : ''} — sorted by priority</p>
+        <p className="text-sm font-medium text-sky-ink-3">
+          <span className="font-display font-semibold text-sky-ink tabular-nums">{rules.length}</span> rule{rules.length !== 1 ? 's' : ''} — sorted by priority
+        </p>
         <SkyButton type="button" variant="secondary" size="sm" onClick={() => setRuleModal({ editing: null })}>
           <Plus className="w-4 h-4" /> Add Rule
         </SkyButton>
@@ -670,11 +751,7 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
       {loading ? (
         <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : rules.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
-          <ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p className="font-bold">No rules yet</p>
-          <p className="text-sm">Rules decide which tasks to recommend based on player answers.</p>
-        </div>
+        <EmptyState Icon={ShieldCheck} title="No rules yet" hint="Rules decide which tasks to recommend based on player answers." />
       ) : (
         <div className="space-y-3">
           {rules.map(rule => (
@@ -683,50 +760,53 @@ function RecommendationRulesTab({ goal }: { goal: GoalDto }) {
               <div className="flex items-start gap-3 p-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">P{rule.priority}</span>
-                    <p className="font-bold text-sm text-sky-ink">{rule.ruleName}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rule.matchMode === 'AllConditions' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                    {/* Priority is the thing an operator scans this list by, so it
+                        gets the solid deep fill — the loudest element in the row. */}
+                    <span className="inline-block text-[10px] font-semibold bg-sky-deep text-white px-2 py-0.5 rounded-full tabular-nums">P{rule.priority}</span>
+                    <p className="font-display font-semibold text-sm text-sky-ink">{rule.ruleName}</p>
+                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ring-1 ${rule.matchMode === 'AllConditions' ? 'bg-sky-deep/10 text-sky-deep ring-sky-deep/20' : 'bg-sky-violet/12 text-sky-violet-deep ring-sky-violet/22'}`}>
                       {rule.matchMode === 'AllConditions' ? 'AND' : 'OR'}
                     </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rule.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {rule.isActive ? 'Active' : 'Off'}
-                    </span>
+                    <StatusPill active={rule.isActive} />
                   </div>
                   {rule.description && <p className="text-xs text-sky-ink-3 mt-1">{rule.description}</p>}
                   <p className="text-[10px] text-sky-ink-3 mt-1">{rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpandedRule(expandedRule === rule.ruleId ? null : rule.ruleId)} title="Conditions" className="w-8 h-8">
-                    <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpandedRule(expandedRule === rule.ruleId ? null : rule.ruleId)} title="Conditions" aria-expanded={expandedRule === rule.ruleId} className="w-8 h-8">
+                    <BookOpen className="w-4 h-4" />
                   </SkyButton>
                   <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggleRule(rule)} className="w-8 h-8">
-                    {rule.isActive ? <ToggleRight className="w-4 h-4 text-success-600" /> : <ToggleLeft className="w-4 h-4 text-sky-ink-3" />}
+                    {rule.isActive ? <ToggleRight className="w-4 h-4 text-sky-teal" /> : <ToggleLeft className="w-4 h-4 text-sky-ink-3" />}
                   </SkyButton>
                   <SkyButton type="button" variant="ghost" size="icon" onClick={() => setRuleModal({ editing: rule })} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
-                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelRule(rule)} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelRule(rule)} className="w-8 h-8 text-sky-rose-deep hover:bg-sky-rose/10"><Trash2 className="w-4 h-4" /></SkyButton>
                 </div>
               </div>
 
               {/* Conditions panel */}
               {expandedRule === rule.ruleId && (
-                <div className="border-t border-gray-200 bg-blue-50/40 px-4 pb-4">
+                <div className="border-t border-white/70 bg-sky-deep/6 px-4 pb-4">
                   <div className="flex items-center justify-between pt-3 mb-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600">Conditions</p>
+                    <p className={eyebrow}>Conditions</p>
                     <SkyButton type="button" variant="secondary" size="sm" onClick={() => setCondModal({ ruleId: rule.ruleId, editing: null })}>
                       <Plus className="w-3 h-3" /> Add Condition
                     </SkyButton>
                   </div>
                   {rule.conditions.length === 0 ? (
-                    <p className="text-xs text-sky-ink-3 italic py-2 text-center border border-dashed border-sky-ink/15 rounded-sky-chip">No conditions — rule matches all players.</p>
+                    <p className="text-xs text-sky-ink-3 py-2.5 text-center border border-dashed border-sky-ink/16 rounded-sky-chip">No conditions — rule matches all players.</p>
                   ) : (
                     <div className="space-y-1.5">
                       {rule.conditions.map(c => (
-                        <div key={c.conditionId} className="flex items-center gap-2 px-3 py-2 bg-white border border-blue-200 rounded-sky-chip">
-                          <span className="text-xs font-mono font-bold text-sky-ink-2 shrink-0">Q#{c.questionId}</span>
-                          <span className="text-xs font-bold text-blue-600 shrink-0">{c.operator}</span>
-                          <span className="text-xs font-mono bg-gray-100 text-sky-ink-2 px-2 py-0.5 rounded-md flex-1 min-w-0 truncate">{c.conditionValue ?? '—'}</span>
+                        // A condition reads as one expression — subject, operator,
+                        // value — so the operator is the only emphasised part and the
+                        // value sits in a recessed slot rather than becoming a badge.
+                        <div key={c.conditionId} className="flex items-center gap-2 px-3 py-2 bg-white/72 ring-1 ring-white/85 rounded-sky-chip">
+                          <span className="text-xs font-mono font-semibold text-sky-ink-2 shrink-0 tabular-nums">Q#{c.questionId}</span>
+                          <span className="text-xs font-semibold text-sky-deep shrink-0">{c.operator}</span>
+                          <span className="text-xs font-mono bg-sky-ink/7 text-sky-ink-2 px-2 py-0.5 rounded-md flex-1 min-w-0 truncate">{c.conditionValue ?? '—'}</span>
                           <SkyButton type="button" variant="ghost" size="icon" onClick={() => setCondModal({ ruleId: rule.ruleId, editing: c })} className="w-6 h-6"><Pencil className="w-3 h-3" /></SkyButton>
-                          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelCond({ rule, cond: c })} className="w-6 h-6 text-error-500 hover:bg-error-50"><Trash2 className="w-3 h-3" /></SkyButton>
+                          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelCond({ rule, cond: c })} className="w-6 h-6 text-sky-rose-deep hover:bg-sky-rose/10"><Trash2 className="w-3 h-3" /></SkyButton>
                         </div>
                       ))}
                     </div>
@@ -792,37 +872,37 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-sky-ink-3">{bindings.length} bound questionnaire{bindings.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm font-medium text-sky-ink-3">
+          <span className="font-display font-semibold text-sky-ink tabular-nums">{bindings.length}</span> bound questionnaire{bindings.length !== 1 ? 's' : ''}
+        </p>
         <SkyButton type="button" variant="secondary" size="sm" onClick={() => setBindModal(true)}>
           <LinkIcon className="w-4 h-4" /> Attach Template
         </SkyButton>
       </div>
-      {actionErr && (
-        <p className="text-xs font-bold text-error-600 bg-error-50 rounded-sky-chip px-3 py-2">{actionErr}</p>
-      )}
+      {actionErr && <FormError>{actionErr}</FormError>}
 
       {loading ? (
         <div className="flex items-center gap-2 justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : bindings.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
-          <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
-          <p className="font-bold">No questionnaires attached</p>
-          <p className="text-sm">Players can't start Goal Wizard until a questionnaire is active.</p>
-        </div>
+        <EmptyState Icon={ScrollText} title="No questionnaires attached" hint="Players can&apos;t start Goal Wizard until a questionnaire is active." />
       ) : (
         <div className="space-y-3">
           {bindings.map(b => (
-            <SkyCard key={b.goalQuestionnaireId} variant="admin" className={`flex items-center gap-4 ${b.isActive ? 'ring-2 ring-warning-400 bg-warning-50' : ''}`}>
+            // Only one binding can be live at a time, so the active one is marked
+            // with a teal rail on the card edge as well as its pill — this is the
+            // row an operator must not mistake.
+            <SkyCard key={b.goalQuestionnaireId} variant="admin" className={`relative overflow-hidden flex items-center gap-4 ${b.isActive ? 'ring-1 ring-sky-teal/28' : ''}`}>
+              {b.isActive && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1.5 bg-sky-teal" />}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-sm text-sky-ink">{b.templateName ?? `Template #${b.templateId}`}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-display font-semibold text-sm text-sky-ink">{b.templateName ?? `Template #${b.templateId}`}</p>
                   {b.isActive && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-warning-200 text-warning-800 px-2 py-0.5 rounded-full">
-                      <CheckCircle className="w-3 h-3" /> Active
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-sky-teal-bg text-sky-teal ring-1 ring-sky-teal/26 px-2 py-0.5 rounded-full">
+                      <CheckCircle className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> Active
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-sky-ink-3 mt-0.5">Effective from: {new Date(b.effectiveFrom).toLocaleDateString()}</p>
+                <p className="text-xs text-sky-ink-3 mt-0.5 tabular-nums">Effective from: {new Date(b.effectiveFrom).toLocaleDateString()}</p>
               </div>
               <SkyButton type="button" variant="secondary" size="sm" onClick={() => navigate(`/questionnaires?templateId=${b.templateId}`)} title="View in Onboarding Eval">
                 <ExternalLink className="w-4 h-4" /> Detail
@@ -853,10 +933,13 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 type CommandTab = 'tasks' | 'rules' | 'questionnaires';
 
-const TABS: { id: CommandTab; label: string; icon: React.ReactNode; cls: string }[] = [
-  { id: 'tasks',          label: 'Practical Tasks',       icon: <Zap className="w-4 h-4" />,          cls: 'bg-purple-200 text-sky-ink' },
-  { id: 'rules',          label: 'Recommendation Rules',  icon: <ShieldCheck className="w-4 h-4" />,   cls: 'bg-blue-200 text-sky-ink' },
-  { id: 'questionnaires', label: 'Questionnaires',         icon: <img src="/icon/Item/Scroll/64px/Golden Scroll 1st 64px.png" alt="" className="w-4 h-4 object-contain" />, cls: 'bg-warning-200 text-sky-ink' },
+// Each tab keeps the hue its own records use elsewhere on the screen, so the
+// tab bar doubles as a legend. The scroll PNG is retired — at the 16px these
+// pills render, pixel art turns to mush next to lucide's stroke weight.
+const TABS: { id: CommandTab; label: string; Icon: LucideIcon; on: string }[] = [
+  { id: 'tasks',          label: 'Practical Tasks',      Icon: Zap,        on: 'bg-linear-to-b from-sky-violet to-sky-violet-deep' },
+  { id: 'rules',          label: 'Recommendation Rules', Icon: ShieldCheck, on: 'bg-linear-to-b from-sky-deep-lo to-sky-deep' },
+  { id: 'questionnaires', label: 'Questionnaires',       Icon: ScrollText, on: 'bg-linear-to-b from-sky-peach to-sky-peach-deep' },
 ];
 
 function GoalCommandCenter({ category, goal, onBack }: {
@@ -873,37 +956,49 @@ function GoalCommandCenter({ category, goal, onBack }: {
         <SkyButton type="button" variant="secondary" size="sm" onClick={onBack}>
           <ArrowLeft className="w-3.5 h-3.5" /> Categories
         </SkyButton>
-        <ChevronRight className="w-4 h-4 text-sky-ink-3" />
-        <span className="text-sm font-bold text-sky-ink-3">{category.categoryName}</span>
-        <ChevronRight className="w-4 h-4 text-sky-ink-3" />
-        <span className="text-sm font-bold text-sky-ink">{goal.goalName}</span>
-        <span className={`ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${goal.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
-          {goal.isActive ? 'Active' : 'Inactive'}
-        </span>
+        <ChevronRight className="w-4 h-4 text-sky-ink-3" aria-hidden="true" />
+        <span className="text-sm font-medium text-sky-ink-3">{category.categoryName}</span>
+        <ChevronRight className="w-4 h-4 text-sky-ink-3" aria-hidden="true" />
+        {/* Only the leaf is emphasised — the trail above it is context, not a title. */}
+        <span className="font-display text-sm font-semibold text-sky-ink">{goal.goalName}</span>
+        <StatusPill active={goal.isActive} offLabel="Inactive" />
       </div>
 
       {/* Goal info banner */}
-      <div className="flex items-center gap-4 px-4 py-3 bg-success-50 rounded-sky-card">
-        <div className="w-10 h-10 rounded-sky-chip bg-success-100 flex items-center justify-center shrink-0">
-          <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
-        </div>
+      {/* The goal being configured is the subject of every tab below, so it gets
+          a deep rail and display type — the anchor an operator checks against. */}
+      <div className="relative flex items-center gap-4 px-4 py-3.5 pl-5 bg-sky-deep/8 ring-1 ring-sky-deep/16 rounded-sky-card overflow-hidden">
+        <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1.5 bg-sky-deep" />
+        <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-deep/12 ring-1 ring-sky-deep/22 text-sky-deep">
+          <Target className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+        </span>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sky-ink">{goal.goalName}</p>
-          <p className="text-xs text-sky-ink-3">{goal.goalCode} · {goal.measurementType}</p>
+          <p className="font-display font-semibold text-sky-ink truncate">{goal.goalName}</p>
+          <p className="text-xs font-medium text-sky-ink-3 truncate">
+            <span className="font-mono">{goal.goalCode}</span> · {goal.measurementType}
+          </p>
         </div>
       </div>
 
       {/* Tab bar */}
       <div className="flex gap-2 flex-wrap">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-sky-chip font-bold text-sm transition-all ${tab === t.id ? t.cls : 'bg-white border border-sky-surf-border text-sky-ink-3 hover:bg-gray-50'}`}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
+        {TABS.map(({ id, label, Icon, on }) => {
+          const live = tab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              aria-pressed={live}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-sky-chip font-semibold text-sm transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${live
+                ? `${on} text-white shadow-sky-fill ring-1 ring-inset ring-white/25`
+                : 'bg-white/62 ring-1 ring-white/80 text-sky-ink-2 hover:bg-white/82 hover:text-sky-ink'
+                }`}
+            >
+              <Icon className={`w-4 h-4 shrink-0 ${live ? 'text-white' : 'text-sky-ink-3'}`} strokeWidth={2.3} aria-hidden="true" />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab content */}
@@ -1014,7 +1109,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
         {/* Left: Categories */}
         <SkyCard variant="admin" className="w-72 shrink-0 flex flex-col gap-3 overflow-hidden">
           <div className="flex items-center justify-between shrink-0">
-            <h2 className="font-bold text-sky-ink">Categories</h2>
+            <h2 className="font-display font-semibold text-sky-ink">Categories</h2>
             <SkyButton type="button" variant="secondary" size="sm" onClick={() => setCatModal({ editing: null })}>
               <Plus className="w-3 h-3" /> New
             </SkyButton>
@@ -1028,24 +1123,29 @@ function CategoryGoalExplorer({ onEnterGoal }: {
               <div
                 key={cat.categoryId}
                 onClick={() => setSelectedCat(cat)}
-                className={`cursor-pointer rounded-sky-chip p-3 transition-all ${selectedCat?.categoryId === cat.categoryId ? 'ring-2 ring-warning-400 bg-warning-50' : 'bg-gray-50 border border-sky-surf-border hover:bg-warning-50/50'}`}
+                className={`relative cursor-pointer rounded-sky-chip p-3 pl-3.5 overflow-hidden transition-all duration-150 ${selectedCat?.categoryId === cat.categoryId
+                  ? 'bg-sky-peach/16 ring-1 ring-sky-peach/32'
+                  : 'bg-white/58 ring-1 ring-white/80 hover:bg-white/80'}`}
               >
+                {/* Selection is a rail plus a tint — in a narrow rail like this the
+                    edge marker is what the eye actually catches while scrolling. */}
+                {selectedCat?.categoryId === cat.categoryId && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" />}
                 <div className="flex items-center justify-between gap-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    {cat.iconCode && <span className="text-lg shrink-0">{cat.iconCode}</span>}
-                    <p className="font-bold text-sm text-sky-ink truncate">{cat.categoryName}</p>
+                    <Layers className="w-3.5 h-3.5 shrink-0 text-sky-ink-3" strokeWidth={2.2} aria-hidden="true" />
+                    <p className="font-semibold text-sm text-sky-ink truncate">{cat.categoryName}</p>
                   </div>
-                  <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cat.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {cat.isActive ? '●' : '○'}
-                  </span>
+                  {/* Compact pill instead of a bare ●/○ glyph: the dot alone was
+                      colour-only, and the word survives at any contrast. */}
+                  <StatusPill active={cat.isActive} onLabel="On" compact />
                 </div>
                 <p className="text-[10px] text-sky-ink-3 font-mono mt-1">{cat.categoryCode}</p>
                 <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
                   <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggleCat(cat)} className="w-6 h-6">
-                    {cat.isActive ? <ToggleRight className="w-3.5 h-3.5 text-success-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-sky-ink-3" />}
+                    {cat.isActive ? <ToggleRight className="w-3.5 h-3.5 text-sky-teal" /> : <ToggleLeft className="w-3.5 h-3.5 text-sky-ink-3" />}
                   </SkyButton>
                   <SkyButton type="button" variant="ghost" size="icon" onClick={() => setCatModal({ editing: cat })} className="w-6 h-6"><Pencil className="w-3.5 h-3.5" /></SkyButton>
-                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelCat(cat)} className="w-6 h-6 text-error-500 hover:bg-error-50"><Trash2 className="w-3.5 h-3.5" /></SkyButton>
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelCat(cat)} className="w-6 h-6 text-sky-rose-deep hover:bg-sky-rose/10"><Trash2 className="w-3.5 h-3.5" /></SkyButton>
                 </div>
               </div>
             ))}
@@ -1056,16 +1156,20 @@ function CategoryGoalExplorer({ onEnterGoal }: {
         <SkyCard variant="admin" className="flex-1 flex flex-col gap-3 overflow-hidden">
           {!selectedCat ? (
             <div className="flex-1 flex flex-col items-center justify-center text-sky-ink-3">
-              <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-16 h-16 object-contain opacity-20 mb-4" />
-              <p className="font-bold text-lg text-sky-ink-2">Select a Category</p>
+              <span className="grid place-items-center w-16 h-16 mb-4 rounded-sky-md bg-white/55 ring-1 ring-white/78">
+                <Layers className="w-7 h-7 text-sky-ink-3 opacity-55" strokeWidth={1.6} aria-hidden="true" />
+              </span>
+              <p className="font-display font-semibold text-lg text-sky-ink-2">Select a Category</p>
               <p className="text-sm">Choose a category on the left to view and manage its goals.</p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between shrink-0">
                 <div>
-                  <h2 className="font-bold text-sky-ink">{selectedCat.categoryName}</h2>
-                  <p className="text-xs text-sky-ink-3">{goals.length} goal{goals.length !== 1 ? 's' : ''}</p>
+                  <h2 className="font-display font-semibold text-sky-ink">{selectedCat.categoryName}</h2>
+                  <p className="text-xs font-medium text-sky-ink-3">
+                    <span className="font-semibold text-sky-ink-2 tabular-nums">{goals.length}</span> goal{goals.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
                 <SkyButton type="button" variant="success" size="sm" onClick={() => setGoalModal({ editing: null })}>
                   <Plus className="w-3 h-3" /> New Goal
@@ -1076,20 +1180,14 @@ function CategoryGoalExplorer({ onEnterGoal }: {
                 {goalLoading ? (
                   <div className="flex items-center justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /></div>
                 ) : goals.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
-                    <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-10 h-10 mx-auto mb-2 object-contain opacity-40" />
-                    <p className="font-bold">No goals in this category</p>
-                    <p className="text-sm">Add the first goal using the button above.</p>
-                  </div>
+                  <EmptyState Icon={Target} title="No goals in this category" hint="Add the first goal using the button above." />
                 ) : goals.map(goal => (
-                  <div key={goal.goalId} className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint hover:bg-gray-50/60 transition-all">
+                  <div key={goal.goalId} className="sky-lift rounded-sky-chip p-4 bg-white/68 ring-1 ring-white/80 shadow-sky-tint transition-all">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-sm text-sky-ink">{goal.goalName}</p>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${goal.isActive ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {goal.isActive ? 'Active' : 'Off'}
-                          </span>
+                          <p className="font-display font-semibold text-sm text-sky-ink">{goal.goalName}</p>
+                          <StatusPill active={goal.isActive} />
                         </div>
                         <p className="text-[10px] text-sky-ink-3 font-mono mt-0.5">{goal.goalCode} · {goal.measurementType}</p>
                         {goal.description && <p className="text-xs text-sky-ink-3 mt-1 line-clamp-1">{goal.description}</p>}
@@ -1097,7 +1195,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
                     </div>
                     <div className="flex items-center gap-2 mt-3">
                       <SkyButton type="button" variant="secondary" size="sm" onClick={() => setGoalModal({ editing: goal })}><Pencil className="w-3 h-3" /> Edit</SkyButton>
-                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => setDelGoal(goal)} className="text-error-600"><Trash2 className="w-3 h-3" /></SkyButton>
+                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => setDelGoal(goal)} aria-label={`Delete ${goal.goalName}`} className="text-sky-rose-deep"><Trash2 className="w-3 h-3" /></SkyButton>
                       <SkyButton type="button" variant="success" size="sm" onClick={() => onEnterGoal(selectedCat, goal)} className="ml-auto">
                         Configure <ChevronRight className="w-3.5 h-3.5" />
                       </SkyButton>
@@ -1136,13 +1234,14 @@ export default function GoalTaskEngineHub() {
   return (
     <div className="h-full flex flex-col gap-4">
       {/* Page header */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-sky-chip bg-success-100 flex items-center justify-center shrink-0">
-          <img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-6 h-6 object-contain" />
-        </div>
+      <div className="flex items-center gap-3.5">
+        <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-deep/10 ring-1 ring-sky-deep/20 text-sky-deep">
+          <Target className="w-6 h-6" strokeWidth={2.2} aria-hidden="true" />
+        </span>
         <div>
-          <h1 className="text-2xl font-bold text-sky-ink">Goal Engine Hub</h1>
-          <p className="text-sm text-sky-ink-2">
+          <p className={eyebrow}>Admin · content engine</p>
+          <h1 className="font-display text-sky-h1 font-semibold text-sky-ink leading-tight">Goal Engine Hub</h1>
+          <p className="text-sm font-medium text-sky-ink-3">
             {view === 'explorer' ? 'Category → Goal explorer' : `Configuring: ${activeGoal?.goalName}`}
           </p>
         </div>

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router";
+import {
+    Mic, MicOff, Video, VideoOff, Swords, Star, AlertTriangle, Radio,
+    Trophy, Check, X, PhoneOff, Send, Loader2, VideoIcon,
+} from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import partyCallApi from "../../api/partyCallApi";
@@ -9,19 +13,34 @@ import type { PartyItem } from "../../types/api.types";
 import type { ChallengeMode, LiveChallengeBankItemDto } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
 
+// ── SHARED ATOMS ──────────────────────────────────────────────────────────────
+const eyebrow = "block text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] mb-1.5";
+const inputCls = [
+    "w-full px-3.5 py-2.5 rounded-sky-chip border border-white/80 bg-white/60",
+    "text-sm font-medium text-sky-ink transition",
+    "focus:outline-hidden focus:border-sky-deep focus:bg-white/85 focus:ring-3 focus:ring-sky-deep/18",
+    "placeholder:text-sky-ink-3 placeholder:font-normal",
+].join(" ");
+
 function VideoTile({ stream, label, muted = false }: { stream: MediaStream | null; label: string; muted?: boolean }) {
     const ref = useRef<HTMLVideoElement>(null);
     useEffect(() => {
         if (ref.current) ref.current.srcObject = stream;
     }, [stream]);
     return (
-        <div className="relative bg-black rounded-xl overflow-hidden border-2 border-black aspect-video">
+        // Video needs a dark bed to read against, but it's navy ink rather than
+        // pure black so it sits in the same family as every other surface.
+        <div className="relative bg-sky-ink rounded-sky-md overflow-hidden ring-1 ring-white/60 shadow-[0_6px_18px_rgba(36,52,77,0.20)] aspect-video">
             {stream ? (
                 <video ref={ref} autoPlay playsInline muted={muted} className="w-full h-full object-cover" />
             ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs font-bold">Connecting…</div>
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-white/55">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-[11px] font-medium">Connecting…</span>
+                </div>
             )}
-            <span className="absolute bottom-1 left-1 px-2 py-0.5 bg-black/70 text-white text-xs font-black rounded-full">{label}</span>
+            <span className="absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-sky-ink/80 to-transparent pointer-events-none" />
+            <span className="absolute bottom-1.5 left-2 text-white text-[11px] font-semibold drop-shadow-[0_1px_2px_rgba(36,52,77,0.9)]">{label}</span>
         </div>
     );
 }
@@ -153,35 +172,57 @@ export default function LiveChallengeSession() {
             <PageBreadcrumb pageTitle="Live Challenge Arena" />
 
             {error && (
-                <div className="mb-6 p-4 bg-red-100 border-4 border-red-400 rounded-2xl font-bold text-red-700">
-                    {error}
+                <div className="relative overflow-hidden sky-glass mb-6 rounded-sky-card pl-5 pr-4 py-4">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+                    <p className="relative flex items-center gap-2.5 text-sm font-semibold text-sky-rose-deep">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        {error}
+                    </p>
                 </div>
             )}
 
             {!session || !isActiveHere ? (
-                <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 max-w-xl">
-                    <h2 className="text-xl font-black mb-4">Start a Live Challenge Arena</h2>
+                <div className="sky-glass rounded-sky-card p-6 sm:p-7 max-w-xl">
+                    <div className="relative flex items-center gap-3 mb-5">
+                        <span className="grid place-items-center w-11 h-11 rounded-sky-md bg-sky-violet/14 text-sky-violet-deep shrink-0">
+                            <Radio className="w-5 h-5" />
+                        </span>
+                        <div>
+                            <h2 className="font-display text-lg font-semibold text-sky-ink tracking-[-0.01em]">Start a Live Challenge Arena</h2>
+                            <p className="text-xs font-medium text-sky-ink-3 mt-0.5">Video call your party and referee live challenges</p>
+                        </div>
+                    </div>
 
                     {activeElsewhere && (
-                        <div className="mb-4 p-4 bg-amber-50 border-2 border-amber-400 rounded-xl">
-                            <p className="font-black text-amber-800">You already have a live session running elsewhere.</p>
-                            <p className="text-sm text-amber-700 mt-1">
+                        <div className="relative overflow-hidden mb-4 rounded-sky-md border border-sky-peach/30 bg-sky-peach/12 pl-4 pr-3.5 py-3.5">
+                            <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach-deep" />
+                            <p className="relative flex items-center gap-2 text-sm font-semibold text-sky-peach-deep">
+                                <AlertTriangle className="w-4 h-4 shrink-0" />
+                                You already have a live session running elsewhere.
+                            </p>
+                            <p className="relative text-xs font-medium text-sky-ink-2 mt-1 pl-6">
                                 End it (via the floating "LIVE" bar) before starting a new one — only one call can run at a time.
                             </p>
                         </div>
                     )}
 
                     {session?.status === "Ended" && session.partyId === selectedPartyId && (
-                        <div className="mb-4 p-4 bg-violet-50 border-2 border-violet-400 rounded-xl">
-                            <p className="font-black text-violet-800 mb-2">Final results</p>
-                            <div className="space-y-1">
+                        <div className="relative overflow-hidden mb-4 rounded-sky-md border border-white/70 bg-sky-violet/8 p-4">
+                            <span className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-violet to-sky-violet-deep" />
+                            <p className="relative flex items-center gap-2 font-display text-sm font-semibold text-sky-violet-deep mb-2.5">
+                                <Trophy className="w-4 h-4 shrink-0" /> Final results
+                            </p>
+                            <div className="relative space-y-1.5">
                                 {leaderboard.map((p, i) => (
-                                    <div key={p.userId} className="flex justify-between text-sm font-bold">
-                                        <span>#{p.finalRank ?? i + 1} {p.username}</span>
-                                        <span>
+                                    <div key={p.userId} className="flex justify-between items-center gap-3 text-sm">
+                                        <span className="font-medium text-sky-ink truncate">
+                                            <span className="font-display font-semibold tabular-nums text-sky-ink-3 mr-1.5">#{p.finalRank ?? i + 1}</span>
+                                            {p.username}
+                                        </span>
+                                        <span className="shrink-0 font-display font-semibold tabular-nums text-sky-ink">
                                             {p.score} pts
                                             {p.mGoldAwarded > 0 && (
-                                                <span className="ml-2 text-amber-600">+{p.mGoldAwarded} M-Gold</span>
+                                                <span className="ml-2 text-sky-peach-deep">+{p.mGoldAwarded} M-Gold</span>
                                             )}
                                         </span>
                                     </div>
@@ -191,30 +232,31 @@ export default function LiveChallengeSession() {
                     )}
 
                     {workspace ? (
-                        <p className="mb-4 text-sm font-bold">
-                            Party: <span className="text-violet-700">{workspace.party.name}</span>
+                        <p className="relative mb-5 text-sm font-medium text-sky-ink-2">
+                            Party: <span className="font-semibold text-sky-violet-deep">{workspace.party.name}</span>
                         </p>
                     ) : (
-                        <>
-                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Party</label>
+                        <div className="relative mb-5">
+                            <label className={eyebrow}>Party</label>
                             <select
                                 value={selectedPartyId}
                                 onChange={(e) => setSelectedPartyId(e.target.value ? parseInt(e.target.value) : "")}
-                                className="w-full px-3 py-2.5 border-2 border-black rounded-xl text-sm font-medium bg-white mb-4"
+                                className={inputCls}
                             >
                                 <option value="">Choose a party…</option>
                                 {parties.map((p) => (
                                     <option key={p.partyId} value={p.partyId}>{p.name} ({p.memberCount} members)</option>
                                 ))}
                             </select>
-                        </>
+                        </div>
                     )}
 
                     <button
                         onClick={handleStart}
                         disabled={!selectedPartyId || starting || activeElsewhere}
-                        className="w-full py-3 border-2 border-black rounded-full font-black text-sm bg-violet-500 text-white shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 transition-all"
+                        className="relative w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-sky-chip font-semibold text-sm text-white bg-linear-to-b from-sky-violet to-sky-violet-deep shadow-[0_6px_16px_rgba(36,52,77,0.24)] transition hover:-translate-y-px hover:shadow-[0_10px_22px_rgba(36,52,77,0.28)] active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
                     >
+                        {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
                         {starting ? "Starting…" : "Start Live Challenge Arena"}
                     </button>
                 </div>
@@ -225,20 +267,22 @@ export default function LiveChallengeSession() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             <div className="relative">
                                 <VideoTile stream={mesh.localStream} label="You (Mentor)" muted />
-                                <div className="absolute top-1 right-1 flex gap-1">
+                                <div className="absolute top-1.5 right-1.5 flex gap-1.5">
+                                    {/* Muted/blind states are rose-filled AND take a slashed glyph —
+                                        the icon alone carries the state if colour is missed. */}
                                     <button
                                         onClick={mesh.toggleMic}
                                         title={mesh.micEnabled ? "Mute mic" : "Unmute mic"}
-                                        className={`w-7 h-7 rounded-full border-2 border-black text-xs font-black ${mesh.micEnabled ? "bg-white" : "bg-red-400 text-white"}`}
+                                        className={`grid place-items-center w-7 h-7 rounded-full backdrop-blur-md transition active:scale-95 ${mesh.micEnabled ? "bg-white/85 text-sky-ink hover:bg-white" : "bg-sky-rose text-white hover:bg-sky-rose-deep"}`}
                                     >
-                                        {mesh.micEnabled ? "🎤" : "🔇"}
+                                        {mesh.micEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
                                     </button>
                                     <button
                                         onClick={mesh.toggleCamera}
                                         title={mesh.cameraEnabled ? "Turn camera off" : "Turn camera on"}
-                                        className={`w-7 h-7 rounded-full border-2 border-black text-xs font-black ${mesh.cameraEnabled ? "bg-white" : "bg-red-400 text-white"}`}
+                                        className={`grid place-items-center w-7 h-7 rounded-full backdrop-blur-md transition active:scale-95 ${mesh.cameraEnabled ? "bg-white/85 text-sky-ink hover:bg-white" : "bg-sky-rose text-white hover:bg-sky-rose-deep"}`}
                                     >
-                                        {mesh.cameraEnabled ? "📷" : "🚫"}
+                                        {mesh.cameraEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
                             </div>
@@ -247,19 +291,26 @@ export default function LiveChallengeSession() {
                             ))}
                         </div>
                         {mesh.mediaError && (
-                            <p className="text-sm font-bold text-red-600">{mesh.mediaError}</p>
+                            <p className="flex items-center gap-2 text-sm font-semibold text-sky-rose-deep">
+                                <AlertTriangle className="w-4 h-4 shrink-0" />{mesh.mediaError}
+                            </p>
                         )}
 
                         {/* Composer */}
-                        <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-                            <h3 className="font-black mb-3">Send a challenge</h3>
+                        <div className="sky-glass rounded-sky-card p-5 sm:p-6">
+                            <div className="relative flex items-center gap-2.5 mb-4">
+                                <span className="grid place-items-center w-8 h-8 rounded-sky-chip bg-sky-peach/22 text-sky-peach-deep shrink-0">
+                                    <Send className="w-4 h-4" />
+                                </span>
+                                <h3 className="font-display text-base font-semibold text-sky-ink">Send a challenge</h3>
+                            </div>
 
-                            <div className="mb-3">
-                                <label className="block text-xs font-black uppercase tracking-wider mb-1.5">From bank (optional)</label>
+                            <div className="relative mb-3.5">
+                                <label className={eyebrow}>From bank (optional)</label>
                                 <select
                                     value={selectedBankItemId}
                                     onChange={(e) => setSelectedBankItemId(e.target.value ? parseInt(e.target.value) : "")}
-                                    className="w-full px-3 py-2 border-2 border-black rounded-xl text-sm font-medium bg-white"
+                                    className={inputCls}
                                 >
                                     <option value="">— Compose ad-hoc instead —</option>
                                     {bankItems.map((b) => (
@@ -272,48 +323,48 @@ export default function LiveChallengeSession() {
 
                             {selectedBankItemId === "" && (
                                 <>
-                                    <div className="mb-3">
-                                        <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Prompt</label>
+                                    <div className="relative mb-3.5">
+                                        <label className={eyebrow}>Prompt</label>
                                         <input
                                             value={adHocPrompt}
                                             onChange={(e) => setAdHocPrompt(e.target.value)}
                                             placeholder="e.g. Show me you're drinking water right now!"
-                                            className="w-full px-3 py-2 border-2 border-black rounded-xl text-sm font-medium"
+                                            className={inputCls}
                                         />
                                     </div>
-                                    <div className="flex gap-3 mb-3">
+                                    <div className="relative flex gap-3 mb-3.5">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Mode</label>
+                                            <label className={eyebrow}>Mode</label>
                                             <select
                                                 value={mode}
                                                 onChange={(e) => setMode(e.target.value as ChallengeMode)}
-                                                className="w-full px-3 py-2 border-2 border-black rounded-xl text-sm font-medium bg-white"
+                                                className={inputCls}
                                             >
                                                 <option value="SELF_SCORE">Self-score (+points)</option>
                                                 <option value="ATTACK">Attack (−points to rival)</option>
                                             </select>
                                         </div>
                                         <div className="w-24">
-                                            <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Points</label>
+                                            <label className={eyebrow}>Points</label>
                                             <input
                                                 type="number"
                                                 min={1}
                                                 value={points}
                                                 onChange={(e) => setPoints(parseInt(e.target.value, 10) || 0)}
-                                                className="w-full px-3 py-2 border-2 border-black rounded-xl text-sm font-medium"
+                                                className={`${inputCls} tabular-nums`}
                                             />
                                         </div>
                                     </div>
                                 </>
                             )}
 
-                            <div className="flex gap-3 mb-4">
+                            <div className="relative flex gap-3 mb-4">
                                 <div className="flex-1">
-                                    <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Send to</label>
+                                    <label className={eyebrow}>Send to</label>
                                     <select
                                         value={assignedToUserId}
                                         onChange={(e) => setAssignedToUserId(e.target.value ? parseInt(e.target.value) : "")}
-                                        className="w-full px-3 py-2 border-2 border-black rounded-xl text-sm font-medium bg-white"
+                                        className={inputCls}
                                     >
                                         <option value="">Everyone in the call</option>
                                         {session.participants.map((p) => (
@@ -323,11 +374,11 @@ export default function LiveChallengeSession() {
                                 </div>
                                 {mode === "ATTACK" && selectedBankItemId === "" && (
                                     <div className="flex-1">
-                                        <label className="block text-xs font-black uppercase tracking-wider mb-1.5">Rival (loses points)</label>
+                                        <label className={eyebrow}>Rival (loses points)</label>
                                         <select
                                             value={rivalUserId}
                                             onChange={(e) => setRivalUserId(e.target.value ? parseInt(e.target.value) : "")}
-                                            className="w-full px-3 py-2 border-2 border-black rounded-xl text-sm font-medium bg-white"
+                                            className={inputCls}
                                         >
                                             <option value="">Pick a rival…</option>
                                             {session.participants
@@ -343,23 +394,34 @@ export default function LiveChallengeSession() {
                             <button
                                 onClick={handleSendChallenge}
                                 disabled={sending}
-                                className="w-full py-2.5 border-2 border-black rounded-full font-black text-sm bg-amber-400 shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 transition-all"
+                                className="relative w-full inline-flex items-center justify-center gap-2 py-3 rounded-sky-chip font-semibold text-sm text-white bg-linear-to-b from-sky-peach to-sky-peach-deep shadow-[0_6px_16px_rgba(36,52,77,0.22)] transition hover:-translate-y-px hover:shadow-[0_10px_22px_rgba(36,52,77,0.26)] active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
                             >
+                                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                 {sending ? "Sending…" : "Send challenge"}
                             </button>
                         </div>
 
                         {/* Pending / responded challenges */}
                         {pendingOrResponded.length > 0 && (
-                            <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-                                <h3 className="font-black mb-3">Awaiting judgment</h3>
-                                <div className="space-y-2">
+                            <div className="sky-glass rounded-sky-card p-5 sm:p-6">
+                                <h3 className="relative font-display text-base font-semibold text-sky-ink mb-3.5">Awaiting judgment</h3>
+                                <div className="relative space-y-2">
                                     {pendingOrResponded.map((c) => (
-                                        <div key={c.challengeId} className="flex items-center justify-between gap-3 p-3 border-2 border-black rounded-xl">
+                                        <div key={c.challengeId} className="sky-glass-chip flex items-center justify-between gap-3 p-3.5 rounded-sky-md">
                                             <div className="min-w-0">
-                                                <p className="font-bold truncate">{c.promptText}</p>
-                                                <p className="text-xs text-gray-500">
-                                                    {c.mode === "ATTACK" ? `⚔️ Attacking ${usernameFor(c.rivalUserId)}` : "⭐ Self-score"} · {c.points} pts ·{" "}
+                                                <p className="font-semibold text-sm text-sky-ink truncate">{c.promptText}</p>
+                                                <p className="flex items-center gap-1.5 text-xs font-medium text-sky-ink-3 mt-0.5">
+                                                    {/* Attack is warm (it costs a rival points); self-score is cool. */}
+                                                    {c.mode === "ATTACK" ? (
+                                                        <span className="inline-flex items-center gap-1 text-sky-peach-deep font-semibold">
+                                                            <Swords className="w-3 h-3 shrink-0" />Attacking {usernameFor(c.rivalUserId)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 text-sky-deep font-semibold">
+                                                            <Star className="w-3 h-3 shrink-0" />Self-score
+                                                        </span>
+                                                    )}
+                                                    · <span className="tabular-nums">{c.points}</span> pts ·{" "}
                                                     {c.status === "Responded" ? `${usernameFor(c.respondedByUserId)} says done` : "Waiting for a response"}
                                                 </p>
                                             </div>
@@ -368,16 +430,18 @@ export default function LiveChallengeSession() {
                                                     <button
                                                         onClick={() => handleJudge(c.challengeId, true)}
                                                         disabled={judgingId !== null}
-                                                        className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-emerald-300 hover:bg-emerald-400 disabled:opacity-50"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-sky-teal shadow-[0_3px_10px_rgba(36,52,77,0.18)] transition hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
                                                     >
-                                                        {judgingId === c.challengeId ? "…" : "Approve"}
+                                                        {judgingId === c.challengeId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                        Approve
                                                     </button>
                                                     <button
                                                         onClick={() => handleJudge(c.challengeId, false)}
                                                         disabled={judgingId !== null}
-                                                        className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-red-200 hover:bg-red-300 disabled:opacity-50"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-rose-deep bg-sky-rose/14 border border-sky-rose/30 transition hover:bg-sky-rose/22 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
                                                     >
-                                                        {judgingId === c.challengeId ? "…" : "Reject"}
+                                                        {judgingId === c.challengeId ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                                                        Reject
                                                     </button>
                                                 </div>
                                             )}
@@ -388,13 +452,16 @@ export default function LiveChallengeSession() {
                         )}
 
                         {judgedChallenges.length > 0 && (
-                            <div className="bg-white border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-5">
-                                <h3 className="font-black mb-3">History</h3>
-                                <div className="space-y-1.5">
+                            <div className="sky-glass rounded-sky-card p-5 sm:p-6">
+                                <h3 className="relative font-display text-base font-semibold text-sky-ink mb-3">History</h3>
+                                <div className="relative divide-y divide-sky-ink/8">
                                     {judgedChallenges.map((c) => (
-                                        <div key={c.challengeId} className="flex justify-between text-sm">
-                                            <span className="truncate font-medium">{c.promptText}</span>
-                                            <span className={`font-black ${c.status === "Approved" ? "text-emerald-600" : "text-red-500"}`}>{c.status}</span>
+                                        <div key={c.challengeId} className="flex justify-between items-center gap-3 py-2">
+                                            <span className="truncate text-sm font-medium text-sky-ink-2">{c.promptText}</span>
+                                            <span className={`sky-badge shrink-0 ${c.status === "Approved" ? "sky-badge-success" : "sky-badge-danger"}`}>
+                                                {c.status === "Approved" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                                                {c.status}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
@@ -402,24 +469,48 @@ export default function LiveChallengeSession() {
                         )}
                     </div>
 
-                    {/* Leaderboard */}
-                    <div className="bg-[#1a1a2e] border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#1A1D20] p-6 text-white h-fit">
-                        <h2 className="text-xl font-black mb-4">Leaderboard</h2>
+                    {/* Leaderboard — the one deliberately dark panel on the page. It's the
+                        scoreboard everyone in the call looks at, so it earns the contrast;
+                        the fill is navy ink over violet, not black. */}
+                    <div className="relative h-fit rounded-sky-card overflow-hidden bg-linear-to-b from-sky-ink to-sky-abyss text-white p-6 shadow-[0_14px_36px_rgba(36,52,77,0.34)] ring-1 ring-white/12">
+                        <span className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-violet via-sky-peach to-sky-violet" />
+                        <div className="flex items-center gap-2.5 mb-4">
+                            <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-white/12 text-sky-peach shrink-0">
+                                <Trophy className="w-4 h-4" />
+                            </span>
+                            <h2 className="font-display text-lg font-semibold tracking-[-0.01em]">Leaderboard</h2>
+                        </div>
                         <div className="space-y-2">
                             {leaderboard.map((p, i) => (
-                                <div key={p.userId} className="flex items-center justify-between bg-white/10 rounded-xl px-3 py-2">
-                                    <span className="font-bold">#{i + 1} {p.username}</span>
-                                    <span className="font-black text-amber-300">{p.score} pts</span>
+                                <div
+                                    key={p.userId}
+                                    className={`flex items-center justify-between gap-3 rounded-sky-md px-3 py-2.5 transition ${i === 0 ? "bg-white/16 ring-1 ring-sky-peach/45" : "bg-white/8"}`}
+                                >
+                                    <span className="flex items-center gap-2.5 min-w-0">
+                                        <span className={`grid place-items-center w-6 h-6 rounded-full shrink-0 font-display text-[11px] font-semibold tabular-nums ${i === 0 ? "bg-sky-peach text-sky-ink" : "bg-white/14 text-white/70"}`}>
+                                            {i + 1}
+                                        </span>
+                                        <span className="font-medium text-sm truncate">{p.username}</span>
+                                    </span>
+                                    <span className="shrink-0 font-display text-sm font-semibold tabular-nums text-sky-peach">{p.score} pts</span>
                                 </div>
                             ))}
-                            {leaderboard.length === 0 && <p className="text-sm text-gray-400">No one has joined yet.</p>}
+                            {leaderboard.length === 0 && (
+                                <div className="flex flex-col items-center gap-2 py-8">
+                                    <span className="grid place-items-center w-11 h-11 rounded-full bg-white/10 text-white/45">
+                                        <VideoIcon className="w-5 h-5" />
+                                    </span>
+                                    <p className="text-sm font-medium text-white/55">No one has joined yet.</p>
+                                </div>
+                            )}
                         </div>
 
                         <button
                             onClick={handleEnd}
                             disabled={ending}
-                            className="w-full mt-6 py-3 border-2 border-black rounded-full font-black text-sm bg-red-500 text-white shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 transition-all"
+                            className="w-full mt-6 inline-flex items-center justify-center gap-2 py-3 rounded-sky-chip font-semibold text-sm text-white bg-sky-rose transition hover:bg-sky-rose-deep hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
                         >
+                            {ending ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneOff className="w-4 h-4" />}
                             {ending ? "Ending…" : "End session"}
                         </button>
                     </div>

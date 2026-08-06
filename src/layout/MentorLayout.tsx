@@ -31,15 +31,13 @@ const MentorLayout: React.FC = () => {
     return (
         <WalletProvider>
             <LiveCallProvider>
-                <div className="min-h-screen flex flex-col">
+                <div className="min-h-screen flex flex-col app-bg">
+                    {/* Grain overlay — fixed, non-interactive (design-system §2) */}
+                    <div className="app-grain" aria-hidden="true" />
                     <MentorHeader />
-                    {/* admin-content kept intentionally: dark mode is force-disabled
-                        above, so its .dark .admin-content overrides are inert here for
-                        now, but not-yet-migrated Mentor pages (Wallet, PartyList,
-                        PartyWorkspace tabs) will need it again once Night-Pastel tokens
-                        land and the forced-light effect above is removed. Drop it only
-                        when every Mentor route is on Sky-Pastel. */}
-                    <main className="admin-content sky-mesh-bg flex-1 w-full p-6 sm:p-8">
+                    {/* Transparent: the mesh + grain above supply the backdrop,
+                        page-level glass cards supply the surface. */}
+                    <main className="admin-content flex-1 w-full p-6 sm:p-8 relative z-1">
                         <Outlet />
                     </main>
                 </div>

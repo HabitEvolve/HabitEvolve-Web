@@ -1,6 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import {
+    AlertTriangle,
+    ArrowDownLeft,
+    ArrowUpRight,
+    Bot,
+    Check,
+    Clock,
+    CreditCard,
+    FlaskConical,
+    Minus,
+    Plus,
+    RotateCcw,
+    ScrollText,
+    TrendingDown,
+    X,
+} from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Pagination from "../../components/common/SkyPagination";
@@ -22,6 +38,22 @@ import type { WalletPaymentMethod, GemTransactionDto } from "../../types/mentorW
 // Sky-Pastel only — neo-brutalism ink borders/hard shadows retired (see DESIGN.md).
 const easeExpo = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 
+const eyebrow = "text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em]";
+const sectionTitle = "font-display text-base font-semibold text-sky-ink";
+
+// The gem is a brand asset shared with the mobile app and the mentor header
+// chip, so it stays a PNG rather than becoming a lucide glyph — the currency has
+// to read identically in the header and on this page. Centralised here so every
+// former call-site sizes it from one place.
+const GemIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+    <img
+        src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png"
+        alt=""
+        aria-hidden="true"
+        className={`inline object-contain align-text-bottom ${className}`}
+    />
+);
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getMentorId = () => {
     const id = localStorage.getItem("user_id");
@@ -35,39 +67,108 @@ const Spinner = ({ size = 18 }: { size?: number }) => (
     </svg>
 );
 
-// ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
-const UsageBar = ({ label, used, max }: { label: string; used: number; max: number }) => {
-    const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
-    const color = pct >= 90 ? "bg-error-500" : pct >= 70 ? "bg-warning-400" : "bg-success-500";
+/** Glass notice with an accent rail — the shared shape for the three page banners. */
+const Notice = ({
+    tone,
+    icon,
+    children,
+    onDismiss,
+}: {
+    tone: "danger" | "success" | "attention";
+    icon: ReactNode;
+    children: ReactNode;
+    onDismiss?: () => void;
+}) => {
+    const cfg = {
+        danger: { rail: "bg-sky-rose", tint: "bg-sky-rose/8", text: "text-sky-rose-deep" },
+        success: { rail: "bg-sky-teal", tint: "bg-sky-teal/10", text: "text-sky-teal" },
+        attention: { rail: "bg-sky-peach", tint: "bg-sky-peach/12", text: "text-sky-peach-deep" },
+    }[tone];
     return (
-        <div>
-            <div className="flex justify-between text-sky-small font-semibold mb-1.5 text-sky-ink">
-                <span>{label}</span>
-                <span className={pct >= 90 ? "text-error-600" : "text-sky-ink-2"}>
-                    {used} / {max === 0 ? "∞" : max}
-                </span>
-            </div>
-            <div className="h-3.5 bg-sky-3/40 rounded-full overflow-hidden">
-                <div
-                    className={`h-full ${color} transition-all duration-500`}
-                    style={{ width: `${pct}%` }}
-                />
+        <div className={`relative mb-6 overflow-hidden rounded-sky-chip ring-1 ring-white/70 ${cfg.tint}`}>
+            <span className={`absolute left-0 top-0 bottom-0 w-1 ${cfg.rail}`} aria-hidden="true" />
+            <div className="flex items-center gap-3 py-3.5 pl-5 pr-3">
+                <span className={`shrink-0 ${cfg.text}`}>{icon}</span>
+                <p className="flex-1 text-sm font-semibold text-sky-ink">{children}</p>
+                {onDismiss && (
+                    <button
+                        type="button"
+                        onClick={onDismiss}
+                        aria-label="Dismiss"
+                        className={`inline-grid place-items-center w-7 h-7 shrink-0 rounded-sky-chip ${cfg.text} hover:bg-white/60 active:scale-95 transition-all duration-150`}
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
             </div>
         </div>
     );
 };
 
-// ── TRANSACTION LOGBOOK ───────────────────────────────────────────────────────
-const TX_META: Record<string, { symbol: string; sign: "+" | "-"; color: string; ring: string }> = {
-    TOPUP: { symbol: "↓", sign: "+", color: "text-success-600", ring: "bg-success-100" },
-    PURCHASE: { symbol: "↑", sign: "-", color: "text-error-600", ring: "bg-error-100" },
-    REFUND: { symbol: "↺", sign: "+", color: "text-brand-600", ring: "bg-brand-100" },
+// ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
+const UsageBar = ({ label, used, max }: { label: string; used: number; max: number }) => {
+    const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
+    // Consumption is not a good/bad axis at the low end — teal here only means
+    // "headroom left". Only ≥90% is a genuine warning, and it carries a glyph and
+    // a bolder weight as well as the hue, so the state is never colour-only.
+    const critical = pct >= 90;
+    const near = pct >= 70 && !critical;
+    const fill = critical ? "bg-sky-rose" : near ? "bg-sky-peach" : "bg-sky-teal";
+    return (
+        <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3.5 py-3">
+            <div className="flex items-baseline justify-between gap-2 mb-2">
+                <span className="text-xs font-semibold text-sky-ink truncate">{label}</span>
+                <span
+                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${
+                        critical ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
+                    }`}
+                >
+                    {critical && <AlertTriangle className="w-3.5 h-3.5" />}
+                    {used}
+                    <span className="text-sky-ink-3">/ {max === 0 ? "∞" : max}</span>
+                </span>
+            </div>
+            <div className="relative h-2.5 rounded-full bg-sky-ink/8 overflow-hidden">
+                <div
+                    className={`h-full rounded-full ${fill} transition-[width] duration-500 ${easeExpo}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+            <p className="mt-1.5 text-[10px] font-medium text-sky-ink-3 tabular-nums">
+                {Math.round(pct)}%
+            </p>
+        </div>
+    );
 };
 
-const TX_STATUS_STYLES: Record<string, string> = {
-    Completed: "bg-success-100 text-success-800",
-    Pending: "bg-warning-100 text-warning-800",
-    Cancelled: "bg-gray-100 text-gray-600",
+// ── TRANSACTION LOGBOOK ───────────────────────────────────────────────────────
+// Direction is the axis here, not good/bad: credits read teal (money arriving),
+// debits rose (leaving), refunds deep (a correction, neither win nor loss).
+const TX_META: Record<string, { icon: ReactNode; sign: "+" | "-"; color: string; ring: string }> = {
+    TOPUP: {
+        icon: <ArrowDownLeft className="w-4 h-4" />,
+        sign: "+",
+        color: "text-sky-teal",
+        ring: "bg-sky-teal-bg text-sky-teal",
+    },
+    PURCHASE: {
+        icon: <ArrowUpRight className="w-4 h-4" />,
+        sign: "-",
+        color: "text-sky-rose-deep",
+        ring: "bg-sky-rose/14 text-sky-rose-deep",
+    },
+    REFUND: {
+        icon: <RotateCcw className="w-4 h-4" />,
+        sign: "+",
+        color: "text-sky-deep",
+        ring: "bg-sky-deep/12 text-sky-deep",
+    },
+};
+
+const TX_STATUS_META: Record<string, { cls: string; icon: ReactNode }> = {
+    Completed: { cls: "sky-badge-success", icon: <Check className="w-3 h-3" /> },
+    Pending: { cls: "sky-badge-pending", icon: <Clock className="w-3 h-3" /> },
+    Cancelled: { cls: "sky-badge-neutral", icon: <X className="w-3 h-3" /> },
 };
 
 const TransactionLogbook = ({
@@ -92,16 +193,21 @@ const TransactionLogbook = ({
 
     if (error) {
         return (
-            <div className="text-center py-10 border border-dashed border-error-300 rounded-sky-chip bg-error-50">
-                <p className="text-sm font-semibold text-error-600">{error}</p>
+            <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/8 ring-1 ring-white/70 py-9 text-center">
+                <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+                <AlertTriangle className="w-5 h-5 mx-auto mb-2 text-sky-rose-deep" />
+                <p className="text-sm font-semibold text-sky-ink">{error}</p>
             </div>
         );
     }
 
     if (transactions.length === 0) {
         return (
-            <div className="text-center py-14 border border-dashed border-sky-ink/15 rounded-sky-chip bg-white/40">
-                <p className="font-bold text-sky-ink text-base">{t("mentor.subscriptionWallet.noTransactions", "The logbook is empty")}</p>
+            <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 py-14 text-center">
+                <span className="inline-grid place-items-center w-11 h-11 mb-3 rounded-full bg-sky-3/40 text-sky-ink-3">
+                    <ScrollText className="w-5 h-5" />
+                </span>
+                <p className={sectionTitle}>{t("mentor.subscriptionWallet.noTransactions", "The logbook is empty")}</p>
                 <p className="text-sm text-sky-ink-3 font-medium mt-1">{t("mentor.subscriptionWallet.noTransactionsHint", "Top up or purchase a plan and it'll show up here.")}</p>
             </div>
         );
@@ -111,32 +217,35 @@ const TransactionLogbook = ({
         <div>
             {transactions.map((tx, i) => {
                 const meta = TX_META[tx.type] ?? TX_META.TOPUP;
-                const statusClass = TX_STATUS_STYLES[tx.status] ?? TX_STATUS_STYLES.Pending;
+                const status = TX_STATUS_META[tx.status] ?? TX_STATUS_META.Pending;
                 const isLast = i === transactions.length - 1;
                 return (
                     <div
                         key={tx.gemTransactionId}
-                        className={`flex gap-4 py-4 ${isLast ? "" : "border-b border-dashed border-sky-ink/15"}`}
+                        className={`group flex gap-4 py-3.5 px-2 -mx-2 rounded-sky-chip transition-colors duration-150 hover:bg-white/55 ${
+                            isLast ? "" : "border-b border-sky-ink/8"
+                        }`}
                     >
-                        <span className={`flex items-center justify-center w-10 h-10 rounded-full border border-sky-surf-border ${meta.ring} font-bold text-lg shrink-0 text-sky-ink`}>
-                            {meta.symbol}
+                        <span className={`inline-grid place-items-center w-10 h-10 rounded-full shrink-0 ring-1 ring-white/70 ${meta.ring}`}>
+                            {meta.icon}
                         </span>
                         <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm text-sky-ink truncate">
                                     {tx.description || tx.type}
                                 </p>
-                                <p className="text-xs text-sky-ink-2 font-medium mt-0.5">
+                                <p className="text-xs text-sky-ink-2 font-medium mt-0.5 tabular-nums">
                                     {new Date(tx.createdAt).toLocaleString()}
                                     {tx.reference && <span className="ml-1.5 text-sky-ink-3">· {tx.reference}</span>}
                                 </p>
                             </div>
                             <div className="text-right shrink-0">
-                                <p className={`font-bold text-sm ${meta.color}`}>
+                                <p className={`font-display text-sm font-semibold tabular-nums ${meta.color}`}>
                                     {meta.sign}{tx.gemAmount.toLocaleString()}
-                                    <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-3.5 h-3.5 object-contain align-text-bottom ml-1" />
+                                    <GemIcon className="w-3.5 h-3.5 ml-1" />
                                 </p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusClass}`}>
+                                <span className={`sky-badge ${status.cls} mt-1`}>
+                                    {status.icon}
                                     {tx.status}
                                 </span>
                             </div>
@@ -188,38 +297,42 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
         >
             <SkyCard
                 variant="mentor"
-                className="w-full max-w-md"
+                className="w-full max-w-md sky-in"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-sky-h2 font-bold text-sky-ink mb-1">{pkg.name}</h2>
-                <p className="text-sky-body text-sky-ink-2 mb-4">{pkg.description}</p>
+                <p className={`relative ${eyebrow}`}>{t("mentor.subscriptionWallet.availablePlans")}</p>
+                <h2 className="relative font-display text-sky-h2 font-semibold text-sky-ink mt-1">{pkg.name}</h2>
+                <p className="relative text-sky-body text-sky-ink-2 mb-4">{pkg.description}</p>
 
-                <div className="bg-sky-3/20 border border-sky-surf-border rounded-sky-chip p-4 mb-4 space-y-2">
+                <div className="relative rounded-sky-chip bg-white/50 ring-1 ring-white/70 p-4 mb-4 space-y-2">
                     {[
-                        [t("mentor.subscriptionWallet.maxParties"), `${pkg.maxParties}`],
-                        [t("mentor.subscriptionWallet.maxMembers"), `${pkg.maxMembersPerParty}`],
-                        [t("mentor.subscriptionWallet.questsPerMember"), `${pkg.questsPerMemberPerDay}`],
-                        [t("mentor.subscriptionWallet.partyQuestsPerWeek"), `${pkg.partyQuestsPerWeek}`],
-                        [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes],
-                        ["Proof Types", pkg.proofTypes || "—"],
-                        ["🤖 AI Verification", pkg.aiVerificationBossModes || "—"],
-                        [t("mentor.subscriptionWallet.duration"), `${pkg.durationDays} ${t("mentor.subscriptionWallet.days")}`],
-                    ].map(([k, v]) => (
-                        <div key={k} className="flex justify-between text-sm font-medium">
-                            <span className="text-sky-ink-2">{k}</span>
-                            <span className="font-semibold text-sky-ink">{v}</span>
+                        [t("mentor.subscriptionWallet.maxParties"), `${pkg.maxParties}`, null],
+                        [t("mentor.subscriptionWallet.maxMembers"), `${pkg.maxMembersPerParty}`, null],
+                        [t("mentor.subscriptionWallet.questsPerMember"), `${pkg.questsPerMemberPerDay}`, null],
+                        [t("mentor.subscriptionWallet.partyQuestsPerWeek"), `${pkg.partyQuestsPerWeek}`, null],
+                        [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes, null],
+                        ["Proof Types", pkg.proofTypes || "—", null],
+                        ["AI Verification", pkg.aiVerificationBossModes || "—", <Bot key="bot" className="w-3.5 h-3.5 text-sky-violet-deep" />],
+                        [t("mentor.subscriptionWallet.duration"), `${pkg.durationDays} ${t("mentor.subscriptionWallet.days")}`, null],
+                    ].map(([k, v, icon]) => (
+                        <div key={k as string} className="flex justify-between gap-3 text-sm font-medium">
+                            <span className="inline-flex items-center gap-1.5 text-sky-ink-2">
+                                {icon as ReactNode}
+                                {k as string}
+                            </span>
+                            <span className="font-semibold text-sky-ink text-right tabular-nums">{v as string}</span>
                         </div>
                     ))}
                 </div>
 
-                <div className="flex items-center justify-between mb-4">
+                <div className="relative flex items-center justify-between mb-4">
                     <span className="text-sky-small text-sky-ink-2 font-medium">{t("mentor.subscriptionWallet.cost")}</span>
-                    <span className="text-sky-h2 font-bold text-sky-peach-deep">
-                        {pkg.price.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-5 h-5 object-contain align-text-bottom" />
+                    <span className="font-display text-sky-h2 font-semibold text-sky-peach-deep tabular-nums">
+                        {pkg.price.toLocaleString()} <GemIcon className="w-5 h-5" />
                     </span>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="relative flex gap-3">
                     <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
                         {t("mentor.subscriptionWallet.cancel")}
                     </SkyButton>
@@ -234,9 +347,11 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
 };
 
 // ── GEM STORE MODAL ───────────────────────────────────────────────────────────
+// Tier hues are a product axis, not a status one — peach for the popular tier,
+// violet (epic) for the top tier. Neither borrows teal/rose.
 const GEM_PACKAGES = [
-    { gems: 5000,  label: "Guild",  color: "bg-warning-100", badge: "POPULAR" },
-    { gems: 10000, label: "Legend", color: "bg-error-100",   badge: "BEST VALUE" },
+    { gems: 5000,  label: "Guild",  face: "bg-sky-peach/16",  accent: "text-sky-peach-deep",  badge: "POPULAR" },
+    { gems: 10000, label: "Legend", face: "bg-sky-violet/14", accent: "text-sky-violet-deep", badge: "BEST VALUE" },
 ] as const;
 
 type GemPackage = typeof GEM_PACKAGES[number];
@@ -313,14 +428,14 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
         >
             <SkyCard
                 variant="mentor"
-                className="w-full max-w-lg overflow-hidden"
+                className="w-full max-w-lg overflow-hidden sky-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Redirecting overlay — shown while SePay form is submitting */}
                 {redirecting && (
                     <div className="absolute inset-0 bg-white/95 rounded-sky-card flex flex-col items-center justify-center gap-4 z-10">
                         <Spinner size={40} />
-                        <p className="font-bold text-xl text-sky-ink">{t("mentor.subscriptionWallet.connectingSepay")}</p>
+                        <p className="font-display text-xl font-semibold text-sky-ink">{t("mentor.subscriptionWallet.connectingSepay")}</p>
                         <p className="text-sm text-sky-ink-2 text-center max-w-xs font-medium">
                             {t("mentor.subscriptionWallet.redirectingPayment")}
                         </p>
@@ -328,46 +443,61 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                 )}
 
                 {/* Header */}
-                <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-sky-h2 font-bold text-sky-ink flex items-center gap-2"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-7 h-7 object-contain" />{t("mentor.subscriptionWallet.gemStore")}</h2>
+                <div className="relative flex items-start justify-between gap-3 mb-1">
+                    <div>
+                        <p className={eyebrow}>{t("mentor.subscriptionWallet.gemWallet")}</p>
+                        <h2 className="font-display text-sky-h2 font-semibold text-sky-ink flex items-center gap-2 mt-0.5">
+                            <GemIcon className="w-7 h-7" />
+                            {t("mentor.subscriptionWallet.gemStore")}
+                        </h2>
+                    </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-sky-ink-2 hover:bg-sky-3/30 hover:text-sky-ink transition-colors text-lg"
+                        aria-label={t("mentor.subscriptionWallet.cancel")}
+                        className="inline-grid place-items-center w-8 h-8 shrink-0 rounded-sky-chip text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink active:scale-95 transition-all duration-150"
                     >
-                        ✕
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
-                <p className="text-sky-small text-sky-ink-2 font-medium mb-5">
-                    Rate: 1 <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-3.5 h-3.5 object-contain align-text-bottom" /> = {vndPerGem.toLocaleString()} VND
+                <p className="relative text-sky-small text-sky-ink-2 font-medium mb-5 tabular-nums">
+                    Rate: 1 <GemIcon className="w-3.5 h-3.5" /> = {vndPerGem.toLocaleString()} VND
                 </p>
 
                 {/* Package grid — selection control, not a CTA: kept as a custom toggle
                     rather than SkyButton so the selected-state ring stays legible. */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="relative grid grid-cols-2 gap-3 mb-3">
                     {GEM_PACKAGES.map((pkg) => {
                         const isSelected = selected?.gems === pkg.gems;
                         return (
                             <button
                                 type="button"
                                 key={pkg.gems}
+                                aria-pressed={isSelected}
                                 onClick={() => selectPackage(pkg)}
-                                className={`relative text-left p-4 rounded-sky-chip transition-all ${pkg.color} ${isSelected
-                                    ? "border-2 border-sky-deep shadow-sky-chip"
-                                    : "border border-sky-surf-border hover:border-sky-deep/40"
+                                className={`relative text-left p-4 rounded-sky-chip ${pkg.face} transition-all duration-150 ${easeExpo} motion-safe:hover:-translate-y-px ${
+                                    isSelected
+                                        ? "ring-2 ring-sky-deep shadow-sky-chip"
+                                        : "ring-1 ring-white/70 hover:ring-sky-deep/35"
                                 }`}
                             >
+                                {/* Selection is not colour-only: the ring is joined by a tick. */}
+                                {isSelected && (
+                                    <span className="absolute -top-1.5 -left-1.5 inline-grid place-items-center w-5 h-5 rounded-full bg-sky-deep text-white shadow-sky-chip">
+                                        <Check className="w-3 h-3" />
+                                    </span>
+                                )}
                                 {pkg.badge && (
-                                    <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[10px] font-semibold bg-sky-deep text-white rounded-full">
+                                    <span className={`absolute top-2 right-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full bg-white/75 ${pkg.accent}`}>
                                         {pkg.badge}
                                     </span>
                                 )}
-                                <div className="text-3xl font-extrabold text-sky-ink">
+                                <div className="font-display text-3xl font-semibold text-sky-ink tabular-nums">
                                     {pkg.gems.toLocaleString()}
-                                    <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-6 h-6 object-contain align-text-bottom ml-1" />
+                                    <GemIcon className="w-6 h-6 ml-1" />
                                 </div>
-                                <div className="text-xs font-semibold text-sky-ink-2 mt-0.5">{pkg.label}</div>
-                                <div className="text-sm font-bold text-sky-ink mt-1">
+                                <div className={`text-xs font-semibold mt-0.5 ${pkg.accent}`}>{pkg.label}</div>
+                                <div className="text-sm font-semibold text-sky-ink mt-1 tabular-nums">
                                     {(pkg.gems * vndPerGem).toLocaleString()} VND
                                 </div>
                             </button>
@@ -376,14 +506,15 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                 </div>
 
                 {/* Custom amount */}
-                <div className="mb-5">
-                    <label className="block text-sky-small font-semibold uppercase tracking-wide text-sky-ink-2 mb-1.5">
+                <div className="relative mb-5">
+                    <label className={`${eyebrow} block mb-1.5`}>
                         {t("mentor.subscriptionWallet.customAmount", "Or enter a custom amount")}
                     </label>
                     <div
-                        className={`relative rounded-sky-chip transition-all ${!selected && customAmount
-                            ? "border-2 border-sky-deep shadow-sky-chip"
-                            : "border border-sky-surf-border"
+                        className={`relative rounded-sky-chip bg-white/60 transition-all duration-150 ${
+                            !selected && customAmount
+                                ? "ring-2 ring-sky-deep shadow-sky-chip"
+                                : "ring-1 ring-white/80"
                         }`}
                     >
                         <input
@@ -393,12 +524,12 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                             value={customAmount}
                             onChange={(e) => handleCustomAmountChange(e.target.value)}
                             placeholder={t("mentor.subscriptionWallet.customAmountPlaceholder", "e.g. 2500")}
-                            className="w-full px-4 py-3 rounded-sky-chip bg-transparent text-sky-ink font-bold text-lg focus:outline-none placeholder:text-sky-ink-3 placeholder:font-medium"
+                            className="w-full px-4 py-3 pr-11 rounded-sky-chip bg-transparent font-display text-lg font-semibold text-sky-ink tabular-nums focus:outline-none placeholder:text-sky-ink-3 placeholder:font-medium placeholder:text-base"
                         />
-                        <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 object-contain pointer-events-none" />
+                        <GemIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none" />
                     </div>
                     {!selected && parsedCustom > 0 && (
-                        <p className="text-xs font-semibold text-sky-ink-2 mt-1.5">
+                        <p className="text-xs font-semibold text-sky-ink-2 mt-1.5 tabular-nums">
                             = {(parsedCustom * vndPerGem).toLocaleString()} VND
                         </p>
                     )}
@@ -406,24 +537,30 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 
                 {/* Payment method toggle — segmented control, same reasoning as the
                     package grid above: custom, not SkyButton. */}
-                <div className="flex gap-2 mb-5">
-                    {(['SEPAY', 'DEMO'] as WalletPaymentMethod[]).map((m) => (
-                        <button
-                            type="button"
-                            key={m}
-                            onClick={() => setMethod(m)}
-                            className={`flex-1 py-2 rounded-full border font-semibold text-xs transition-all ${method === m
-                                ? "border-sky-deep bg-sky-deep text-white"
-                                : "border-sky-surf-border bg-white/60 text-sky-ink-2 hover:border-sky-deep/40"
-                            }`}
-                        >
-                            {m === 'SEPAY' ? '💳 SePay (Real)' : '🧪 DEMO (Dev)'}
-                        </button>
-                    ))}
+                <div className="relative flex gap-2 mb-5">
+                    {(['SEPAY', 'DEMO'] as WalletPaymentMethod[]).map((m) => {
+                        const isOn = method === m;
+                        return (
+                            <button
+                                type="button"
+                                key={m}
+                                aria-pressed={isOn}
+                                onClick={() => setMethod(m)}
+                                className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-full font-semibold text-xs transition-all duration-150 ${easeExpo} ${
+                                    isOn
+                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                                        : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
+                                }`}
+                            >
+                                {m === 'SEPAY' ? <CreditCard className="w-3.5 h-3.5" /> : <FlaskConical className="w-3.5 h-3.5" />}
+                                {m === 'SEPAY' ? 'SePay (Real)' : 'DEMO (Dev)'}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* Buy button */}
-                <div className="flex gap-3">
+                <div className="relative flex gap-3">
                     <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
                         {t("mentor.subscriptionWallet.cancel")}
                     </SkyButton>
@@ -437,7 +574,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                         {loading
                             ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</>
                             : effectiveGems > 0
-                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="inline w-4 h-4 object-contain align-text-bottom" /> — {vndPrice} VND</>
+                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <GemIcon className="w-4 h-4" /> — {vndPrice} VND</>
                                 : t("mentor.subscriptionWallet.enterValidAmount", "Enter a valid gem amount.")
                         }
                     </SkyButton>
@@ -484,24 +621,25 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
         >
             <SkyCard
                 variant="mentor"
-                className="w-full max-w-md"
+                className="w-full max-w-md sky-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-5">
-                    <div className="w-12 h-12 shrink-0 flex items-center justify-center bg-error-100 border border-error-300 rounded-sky-chip text-2xl select-none">
-                        ⚠️
+                <div className="relative flex items-center gap-3 mb-5">
+                    <div className="inline-grid place-items-center w-12 h-12 shrink-0 rounded-sky-chip bg-sky-rose/14 ring-1 ring-sky-rose/30 text-sky-rose-deep">
+                        <AlertTriangle className="w-6 h-6" />
                     </div>
-                    <div>
-                        <h2 className="text-sky-h3 font-bold text-sky-ink leading-tight">{t("mentor.subscriptionWallet.cancelSubTitle")}</h2>
-                        <p className="text-xs text-sky-ink-2 font-medium mt-0.5">
+                    <div className="min-w-0">
+                        <h2 className="font-display text-sky-h3 font-semibold text-sky-ink leading-tight">{t("mentor.subscriptionWallet.cancelSubTitle")}</h2>
+                        <p className="text-xs text-sky-ink-2 font-medium mt-0.5 truncate">
                             {t("mentor.subscriptionWallet.currentPlan")}: <strong className="text-sky-ink font-semibold">{planName}</strong>
                         </p>
                     </div>
                 </div>
 
                 {/* Downgrade warning */}
-                <div className="bg-error-50 border border-error-300 rounded-sky-chip p-4 mb-5 space-y-3">
+                <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/8 ring-1 ring-white/70 p-4 pl-5 mb-5 space-y-3">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
                     <p className="text-sm font-semibold text-sky-ink">
                         {t("mentor.subscriptionWallet.cancelWarning", { freeTier: t("mentor.subscriptionWallet.freeTier") })}
                     </p>
@@ -512,8 +650,8 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                             t("mentor.subscriptionWallet.cancelLimit3"),
                         ].map((item) => (
                             <li key={item} className="flex items-center gap-2 text-xs font-medium text-sky-ink-2">
-                                <span className="w-4 h-4 shrink-0 flex items-center justify-center bg-error-200 border border-error-400 rounded-full text-error-700 font-bold text-[10px]">
-                                    ↓
+                                <span className="inline-grid place-items-center w-4 h-4 shrink-0 rounded-full bg-sky-rose/18 text-sky-rose-deep">
+                                    <TrendingDown className="w-2.5 h-2.5" />
                                 </span>
                                 {item}
                             </li>
@@ -521,7 +659,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                     </ul>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="relative flex gap-3">
                     {/* "Safe" choice always on the left */}
                     <SkyButton type="button" variant="secondary" onClick={onClose} disabled={loading} className="flex-1">
                         {t("mentor.subscriptionWallet.keepPlan")}
@@ -622,7 +760,7 @@ export default function SubscriptionWallet() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-64 text-sky-deep">
                 <Spinner size={40} />
             </div>
         );
@@ -639,36 +777,38 @@ export default function SubscriptionWallet() {
             <PageBreadcrumb pageTitle={t("mentor.subscriptionWallet.pageTitle")} />
 
             {error && (
-                <div className="mb-6 p-4 bg-error-100 border border-error-400 rounded-sky-chip font-semibold text-error-700">
+                <Notice tone="danger" icon={<AlertTriangle className="w-5 h-5" />}>
                     {error}
-                </div>
+                </Notice>
             )}
 
             {purchaseResult && (
-                <div className="mb-6 p-4 bg-success-100 border border-success-400 rounded-sky-chip font-semibold text-success-800 flex items-center justify-between">
-                    <span>
-                        {t("mentor.subscriptionWallet.purchaseSuccessful", { plan: purchaseResult.subscription.packageName })}
-                    </span>
-                    <button type="button" onClick={() => setPurchaseResult(null)} className="text-success-600 hover:opacity-70 font-bold text-lg">✕</button>
-                </div>
+                <Notice
+                    tone="success"
+                    icon={<Check className="w-5 h-5" />}
+                    onDismiss={() => setPurchaseResult(null)}
+                >
+                    {t("mentor.subscriptionWallet.purchaseSuccessful", { plan: purchaseResult.subscription.packageName })}
+                </Notice>
             )}
 
             {cancelSuccess && (
-                <div className="mb-6 p-4 bg-warning-100 border border-warning-400 rounded-sky-chip font-semibold text-warning-900 flex items-center justify-between">
-                    <span>
-                        {t("mentor.subscriptionWallet.cancelledDowngrade")}
-                    </span>
-                    <button type="button" onClick={() => setCancelSuccess(false)} className="text-warning-700 hover:opacity-70 font-bold text-lg">✕</button>
-                </div>
+                <Notice
+                    tone="attention"
+                    icon={<TrendingDown className="w-5 h-5" />}
+                    onDismiss={() => setCancelSuccess(false)}
+                >
+                    {t("mentor.subscriptionWallet.cancelledDowngrade")}
+                </Notice>
             )}
 
             {/* Top Row: Gems Resource Container | Plan + Usage */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 sky-stagger">
                 {/* ── Resource Container: Gems ──────────────────────────────── */}
-                <SkyCard variant="mentor" className="flex flex-col items-center text-center gap-3">
-                    <div className="w-full flex items-center justify-between">
-                        <span className="sky-glass-chip flex items-center justify-center w-10 h-10 shrink-0">
-                            <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-6 h-6 object-contain" />
+                <SkyCard variant="mentor" className="flex flex-col gap-3">
+                    <div className="relative w-full flex items-center justify-between">
+                        <span className="sky-glass-chip inline-grid place-items-center w-10 h-10 shrink-0">
+                            <GemIcon className="w-6 h-6" />
                         </span>
                         <SkyButton
                             type="button"
@@ -676,43 +816,49 @@ export default function SubscriptionWallet() {
                             size="sm"
                             onClick={() => setShowTopUp(true)}
                         >
-                            + {t("mentor.subscriptionWallet.topUp")}
+                            <Plus className="w-3.5 h-3.5" /> {t("mentor.subscriptionWallet.topUp")}
                         </SkyButton>
                     </div>
-                    <h2 className="text-sky-small font-semibold uppercase tracking-wider text-sky-ink-2">{t("mentor.subscriptionWallet.gemWallet")}</h2>
-                    <div className="text-5xl font-extrabold text-sky-peach-deep leading-none">
-                        {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
+                    {/* The balance is the loudest number on the page — everything
+                        around it stays quiet so it can be. */}
+                    <div className="relative mt-auto">
+                        <p className={eyebrow}>{t("mentor.subscriptionWallet.gemWallet")}</p>
+                        <div className="font-display text-5xl font-semibold text-sky-peach-deep leading-none tabular-nums mt-1.5">
+                            {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
+                        </div>
+                        {wallet && (
+                            <p className="text-sky-small text-sky-ink-2 font-medium mt-2 tabular-nums">
+                                Rate: 1 <GemIcon className="w-3.5 h-3.5" /> = {wallet.vndPerGem.toLocaleString()} VND
+                            </p>
+                        )}
                     </div>
-                    {wallet && (
-                        <p className="text-sky-small text-sky-ink-2 font-medium">
-                            Rate: 1 <img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="gem" className="inline w-3.5 h-3.5 object-contain align-text-bottom" /> = {wallet.vndPerGem.toLocaleString()} VND
-                        </p>
-                    )}
                 </SkyCard>
 
                 {/* Current Plan + Usage — merged into one card spanning the remaining 2 columns */}
                 <SkyCard variant="mentor" className="md:col-span-2 flex flex-col gap-4">
                     {/* Plan header: info on the left, Cancel pinned to the top-right */}
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="relative flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-1.5 min-w-0">
-                            <h2 className="text-sky-h3 font-bold text-sky-ink">{t("mentor.subscriptionWallet.currentPlan")}</h2>
+                            <p className={eyebrow}>{t("mentor.subscriptionWallet.currentPlan")}</p>
                             {plan ? (
                                 <>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-2xl font-bold text-sky-ink">{plan.name}</span>
+                                        <span className="font-display text-2xl font-semibold text-sky-ink">{plan.name}</span>
                                         {activeSub?.isDefaultFree && (
-                                            <span className="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-700 rounded-full">
+                                            <span className="sky-badge sky-badge-neutral">
                                                 FREE
                                             </span>
                                         )}
                                         {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && (
-                                            <span className="px-2 py-0.5 text-xs font-semibold bg-success-500 text-white rounded-full">
+                                            <span className="sky-badge sky-badge-success">
+                                                <Check className="w-3 h-3" />
                                                 ACTIVE
                                             </span>
                                         )}
                                     </div>
                                     {activeSub?.subscription?.expiresAt && (
-                                        <p className="text-xs text-sky-ink-2 font-medium">
+                                        <p className="inline-flex items-center gap-1.5 text-xs text-sky-ink-2 font-medium tabular-nums">
+                                            <Clock className="w-3.5 h-3.5 text-sky-ink-3" />
                                             {t("mentor.subscriptionWallet.expires")}: {new Date(activeSub.subscription.expiresAt).toLocaleDateString()}
                                         </p>
                                     )}
@@ -738,11 +884,11 @@ export default function SubscriptionWallet() {
                         )}
                     </div>
 
-                    <div className="border-t border-sky-surf-border" />
+                    <div className="relative border-t border-sky-ink/8" />
 
                     {/* Usage section */}
-                    <div>
-                        <p className="text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wider mb-3">
+                    <div className="relative">
+                        <p className={`${eyebrow} mb-3`}>
                             {t("mentor.subscriptionWallet.usageThisPeriod")}
                         </p>
                         {usage ? (
@@ -761,62 +907,81 @@ export default function SubscriptionWallet() {
 
             {/* ── Transaction Logbook ────────────────────────────────────────── */}
             <SkyCard variant="mentor" className="mb-8">
-                <h2 className="text-sky-h3 font-bold text-sky-ink mb-1 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-3/30 text-sm">📜</span>
+                <h2 className={`relative flex items-center gap-2 ${sectionTitle}`}>
+                    <span className="inline-grid place-items-center w-7 h-7 rounded-full bg-sky-deep/12 text-sky-deep">
+                        <ScrollText className="w-4 h-4" />
+                    </span>
                     {t("mentor.subscriptionWallet.transactionLog", "Logbook")}
                 </h2>
-                <p className="text-sky-small text-sky-ink-2 font-medium mb-4">
+                <p className="relative text-sky-small text-sky-ink-2 font-medium mb-4 mt-1">
                     {t("mentor.subscriptionWallet.transactionLogHint", "Every top-up and purchase, in order.")}
                 </p>
-                <TransactionLogbook transactions={pagedTransactions} loading={loadingTx} error={txError} />
-                {!loadingTx && !txError && transactions.length > 0 && (
-                    <Pagination currentPage={txPage} totalPages={txTotalPages} onPageChange={setTxPage} />
-                )}
+                <div className="relative">
+                    <TransactionLogbook transactions={pagedTransactions} loading={loadingTx} error={txError} />
+                    {!loadingTx && !txError && transactions.length > 0 && (
+                        <Pagination currentPage={txPage} totalPages={txTotalPages} onPageChange={setTxPage} />
+                    )}
+                </div>
             </SkyCard>
 
             {/* Available Packages */}
             <div>
-                <h2 className="text-sky-h2 font-bold text-sky-ink mb-4">{t("mentor.subscriptionWallet.availablePlans")}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <p className={eyebrow}>{t("mentor.subscriptionWallet.gemStore")}</p>
+                <h2 className="font-display text-sky-h2 font-semibold text-sky-ink mb-4 mt-1">{t("mentor.subscriptionWallet.availablePlans")}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sky-stagger">
                     {packages.map((pkg) => {
                         const isCurrent = activeSub?.package.packageId === pkg.packageId;
                         return (
                             <SkyCard
                                 key={pkg.packageId}
                                 variant="mentor"
-                                className={`relative flex flex-col gap-4 transition-transform duration-150 ${easeExpo} hover:scale-[1.01]`}
+                                className={`relative flex flex-col gap-4 overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${
+                                    isCurrent ? "ring-1 ring-sky-teal/35" : ""
+                                }`}
                             >
+                                {/* Current plan gets three cues: a teal rail, a teal wash
+                                    and the badge — never the tint alone. */}
                                 {isCurrent && (
-                                    <div className="absolute inset-0 rounded-sky-card bg-success-500/5 pointer-events-none" aria-hidden="true" />
+                                    <>
+                                        <span className="absolute left-0 right-0 top-0 h-1 bg-sky-teal" aria-hidden="true" />
+                                        <div className="absolute inset-0 bg-sky-teal/5 pointer-events-none" aria-hidden="true" />
+                                        <span className="absolute top-3 right-3 sky-badge sky-badge-success">
+                                            <Check className="w-3 h-3" />
+                                            CURRENT
+                                        </span>
+                                    </>
                                 )}
-                                {isCurrent && (
-                                    <span className="absolute top-3 right-3 px-2 py-0.5 text-xs font-semibold bg-success-500 text-white rounded-full">
-                                        CURRENT
-                                    </span>
-                                )}
-                                <div>
-                                    <h3 className="text-sky-h3 font-semibold text-sky-ink">{pkg.name}</h3>
+                                <div className="relative pr-24">
+                                    <h3 className="font-display text-sky-h3 font-semibold text-sky-ink">{pkg.name}</h3>
                                     <p className="text-xs text-sky-ink-2 mt-0.5">{pkg.description}</p>
                                 </div>
-                                <div className="text-sky-h2 font-bold text-sky-peach-deep">
-                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-sky-ink-2 inline-flex items-center gap-0.5"><img src="/icon/Currency/Diamond/64px/Purple Diamond 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> / {pkg.durationDays}d</span>
+                                <div className="relative font-display text-sky-h2 font-semibold text-sky-peach-deep tabular-nums">
+                                    {pkg.price.toLocaleString()} <span className="text-sm font-medium text-sky-ink-2 inline-flex items-center gap-0.5"><GemIcon className="w-3.5 h-3.5" /> / {pkg.durationDays}d</span>
                                 </div>
-                                <ul className="text-xs space-y-1 text-sky-ink-2 font-medium">
-                                    <li>✦ {t("mentor.subscriptionWallet.upToParties", { count: pkg.maxParties })}</li>
-                                    <li>✦ <strong className="text-sky-ink">{pkg.maxMembersPerParty}</strong> {t("mentor.subscriptionWallet.membersPerParty")}</li>
-                                    <li>✦ <strong className="text-sky-ink">{pkg.questsPerMemberPerDay}</strong> {t("mentor.subscriptionWallet.questsPerMemberDay")}</li>
-                                    <li>✦ {t("mentor.subscriptionWallet.bossModes")}: <strong className="text-sky-ink">{pkg.bossModes}</strong></li>
-                                    <li>✦ {t("mentor.subscriptionWallet.rewardTier")}: <strong className="text-sky-ink">{pkg.rewardTier}</strong></li>
-                                    {pkg.proofTypes && (
-                                        <li>✦ Proof: <strong className="text-sky-ink">{pkg.proofTypes}</strong></li>
-                                    )}
+                                <ul className="relative text-xs space-y-1.5 text-sky-ink-2 font-medium">
+                                    {[
+                                        <>{t("mentor.subscriptionWallet.upToParties", { count: pkg.maxParties })}</>,
+                                        <><strong className="text-sky-ink font-semibold tabular-nums">{pkg.maxMembersPerParty}</strong> {t("mentor.subscriptionWallet.membersPerParty")}</>,
+                                        <><strong className="text-sky-ink font-semibold tabular-nums">{pkg.questsPerMemberPerDay}</strong> {t("mentor.subscriptionWallet.questsPerMemberDay")}</>,
+                                        <>{t("mentor.subscriptionWallet.bossModes")}: <strong className="text-sky-ink font-semibold">{pkg.bossModes}</strong></>,
+                                        <>{t("mentor.subscriptionWallet.rewardTier")}: <strong className="text-sky-ink font-semibold">{pkg.rewardTier}</strong></>,
+                                        ...(pkg.proofTypes ? [<>Proof: <strong className="text-sky-ink font-semibold">{pkg.proofTypes}</strong></>] : []),
+                                    ].map((node, i) => (
+                                        <li key={i} className="flex items-start gap-2">
+                                            <Check className="w-3.5 h-3.5 mt-px shrink-0 text-sky-teal" />
+                                            <span>{node}</span>
+                                        </li>
+                                    ))}
                                     {pkg.aiVerificationBossModes ? (
-                                        <li className="flex items-center gap-1">
-                                            <span>✦ 🤖 AI verify:</span>
-                                            <strong className="text-sky-ink">{pkg.aiVerificationBossModes}</strong>
+                                        <li className="flex items-start gap-2">
+                                            <Bot className="w-3.5 h-3.5 mt-px shrink-0 text-sky-violet-deep" />
+                                            <span>AI verify: <strong className="text-sky-ink font-semibold">{pkg.aiVerificationBossModes}</strong></span>
                                         </li>
                                     ) : (
-                                        <li className="text-sky-ink-3">✦ 🤖 No AI verification</li>
+                                        <li className="flex items-start gap-2 text-sky-ink-3">
+                                            <Minus className="w-3.5 h-3.5 mt-px shrink-0" />
+                                            <span>No AI verification</span>
+                                        </li>
                                     )}
                                 </ul>
                                 <SkyButton
@@ -824,7 +989,7 @@ export default function SubscriptionWallet() {
                                     variant="primary"
                                     disabled={isCurrent}
                                     onClick={() => setPurchasePkg(pkg)}
-                                    className="mt-auto"
+                                    className="relative mt-auto"
                                 >
                                     {isCurrent ? t("mentor.subscriptionWallet.currentPlanBtn") : t("mentor.subscriptionWallet.buyUpgrade")}
                                 </SkyButton>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Plus, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, ShieldAlert, Wand2, Film,
+  Skull, Flame, Check, Minus, AlertTriangle, Heart, Tag,
 } from 'lucide-react';
 import { adminDailyBossApi } from '../api/adminDailyBossApi';
 import { adminGoalApi } from '../api/adminGoalApi';
@@ -21,9 +22,9 @@ const isIconUrl = (icon: string | null | undefined): icon is string => !!icon &&
 // file and that modal are migrated together in the same pass, so restyling
 // here is safe — no un-migrated consumer left behind.
 export const inputCls = [
-  'w-full px-3 py-2 rounded-sky-chip border border-sky-surf-border bg-white',
-  'text-sky-ink text-sm font-medium',
-  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
+  'w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80',
+  'text-sky-ink text-sm font-medium transition-shadow',
+  'focus:outline-none focus:ring-2 focus:ring-sky-deep/45',
   'placeholder:text-sky-ink-3',
 ].join(' ');
 
@@ -33,6 +34,25 @@ export const btnBase = [
   'disabled:opacity-50 disabled:cursor-not-allowed',
 ].join(' ');
 
+// ─── Tone taxonomy ────────────────────────────────────────────────────────────
+// A boss is game content, so violet carries the concept itself; dmg-orange
+// carries HP (the thing players burn down); teal is spent only on "this boss is
+// live in the pool"; peach on "a human needs to look at this" (unknown category,
+// empty pool, missing animation); rose only on failure and on delete.
+type Tone = 'deep' | 'peach' | 'dmg' | 'violet' | 'teal' | 'rose' | 'neutral';
+const TONE: Record<Tone, { chip: string; wash: string; rail: string }> = {
+  deep:    { chip: 'bg-sky-deep/12 ring-sky-deep/22 text-sky-deep',            wash: 'bg-sky-deep/8',    rail: 'bg-sky-deep' },
+  peach:   { chip: 'bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep',    wash: 'bg-sky-peach/14',  rail: 'bg-sky-peach' },
+  dmg:     { chip: 'bg-sky-dmg/14 ring-sky-dmg/26 text-sky-dmg-deep',          wash: 'bg-sky-dmg/10',    rail: 'bg-sky-dmg' },
+  violet:  { chip: 'bg-sky-violet/14 ring-sky-violet/26 text-sky-violet-deep', wash: 'bg-sky-violet/10', rail: 'bg-sky-violet' },
+  teal:    { chip: 'bg-sky-teal-bg ring-sky-teal/26 text-sky-teal',            wash: 'bg-sky-teal/10',   rail: 'bg-sky-teal' },
+  rose:    { chip: 'bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep',       wash: 'bg-sky-rose/10',   rail: 'bg-sky-rose' },
+  neutral: { chip: 'bg-white/72 ring-white/85 text-sky-ink-2',                 wash: 'bg-white/48',      rail: 'bg-sky-ink/22' },
+};
+
+const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3';
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
+
 // ─── Portal ───────────────────────────────────────────────────────────────────
 export const Portal = ({ children }: { children: React.ReactNode }) =>
   createPortal(children, document.body);
@@ -41,7 +61,13 @@ export const Portal = ({ children }: { children: React.ReactNode }) =>
 function Flash({ alert }: { alert: { type: 'success' | 'error'; msg: string } | null }) {
   if (!alert) return null;
   return (
-    <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-sky-chip font-semibold text-sm shadow-sky-glass ${alert.type === 'success' ? 'bg-success-100 text-success-800' : 'bg-error-100 text-error-800'}`}>
+    // The flash carries a glyph and a rail as well as a hue, so it reads as
+    // "worked" or "failed" without relying on colour alone.
+    <div className={`sky-in fixed top-4 right-4 z-50 flex items-center gap-2.5 overflow-hidden rounded-sky-chip px-4 py-3 text-sm font-semibold shadow-sky-glass backdrop-blur-md ${alert.type === 'success' ? 'bg-sky-teal-bg/92 text-sky-teal' : 'bg-sky-rose/14 text-sky-rose-deep'}`}>
+      <span className={`absolute left-0 top-0 h-full w-[3px] ${alert.type === 'success' ? 'bg-sky-teal' : 'bg-sky-rose'}`} aria-hidden="true" />
+      {alert.type === 'success'
+        ? <Check className="w-4 h-4 shrink-0" strokeWidth={2.8} aria-hidden="true" />
+        : <AlertTriangle className="w-4 h-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />}
       {alert.msg}
     </div>
   );
@@ -56,14 +82,21 @@ function ConfirmDeleteModal({ boss, onConfirm, onCancel, loading }: {
 }) {
   return (
     <Portal>
-      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <SkyCard variant="admin" className="w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <ShieldAlert className="w-5 h-5 text-error-500 shrink-0" />
-            <h3 className="text-lg font-bold text-error-700">Delete Boss?</h3>
+      <div className="fixed inset-0 bg-sky-abyss/45 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="sky-in w-full max-w-sm">
+          {/* Deleting can't be undone, so the warning is plated and the boss being
+              removed is named in its own recessed line. */}
+          <div className="flex items-start gap-3 mb-3">
+            <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-rose/12 ring-1 ring-sky-rose/24 text-sky-rose-deep">
+              <ShieldAlert className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className={eyebrow}>Irreversible</p>
+              <h3 className="font-display text-base font-semibold leading-tight text-sky-ink">Delete Boss?</h3>
+            </div>
           </div>
-          <p className="text-sm text-sky-ink-2 mb-6">
-            Remove <strong>{boss.icon} {boss.name}</strong> from the pool? This cannot be undone.
+          <p className="mb-6 rounded-sky-chip bg-white/58 ring-1 ring-white/80 px-3.5 py-2.5 text-sm font-medium text-sky-ink-2">
+            Remove <strong className="font-semibold text-sky-ink">{boss.icon} {boss.name}</strong> from the pool? This cannot be undone.
           </p>
           <div className="flex gap-3">
             <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancel</SkyButton>
@@ -120,26 +153,34 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-sky-admin-bg-deep">
-            <div className="flex items-center gap-2">
-              <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
-              <h2 className="font-bold text-lg text-sky-ink">
+      <div className="fixed inset-0 bg-sky-abyss/45 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <SkyCard variant="admin" className="sky-in p-0 overflow-hidden w-full max-w-md">
+          <div className={`relative flex items-center gap-3 overflow-hidden border-b border-white/65 px-5 py-4 ${TONE.violet.wash}`}>
+            <span className={`absolute left-0 top-0 h-full w-[3px] ${TONE.violet.rail}`} aria-hidden="true" />
+            <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${TONE.violet.chip}`}>
+              <Skull className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={eyebrow}>Daily boss</p>
+              <h2 className="truncate font-display text-base font-semibold leading-tight text-sky-ink">
                 {editing ? 'Edit Daily Boss' : 'New Daily Boss'}
               </h2>
             </div>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X className="w-5 h-5" /></SkyButton>
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             {err && (
-              <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{err}</p>
+              <p className="relative flex items-start gap-2 overflow-hidden rounded-sky-chip bg-sky-rose/10 pl-4 pr-3 py-2 text-xs font-semibold text-sky-rose-deep">
+                <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+                <span className="min-w-0">{err}</span>
+              </p>
             )}
 
             <div className="grid grid-cols-[1fr_80px] gap-3">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Boss Name *</label>
+                <label className={fieldLabel}>Boss Name *</label>
                 <input
                   value={form.name}
                   onChange={e => set('name', e.target.value)}
@@ -149,7 +190,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Icon</label>
+                <label className={fieldLabel}>Icon</label>
                 <input
                   value={form.icon ?? ''}
                   onChange={e => set('icon', e.target.value)}
@@ -160,7 +201,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
+              <label className={fieldLabel}>Description</label>
               <textarea
                 value={form.description ?? ''}
                 onChange={e => set('description', e.target.value)}
@@ -171,7 +212,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Category</label>
+              <label className={fieldLabel}>Category</label>
               <select
                 value={form.categoryCode ?? ''}
                 onChange={e => set('categoryCode', e.target.value || null)}
@@ -185,31 +226,39 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-sky-ink-3 mt-1">
+              <p className="mt-1.5 text-[11px] font-medium text-sky-ink-3">
                 {categoriesLoading
                   ? 'Đang tải danh mục…'
                   : 'Boss hợp chủ đề sẽ ưu tiên cho player theo goal đó; Generic khớp mọi goal.'}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">HP Min *</label>
-                <input
-                  type="number" min={1}
-                  value={form.hpMin}
-                  onChange={e => set('hpMin', Number(e.target.value))}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">HP Max *</label>
-                <input
-                  type="number" min={1}
-                  value={form.hpMax}
-                  onChange={e => set('hpMax', Number(e.target.value))}
-                  className={inputCls}
-                />
+            {/* HP is the one pair of numbers that has to be read together — a max
+                below a min is the mistake this form exists to prevent — so the two
+                fields share a plate rather than floating side by side. */}
+            <div className="rounded-sky-md bg-white/50 ring-1 ring-white/76 p-3.5">
+              <p className={`inline-flex items-center gap-1.5 mb-2.5 ${eyebrow}`}>
+                <Heart className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" /> HP range
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>HP Min *</label>
+                  <input
+                    type="number" min={1}
+                    value={form.hpMin}
+                    onChange={e => set('hpMin', Number(e.target.value))}
+                    className={`${inputCls} tabular-nums`}
+                  />
+                </div>
+                <div>
+                  <label className={fieldLabel}>HP Max *</label>
+                  <input
+                    type="number" min={1}
+                    value={form.hpMax}
+                    onChange={e => set('hpMax', Number(e.target.value))}
+                    className={`${inputCls} tabular-nums`}
+                  />
+                </div>
               </div>
             </div>
 
@@ -242,40 +291,48 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
   const cat = boss.categoryCode ? categories.find(c => c.categoryCode === boss.categoryCode) : null;
   const categoryUnknown = !!boss.categoryCode && !cat;
   return (
-    <SkyCard variant="admin" className={`relative ${boss.isActive ? 'ring-2 ring-warning-400' : ''}`}>
+    // Whether a boss is in the live pool changes what every player sees tomorrow,
+    // so it is signalled three ways at once: a rail, a tint, and a badge.
+    <SkyCard variant="admin" className={`relative overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${boss.isActive ? 'ring-1 ring-sky-teal/26 hover:-translate-y-0.5' : 'opacity-92 hover:opacity-100'}`}>
+      <span className={`absolute left-0 top-0 h-full w-[3px] ${boss.isActive ? TONE.teal.rail : 'bg-sky-ink/12'}`} aria-hidden="true" />
       {/* Status badge */}
       <div className="absolute top-4 right-4">
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${boss.isActive ? 'bg-warning-100 text-warning-700' : 'bg-gray-100 text-gray-500'}`}>
-          {boss.isActive ? '● Active' : '○ Inactive'}
+        <span className={`inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${boss.isActive ? TONE.teal.chip : TONE.neutral.chip}`}>
+          {boss.isActive
+            ? <Check className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
+            : <Minus className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />}
+          {boss.isActive ? 'Active' : 'Inactive'}
         </span>
       </div>
 
       {/* Boss identity */}
-      <div className="flex items-center gap-3 mb-3 pr-20">
-        <div className="w-12 h-12 rounded-sky-chip bg-warning-50 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+      <div className="flex items-center gap-3 mb-3.5 pr-20">
+        <div className="grid place-items-center w-12 h-12 shrink-0 overflow-hidden rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-2xl text-sky-violet-deep">
           {isIconUrl(boss.icon) ? (
             <img src={boss.icon} alt={boss.name} className="w-full h-full object-cover" />
           ) : (
-            boss.icon || <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-5 h-5 object-contain" />
+            boss.icon || <Skull className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
           )}
         </div>
         <div className="min-w-0">
-          <p className="font-bold text-base text-sky-ink truncate">{boss.name}</p>
+          <p className="truncate font-display text-base font-semibold text-sky-ink">{boss.name}</p>
           {boss.description && (
-            <p className="text-xs text-sky-ink-2 truncate mt-0.5">{boss.description}</p>
+            <p className="mt-0.5 truncate text-xs font-medium text-sky-ink-2">{boss.description}</p>
           )}
+          {/* A category that resolves to nothing is almost always a typo, so it
+              gets the attention hue and a warning glyph rather than blending in
+              with the categories that are fine. */}
           <span
             title={categoryUnknown ? `Category code "${boss.categoryCode}" khớp không danh mục nào — có thể gõ sai.` : undefined}
-            className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-              categoryUnknown
-                ? 'bg-warning-100 text-warning-700'
-                : boss.categoryCode
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'bg-gray-100 text-gray-500'
+            className={`mt-1.5 inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${
+              categoryUnknown ? TONE.peach.chip : boss.categoryCode ? TONE.deep.chip : TONE.neutral.chip
             }`}
           >
             {categoryUnknown
-              ? `⚠ ${boss.categoryCode}`
+              ? <AlertTriangle className="w-2.5 h-2.5 shrink-0" strokeWidth={2.8} aria-hidden="true" />
+              : <Tag className="w-2.5 h-2.5 shrink-0" strokeWidth={2.8} aria-hidden="true" />}
+            {categoryUnknown
+              ? boss.categoryCode
               : cat
                 ? `${cat.iconCode ? `${cat.iconCode} ` : ''}${cat.categoryName}`
                 : 'Generic'}
@@ -284,28 +341,32 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
       </div>
 
       {/* HP range + animation status */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex-1 bg-warning-50 border border-warning-200 rounded-sky-chip px-3 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-warning-700 mb-0.5">HP Range</p>
-          <p className="text-sm font-bold text-sky-ink">
+      <div className="mb-4 flex items-stretch gap-2">
+        <div className="flex-1 rounded-sky-md bg-sky-dmg/10 ring-1 ring-sky-dmg/20 px-3 py-2">
+          <p className={`mb-0.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-dmg-deep`}>
+            <Heart className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> HP Range
+          </p>
+          <p className="font-display text-sm font-semibold text-sky-ink tabular-nums">
             {boss.hpMin.toLocaleString()} – {boss.hpMax.toLocaleString()}
           </p>
         </div>
+        {/* A boss with no frames still runs, but it looks unfinished in-game — so
+            "not uploaded yet" is peach (needs a human) rather than an error. */}
         <button
           type="button"
           onClick={onOpenAnimation}
           title="Animation Studio"
           className={[
-            'flex-1 h-full rounded-sky-chip px-3 py-2 border text-left transition-colors',
+            'flex-1 rounded-sky-md px-3 py-2 text-left ring-1 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-px',
             hasAnimation
-              ? 'bg-purple-50 border-purple-200 hover:bg-purple-100'
-              : 'bg-warning-50 border-warning-300 hover:bg-warning-100',
+              ? 'bg-sky-violet/10 ring-sky-violet/22 hover:bg-sky-violet/16'
+              : 'bg-sky-peach/14 ring-sky-peach/28 hover:bg-sky-peach/22',
           ].join(' ')}
         >
-          <p className={`text-[10px] font-semibold uppercase tracking-wide mb-0.5 flex items-center gap-1 ${hasAnimation ? 'text-purple-700' : 'text-warning-700'}`}>
-            <Film className="w-3 h-3" /> Animation
+          <p className={`mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${hasAnimation ? 'text-sky-violet-deep' : 'text-sky-peach-deep'}`}>
+            <Film className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> Animation
           </p>
-          <p className="text-sm font-bold text-sky-ink">
+          <p className="font-display text-sm font-semibold text-sky-ink tabular-nums">
             {hasAnimation ? `${boss.totalFrames} frame` : 'Chưa có — upload'}
           </p>
         </button>
@@ -313,11 +374,11 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        <SkyButton type="button" variant="secondary" size="sm" onClick={onToggle} disabled={toggling} title={boss.isActive ? 'Deactivate' : 'Activate'}>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={onToggle} disabled={toggling} title={boss.isActive ? 'Deactivate' : 'Activate'} aria-pressed={boss.isActive}>
           {toggling
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : boss.isActive
-              ? <ToggleRight className="w-4 h-4 text-success-600" />
+              ? <ToggleRight className="w-4 h-4 text-sky-teal" />
               : <ToggleLeft className="w-4 h-4" />
           }
           {boss.isActive ? 'Deactivate' : 'Activate'}
@@ -328,7 +389,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
         <SkyButton type="button" variant="secondary" size="sm" onClick={onOpenAnimation}>
           <Wand2 className="w-3.5 h-3.5" /> Anim
         </SkyButton>
-        <SkyButton type="button" variant="destructive" size="icon" onClick={onDelete} className="ml-auto">
+        <SkyButton type="button" variant="destructive" size="icon" onClick={onDelete} className="ml-auto" aria-label={`Delete ${boss.name}`}>
           <Trash2 className="w-3.5 h-3.5" />
         </SkyButton>
       </div>
@@ -422,25 +483,26 @@ export default function AdminDailyBossManagement() {
       <Flash alert={alert} />
 
       {/* Header */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="w-12 h-12 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
-          <img src="/icon/Main/Fire 2/64w/Fire 64px.png" alt="" className="w-5 h-5 object-contain" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-black text-sky-ink">Daily Boss Pool</h1>
-          <p className="text-sm text-sky-ink-2">
+      <div className="sky-in flex items-center gap-4 flex-wrap">
+        <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-dmg/12 ring-1 ring-sky-dmg/22 text-sky-dmg-deep">
+          <Flame className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className={eyebrow}>Game content</p>
+          <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">Daily Boss Pool</h1>
+          <p className="mt-0.5 text-sm font-medium text-sky-ink-2">
             Each player gets one boss per day drawn from the active pool (stable hash per user/date).
           </p>
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          <label className="flex cursor-pointer select-none items-center gap-2 rounded-sky-chip bg-white/58 ring-1 ring-white/80 px-3 py-2 transition-colors hover:bg-white/74">
             <input
               type="checkbox"
               checked={activeOnly}
               onChange={e => setActiveOnly(e.target.checked)}
               className="w-4 h-4 accent-sky-deep"
             />
-            <span className="text-sm font-semibold text-sky-ink-2">Active only</span>
+            <span className="text-sm font-semibold text-sky-ink">Active only</span>
           </label>
           <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })}>
             <Plus className="w-4 h-4" /> Add Boss
@@ -449,20 +511,25 @@ export default function AdminDailyBossManagement() {
       </div>
 
       {/* Stats bar */}
-      <div className="flex gap-3 flex-wrap">
-        {[
-          { label: 'Total', value: bosses.length, color: 'bg-gray-100 text-gray-700' },
-          { label: 'Active', value: activeBosses.length, color: 'bg-warning-50 text-warning-700' },
-          { label: 'Inactive', value: inactiveBosses.length, color: 'bg-gray-50 text-gray-500' },
-        ].map(s => (
-          <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-full ${s.color}`}>
-            <span className="text-xs font-semibold uppercase tracking-wide opacity-70">{s.label}</span>
-            <span className="text-lg font-bold">{s.value}</span>
+      {/* Active is the only count that changes what players get, so it is the
+          only one that carries a hue; total and inactive stay quiet. */}
+      <div className="flex flex-wrap items-center gap-2 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
+        {([
+          { label: 'Total', value: bosses.length, tone: 'neutral' as Tone },
+          { label: 'Active', value: activeBosses.length, tone: 'teal' as Tone },
+          { label: 'Inactive', value: inactiveBosses.length, tone: 'neutral' as Tone },
+        ]).map(s => (
+          <div key={s.label} className={`flex items-center gap-2 rounded-sky-chip ring-1 px-3.5 py-1.5 ${TONE[s.tone].chip}`}>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-75">{s.label}</span>
+            <span className="font-display text-lg font-semibold leading-none tabular-nums">{s.value}</span>
           </div>
         ))}
         {activeBosses.length === 0 && !loading && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-warning-50 text-warning-700">
-            <ShieldAlert className="w-4 h-4" />
+          // An empty pool silently degrades to fallback HP, so it has to be said
+          // out loud — this is the one line on the page that must not be missed.
+          <div className="relative ml-auto flex items-center gap-2 overflow-hidden rounded-sky-chip bg-sky-peach/16 pl-3.5 pr-3.5 py-1.5 text-sky-peach-deep">
+            <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+            <ShieldAlert className="w-4 h-4 shrink-0" strokeWidth={2.4} aria-hidden="true" />
             <span className="text-xs font-semibold">Pool empty — system uses fallback HP config</span>
           </div>
         )}
@@ -470,17 +537,19 @@ export default function AdminDailyBossManagement() {
 
       {/* Boss grid */}
       {loading ? (
-        <div className="flex items-center gap-2 justify-center py-20 text-sky-ink-3">
+        <div className="flex items-center gap-2 justify-center py-20 text-sm font-medium text-sky-ink-3">
           <Loader2 className="w-6 h-6 animate-spin" /> Loading pool…
         </div>
       ) : bosses.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
-          <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-14 h-14 mx-auto mb-3 opacity-20 object-contain" />
-          <p className="font-bold text-lg">No bosses yet</p>
-          <p className="text-sm mt-1">Add the first boss to the daily pool.</p>
+        <div className="flex flex-col items-center gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/38 py-20">
+          <span className="grid place-items-center w-16 h-16 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">
+            <Skull className="w-7 h-7" strokeWidth={1.8} aria-hidden="true" />
+          </span>
+          <p className="font-display text-sky-h3 font-semibold text-sky-ink">No bosses yet</p>
+          <p className="text-sm font-medium text-sky-ink-2">Add the first boss to the daily pool.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="sky-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {bosses.map(boss => (
             <BossCard
               key={boss.dailyBossTemplateId}

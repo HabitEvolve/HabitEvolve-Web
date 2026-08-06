@@ -20,7 +20,7 @@ const RadioSm: React.FC<RadioProps> = ({
   return (
     <label
       htmlFor={id}
-      className={`flex cursor-pointer select-none items-center text-sm text-gray-500 dark:text-gray-400 ${className}`}
+      className={`flex cursor-pointer select-none items-center text-sm text-sky-ink-2 ${className}`}
     >
       <span className="relative">
         {/* Hidden Input */}
@@ -37,16 +37,12 @@ const RadioSm: React.FC<RadioProps> = ({
         <span
           className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full border ${
             checked
-              ? "border-brand-500 bg-brand-500"
-              : "bg-transparent border-gray-300 dark:border-gray-700"
+              ? "border-sky-deep bg-sky-deep"
+              : "bg-white/60 border-white/80"
           }`}
         >
           {/* Inner Dot */}
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              checked ? "bg-white" : "bg-white dark:bg-[#1e2636]"
-            }`}
-          ></span>
+          <span className="h-1.5 w-1.5 rounded-full bg-white"></span>
         </span>
       </span>
       {label}

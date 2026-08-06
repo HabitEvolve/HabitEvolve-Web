@@ -3,8 +3,11 @@ import { createPortal } from 'react-dom';
 import {
   Plus, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, ShieldAlert,
-  ChevronDown, ChevronUp, Users, Zap, Coins,
+  ChevronDown, ChevronUp, Users, Coins,
+  Check, Archive, PencilLine, AlertTriangle, Trophy,
+  Sparkles, Star, Gem, Swords, Library, BookOpen,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import Pagination from '../components/common/SkyPagination';
 import { adminQuestLibraryApi } from '../api/adminQuestLibraryApi';
@@ -29,30 +32,124 @@ const VERIFICATION_TAGS: VerificationTag[] = ['FACE', 'ITEM', 'ACTION'];
 const CV_QUEST_TYPES: CvQuestType[] = ['running', 'drinking_water', 'sleeping', 'reading', 'cooking', 'exercise'];
 const HOW_TO_SUBMIT_MAX = 500;
 
-const DIFF_CFG: Record<QuestLibraryDifficulty, { label: string; cls: string }> = {
-  EASY:   { label: 'Easy',   cls: 'bg-success-100 text-success-800' },
-  NORMAL: { label: 'Normal', cls: 'bg-blue-100 text-blue-800' },
-  HARD:   { label: 'Hard',   cls: 'bg-warning-100 text-warning-800' },
-  EPIC:   { label: 'Epic',   cls: 'bg-purple-100 text-purple-800' },
-};
-
-const STATUS_CFG: Record<QuestLibraryStatus, { cls: string }> = {
-  Draft:     { cls: 'bg-gray-100 text-gray-600' },
-  Published: { cls: 'bg-success-100 text-success-800' },
-  Archived:  { cls: 'bg-error-100 text-error-600' },
-};
-
 // ─── Style helpers ────────────────────────────────────────────────────────────
 const inputCls = [
-  'w-full px-3 py-2 rounded-sky-chip border border-sky-surf-border bg-white',
-  'text-sky-ink text-sm font-medium',
-  'focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20',
-  'placeholder:text-sky-ink-3',
+  'w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80',
+  'text-sky-ink text-sm font-medium transition-shadow',
+  'focus:outline-none focus:ring-2 focus:ring-sky-deep/45',
+  'placeholder:text-sky-ink-3 disabled:opacity-55',
 ].join(' ');
+
+const filterSelectCls = [
+  'px-3 py-2 rounded-sky-chip bg-white/70 ring-1 ring-white/80',
+  'text-xs font-semibold text-sky-ink transition-shadow',
+  'focus:outline-none focus:ring-2 focus:ring-sky-deep/45',
+].join(' ');
+
+const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3';
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
+
+// One hue per meaning, reused everywhere that meaning appears — chip, modal
+// header, selection rail. deep = the operational default (goals, quantities),
+// peach = reward and attention, dmg = damage, violet = the quest-template
+// concept itself and Epic, teal = the one genuinely successful state
+// (Published), rose = destructive, neutral = no state yet (Draft).
+type Tone = 'deep' | 'peach' | 'dmg' | 'violet' | 'teal' | 'rose' | 'neutral';
+const TONE: Record<Tone, { chip: string; wash: string; rail: string }> = {
+  deep:    { chip: 'bg-sky-deep/12 ring-sky-deep/22 text-sky-deep',            wash: 'bg-sky-deep/8',    rail: 'bg-sky-deep' },
+  peach:   { chip: 'bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep',    wash: 'bg-sky-peach/14',  rail: 'bg-sky-peach' },
+  dmg:     { chip: 'bg-sky-dmg/14 ring-sky-dmg/26 text-sky-dmg-deep',          wash: 'bg-sky-dmg/10',    rail: 'bg-sky-dmg' },
+  violet:  { chip: 'bg-sky-violet/14 ring-sky-violet/26 text-sky-violet-deep', wash: 'bg-sky-violet/10', rail: 'bg-sky-violet' },
+  teal:    { chip: 'bg-sky-teal-bg ring-sky-teal/26 text-sky-teal',            wash: 'bg-sky-teal/10',   rail: 'bg-sky-teal' },
+  rose:    { chip: 'bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep',       wash: 'bg-sky-rose/10',   rail: 'bg-sky-rose' },
+  neutral: { chip: 'bg-white/72 ring-white/85 text-sky-ink-2',                 wash: 'bg-white/48',      rail: 'bg-sky-ink/22' },
+};
+
+// Difficulty is a category, not a verdict — Easy isn't "good" and Epic isn't
+// "bad" — so the ramp is picked for separation at a glance and deliberately
+// spends no teal: on this screen teal means Published and nothing else.
+const DIFF_CFG: Record<QuestLibraryDifficulty, { label: string; cls: string }> = {
+  EASY:   { label: 'Easy',   cls: TONE.neutral.chip },
+  NORMAL: { label: 'Normal', cls: TONE.deep.chip },
+  HARD:   { label: 'Hard',   cls: TONE.peach.chip },
+  EPIC:   { label: 'Epic',   cls: TONE.violet.chip },
+};
+
+// Status carries a glyph as well as a hue, so Published never relies on colour
+// alone to be told apart from Draft.
+const STATUS_CFG: Record<QuestLibraryStatus, { cls: string; Icon: LucideIcon }> = {
+  Draft:     { cls: TONE.neutral.chip, Icon: PencilLine },
+  Published: { cls: TONE.teal.chip,    Icon: Check },
+  Archived:  { cls: TONE.rose.chip,    Icon: Archive },
+};
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 const Portal = ({ children }: { children: React.ReactNode }) =>
   createPortal(children, document.body);
+
+// ─── Shared modal chrome ──────────────────────────────────────────────────────
+// Every modal here opens with the same header shape — tinted strip, left rail,
+// icon chip, eyebrow, display-face title — so tone is the only thing that
+// changes between them and an operator learns the layout once.
+function ModalHead({ Icon, eyebrowText, title, tone, onClose }: {
+  Icon: LucideIcon; eyebrowText: string; title: string; tone: Tone; onClose(): void;
+}) {
+  return (
+    <div className={`relative flex items-center justify-between gap-3 shrink-0 overflow-hidden border-b border-white/65 p-5 ${TONE[tone].wash}`}>
+      <span className={`absolute left-0 top-0 h-full w-[3px] ${TONE[tone].rail}`} aria-hidden="true" />
+      <div className="flex items-center gap-3 min-w-0">
+        <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${TONE[tone].chip}`}>
+          <Icon className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className={eyebrow}>{eyebrowText}</p>
+          <h2 className="font-display text-sky-h3 font-semibold leading-tight text-sky-ink truncate">{title}</h2>
+        </div>
+      </div>
+      <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+        <X className="w-5 h-5" />
+      </SkyButton>
+    </div>
+  );
+}
+
+// A missing goal mapping isn't an error the operator caused — it's a
+// precondition to notice — so it reads on the peach attention tone with a rail
+// and a glyph rather than as a red failure.
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative flex items-start gap-2.5 overflow-hidden rounded-sky-chip bg-sky-peach/14 pl-4 pr-3.5 py-2.5">
+      <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+      <AlertTriangle className="w-4 h-4 shrink-0 mt-px text-sky-peach-deep" strokeWidth={2.2} aria-hidden="true" />
+      <p className="text-xs font-semibold text-sky-peach-deep">{children}</p>
+    </div>
+  );
+}
+
+// ─── Goal picker row ──────────────────────────────────────────────────────────
+// Shared by both places a quest gets mapped to goals. Goal = deep, matching the
+// Goal & Task Engine screen, so one concept doesn't get two colour languages.
+function GoalPickRow({ goal, checked, onToggle }: {
+  goal: GoalDto; checked: boolean; onToggle(): void;
+}) {
+  return (
+    <label className={`relative flex items-center gap-3 px-4 py-2.5 cursor-pointer overflow-hidden transition-colors ${checked ? TONE.deep.wash : 'hover:bg-white/62'}`}>
+      {/* Selection is carried by a rail and a tick as well as the tint, so a run
+          of picked rows stays readable without counting checkboxes. */}
+      {checked && <span className={`absolute left-0 top-0 h-full w-[3px] ${TONE.deep.rail}`} aria-hidden="true" />}
+      <input type="checkbox" checked={checked} onChange={onToggle} className="peer sr-only" />
+      <span className="grid place-items-center w-[18px] h-[18px] shrink-0 rounded-[6px] bg-white/80 ring-1 ring-white/85 text-white transition-all peer-checked:bg-sky-deep peer-checked:ring-sky-deep peer-focus-visible:ring-2 peer-focus-visible:ring-sky-deep/55">
+        <Check className={`w-3 h-3 transition-opacity ${checked ? 'opacity-100' : 'opacity-0'}`} strokeWidth={3} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-sky-ink truncate">{goal.goalName}</p>
+        <p className="text-[10px] font-mono text-sky-ink-3">{goal.goalCode}</p>
+      </div>
+    </label>
+  );
+}
+
+const goalListCls = 'rounded-sky-md bg-white/45 ring-1 ring-white/70 divide-y divide-white/70 overflow-hidden';
 
 // ─── Reward Modal ─────────────────────────────────────────────────────────────
 function RewardModal({ item, onClose, onSaved }: {
@@ -82,32 +179,35 @@ function RewardModal({ item, onClose, onSaved }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-warning-50">
-            <div className="flex items-center gap-2">
-              <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-5 h-5 object-contain" alt="" />
-              <h2 className="font-bold text-lg text-sky-ink">Edit Rewards</h2>
-            </div>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={Trophy} eyebrowText="Reward matrix" title="Edit Rewards" tone="peach" onClose={onClose} />
           <div className="p-5 space-y-4">
-            <p className="text-xs font-semibold text-sky-ink-3 truncate">Quest: {item.title}</p>
+            {/* Which quest is being repriced is the one fact that must not be
+                misread here, so it gets its own labelled slot instead of a
+                caption that scans as decoration. */}
+            <div className="rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-3.5 py-2.5">
+              <p className={eyebrow}>Quest</p>
+              <p className="text-sm font-semibold text-sky-ink truncate">{item.title}</p>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Gold', icon: <Coins className="w-3.5 h-3.5 text-warning-500" />, val: gold, set: setGold },
-                { label: 'Bonus Gold', icon: <Coins className="w-3.5 h-3.5 text-warning-400" />, val: bonusGold, set: setBonusGold },
-                { label: 'XP', icon: <img src="/icon/Item/Medal/64px/Bronze Medal 1st 64px.png" className="w-3.5 h-3.5 object-contain" alt="" />, val: xp, set: setXp },
-                { label: 'Gems', icon: <Zap className="w-3.5 h-3.5 text-purple-500" />, val: gems, set: setGems },
+                { label: 'Gold', Icon: Coins, tone: 'peach' as Tone, val: gold, set: setGold },
+                { label: 'Bonus Gold', Icon: Sparkles, tone: 'peach' as Tone, val: bonusGold, set: setBonusGold },
+                { label: 'XP', Icon: Star, tone: 'deep' as Tone, val: xp, set: setXp },
+                { label: 'Gems', Icon: Gem, tone: 'violet' as Tone, val: gems, set: setGems },
               ].map(f => (
                 <div key={f.label}>
-                  <label className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">
-                    {f.icon} {f.label}
+                  <label className={`flex items-center gap-1.5 mb-1.5 ${eyebrow}`}>
+                    <span className={`grid place-items-center w-5 h-5 shrink-0 rounded-[7px] ring-1 ${TONE[f.tone].chip}`}>
+                      <f.Icon className="w-3 h-3" strokeWidth={2.4} aria-hidden="true" />
+                    </span>
+                    {f.label}
                   </label>
                   <input
                     type="number" min={0}
                     value={f.val}
                     onChange={e => f.set(Number(e.target.value))}
-                    className={inputCls}
+                    className={`${inputCls} tabular-nums`}
                   />
                 </div>
               ))}
@@ -116,7 +216,7 @@ function RewardModal({ item, onClose, onSaved }: {
             <div className="flex gap-3 pt-1">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
               <SkyButton type="button" variant="primary" onClick={handleSave} disabled={saving} className="flex-1">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-4 h-4 object-contain" alt="" />} Save
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />} Save
               </SkyButton>
             </div>
           </div>
@@ -156,33 +256,31 @@ function GoalsModal({ item, allGoals, onClose, onSaved }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md flex flex-col max-h-[80vh]">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-blue-50 shrink-0">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-700" />
-              <h2 className="font-bold text-lg text-sky-ink">Edit Goal Mappings</h2>
-            </div>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead Icon={Users} eyebrowText="Personalization" title="Edit Goal Mappings" tone="deep" onClose={onClose} />
           <div className="p-5 space-y-3 overflow-y-auto flex-1">
-            <p className="text-xs font-semibold text-sky-ink-3 truncate">Quest: {item.title}</p>
-            <p className="text-xs text-sky-ink-2">Thay thế toàn bộ goal mappings. <strong>({selectedIds.length} selected)</strong></p>
+            <div className="rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-3.5 py-2.5">
+              <p className={eyebrow}>Quest</p>
+              <p className="text-sm font-semibold text-sky-ink truncate">{item.title}</p>
+            </div>
+            {/* Saving replaces the whole mapping rather than adding to it, so the
+                live count sits beside that warning instead of under the list. */}
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-sky-ink-2">Thay thế toàn bộ goal mappings.</p>
+              <span className={`shrink-0 inline-flex items-center rounded-sky-chip ring-1 px-2 py-0.5 text-[11px] font-semibold tabular-nums ${TONE.deep.chip}`}>
+                {selectedIds.length} selected
+              </span>
+            </div>
             {allGoals.length === 0 ? (
-              <p className="text-xs text-warning-600 font-semibold">No goals found.</p>
+              <Notice>No goals found.</Notice>
             ) : (
-              <div className="border border-sky-surf-border rounded-sky-chip divide-y divide-gray-100">
+              <div className={goalListCls}>
                 {allGoals.map(g => (
-                  <label key={g.goalId} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-blue-50 transition-colors ${selectedIds.includes(g.goalId) ? 'bg-blue-50' : ''}`}>
-                    <input type="checkbox" checked={selectedIds.includes(g.goalId)} onChange={() => toggle(g.goalId)} className="w-4 h-4 accent-sky-deep shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-sky-ink truncate">{g.goalName}</p>
-                      <p className="text-[10px] font-mono text-sky-ink-3">{g.goalCode}</p>
-                    </div>
-                  </label>
+                  <GoalPickRow key={g.goalId} goal={g} checked={selectedIds.includes(g.goalId)} onToggle={() => toggle(g.goalId)} />
                 ))}
               </div>
             )}
           </div>
-          <div className="flex gap-3 px-5 py-4 border-t border-gray-200 shrink-0">
+          <div className="flex gap-3 px-5 py-4 border-t border-white/65 shrink-0">
             <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
             <SkyButton type="button" variant="primary" onClick={handleSave} disabled={saving} className="flex-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />} Save Goals
@@ -277,40 +375,40 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-xl max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-purple-50 shrink-0">
-            <div className="flex items-center gap-2">
-              <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-5 h-5 object-contain" alt="" />
-              <h2 className="font-bold text-lg text-sky-ink">{editing ? 'Edit Quest' : 'New Quest'}</h2>
-            </div>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></SkyButton>
-          </div>
+          <ModalHead
+            Icon={BookOpen}
+            eyebrowText="Quest template"
+            title={editing ? 'Edit Quest' : 'New Quest'}
+            tone="violet"
+            onClose={onClose}
+          />
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Title *</label>
+              <label className={fieldLabel}>Title *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Drink 2L of water" required />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Description</label>
+              <label className={fieldLabel}>Description</label>
               <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} placeholder="Optional details…" />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Difficulty *</label>
+                <label className={fieldLabel}>Difficulty *</label>
                 <select value={difficulty} onChange={e => setDifficulty(e.target.value as QuestLibraryDifficulty)} className={inputCls}>
                   {DIFFICULTIES.map(d => <option key={d} value={d}>{DIFF_CFG[d].label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Proof Type *</label>
+                <label className={fieldLabel}>Proof Type *</label>
                 <select value={proofType} onChange={e => setProofType(e.target.value)} className={inputCls}>
                   {PROOF_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Repeat *</label>
+                <label className={fieldLabel}>Repeat *</label>
                 <select value={repeatRule} onChange={e => setRepeatRule(e.target.value as RepeatRule)} className={inputCls}>
                   {REPEAT_RULES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -318,12 +416,12 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Damage</label>
-              <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={inputCls} />
+              <label className={fieldLabel}>Damage</label>
+              <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">
+              <label className={fieldLabel}>
                 How To Submit
                 <span className="ml-1.5 text-[10px] font-normal normal-case text-sky-ink-3">{howToSubmit.length}/{HOW_TO_SUBMIT_MAX}</span>
               </label>
@@ -338,20 +436,32 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Verification Tags</label>
-              <div className="flex flex-wrap gap-3">
-                {VERIFICATION_TAGS.map(tag => (
-                  <label key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sky-chip border border-sky-surf-border text-xs font-semibold bg-white text-sky-ink cursor-pointer">
-                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 accent-sky-deep" />
-                    {tag}
-                  </label>
-                ))}
+              <label className={fieldLabel}>Verification Tags</label>
+              {/* Verification method is a category, not a verdict — it gets the
+                  violet game hue, and a tick rather than a colour swap alone so
+                  which tags are on survives a glance. */}
+              <div className="flex flex-wrap gap-2">
+                {VERIFICATION_TAGS.map(tag => {
+                  const on = selectedTags.includes(tag);
+                  return (
+                    <label
+                      key={tag}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sky-chip ring-1 text-xs font-semibold cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-within:ring-2 focus-within:ring-sky-deep/45 ${on ? TONE.violet.chip : 'bg-white/62 ring-white/80 text-sky-ink-2 hover:bg-white/80 hover:text-sky-ink'}`}
+                    >
+                      <input type="checkbox" checked={on} onChange={() => toggleTag(tag)} className="sr-only" />
+                      <Check className={`w-3.5 h-3.5 transition-opacity ${on ? 'opacity-100' : 'opacity-25'}`} strokeWidth={2.6} aria-hidden="true" />
+                      {tag}
+                    </label>
+                  );
+                })}
               </div>
-              <p className="text-[10px] text-sky-ink-3 mt-1">FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.</p>
+              <p className="text-[10px] text-sky-ink-3 mt-2 leading-relaxed">
+                <strong className="font-semibold text-sky-ink-2">FACE</strong> blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.
+              </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">CV Quest Type</label>
+              <label className={fieldLabel}>CV Quest Type</label>
               <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
                 <option value="">— None —</option>
                 {CV_QUEST_TYPES.map(ct => <option key={ct} value={ct}>{ct}</option>)}
@@ -361,7 +471,7 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             {/* Rewards — only for create */}
             {!editing && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-2">Rewards</p>
+                <p className={`mb-2 ${eyebrow}`}>Rewards</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { label: 'Gold', val: gold, set: setGold },
@@ -370,8 +480,8 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
                     { label: 'Gems', val: gems, set: setGems },
                   ].map(f => (
                     <div key={f.label}>
-                      <label className="block text-[10px] font-semibold text-sky-ink-3 mb-1">{f.label}</label>
-                      <input type="number" min={0} value={f.val} onChange={e => f.set(Number(e.target.value))} className={inputCls} />
+                      <label className={fieldLabel}>{f.label}</label>
+                      <input type="number" min={0} value={f.val} onChange={e => f.set(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
                     </div>
                   ))}
                 </div>
@@ -381,21 +491,15 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             {/* Goals — only for create */}
             {!editing && (
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-2">
+                <label className={`block mb-2 ${eyebrow}`}>
                   Map to Goals * <span className="text-[10px] font-normal normal-case text-sky-ink-3">({selectedGoalIds.length} selected)</span>
                 </label>
                 {allGoals.length === 0 ? (
-                  <p className="text-xs text-warning-600 font-semibold">No goals available. Create goals first.</p>
+                  <Notice>No goals available. Create goals first.</Notice>
                 ) : (
-                  <div className="max-h-36 overflow-y-auto border border-sky-surf-border rounded-sky-chip divide-y divide-gray-100">
+                  <div className={`max-h-36 overflow-y-auto ${goalListCls}`}>
                     {allGoals.map(g => (
-                      <label key={g.goalId} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-purple-50 transition-colors ${selectedGoalIds.includes(g.goalId) ? 'bg-purple-50' : ''}`}>
-                        <input type="checkbox" checked={selectedGoalIds.includes(g.goalId)} onChange={() => toggleGoal(g.goalId)} className="w-4 h-4 accent-sky-deep shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-sky-ink truncate">{g.goalName}</p>
-                          <p className="text-[10px] font-mono text-sky-ink-3">{g.goalCode}</p>
-                        </div>
-                      </label>
+                      <GoalPickRow key={g.goalId} goal={g} checked={selectedGoalIds.includes(g.goalId)} onToggle={() => toggleGoal(g.goalId)} />
                     ))}
                   </div>
                 )}
@@ -403,13 +507,14 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
             )}
 
             {editing && (
-              <p className="text-xs text-sky-ink-3 bg-gray-50 rounded-sky-chip px-3 py-2">
-                Dùng "Edit Goals" để cập nhật goal mappings. Dùng "Rewards" để cập nhật phần thưởng.
+              <p className="text-xs text-sky-ink-2 bg-white/62 ring-1 ring-white/80 rounded-sky-chip px-3.5 py-2.5 leading-relaxed">
+                Dùng <strong className="font-semibold text-sky-ink">Edit Goals</strong> để cập nhật goal mappings.
+                Dùng <strong className="font-semibold text-sky-ink">Rewards</strong> để cập nhật phần thưởng.
               </p>
             )}
           </form>
 
-          <div className="flex gap-3 px-5 py-4 border-t border-gray-200 shrink-0">
+          <div className="flex gap-3 px-5 py-4 border-t border-white/65 shrink-0">
             <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
             <SkyButton type="submit" variant="primary" disabled={saving} onClick={handleSubmit} className="flex-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -430,11 +535,18 @@ function ConfirmDeleteModal({ title, onConfirm, onCancel, loading }: {
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <ShieldAlert className="w-5 h-5 text-error-500 shrink-0" />
-            <h3 className="text-lg font-bold text-error-700">Delete Quest?</h3>
+          <div className="flex items-center gap-3 mb-3">
+            <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${TONE.rose.chip}`}>
+              <ShieldAlert className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className={eyebrow}>Irreversible</p>
+              <h3 className="font-display text-sky-h3 font-semibold leading-tight text-sky-ink">Delete Quest?</h3>
+            </div>
           </div>
-          <p className="text-sm text-sky-ink-2 mb-6">Remove <strong>"{title}"</strong>? Only Draft or Archived quests can be deleted.</p>
+          <p className="text-sm text-sky-ink-2 mb-6 leading-relaxed">
+            Remove <strong className="font-semibold text-sky-ink">{title}</strong>? Only Draft or Archived quests can be deleted.
+          </p>
           <div className="flex gap-3">
             <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancel</SkyButton>
             <SkyButton type="button" variant="destructive" onClick={onConfirm} disabled={loading} className="flex-1">
@@ -459,38 +571,53 @@ function ExpandedRow({ item, allGoals, onRefresh }: {
   const goalObjects = allGoals.filter(g => (item.goalIds ?? []).includes(g.goalId));
 
   return (
-    <div className="px-4 pb-4 pt-3 bg-purple-50/40 border-t border-gray-200 space-y-3">
+    <div className="px-4 pb-4 pt-4 bg-white/42 border-t border-white/70 space-y-4">
       {/* Goals */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-600 mb-1.5">Mapped Goals</p>
-        <div className="flex flex-wrap gap-1.5">
-          {goalObjects.length === 0
-            ? <span className="text-xs text-warning-600 font-semibold">No goals mapped — publish blocked</span>
-            : goalObjects.map(g => (
-              <span key={g.goalId} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+        <p className={`mb-1.5 ${eyebrow}`}>Mapped goals</p>
+        {goalObjects.length === 0 ? (
+          <Notice>No goals mapped — publish blocked</Notice>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {goalObjects.map(g => (
+              <span key={g.goalId} className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-sky-chip ring-1 ${TONE.deep.chip}`}>
                 {g.goalCode}
               </span>
-            ))
-          }
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Rewards */}
+      {/* Payout — the five numbers an operator compares across quests, so they
+          get an even grid with each figure on the display face, rather than a
+          run of inline text that has to be re-parsed on every row. */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-warning-600 mb-1.5">Rewards</p>
-        <div className="flex gap-3 flex-wrap text-xs font-semibold text-sky-ink-2">
-          <span>🪙 Gold: <span className="font-bold text-sky-ink">{item.rewardGold}</span></span>
-          <span>✨ Bonus: <span className="font-bold text-sky-ink">{item.rewardBonusGold}</span></span>
-          <span>⭐ XP: <span className="font-bold text-sky-ink">{item.rewardXp}</span></span>
-          <span>💎 Gems: <span className="font-bold text-sky-ink">{item.rewardGems}</span></span>
-          <span>⚔️ Dmg: <span className="font-bold text-sky-ink">{item.damage}</span></span>
+        <p className={`mb-1.5 ${eyebrow}`}>Payout</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {[
+            { label: 'Gold', Icon: Coins, tone: 'peach' as Tone, val: item.rewardGold },
+            { label: 'Bonus', Icon: Sparkles, tone: 'peach' as Tone, val: item.rewardBonusGold },
+            { label: 'XP', Icon: Star, tone: 'deep' as Tone, val: item.rewardXp },
+            { label: 'Gems', Icon: Gem, tone: 'violet' as Tone, val: item.rewardGems },
+            { label: 'Damage', Icon: Swords, tone: 'dmg' as Tone, val: item.damage },
+          ].map(r => (
+            <div key={r.label} className="flex items-center gap-2.5 rounded-sky-chip bg-white/64 ring-1 ring-white/80 px-3 py-2">
+              <span className={`grid place-items-center w-7 h-7 shrink-0 rounded-[10px] ring-1 ${TONE[r.tone].chip}`}>
+                <r.Icon className="w-3.5 h-3.5" strokeWidth={2.3} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className={eyebrow}>{r.label}</p>
+                <p className="font-display text-sm font-semibold leading-tight text-sky-ink tabular-nums">{r.val}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
         <SkyButton type="button" variant="secondary" size="sm" onClick={() => setShowReward(true)}>
-          <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" className="w-3.5 h-3.5 object-contain" alt="" /> Edit Rewards
+          <Trophy className="w-3.5 h-3.5" /> Edit Rewards
         </SkyButton>
         <SkyButton type="button" variant="secondary" size="sm" onClick={() => setShowGoals(true)}>
           <Users className="w-3.5 h-3.5" /> Edit Goals
@@ -529,47 +656,56 @@ function QuestRow({ item, allGoals, onEdit, onDelete, onStatusChange, onRefresh,
   const [expanded, setExpanded] = useState(false);
 
   const safeStatus = (item.status ?? 'Draft') as QuestLibraryStatus;
-  const statusCls = STATUS_CFG[safeStatus]?.cls ?? STATUS_CFG.Draft.cls;
+  const statusCfg = STATUS_CFG[safeStatus] ?? STATUS_CFG.Draft;
+  const StatusIcon = statusCfg.Icon;
   const diffCls = DIFF_CFG[item.difficulty]?.cls ?? DIFF_CFG.EASY.cls;
   const diffLabel = DIFF_CFG[item.difficulty]?.label ?? item.difficulty;
 
   const canDelete = safeStatus === 'Draft' || safeStatus === 'Archived';
 
   return (
-    <SkyCard variant="admin" className="p-0 overflow-hidden">
+    <SkyCard variant="admin" className="p-0 overflow-hidden sky-lift">
       <div className="flex items-start gap-3 p-4">
-        <span className={`shrink-0 mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffCls}`}>{diffLabel}</span>
+        <span className={`shrink-0 mt-0.5 rounded-sky-chip ring-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${diffCls}`}>{diffLabel}</span>
 
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-sky-ink">{item.title}</p>
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="text-[10px] font-semibold text-sky-ink-3">{item.repeatRule}</span>
-            <span className="text-[10px] font-semibold bg-gray-100 text-sky-ink-2 px-1.5 py-0.5 rounded-lg">{item.proofType}</span>
-            <span className="text-[10px] font-semibold text-sky-ink-3">{(item.goalIds ?? []).length} goal{(item.goalIds ?? []).length !== 1 ? 's' : ''}</span>
+          {/* The title is what an operator scans this list by, so it is the only
+              thing here on the display face at full ink. */}
+          <p className="font-display text-sm font-semibold leading-snug text-sky-ink">{item.title}</p>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <span className="rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-2 py-0.5 text-[10px] font-semibold text-sky-ink-2">{item.repeatRule}</span>
+            <span className="rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-2 py-0.5 text-[10px] font-semibold text-sky-ink-2">{item.proofType}</span>
+            <span className="text-[10px] font-semibold text-sky-ink-3 tabular-nums">{(item.goalIds ?? []).length} goal{(item.goalIds ?? []).length !== 1 ? 's' : ''}</span>
           </div>
         </div>
 
-        <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusCls}`}>{safeStatus}</span>
+        <span className={`shrink-0 inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2.5 py-1 text-[10px] font-semibold ${statusCfg.cls}`}>
+          <StatusIcon className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" />
+          {safeStatus}
+        </span>
 
         <div className="flex items-center gap-1 shrink-0">
-          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpanded(e => !e)} title="Details" className="w-8 h-8">
+          <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpanded(e => !e)} title="Details" aria-label="Details" aria-expanded={expanded} className="w-8 h-8">
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </SkyButton>
-          <SkyButton type="button" variant="ghost" size="icon" onClick={onEdit} className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
+          <SkyButton type="button" variant="ghost" size="icon" onClick={onEdit} title="Edit" aria-label="Edit" className="w-8 h-8"><Pencil className="w-4 h-4" /></SkyButton>
 
+          {/* Publish is the only genuinely successful action in this cluster, so
+              it is the only teal control; archive withdraws (peach) and delete is
+              irreversible (rose). Three actions, three distinct meanings. */}
           {safeStatus === 'Draft' && (
-            <SkyButton type="button" variant="ghost" size="icon" onClick={() => onStatusChange('publish')} disabled={statusChanging} title="Publish" className="w-8 h-8 text-success-600 hover:bg-success-50">
+            <SkyButton type="button" variant="ghost" size="icon" onClick={() => onStatusChange('publish')} disabled={statusChanging} title="Publish" aria-label="Publish" className="w-8 h-8 text-sky-teal hover:bg-sky-teal/14">
               {statusChanging ? <Loader2 className="w-4 h-4 animate-spin" /> : <ToggleRight className="w-4 h-4" />}
             </SkyButton>
           )}
           {(safeStatus === 'Draft' || safeStatus === 'Published') && (
-            <SkyButton type="button" variant="ghost" size="icon" onClick={() => onStatusChange('archive')} disabled={statusChanging} title="Archive" className="w-8 h-8 text-error-500 hover:bg-error-50">
+            <SkyButton type="button" variant="ghost" size="icon" onClick={() => onStatusChange('archive')} disabled={statusChanging} title="Archive" aria-label="Archive" className="w-8 h-8 text-sky-peach-deep hover:bg-sky-peach/18">
               {statusChanging ? <Loader2 className="w-4 h-4 animate-spin" /> : <ToggleLeft className="w-4 h-4" />}
             </SkyButton>
           )}
 
           {canDelete && (
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onDelete} className="w-8 h-8 text-error-500 hover:bg-error-50"><Trash2 className="w-4 h-4" /></SkyButton>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onDelete} title="Delete" aria-label="Delete" className="w-8 h-8 text-sky-rose-deep hover:bg-sky-rose/14"><Trash2 className="w-4 h-4" /></SkyButton>
           )}
         </div>
       </div>
@@ -668,13 +804,14 @@ export default function AdminQuestLibraryManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="w-12 h-12 rounded-sky-chip bg-purple-100 flex items-center justify-center shrink-0">
-          <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-6 h-6 object-contain" alt="" />
+      <div className="flex items-center gap-4 flex-wrap sky-in">
+        <div className={`w-12 h-12 rounded-sky-md ring-1 flex items-center justify-center shrink-0 ${TONE.violet.chip}`}>
+          <Library className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
         </div>
-        <div>
-          <h1 className="text-2xl font-black text-sky-ink">System Quest Library</h1>
-          <p className="text-sm text-sky-ink-2">
+        <div className="min-w-0">
+          <p className={eyebrow}>Content library</p>
+          <h1 className="font-display text-sky-h1 font-semibold leading-tight text-sky-ink">System Quest Library</h1>
+          <p className="text-sm text-sky-ink-2 mt-0.5">
             Manage reusable quest templates — publish to make available to players via goal mapping.
           </p>
         </div>
@@ -688,24 +825,28 @@ export default function AdminQuestLibraryManagement() {
         {/* Per-status breakdown can't be computed client-side once the list is
             server-paginated (items only holds the current page) — Total is the one
             count the BE's page metadata actually gives us accurately. */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-sky-ink-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wide opacity-70">Total</span>
-          <span className="text-base font-bold">{totalRecords}</span>
+        <div className="inline-flex items-center gap-2.5 rounded-sky-chip bg-white/62 ring-1 ring-white/80 px-3.5 py-2">
+          <span className={eyebrow}>Total</span>
+          <span className="font-display text-base font-semibold leading-none text-sky-ink tabular-nums">{totalRecords}</span>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <label className="sr-only" htmlFor="ql-filter-status">Filter by status</label>
           <select
+            id="ql-filter-status"
             value={filterStatus}
             onChange={e => { setFilterStatus(e.target.value as QuestLibraryStatus | ''); setPage(1); }}
-            className="px-3 py-1.5 rounded-sky-chip border border-sky-surf-border text-xs font-semibold bg-white text-sky-ink focus:outline-none focus:border-sky-deep"
+            className={filterSelectCls}
           >
             <option value="">All statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          <label className="sr-only" htmlFor="ql-filter-diff">Filter by difficulty</label>
           <select
+            id="ql-filter-diff"
             value={filterDiff}
             onChange={e => { setFilterDiff(e.target.value as QuestLibraryDifficulty | ''); setPage(1); }}
-            className="px-3 py-1.5 rounded-sky-chip border border-sky-surf-border text-xs font-semibold bg-white text-sky-ink focus:outline-none focus:border-sky-deep"
+            className={filterSelectCls}
           >
             <option value="">All difficulties</option>
             {DIFFICULTIES.map(d => <option key={d} value={d}>{DIFF_CFG[d].label}</option>)}
@@ -717,17 +858,19 @@ export default function AdminQuestLibraryManagement() {
           section with a spinner; a page-change/filter-change refetch just dims the
           existing list in place so the table never unmounts under the user. */}
       {loading && items.length === 0 ? (
-        <div className="flex items-center gap-2 justify-center py-20 text-sky-ink-3">
+        <div className="flex items-center gap-2 justify-center py-20 text-sm font-medium text-sky-ink-3">
           <Loader2 className="w-6 h-6 animate-spin" /> Loading quest library…
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
-          <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" className="w-14 h-14 mx-auto mb-3 opacity-20 object-contain" alt="" />
-          <p className="font-bold text-lg">No quests found</p>
-          <p className="text-sm mt-1">Create a quest and map it to at least one goal before publishing.</p>
+        <div className="text-center py-20 border border-dashed border-sky-ink/15 rounded-sky-card bg-white/38">
+          <span className={`grid place-items-center w-14 h-14 mx-auto mb-4 rounded-sky-md ring-1 ${TONE.violet.chip}`}>
+            <Library className="w-7 h-7" strokeWidth={1.9} aria-hidden="true" />
+          </span>
+          <p className="font-display text-sky-h3 font-semibold text-sky-ink">No quests found</p>
+          <p className="text-sm mt-1.5 text-sky-ink-2">Create a quest and map it to at least one goal before publishing.</p>
         </div>
       ) : (
-        <div className={`space-y-3 transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>
+        <div className={`space-y-3 sky-stagger transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>
           {items.map(item => (
             <QuestRow
               key={item.templateId}

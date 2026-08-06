@@ -27,14 +27,14 @@ const TextArea: React.FC<TextareaProps> = ({
     }
   };
 
-  let textareaClasses = `w-full rounded-lg border px-4 py-2.5 text-sm shadow-theme-xs focus:outline-hidden ${className} `;
+  let textareaClasses = `w-full rounded-sky-chip border px-4 py-2.5 text-sm transition placeholder:text-sky-ink-3 focus:outline-hidden ${className} `;
 
   if (disabled) {
-    textareaClasses += ` bg-gray-100 opacity-50 text-gray-500 border-gray-300 cursor-not-allowed opacity40 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700`;
+    textareaClasses += ` bg-sky-ink/5 opacity-50 text-sky-ink-3 border-sky-ink/12 cursor-not-allowed`;
   } else if (error) {
-    textareaClasses += ` bg-transparent  border-gray-300 focus:border-error-300 focus:ring-3 focus:ring-error-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-error-800`;
+    textareaClasses += ` bg-white/60 text-sky-ink border-sky-rose focus:border-sky-rose focus:ring-3 focus:ring-sky-rose/20`;
   } else {
-    textareaClasses += ` bg-transparent text-gray-900 dark:text-gray-300 text-gray-900 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`;
+    textareaClasses += ` bg-white/60 text-sky-ink border-white/80 focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/18`;
   }
 
   return (
@@ -50,7 +50,7 @@ const TextArea: React.FC<TextareaProps> = ({
       {hint && (
         <p
           className={`mt-2 text-sm ${
-            error ? "text-error-500" : "text-gray-500 dark:text-gray-400"
+            error ? "text-sky-rose-deep" : "text-sky-ink-2"
           }`}
         >
           {hint}

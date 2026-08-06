@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useOutletContext } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Bot, Circle } from "lucide-react";
+import {
+    Bot, Circle, Lock, Swords, Coins, Trophy, Calendar, Clock, BookOpen,
+    AlertTriangle, Check, CheckCircle2, ScrollText, Medal, Timer, Users, Skull,
+} from "lucide-react";
 import mentorApi from "../../../api/mentorApi";
 import { useAlert } from "../../../context/AlertContext";
 import SkyCard from "../../../components/ui/card/SkyCard";
@@ -20,6 +23,16 @@ import type {
     BossMode,
     MentorTier,
 } from "../../../types/mentor.types";
+
+// Pixel-art game assets are kept only where they render at 36px or larger —
+// below that they turn to mush and clash with the lucide line vocabulary used
+// for every other affordance on the screen.
+const SKULL_ART = "/icon/Player/Skull/64px/Skull 1st 64px.png";
+const CHEST_ART = "/icon/Item/Chest/64px/Chest 1st 64px.png";
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const metaChip = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sky-chip bg-white/62 ring-1 ring-white/75 text-xs font-semibold text-sky-ink-2";
+const tile = "rounded-sky-chip bg-white/58 ring-1 ring-white/72 px-3 py-2.5 min-w-0";
 
 // ── LIVE COUNTDOWN ────────────────────────────────────────────────────────────
 const useNow = (intervalMs = 1000) => {
@@ -44,6 +57,15 @@ const CountdownTimer = ({ target }: { target: string | Date }) => {
     return <span>{t("mentor.bossRaid.grimoire.countdownFormat", { d, h, m })}</span>;
 };
 
+// ── STAT LINE (dotted leader — reads like a monster stat block) ───────────────
+const StatLine = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <div className="flex items-baseline gap-2 min-w-0">
+        <dt className="shrink-0 text-sky-ink-2">{label}</dt>
+        <span className="flex-1 border-b border-dotted border-sky-ink/20 -translate-y-0.5" aria-hidden="true" />
+        <dd className="shrink-0 font-display font-semibold text-sky-ink tabular-nums">{value}</dd>
+    </div>
+);
+
 // ── SEGMENTED "HAZARD" HP BAR ─────────────────────────────────────────────────
 const SegmentedHpBar = ({
     current, max, label = "Boss HP", variant = "boss", size = "md", segments = 20,
@@ -54,20 +76,28 @@ const SegmentedHpBar = ({
     const pct = max > 0 ? Math.max(0, Math.min((current / max) * 100, 100)) : 0;
     const filled = Math.round((pct / 100) * segments);
     const heightCls = size === "lg" ? "h-7 sm:h-9" : "h-5";
+    // Boss HP is the threat, so it burns warm (the damage family). Shared HP is
+    // the party's own resource, so it stays cool blue — the "user" hue. Neither
+    // borrows teal, which is reserved for success.
     const fillGrad = variant === "boss"
-        ? "bg-linear-to-b from-rose-500 to-red-600"
-        : "bg-linear-to-b from-blue-400 to-blue-600";
+        ? "bg-linear-to-b from-sky-dmg to-sky-dmg-deep"
+        : "bg-linear-to-b from-sky-deep-lo to-sky-deep";
     return (
         <div>
-            <div className="flex justify-between items-baseline text-xs font-semibold mb-1.5 text-sky-ink">
-                <span>{label}</span>
-                <span className={size === "lg" ? "text-base" : ""}>{current.toLocaleString()} / {max.toLocaleString()}</span>
+            <div className="flex justify-between items-baseline gap-3 mb-1.5">
+                <span className={eyebrow}>{label}</span>
+                {/* The percentage is spelled out so the bar is never the only cue. */}
+                <span className={`font-display font-semibold text-sky-ink tabular-nums ${size === "lg" ? "text-base" : "text-xs"}`}>
+                    {current.toLocaleString()}
+                    <span className="text-sky-ink-3"> / {max.toLocaleString()}</span>
+                    <span className="ml-2 text-sky-ink-2">{Math.round(pct)}%</span>
+                </span>
             </div>
-            <div className={`flex gap-0.75 ${heightCls} p-1 rounded-lg bg-sky-3/20`}>
+            <div className={`flex gap-0.75 ${heightCls} p-1 rounded-sky-chip bg-sky-ink/8 ring-1 ring-inset ring-white/55`}>
                 {Array.from({ length: segments }).map((_, i) => (
                     <div
                         key={i}
-                        className={`flex-1 rounded-xs transition-colors duration-300 ${i < filled ? fillGrad : "bg-gray-200"}`}
+                        className={`flex-1 rounded-xs transition-colors duration-300 ${i < filled ? fillGrad : "bg-white/45"}`}
                     />
                 ))}
             </div>
@@ -78,17 +108,23 @@ const SegmentedHpBar = ({
 const TIER_ORDER: Record<MentorTier, number> = { Free: 0, Basic: 1, Premium: 2 };
 const CODE_TO_TIER: Record<string, MentorTier> = { FREE: "Free", BASIC: "Basic", PREMIUM: "Premium" };
 
+// Risk is an ordered ramp on the party's own HP: calm → hot. Teal marks only
+// the genuinely safe end and rose is held back for Critical, so the ramp never
+// spends its loudest hue early.
 const RISK_COLORS: Record<string, string> = {
-    Low: "text-success-600",
-    Medium: "text-warning-600",
-    High: "text-orange-600",
-    Critical: "text-error-600",
+    Low: "text-sky-teal",
+    Medium: "text-sky-peach-deep",
+    High: "text-sky-dmg-deep",
+    Critical: "text-sky-rose-deep",
 };
 
-const DIFF_META: Record<BossMode, { dotColor: string; badge: string; band: string }> = {
-    Easy:   { dotColor: "text-success-500", badge: "bg-success-100 text-success-800", band: "from-success-400 to-success-600" },
-    Normal: { dotColor: "text-warning-500", badge: "bg-warning-100 text-warning-800", band: "from-warning-400 to-orange-500" },
-    Hard:   { dotColor: "text-error-500",   badge: "bg-error-100 text-error-800",     band: "from-error-500 to-error-700" },
+// Difficulty is a heat ramp, not a verdict — cool→warm rather than borrowing
+// teal (success) or rose (destructive). Easy is the calm blue end, Hard the
+// hottest ember.
+const DIFF_META: Record<BossMode, { dot: string; badge: string; band: string; glow: string }> = {
+    Easy:   { dot: "text-sky-deep",       badge: "bg-sky-deep/12 text-sky-deep",        band: "from-sky-deep-lo to-sky-deep",     glow: "bg-sky-1/60" },
+    Normal: { dot: "text-sky-peach-deep", badge: "bg-sky-peach/22 text-sky-peach-deep", band: "from-sky-peach to-sky-peach-deep", glow: "bg-sky-peach/55" },
+    Hard:   { dot: "text-sky-dmg-deep",   badge: "bg-sky-dmg/18 text-sky-dmg-deep",     band: "from-sky-dmg to-sky-dmg-deep",     glow: "bg-sky-dmg/55" },
 };
 
 // ── MONSTER GRIMOIRE CARD (TCG-style, one per difficulty mode) ───────────────
@@ -109,59 +145,79 @@ const ModeCard = ({ mode, enabled, hasAi, isSelected, summoning, onSummon }: Mod
         <SkyCard
             variant="mentor"
             className={[
-                "p-0 overflow-hidden h-full flex flex-col justify-between",
+                "group p-0 overflow-hidden h-full flex flex-col",
                 "transition-all duration-300 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]",
-                enabled ? "motion-safe:hover:-translate-y-1" : "opacity-60",
+                enabled
+                    ? "motion-safe:hover:-translate-y-1 hover:shadow-[0_20px_44px_-20px_rgba(36,52,77,0.42)]"
+                    : "opacity-60 saturate-50",
                 isSelected ? "ring-2 ring-sky-deep" : "",
             ].join(" ")}
         >
-            <div className={`relative h-32 flex items-center justify-center bg-linear-to-br ${meta.band}`}>
-                <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-16 h-16 object-contain drop-shadow-lg" />
+            {/* Sigil band — the card's art box. The bloom sits behind the pixel
+                sigil so it reads as lit from within rather than pasted on. */}
+            <div className={`relative h-32 shrink-0 overflow-hidden bg-linear-to-br ${meta.band}`}>
+                <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-2xl ${meta.glow}`} aria-hidden="true" />
+                <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-sky-ink/22 to-transparent" aria-hidden="true" />
+                <img
+                    src={SKULL_ART}
+                    alt=""
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 object-contain drop-shadow-[0_8px_12px_rgba(36,52,77,0.42)] transition-transform duration-500 motion-safe:group-hover:scale-105"
+                />
                 {!enabled && (
-                    <div className="absolute inset-0 bg-sky-ink/55 flex items-center justify-center">
-                        <span className="text-white text-xs font-semibold inline-flex items-center gap-1">
-                            <img src="/icon/Item/Lock/64px/Lock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {mode.minTier}+
+                    <div className="absolute inset-0 bg-sky-ink/62 grid place-items-center">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sky-chip bg-white/16 ring-1 ring-white/30 text-white text-[11px] font-semibold">
+                            <Lock className="w-3.5 h-3.5" /> {mode.minTier}+
                         </span>
                     </div>
                 )}
             </div>
 
-            <div className="p-4 flex flex-col gap-2 flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}>
-                        <Circle className={`w-2.5 h-2.5 fill-current ${meta.dotColor}`} aria-hidden="true" /> {mode.mode}
+            <div className="relative flex flex-1 flex-col min-w-0 px-4 pb-4">
+                {/* Difficulty ribbon overlaps the band so the card has a seam
+                    instead of two stacked rectangles. */}
+                <div className="relative -mt-4 mb-3 flex items-center justify-between gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-sky-chip ring-1 ring-white/80 backdrop-blur-sm text-xs font-semibold shadow-sky-chip ${meta.badge}`}>
+                        <Circle className={`w-2.5 h-2.5 fill-current ${meta.dot}`} aria-hidden="true" /> {mode.mode}
                     </span>
-                    {hasAi && <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-600"><Bot className="w-3 h-3" /> AI</span>}
+                    {hasAi && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-sky-chip bg-sky-violet/14 text-[10px] font-semibold text-sky-violet-deep">
+                            <Bot className="w-3 h-3" /> AI
+                        </span>
+                    )}
                 </div>
 
-                <div className="space-y-1 text-xs font-medium text-sky-ink-2">
-                    <div className="flex justify-between"><span>{t("mentor.bossRaid.bossHp")}</span><span className="font-semibold text-sky-ink">{mode.bossHp.toLocaleString()}</span></div>
-                    <div className="flex justify-between"><span>{t("mentor.bossRaid.partySize")}</span><span className="font-semibold text-sky-ink">{mode.partyMin}–{mode.partyMax}</span></div>
-                    <div className="flex justify-between"><span>{t("mentor.bossRaid.maxDmgPerQuest")}</span><span className="font-semibold text-sky-ink">{mode.maxDamagePerQuest}</span></div>
+                <dl className="space-y-1.5 text-xs font-medium">
+                    <StatLine label={t("mentor.bossRaid.bossHp")} value={mode.bossHp.toLocaleString()} />
+                    <StatLine label={t("mentor.bossRaid.partySize")} value={`${mode.partyMin}–${mode.partyMax}`} />
+                    <StatLine label={t("mentor.bossRaid.maxDmgPerQuest")} value={mode.maxDamagePerQuest} />
+                </dl>
+
+                <div className="flex items-center gap-2 mt-auto pt-3 border-t border-dashed border-sky-ink/15 min-w-0">
+                    <span
+                        className="inline-flex items-center gap-1 shrink-0 px-2 py-1 rounded-sky-chip bg-sky-peach/16 text-[11px] font-semibold text-sky-peach-deep tabular-nums"
+                        title={t("mentor.bossRaid.grimoire.lootMGoldCap")}
+                    >
+                        <Coins className="w-3.5 h-3.5" /> {mode.mGoldRewardCapPerQuest}
+                    </span>
+                    <span
+                        className="inline-flex items-center gap-1 min-w-0 px-2 py-1 rounded-sky-chip bg-sky-violet/12 text-[11px] font-semibold text-sky-violet-deep"
+                        title={t("mentor.bossRaid.grimoire.lootRewardTier")}
+                    >
+                        <Trophy className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{mode.rewardTier}</span>
+                    </span>
                 </div>
 
-                <div className="flex items-center gap-3 mt-1 pt-2 border-t border-dashed border-sky-ink/15">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-peach-deep" title={t("mentor.bossRaid.grimoire.lootMGoldCap")}>
-                        <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {mode.mGoldRewardCapPerQuest}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-purple-700 truncate" title={t("mentor.bossRaid.grimoire.lootRewardTier")}>
-                        <img src="/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {mode.rewardTier}
-                    </span>
-                </div>
-            </div>
-
-            <div className="p-4 pt-0">
                 <SkyButton
                     type="button"
                     variant="primary"
                     onClick={onSummon}
                     disabled={!enabled || summoning}
-                    className="w-full"
+                    className="w-full mt-3"
                 >
                     {summoning ? (
                         <><Spinner size={14} /> {t("mentor.bossRaid.grimoire.summoning")}</>
                     ) : (
-                        <><img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> {t("mentor.bossRaid.grimoire.summonBtn")}</>
+                        <><Swords className="w-4 h-4" /> {t("mentor.bossRaid.grimoire.summonBtn")}</>
                     )}
                 </SkyButton>
             </div>
@@ -323,72 +379,100 @@ export default function BossRaidTab() {
 
     const hasActiveEncounter = !!partyStatus;
 
+    // Hue-for-hue translation of the original status ramp: teal replaces green,
+    // peach replaces amber, rose replaces red. The wording carries the meaning.
+    const statusBadge =
+        partyStatus?.status === "Active" ? "sky-badge sky-badge-success"
+        : partyStatus?.status === "Defeated" ? "sky-badge sky-badge-pending"
+        : "sky-badge sky-badge-danger";
+
     return (
         <>
             {error && (
-                <div className="mb-6 p-4 bg-error-100 border border-error-400 rounded-sky-card font-semibold text-error-700">
-                    {error}
+                <div className="relative mb-6 overflow-hidden rounded-sky-card sky-glass p-4 pl-5">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+                    <p className="relative inline-flex items-start gap-2 text-sm font-semibold text-sky-rose-deep">
+                        <AlertTriangle className="w-4 h-4 mt-px shrink-0" aria-hidden="true" /> {error}
+                    </p>
                 </div>
             )}
 
             {!boss ? (
-                <div className="mb-8 p-8 bg-gray-50 border border-gray-200 rounded-sky-card text-center">
-                    <p className="text-xl font-bold text-sky-ink-3">{t("mentor.bossRaid.noActiveBoss")}</p>
-                    <p className="text-sm text-sky-ink-3 mt-1">{t("mentor.bossRaid.checkBack")}</p>
+                <div className="relative mb-8 rounded-sky-card sky-glass p-10 text-center">
+                    <span className="relative mx-auto mb-3 grid place-items-center w-14 h-14 rounded-full bg-sky-ink/6 ring-1 ring-sky-ink/12 text-sky-ink-3">
+                        <Skull className="w-6 h-6" aria-hidden="true" />
+                    </span>
+                    <p className="relative font-display text-lg font-semibold text-sky-ink">{t("mentor.bossRaid.noActiveBoss")}</p>
+                    <p className="relative text-sm text-sky-ink-2 mt-1">{t("mentor.bossRaid.checkBack")}</p>
                 </div>
             ) : (
                 <>
-                    <div className="mb-6 p-5 bg-error-50 border border-error-300 rounded-sky-card shadow-sky-tint">
-                        <div className="flex flex-wrap items-start justify-between gap-4">
+                    {/* ══════════════ THIS WEEK'S ANTAGONIST ══════════════ */}
+                    <div className="relative mb-6 overflow-hidden rounded-sky-card sky-glass p-5 sm:p-6">
+                        {/* Ember wash — the card leans into the damage family
+                            without ever resorting to a flat red panel. */}
+                        <div className="pointer-events-none absolute -top-20 -right-12 w-60 h-60 rounded-full bg-sky-dmg/12 blur-3xl" aria-hidden="true" />
+                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-sky-dmg to-sky-dmg-deep" aria-hidden="true" />
+
+                        <div className="relative flex flex-wrap items-start justify-between gap-5">
                             <div className="min-w-0">
-                                <div className="flex items-center gap-3 mb-1 flex-wrap">
-                                    <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-9 h-9 object-contain shrink-0" />
-                                    <h1 className="text-2xl sm:text-3xl font-bold text-sky-ink tracking-tight wrap-break-word">{boss.themeName}</h1>
-                                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${boss.status === "Published" ? "bg-success-400 text-success-950" : "bg-gray-200 text-gray-700"}`}>
+                                <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                                    <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-chip bg-linear-to-b from-sky-dmg/22 to-sky-dmg/8 ring-1 ring-sky-dmg/25">
+                                        <img src={SKULL_ART} alt="" className="w-9 h-9 object-contain" />
+                                    </span>
+                                    <h1 className="font-display text-2xl sm:text-3xl font-semibold text-sky-ink tracking-tight wrap-break-word">{boss.themeName}</h1>
+                                    <span className={boss.status === "Published" ? "sky-badge sky-badge-success" : "sky-badge sky-badge-neutral"}>
                                         {boss.status}
                                     </span>
                                     {statusLoading && <Spinner size={16} />}
                                 </div>
                                 {boss.description && (
-                                    <p className="text-sky-ink-2 font-medium mb-2 max-w-xl wrap-break-word">{boss.description}</p>
+                                    <p className="text-sm text-sky-ink-2 font-medium mb-3 max-w-xl leading-relaxed wrap-break-word">{boss.description}</p>
                                 )}
-                                <div className="flex flex-wrap gap-2 text-xs font-semibold text-sky-ink-2">
-                                    <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/60 border border-sky-surf-border rounded-full">
-                                        <img src="/icon/Item/Calendar/64px/Calendar 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {boss.activeWeekStart} → {boss.activeWeekEnd}
+                                <div className="flex flex-wrap gap-2">
+                                    <span className={metaChip}>
+                                        <Calendar className="w-3.5 h-3.5 text-sky-ink-3" aria-hidden="true" />
+                                        <span className="tabular-nums">{boss.activeWeekStart} → {boss.activeWeekEnd}</span>
                                     </span>
                                     {boss.startTime && (
-                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/60 border border-sky-surf-border rounded-full">
-                                            <img src="/icon/Item/Clock/64px/Clock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {boss.startTime} — {boss.endTime}
+                                        <span className={metaChip}>
+                                            <Clock className="w-3.5 h-3.5 text-sky-ink-3" aria-hidden="true" />
+                                            <span className="tabular-nums">{boss.startTime} — {boss.endTime}</span>
                                         </span>
                                     )}
                                     {boss.registrationWindow && (
-                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/60 border border-sky-surf-border rounded-full" title="Cửa sổ đăng ký chuẩn">
-                                            <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> Đăng ký: {boss.registrationWindow}
+                                        <span className={metaChip} title="Cửa sổ đăng ký chuẩn">
+                                            <BookOpen className="w-3.5 h-3.5 text-sky-ink-3" aria-hidden="true" />
+                                            <span className="tabular-nums">Đăng ký: {boss.registrationWindow}</span>
                                         </span>
                                     )}
                                     {boss.lateRegistrationWindow && (
-                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-warning-100 border border-warning-300 rounded-full" title="Đăng ký muộn">
-                                            <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> Muộn: {boss.lateRegistrationWindow}
+                                        <span
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sky-chip bg-sky-peach/18 ring-1 ring-sky-peach/30 text-xs font-semibold text-sky-peach-deep"
+                                            title="Đăng ký muộn"
+                                        >
+                                            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+                                            <span className="tabular-nums">Muộn: {boss.lateRegistrationWindow}</span>
                                         </span>
                                     )}
                                 </div>
                             </div>
 
                             {activeSub && (
-                                <div className="bg-white/60 border border-sky-surf-border rounded-sky-chip shadow-sky-tint px-5 py-4 min-w-40 space-y-2 shrink-0">
+                                <div className="shrink-0 min-w-44 rounded-sky-chip bg-white/62 ring-1 ring-white/78 shadow-sky-tint px-5 py-4 space-y-2.5">
                                     <div className="text-center">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-sky-ink-2">{t("mentor.bossRaid.yourTier")}</p>
-                                        <p className="text-2xl font-bold text-sky-ink">{activeSub.package.name}</p>
+                                        <p className={eyebrow}>{t("mentor.bossRaid.yourTier")}</p>
+                                        <p className="font-display text-2xl font-semibold text-sky-ink mt-0.5">{activeSub.package.name}</p>
                                         <p className="text-xs text-sky-ink-2 mt-0.5">{allowedModes.join(" · ")}</p>
                                     </div>
                                     {allowedProofTypes.length > 0 && (
-                                        <div className="text-xs text-sky-ink-2 text-center wrap-break-word">
-                                            <span className="font-semibold">Proof: </span>{allowedProofTypes.join(", ")}
+                                        <div className="pt-2 border-t border-dashed border-sky-ink/12 text-xs text-sky-ink-2 text-center wrap-break-word">
+                                            <span className="font-semibold text-sky-ink">Proof: </span>{allowedProofTypes.join(", ")}
                                         </div>
                                     )}
                                     {aiVerificationModes.length > 0 && (
-                                        <div className="flex items-center justify-center gap-1 text-xs font-semibold text-purple-700">
-                                            <Bot className="w-3.5 h-3.5" /> AI: {aiVerificationModes.join(", ")}
+                                        <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-sky-violet-deep">
+                                            <Bot className="w-3.5 h-3.5" aria-hidden="true" /> AI: {aiVerificationModes.join(", ")}
                                         </div>
                                     )}
                                 </div>
@@ -398,119 +482,152 @@ export default function BossRaidTab() {
 
                     {hasActiveEncounter ? (
                         /* ══════════════ ACTIVE ENCOUNTER HERO ══════════════ */
-                        <div className="mb-8 p-6 sm:p-8 bg-linear-to-br from-error-50 to-sky-peach/10 border border-error-400 rounded-sky-card shadow-sky-glass">
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-error-600 mb-2">
-                                <img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> {t("mentor.bossRaid.grimoire.heroKicker")}
-                            </span>
+                        <div className="relative mb-8 overflow-hidden rounded-sky-card sky-glass p-6 sm:p-8">
+                            <div className="pointer-events-none absolute -top-24 -left-16 w-72 h-72 rounded-full bg-sky-dmg/10 blur-3xl" aria-hidden="true" />
+                            <div className="pointer-events-none absolute -bottom-24 -right-12 w-64 h-64 rounded-full bg-sky-violet/10 blur-3xl" aria-hidden="true" />
 
-                            <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-                                <div className="min-w-0">
-                                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-sky-ink wrap-break-word">{partyStatus!.bossName}</h1>
-                                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                        partyStatus!.status === "Active" ? "bg-success-100 text-success-800" :
-                                        partyStatus!.status === "Defeated" ? "bg-warning-100 text-warning-800" :
-                                        "bg-error-100 text-error-800"
-                                    }`}>{partyStatus!.status}</span>
-                                </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-xs font-semibold uppercase text-sky-ink-2">{t("mentor.bossRaid.grimoire.heroTimeLeft")}</p>
-                                    <p className="text-xl font-bold text-error-600 tabular-nums">
-                                        <CountdownTimer target={partyStatus!.weekEndDate} />
-                                    </p>
-                                </div>
-                            </div>
+                            <div className="relative">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-dmg-deep mb-2">
+                                    <Swords className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.bossRaid.grimoire.heroKicker")}
+                                </span>
 
-                            <div className="space-y-4 mb-5">
-                                <SegmentedHpBar current={partyStatus!.currentHp} max={partyStatus!.maxHp} label={t("mentor.bossRaid.bossHp")} variant="boss" size="lg" segments={24} />
-                                {sharedHp && (
-                                    <div>
-                                        <SegmentedHpBar current={sharedHp.sharedHpCurrent} max={sharedHp.sharedHpMax} label="Shared HP" variant="shared" segments={20} />
-                                        <p className={`text-xs font-semibold mt-1 ${RISK_COLORS[sharedHp.riskLevel] ?? "text-sky-ink-3"}`}>Risk: {sharedHp.riskLevel}</p>
+                                <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+                                    <div className="min-w-0">
+                                        <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-sky-ink wrap-break-word">{partyStatus!.bossName}</h1>
+                                        <span className={`mt-2 ${statusBadge}`}>{partyStatus!.status}</span>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className={`inline-flex items-center gap-1.5 justify-end ${eyebrow}`}>
+                                            <Timer className="w-3 h-3" aria-hidden="true" /> {t("mentor.bossRaid.grimoire.heroTimeLeft")}
+                                        </p>
+                                        <p className="font-display text-2xl font-semibold text-sky-dmg-deep tabular-nums mt-0.5">
+                                            <CountdownTimer target={partyStatus!.weekEndDate} />
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 mb-5">
+                                    <SegmentedHpBar current={partyStatus!.currentHp} max={partyStatus!.maxHp} label={t("mentor.bossRaid.bossHp")} variant="boss" size="lg" segments={24} />
+                                    {sharedHp && (
+                                        <div>
+                                            <SegmentedHpBar current={sharedHp.sharedHpCurrent} max={sharedHp.sharedHpMax} label="Shared HP" variant="shared" segments={20} />
+                                            <p className={`inline-flex items-center gap-1.5 text-xs font-semibold mt-1.5 ${RISK_COLORS[sharedHp.riskLevel] ?? "text-sky-ink-3"}`}>
+                                                <Circle className="w-2 h-2 fill-current" aria-hidden="true" /> Risk: {sharedHp.riskLevel}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                                    {[
+                                        [t("mentor.bossRaid.difficulty"), partyStatus!.difficulty],
+                                        [t("mentor.bossRaid.totalDamage"), partyStatus!.totalDamageDealt.toLocaleString()],
+                                        [t("mentor.bossRaid.grimoire.heroLoot"), partyStatus!.rewardTier],
+                                        [t("mentor.bossRaid.weekEnds"), new Date(partyStatus!.weekEndDate).toLocaleDateString()],
+                                    ].map(([k, v]) => (
+                                        <div key={k} className={tile}>
+                                            <p className={`${eyebrow} truncate`}>{k}</p>
+                                            <p className="font-display text-sm font-semibold text-sky-ink truncate tabular-nums mt-1">{v}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {partyStatus!.participants && partyStatus!.participants.length > 0 && (
+                                    <div className="mb-6">
+                                        <p className={`inline-flex items-center gap-1.5 mb-2 ${eyebrow}`}>
+                                            <Users className="w-3 h-3" aria-hidden="true" /> {t("mentor.bossRaid.participants")}
+                                        </p>
+                                        <div className="space-y-1.5">
+                                            {partyStatus!.participants.map((p, i) => (
+                                                <div key={p.userId} className="flex items-center justify-between gap-3 rounded-sky-chip bg-white/58 ring-1 ring-white/72 px-3 py-2 text-sm">
+                                                    <span className="inline-flex items-center gap-2 min-w-0">
+                                                        <span className="grid place-items-center w-6 h-6 shrink-0 rounded-full bg-sky-ink/8 font-display text-[11px] font-semibold text-sky-ink-2 tabular-nums">{i + 1}</span>
+                                                        <span className="font-semibold text-sky-ink truncate">User {p.userId}</span>
+                                                    </span>
+                                                    <div className="flex items-center gap-3 shrink-0 tabular-nums">
+                                                        <span className="font-display font-semibold text-sky-dmg-deep">
+                                                            {p.damageDealt}
+                                                            <span className={`ml-1 font-sans ${eyebrow}`}>dmg</span>
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1 font-display font-semibold text-sky-teal">
+                                                            <Check className="w-3.5 h-3.5" aria-hidden="true" />{p.questsCompleted}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activity.length > 0 && (
+                                    <div className="mb-6">
+                                        <p className={`inline-flex items-center gap-1.5 mb-2 ${eyebrow}`}>
+                                            <ScrollText className="w-3 h-3" aria-hidden="true" /> Recent Activity
+                                        </p>
+                                        <div className="space-y-1 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
+                                            {activity.map((a, i) => (
+                                                <div key={i} className="flex items-start gap-2 rounded-sky-chip bg-white/50 ring-1 ring-white/66 px-3 py-1.5 text-xs">
+                                                    <span className="mt-1.5 w-1.5 h-1.5 shrink-0 rounded-full bg-sky-deep" aria-hidden="true" />
+                                                    <p className="min-w-0">
+                                                        <span className="font-semibold text-sky-deep">{a.username}</span>
+                                                        <span className="text-sky-ink-2"> · {a.questTitle} · </span>
+                                                        <span className="font-semibold text-sky-dmg-deep tabular-nums">-{a.damageDealt} HP</span>
+                                                        <span className="text-sky-ink-3 ml-2 tabular-nums">({a.bossHpAfter.toLocaleString()} left)</span>
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {partyStatus!.status === "Defeated" && weeklyChest && (
+                                    /* Loot is warm peach — reward, not success. */
+                                    <div className="relative overflow-hidden rounded-sky-card bg-sky-peach/12 ring-1 ring-sky-peach/28 p-4 pl-5">
+                                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-sky-peach to-sky-peach-deep" aria-hidden="true" />
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <img src={CHEST_ART} alt="" className="w-9 h-9 object-contain shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="font-display text-sm font-semibold text-sky-ink">Weekly Chest</p>
+                                                <p className="text-[11px] text-sky-ink-2 tabular-nums">
+                                                    {weeklyChest.claimedCount} / {weeklyChest.eligibleMemberCount} claimed
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <dl className="space-y-1.5 text-xs font-medium">
+                                            <StatLine label="Gold" value={<span className="text-sky-peach-deep">{weeklyChest.goldReward.toLocaleString()}</span>} />
+                                            <StatLine label="M-Gold" value={<span className="text-sky-peach-deep">{weeklyChest.mgoldReward.toLocaleString()}</span>} />
+                                            <StatLine
+                                                label="Badge"
+                                                value={<span className="inline-flex items-center gap-1"><Medal className="w-3.5 h-3.5 text-sky-peach-deep" aria-hidden="true" /> {weeklyChest.badge}</span>}
+                                            />
+                                        </dl>
+                                        <SkyButton
+                                            type="button"
+                                            variant="primary"
+                                            onClick={handleClaimChest}
+                                            disabled={claimLoading || weeklyChest.alreadyClaimed || claimSuccess}
+                                            className="mt-3 w-full"
+                                        >
+                                            {claimLoading ? <><Spinner size={14} /> Claiming…</> :
+                                             weeklyChest.alreadyClaimed || claimSuccess ? <><CheckCircle2 className="w-4 h-4" /> Claimed</> : "Claim Reward"}
+                                        </SkyButton>
                                     </div>
                                 )}
                             </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                                {[
-                                    [t("mentor.bossRaid.difficulty"), partyStatus!.difficulty],
-                                    [t("mentor.bossRaid.totalDamage"), partyStatus!.totalDamageDealt.toLocaleString()],
-                                    [t("mentor.bossRaid.grimoire.heroLoot"), partyStatus!.rewardTier],
-                                    [t("mentor.bossRaid.weekEnds"), new Date(partyStatus!.weekEndDate).toLocaleDateString()],
-                                ].map(([k, v]) => (
-                                    <div key={k} className="bg-white/60 border border-sky-surf-border rounded-sky-chip p-3 min-w-0">
-                                        <p className="text-sky-ink-2 text-xs font-medium truncate">{k}</p>
-                                        <p className="font-bold text-sky-ink truncate">{v}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {partyStatus!.participants && partyStatus!.participants.length > 0 && (
-                                <div className="mb-5">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-sky-ink-2 mb-2">{t("mentor.bossRaid.participants")}</p>
-                                    <div className="space-y-1.5">
-                                        {partyStatus!.participants.map((p, i) => (
-                                            <div key={p.userId} className="flex items-center justify-between bg-white/60 border border-sky-surf-border rounded-sky-chip px-3 py-2 text-sm">
-                                                <span className="font-semibold text-sky-ink-2">#{i + 1} User {p.userId}</span>
-                                                <div className="flex gap-4 shrink-0">
-                                                    <span className="text-error-600 font-bold">{p.damageDealt} dmg</span>
-                                                    <span className="inline-flex items-center gap-1 text-success-600 font-bold">{p.questsCompleted} <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /></span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activity.length > 0 && (
-                                <div className="mb-5">
-                                    <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sky-ink-2 mb-2"><img src="/icon/Item/Scroll/64px/Scroll 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> Recent Activity</p>
-                                    <div className="space-y-1 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                                        {activity.map((a, i) => (
-                                            <div key={i} className="bg-white/50 border border-sky-surf-border rounded-lg px-3 py-1.5 text-xs">
-                                                <span className="text-success-600 font-semibold">{a.username}</span>
-                                                <span className="text-sky-ink-2"> · {a.questTitle} · </span>
-                                                <span className="text-error-600 font-semibold">-{a.damageDealt} HP</span>
-                                                <span className="text-sky-ink-3 ml-2">({a.bossHpAfter.toLocaleString()} left)</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {partyStatus!.status === "Defeated" && weeklyChest && (
-                                <div className="p-4 bg-warning-100 border border-warning-300 rounded-sky-chip">
-                                    <p className="inline-flex items-center gap-1.5 font-bold text-warning-800 mb-2">
-                                        <img src="/icon/Item/Chest/64px/Chest 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> Weekly Chest
-                                    </p>
-                                    <div className="space-y-1 text-xs font-medium text-sky-ink-2">
-                                        <div className="flex justify-between"><span>Gold</span><span className="font-bold text-sky-peach-deep">{weeklyChest.goldReward.toLocaleString()}</span></div>
-                                        <div className="flex justify-between"><span>M-Gold</span><span className="font-bold text-sky-peach-deep">{weeklyChest.mgoldReward.toLocaleString()}</span></div>
-                                        <div className="flex justify-between"><span>Badge</span><span className="inline-flex items-center gap-1 font-bold text-sky-ink"><img src="/icon/Item/Medal/64px/Golden Medal 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {weeklyChest.badge}</span></div>
-                                        <div className="flex justify-between text-sky-ink-2">
-                                            <span>Claimed</span><span>{weeklyChest.claimedCount} / {weeklyChest.eligibleMemberCount}</span>
-                                        </div>
-                                    </div>
-                                    <SkyButton
-                                        type="button"
-                                        variant="primary"
-                                        onClick={handleClaimChest}
-                                        disabled={claimLoading || weeklyChest.alreadyClaimed || claimSuccess}
-                                        className="mt-3 w-full"
-                                    >
-                                        {claimLoading ? <><Spinner size={14} /> Claiming…</> :
-                                         weeklyChest.alreadyClaimed || claimSuccess ? <><img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> Claimed</> : "Claim Reward"}
-                                    </SkyButton>
-                                </div>
-                            )}
                         </div>
                     ) : (
                         /* ══════════════ THE MONSTER GRIMOIRE ══════════════ */
                         <div>
-                            <div className="mb-4">
-                                <h2 className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-sky-ink">
-                                    <img src="/icon/Item/Sword/64px/Sword 1st 64px.png" alt="" className="w-6 h-6 object-contain" /> {t("mentor.bossRaid.grimoire.sectionTitle")}
-                                </h2>
-                                <p className="text-sm text-sky-ink-2 font-medium">{t("mentor.bossRaid.grimoire.sectionSubtitle")}</p>
+                            <div className="mb-4 flex items-start gap-3">
+                                <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-deep/10 ring-1 ring-sky-deep/18 text-sky-deep">
+                                    <Swords className="w-5 h-5" aria-hidden="true" />
+                                </span>
+                                <div className="min-w-0">
+                                    <h2 className="font-display text-2xl font-semibold tracking-tight text-sky-ink">
+                                        {t("mentor.bossRaid.grimoire.sectionTitle")}
+                                    </h2>
+                                    <p className="text-sm text-sky-ink-2 font-medium">{t("mentor.bossRaid.grimoire.sectionSubtitle")}</p>
+                                </div>
                             </div>
 
                             {boss.modes && boss.modes.length > 0 && (
@@ -522,13 +639,14 @@ export default function BossRaidTab() {
                                                 type="button"
                                                 key={f}
                                                 onClick={() => setGridFilter(f)}
+                                                aria-pressed={isActive}
                                                 className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-sky-chip font-semibold text-sm transition-all duration-150 ${easeExpo} ${
                                                     isActive
-                                                        ? "bg-sky-deep text-white shadow-sky-chip"
-                                                        : "bg-white/50 text-sky-ink-2 border border-sky-surf-border hover:border-sky-deep/30"
+                                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill"
+                                                        : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
                                                 }`}
                                             >
-                                                {f !== "all" && <Circle className={`w-2.5 h-2.5 fill-current ${isActive ? "text-white" : DIFF_META[f].dotColor}`} aria-hidden="true" />}
+                                                {f !== "all" && <Circle className={`w-2.5 h-2.5 fill-current ${isActive ? "text-white" : DIFF_META[f].dot}`} aria-hidden="true" />}
                                                 {f === "all" ? t("mentor.bossRaid.grimoire.filterAll") : f}
                                             </button>
                                         );
@@ -539,7 +657,7 @@ export default function BossRaidTab() {
                             {!boss.modes || boss.modes.length === 0 ? (
                                 <p className="text-sm text-sky-ink-3 font-medium">{t("mentor.bossRaid.grimoire.gridEmpty")}</p>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sky-stagger">
                                     {visibleModes.map((mode) => (
                                         <ModeCard
                                             key={mode.mode}
@@ -555,20 +673,24 @@ export default function BossRaidTab() {
                             )}
 
                             {registerResult && (
-                                <div className="mt-6 p-4 bg-success-100 border border-success-400 rounded-sky-chip space-y-1">
-                                    <p className="font-bold text-success-800 mb-2">{t("mentor.bossRaid.registrationSuccess")}</p>
-                                    {[
-                                        [t("mentor.bossRaid.party"), registerResult.partyName],
-                                        [t("mentor.bossRaid.boss"), registerResult.bossName],
-                                        [t("mentor.bossRaid.difficulty"), registerResult.difficulty],
-                                        ["Boss HP", `${registerResult.maxHp.toLocaleString()} HP`],
-                                        ["Shared HP", `${registerResult.sharedHpCurrent} / ${registerResult.sharedHpMax}`],
-                                        [t("mentor.bossRaid.rewardTier"), registerResult.rewardTier],
-                                    ].map(([k, v]) => (
-                                        <div key={k} className="flex justify-between text-sm text-success-700 font-medium">
-                                            <span>{k}</span><strong>{v}</strong>
-                                        </div>
-                                    ))}
+                                /* Teal, never green (§4). */
+                                <div className="relative mt-6 overflow-hidden rounded-sky-card sky-glass p-5 pl-6">
+                                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-teal" aria-hidden="true" />
+                                    <p className="relative inline-flex items-center gap-2 font-display text-sm font-semibold text-sky-teal mb-3">
+                                        <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> {t("mentor.bossRaid.registrationSuccess")}
+                                    </p>
+                                    <dl className="relative space-y-1.5 text-xs font-medium">
+                                        {[
+                                            [t("mentor.bossRaid.party"), registerResult.partyName],
+                                            [t("mentor.bossRaid.boss"), registerResult.bossName],
+                                            [t("mentor.bossRaid.difficulty"), registerResult.difficulty],
+                                            ["Boss HP", `${registerResult.maxHp.toLocaleString()} HP`],
+                                            ["Shared HP", `${registerResult.sharedHpCurrent} / ${registerResult.sharedHpMax}`],
+                                            [t("mentor.bossRaid.rewardTier"), registerResult.rewardTier],
+                                        ].map(([k, v]) => (
+                                            <StatLine key={k} label={k} value={v} />
+                                        ))}
+                                    </dl>
                                 </div>
                             )}
                         </div>

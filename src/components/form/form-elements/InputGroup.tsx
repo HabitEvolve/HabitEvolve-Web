@@ -25,7 +25,10 @@ export default function InputGroup() {
               type="text"
               className="pl-[62px]"
             />
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 border-r border-gray-200 px-3.5 py-3 text-gray-500 dark:border-gray-800 dark:text-gray-400">
+            {/* The prefix is a fixed affix, not an input: it sits in the
+                quietest ink and is separated by a white hairline so it reads
+                as part of the field's chrome rather than as typed text. */}
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 border-r border-white/70 px-3.5 py-3 text-sky-ink-3 pointer-events-none">
               <EnvelopeIcon className="size-6" />
             </span>
           </div>

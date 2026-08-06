@@ -258,7 +258,7 @@ export interface DynamicIconProps extends LucideProps {
  *
  * Usage:
  *   <DynamicIcon iconName="dumbbell" />
- *   <DynamicIcon iconName={category.iconCode} size={18} className="text-blue-700" />
+ *   <DynamicIcon iconName={category.iconCode} size={18} className="text-sky-deep" />
  *
  * To add a new icon:
  *   1. Import it at the top of this file.

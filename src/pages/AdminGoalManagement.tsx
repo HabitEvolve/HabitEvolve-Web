@@ -52,15 +52,35 @@ const CAT_FILTER_FIELDS: FilterField[] = [
 ];
 
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
+// btnBase carries shape/typography only; each call-site adds its own fill from
+// the tokens below, so there is exactly one place that defines button geometry.
 const btnBase =
-  "inline-flex items-center gap-2 px-4 py-2 font-black text-sm border-2 border-black rounded-full " +
-  "shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 " +
-  "disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all";
+  "inline-flex items-center gap-2 px-4 py-2 font-medium text-sm rounded-sky-chip " +
+  "transition disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none";
+
+const btnPrimary = "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill sky-lift";
+const btnGhost = "sky-glass-chip text-sky-deep sky-lift";
 
 const inputCls =
-  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium bg-white " +
-  "focus:outline-none focus:ring-2 focus:ring-orange-300 placeholder:text-gray-400";
+  "w-full px-4 py-2.5 rounded-sky-chip border border-white/80 bg-white/60 text-sm text-sky-ink transition " +
+  "placeholder:text-sky-ink-3 focus:outline-hidden focus:border-sky-deep focus:bg-white/85 focus:ring-3 focus:ring-sky-deep/18";
+
+// Row action buttons. One geometry, three tints — deep = neutral edit, peach =
+// "go configure something else", violet = evaluation/epic. Tint only ever names
+// the destination, never the danger level (nothing here is destructive).
+const iconBtnBase =
+  "w-8 h-8 flex items-center justify-center rounded-sky-chip border transition " +
+  "hover:-translate-y-px active:translate-y-0 active:scale-95";
+const ICON_BTN: Record<"deep" | "peach" | "violet", string> = {
+  deep: "border-sky-deep/20 bg-sky-deep/8 text-sky-deep hover:bg-sky-deep/14",
+  peach: "border-sky-peach-deep/25 bg-sky-peach/18 text-sky-peach-deep hover:bg-sky-peach/28",
+  violet: "border-sky-violet/22 bg-sky-violet/12 text-sky-violet-deep hover:bg-sky-violet/20",
+};
+
+// Inline error banner — rail + tinted panel + text, so state is never colour-only.
+const errorBanner =
+  "relative mx-6 mt-5 overflow-hidden rounded-sky-chip bg-sky-rose/12 border border-sky-rose/28 " +
+  "pl-4 pr-3 py-3 text-sm text-sky-rose-deep font-medium flex items-center justify-between gap-3";
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const formatDate = (d: string) =>
@@ -108,13 +128,12 @@ const SaveIcon = () => (
 );
 
 // ── ACTIVE PILL ───────────────────────────────────────────────────────────────
+// Active = TEAL (§4). Dot + word together, never colour alone.
 const ActivePill = ({ isActive }: { isActive: boolean }) => (
-  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${
-    isActive
-      ? "bg-green-100 border-green-400 text-green-800"
-      : "bg-gray-100 border-gray-400 text-gray-500"
+  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+    isActive ? "bg-sky-teal-bg text-sky-teal" : "bg-sky-ink/7 text-sky-ink-2"
   }`}>
-    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
+    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-sky-teal" : "bg-sky-ink-3"}`} />
     {isActive ? "Active" : "Inactive"}
   </span>
 );
@@ -125,17 +144,17 @@ const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     type="button"
     onClick={() => onChange(!checked)}
     aria-pressed={checked}
-    className={`relative flex-shrink-0 w-12 h-6 rounded-full border-2 border-black transition-colors shadow-[2px_2px_0_0_#1A1D20] ${
-      checked ? "bg-emerald-400" : "bg-gray-300"
+    className={`relative shrink-0 w-12 h-6 rounded-full transition-colors ${
+      checked ? "bg-sky-teal shadow-[inset_0_1px_2px_rgba(36,52,77,0.25)]" : "bg-sky-ink/15"
     }`}
   >
-    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full border-2 border-black bg-white transition-transform ${
+    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
       checked ? "translate-x-6" : "translate-x-0"
     }`} />
   </button>
 );
 
-// ── GAME MODAL (portal) ───────────────────────────────────────────────────────
+// ── MODAL (portal) ────────────────────────────────────────────────────────────
 const GameModal = ({
   title, onClose, children, maxWidth = "max-w-lg",
 }: {
@@ -144,21 +163,23 @@ const GameModal = ({
   children: React.ReactNode;
   maxWidth?: string;
 }) => createPortal(
-  <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className={`relative w-full ${maxWidth} mx-4 bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20] max-h-[90vh] overflow-y-auto`}>
-      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b-2 border-black bg-white">
-        <h2 className="text-lg font-black text-gray-900">{title}</h2>
+  <div className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-sky-ink/45 backdrop-blur-[18px]">
+    <div className={`relative w-full ${maxWidth} mx-4 sky-glass rounded-sky-card max-h-[90vh] overflow-y-auto sky-in`}>
+      <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-deep-lo to-sky-deep" />
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b border-white/60 bg-white/70 backdrop-blur-[14px]">
+        <h2 className="font-display text-lg font-semibold text-sky-ink">{title}</h2>
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center justify-center w-8 h-8 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+          aria-label="Close"
+          className="flex items-center justify-center w-8 h-8 rounded-full text-sky-ink-2 hover:bg-white/80 hover:text-sky-ink active:scale-95 transition"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
-      <div className="px-6 py-6">{children}</div>
+      <div className="relative px-6 py-6">{children}</div>
     </div>
   </div>,
   document.body
@@ -167,18 +188,18 @@ const GameModal = ({
 // ── FORM FIELD ────────────────────────────────────────────────────────────────
 const FormField = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
   <div>
-    <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">{label}</label>
+    <label className="block text-xs font-semibold text-sky-ink-2 mb-1.5">{label}</label>
     {children}
-    {hint && <p className="text-xs text-gray-400 mt-1 font-medium">{hint}</p>}
+    {hint && <p className="text-xs text-sky-ink-3 mt-1">{hint}</p>}
   </div>
 );
 
 // ── SKELETON ROW ──────────────────────────────────────────────────────────────
 const SkeletonRow = ({ cells }: { cells: number }) => (
-  <tr className="border-b-2 border-gray-100 animate-pulse">
+  <tr className="sky-table-row animate-pulse">
     {Array.from({ length: cells }).map((_, i) => (
       <td key={i} className="px-4 py-4">
-        <div className="h-4 bg-gray-200 rounded-full" style={{ width: `${48 + (i % 4) * 28}px` }} />
+        <div className="h-4 bg-sky-ink/10 rounded-full" style={{ width: `${48 + (i % 4) * 28}px` }} />
       </td>
     ))}
   </tr>
@@ -191,14 +212,14 @@ const PaginationBar = ({
   page: number; hasMore: boolean; loading: boolean;
   onPrev: () => void; onNext: () => void;
 }) => (
-  <div className="flex items-center justify-between px-6 py-4 border-t-2 border-gray-100 bg-gray-50/50">
-    <button onClick={onPrev} disabled={page === 1 || loading} className={`${btnBase} bg-white text-gray-700`}>
+  <div className="flex items-center justify-between px-6 py-4 border-t border-white/60 bg-white/35">
+    <button type="button" onClick={onPrev} disabled={page === 1 || loading} className={`${btnBase} ${btnGhost}`}>
       <ChevronLeft /> Previous
     </button>
-    <span className="text-sm font-black text-gray-600 border-2 border-black rounded-full px-4 py-1.5 bg-white shadow-[2px_2px_0_0_#1A1D20]">
+    <span className="font-display text-sm font-semibold text-sky-ink-2 tabular-nums">
       Page {page}
     </span>
-    <button onClick={onNext} disabled={!hasMore || loading} className={`${btnBase} bg-white text-gray-700`}>
+    <button type="button" onClick={onNext} disabled={!hasMore || loading} className={`${btnBase} ${btnGhost}`}>
       Next <ChevronRight />
     </button>
   </div>
@@ -208,12 +229,12 @@ const PaginationBar = ({
 const TableCard = ({ icon, title, count, loading, children }: {
   icon: React.ReactNode; title: string; count?: number; loading: boolean; children: React.ReactNode;
 }) => (
-  <div className="bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20] overflow-hidden">
-    <div className="flex items-center gap-3 px-6 py-4 border-b-4 border-black bg-gray-50">
-      <span className="text-gray-600">{icon}</span>
-      <span className="font-black text-gray-900 text-sm">{title}</span>
+  <div className="sky-glass-admin rounded-sky-card overflow-hidden">
+    <div className="relative flex items-center gap-3 px-6 py-4 border-b border-white/60 bg-white/40">
+      <span className="text-sky-deep">{icon}</span>
+      <span className="font-display font-semibold text-sky-ink text-sm">{title}</span>
       {!loading && count !== undefined && (
-        <span className="ml-auto bg-orange-200 border-2 border-black text-gray-800 text-xs font-black px-2.5 py-0.5 rounded-full">
+        <span className="font-display ml-auto bg-sky-deep/12 text-sky-deep text-xs font-semibold px-2.5 py-0.5 rounded-full tabular-nums">
           {count}
         </span>
       )}
@@ -460,15 +481,20 @@ export default function AdminGoalManagement() {
       <PageBreadcrumb pageTitle="Goal & Category Management" />
 
       {/* ── TAB SWITCHER ──────────────────────────────────────────────── */}
-      <div className="flex gap-3 mb-6">
+      {/* Segmented control on one glass rail: the active segment is the only
+          filled surface on the page above the fold, so it reads as "you are
+          here" without needing a second cue. */}
+      <div className="inline-flex gap-1 p-1 mb-6 rounded-sky-chip sky-glass-chip">
         {(["categories", "goals"] as const).map(tab => (
           <button
             key={tab}
+            type="button"
             onClick={() => setActiveTab(tab)}
-            className={`flex items-center gap-2 px-6 py-3 font-black text-sm border-2 border-black rounded-2xl capitalize transition-all ${
+            aria-pressed={activeTab === tab}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-sky-chip capitalize transition ${
               activeTab === tab
-                ? "bg-yellow-300 shadow-none translate-x-[3px] translate-y-[3px]"
-                : "bg-white shadow-[4px_4px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+                ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill"
+                : "text-sky-ink-2 hover:bg-white/70 hover:text-sky-deep"
             }`}
           >
             {tab === "categories" ? <FolderIcon /> : <TargetIcon />}
@@ -482,10 +508,10 @@ export default function AdminGoalManagement() {
         <div className="space-y-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-black text-gray-900">Goal Categories</h1>
-              <p className="text-sm text-gray-500 font-medium mt-0.5">Organise habits into top-level categories.</p>
+              <h1 className="font-display text-2xl font-semibold text-sky-ink">Goal Categories</h1>
+              <p className="text-sm text-sky-ink-2 mt-0.5">Organise habits into top-level categories.</p>
             </div>
-            <button onClick={openCreateCat} className={`${btnBase} bg-emerald-300 text-gray-900 whitespace-nowrap`}>
+            <button type="button" onClick={openCreateCat} className={`${btnBase} ${btnPrimary} whitespace-nowrap`}>
               <PlusIcon /> Create Category
             </button>
           </div>
@@ -501,18 +527,19 @@ export default function AdminGoalManagement() {
             />
 
             {catError && (
-              <div className="mx-6 mt-5 bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold flex items-center justify-between gap-3">
+              <div className={errorBanner}>
+                <span aria-hidden className="absolute left-0 inset-y-0 w-[3px] bg-sky-rose" />
                 <span>{catError}</span>
-                <button onClick={fetchCategories} className="underline font-black hover:no-underline whitespace-nowrap">Retry</button>
+                <button type="button" onClick={fetchCategories} className="underline font-semibold hover:no-underline whitespace-nowrap">Retry</button>
               </div>
             )}
 
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
-                  <tr className="border-b-2 border-gray-200 bg-gray-50/50">
+                  <tr className="sky-table-head">
                     {["#", "Code", "Name", "Icon", "Order", "Status", "Created", "Actions"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -522,12 +549,14 @@ export default function AdminGoalManagement() {
                   ) : categories.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-20 text-center">
-                        <div className="text-4xl mb-3">📁</div>
-                        <p className="text-gray-600 text-sm font-black">
+                        <span className="mx-auto mb-3 flex items-center justify-center w-14 h-14 rounded-full bg-sky-deep/8 text-sky-deep">
+                          <FolderIcon />
+                        </span>
+                        <p className="font-display text-sky-ink text-sm font-semibold">
                           {catHasActiveFilters ? "No categories match your filters." : "No categories yet."}
                         </p>
                         {catHasActiveFilters && (
-                          <button onClick={clearCatFilters} className="mt-2 text-xs font-black text-blue-600 underline hover:no-underline">
+                          <button type="button" onClick={clearCatFilters} className="mt-2 text-xs font-semibold text-sky-deep underline hover:no-underline">
                             Clear filters
                           </button>
                         )}
@@ -535,33 +564,30 @@ export default function AdminGoalManagement() {
                     </tr>
                   ) : (
                     categories.map((cat, idx) => (
-                      <tr
-                        key={cat.categoryId}
-                        className={`transition-colors hover:bg-yellow-50/60 ${idx < categories.length - 1 ? "border-b-2 border-gray-100" : ""}`}
-                      >
-                        <td className="px-4 py-4 text-xs font-black text-gray-400">{(catPage - 1) * PAGE_SIZE + idx + 1}</td>
+                      <tr key={cat.categoryId} className="sky-table-row">
+                        <td className="px-4 py-4 text-xs font-semibold text-sky-ink-3 tabular-nums">{(catPage - 1) * PAGE_SIZE + idx + 1}</td>
                         <td className="px-4 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black border-2 border-black bg-sky-100 text-sky-800 shadow-[2px_2px_0_0_#1A1D20]">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-sky-chip text-xs font-semibold font-display tracking-wide bg-sky-deep/10 text-sky-deep">
                             {cat.categoryCode}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-gray-800">{cat.categoryName}</td>
+                        <td className="px-4 py-4 text-sm font-medium text-sky-ink">{cat.categoryName}</td>
                         <td className="px-4 py-4">
                           {cat.iconCode ? (
-                            <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black bg-orange-50 shadow-[2px_2px_0_0_#1A1D20] text-gray-700">
-                              <DynamicIcon iconName={cat.iconCode} size={16} strokeWidth={2.5} />
+                            <div className="w-8 h-8 flex items-center justify-center rounded-sky-chip bg-white/70 border border-white/85 text-sky-deep shadow-[0_4px_10px_-6px_rgba(36,52,77,0.35)]">
+                              <DynamicIcon iconName={cat.iconCode} size={16} strokeWidth={2.2} />
                             </div>
                           ) : (
-                            <span className="text-gray-300 text-xs font-medium">—</span>
+                            <span className="text-sky-ink-3 text-xs">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-sm font-black text-gray-700 text-center">{cat.displayOrder}</td>
+                        <td className="px-4 py-4 text-sm font-semibold text-sky-ink-2 text-center tabular-nums">{cat.displayOrder}</td>
                         <td className="px-4 py-4"><ActivePill isActive={cat.isActive} /></td>
-                        <td className="px-4 py-4 text-xs text-gray-400 font-medium whitespace-nowrap">{formatDate(cat.createdAt)}</td>
+                        <td className="px-4 py-4 text-xs text-sky-ink-3 whitespace-nowrap">{formatDate(cat.createdAt)}</td>
                         <td className="px-4 py-4">
                           <button
-                            title="Edit category" onClick={() => openEditCat(cat)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800"
+                            type="button" title="Edit category" onClick={() => openEditCat(cat)}
+                            className={`${iconBtnBase} ${ICON_BTN.deep}`}
                           >
                             <PencilIcon />
                           </button>
@@ -587,10 +613,10 @@ export default function AdminGoalManagement() {
         <div className="space-y-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-black text-gray-900">Goals</h1>
-              <p className="text-sm text-gray-500 font-medium mt-0.5">Define individual habit goals within categories.</p>
+              <h1 className="font-display text-2xl font-semibold text-sky-ink">Goals</h1>
+              <p className="text-sm text-sky-ink-2 mt-0.5">Define individual habit goals within categories.</p>
             </div>
-            <button onClick={openCreateGoal} className={`${btnBase} bg-emerald-300 text-gray-900 whitespace-nowrap`}>
+            <button type="button" onClick={openCreateGoal} className={`${btnBase} ${btnPrimary} whitespace-nowrap`}>
               <PlusIcon /> Create Goal
             </button>
           </div>
@@ -606,18 +632,19 @@ export default function AdminGoalManagement() {
             />
 
             {goalError && (
-              <div className="mx-6 mt-5 bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold flex items-center justify-between gap-3">
+              <div className={errorBanner}>
+                <span aria-hidden className="absolute left-0 inset-y-0 w-[3px] bg-sky-rose" />
                 <span>{goalError}</span>
-                <button onClick={fetchGoals} className="underline font-black hover:no-underline whitespace-nowrap">Retry</button>
+                <button type="button" onClick={fetchGoals} className="underline font-semibold hover:no-underline whitespace-nowrap">Retry</button>
               </div>
             )}
 
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
-                  <tr className="border-b-2 border-gray-200 bg-gray-50/50">
+                  <tr className="sky-table-head">
                     {["#", "Code", "Goal Name", "Category", "Status", "Created", "Configure"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-gray-500">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -627,12 +654,14 @@ export default function AdminGoalManagement() {
                   ) : goals.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-20 text-center">
-                        <div className="text-4xl mb-3">🎯</div>
-                        <p className="text-gray-600 text-sm font-black">
+                        <span className="mx-auto mb-3 flex items-center justify-center w-14 h-14 rounded-full bg-sky-deep/8 text-sky-deep">
+                          <TargetIcon />
+                        </span>
+                        <p className="font-display text-sky-ink text-sm font-semibold">
                           {goalHasActiveFilters ? "No goals match your filters." : "No goals defined yet."}
                         </p>
                         {goalHasActiveFilters && (
-                          <button onClick={clearGoalFilters} className="mt-2 text-xs font-black text-blue-600 underline hover:no-underline">
+                          <button type="button" onClick={clearGoalFilters} className="mt-2 text-xs font-semibold text-sky-deep underline hover:no-underline">
                             Clear filters
                           </button>
                         )}
@@ -640,43 +669,40 @@ export default function AdminGoalManagement() {
                     </tr>
                   ) : (
                     goals.map((goal, idx) => (
-                      <tr
-                        key={goal.goalId}
-                        className={`transition-colors hover:bg-yellow-50/60 ${idx < goals.length - 1 ? "border-b-2 border-gray-100" : ""}`}
-                      >
-                        <td className="px-4 py-4 text-xs font-black text-gray-400">{(goalPage - 1) * PAGE_SIZE + idx + 1}</td>
+                      <tr key={goal.goalId} className="sky-table-row">
+                        <td className="px-4 py-4 text-xs font-semibold text-sky-ink-3 tabular-nums">{(goalPage - 1) * PAGE_SIZE + idx + 1}</td>
                         <td className="px-4 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black border-2 border-black bg-purple-100 text-purple-800 shadow-[2px_2px_0_0_#1A1D20]">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-sky-chip text-xs font-semibold font-display tracking-wide bg-sky-violet/12 text-sky-violet-deep">
                             {goal.goalCode}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-gray-800">{goal.goalName}</td>
+                        <td className="px-4 py-4 text-sm font-medium text-sky-ink">{goal.goalName}</td>
                         <td className="px-4 py-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border-2 border-gray-300 bg-gray-100 text-gray-600">
-                            {goal.categoryCode}
-                          </span>
+                          <span className="sky-badge sky-badge-neutral">{goal.categoryCode}</span>
                         </td>
                         <td className="px-4 py-4"><ActivePill isActive={goal.isActive} /></td>
-                        <td className="px-4 py-4 text-xs text-gray-400 font-medium whitespace-nowrap">{formatDate(goal.createdAt)}</td>
+                        <td className="px-4 py-4 text-xs text-sky-ink-3 whitespace-nowrap">{formatDate(goal.createdAt)}</td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-1.5">
                             <button
-                              title="Edit goal" onClick={() => openEditGoal(goal)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-blue-100 hover:bg-blue-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-blue-800"
+                              type="button" title="Edit goal" onClick={() => openEditGoal(goal)}
+                              className={`${iconBtnBase} ${ICON_BTN.deep}`}
                             >
                               <PencilIcon />
                             </button>
                             <button
+                              type="button"
                               title="Configure Task Library for this Goal"
                               onClick={() => navigate(`/practical-tasks?goalId=${goal.goalId}&goalName=${encodeURIComponent(goal.goalName)}`)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-amber-100 hover:bg-amber-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-amber-800"
+                              className={`${iconBtnBase} ${ICON_BTN.peach}`}
                             >
                               <TaskLibIcon />
                             </button>
                             <button
+                              type="button"
                               title="Bind Questionnaire Template to this Goal"
                               onClick={() => navigate(`/questionnaires?goalId=${goal.goalId}&goalName=${encodeURIComponent(goal.goalName)}`)}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-purple-100 hover:bg-purple-200 shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-purple-800"
+                              className={`${iconBtnBase} ${ICON_BTN.violet}`}
                             >
                               <EvalIcon />
                             </button>
@@ -720,31 +746,33 @@ export default function AdminGoalManagement() {
                 placeholder="What does this category cover?" className={`${inputCls} resize-none`} />
             </FormField>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Icon Code" hint="Emoji or identifier (e.g. 💪)">
+              {/* iconCode is resolved by <DynamicIcon>, which maps lucide names —
+                  the old "emoji" hint pointed at something that never rendered. */}
+              <FormField label="Icon Code" hint="Lucide icon name (e.g. dumbbell, moon, target)">
                 <input type="text" value={catForm.iconCode ?? ""}
                   onChange={e => setCatField("iconCode", e.target.value)}
-                  placeholder="💪" className={inputCls} />
+                  placeholder="dumbbell" className={inputCls} />
               </FormField>
               <FormField label="Display Order *">
                 <input required type="number" min={1} value={catForm.displayOrder}
                   onChange={e => setCatField("displayOrder", Number(e.target.value))} className={inputCls} />
               </FormField>
             </div>
-            <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl">
+            <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-sky-chip bg-white/55 border border-white/80">
               <div>
-                <p className="text-sm font-black text-gray-800">Active</p>
-                <p className="text-xs text-gray-400 font-medium">Visible to players on the platform</p>
+                <p className="text-sm font-semibold text-sky-ink">Active</p>
+                <p className="text-xs text-sky-ink-3">Visible to players on the platform</p>
               </div>
               <Toggle checked={catForm.isActive} onChange={v => setCatField("isActive", v)} />
             </div>
             {catFormError && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{catFormError}</p>
+              <p className="text-xs font-medium text-sky-rose-deep bg-sky-rose/12 border border-sky-rose/28 rounded-sky-chip px-3 py-2">{catFormError}</p>
             )}
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={closeCatForm} disabled={catSubmitting}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
+                className={`${btnBase} ${btnGhost} flex-1 justify-center`}>Cancel</button>
               <button type="submit" disabled={catSubmitting}
-                className={`${btnBase} flex-1 justify-center ${editingCat ? "bg-blue-200 text-blue-900" : "bg-emerald-300 text-gray-900"}`}>
+                className={`${btnBase} ${btnPrimary} flex-1 justify-center`}>
                 {catSubmitting
                   ? <><Spinner size={13} />{editingCat ? "Saving…" : "Creating…"}</>
                   : editingCat ? <><SaveIcon />Save Changes</> : <><PlusIcon />Create Category</>}
@@ -776,12 +804,12 @@ export default function AdminGoalManagement() {
                 <option value="" disabled>Select a category…</option>
                 {allCategories.map(cat => (
                   <option key={cat.categoryId} value={cat.categoryId}>
-                    {cat.iconCode ? `${cat.iconCode} ` : ""}{cat.categoryName}
+                    {cat.categoryName}
                   </option>
                 ))}
               </select>
               {allCategories.length === 0 && (
-                <p className="text-xs text-amber-600 font-semibold mt-1">No categories available. Create a category first.</p>
+                <p className="text-xs text-sky-peach-deep font-medium mt-1">No categories available. Create a category first.</p>
               )}
             </FormField>
             <FormField label="Description">
@@ -789,21 +817,21 @@ export default function AdminGoalManagement() {
                 onChange={e => setGoalField("description", e.target.value)}
                 placeholder="Describe this goal and how it's tracked…" className={`${inputCls} resize-none`} />
             </FormField>
-            <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl">
+            <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-sky-chip bg-white/55 border border-white/80">
               <div>
-                <p className="text-sm font-black text-gray-800">Active</p>
-                <p className="text-xs text-gray-400 font-medium">Players can select this goal when setting up habits</p>
+                <p className="text-sm font-semibold text-sky-ink">Active</p>
+                <p className="text-xs text-sky-ink-3">Players can select this goal when setting up habits</p>
               </div>
               <Toggle checked={goalForm.isActive} onChange={v => setGoalField("isActive", v)} />
             </div>
             {goalFormError && (
-              <p className="text-xs font-bold text-red-600 bg-red-50 border-2 border-red-300 rounded-xl px-3 py-2">{goalFormError}</p>
+              <p className="text-xs font-medium text-sky-rose-deep bg-sky-rose/12 border border-sky-rose/28 rounded-sky-chip px-3 py-2">{goalFormError}</p>
             )}
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={closeGoalForm} disabled={goalSubmitting}
-                className={`${btnBase} flex-1 justify-center bg-white text-gray-700`}>Cancel</button>
+                className={`${btnBase} ${btnGhost} flex-1 justify-center`}>Cancel</button>
               <button type="submit" disabled={goalSubmitting}
-                className={`${btnBase} flex-1 justify-center ${editingGoal ? "bg-blue-200 text-blue-900" : "bg-emerald-300 text-gray-900"}`}>
+                className={`${btnBase} ${btnPrimary} flex-1 justify-center`}>
                 {goalSubmitting
                   ? <><Spinner size={13} />{editingGoal ? "Saving…" : "Creating…"}</>
                   : editingGoal ? <><SaveIcon />Save Changes</> : <><PlusIcon />Create Goal</>}

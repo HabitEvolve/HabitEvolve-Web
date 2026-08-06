@@ -27,7 +27,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
         <input
           id={id}
           type="checkbox"
-          className={`w-5 h-5 appearance-none cursor-pointer dark:border-gray-700 border border-gray-300 checked:border-transparent rounded-md checked:bg-brand-500 disabled:opacity-60 
+          className={`w-5 h-5 appearance-none cursor-pointer border border-white/80 bg-white/60 checked:border-transparent rounded-md checked:bg-sky-deep disabled:opacity-60
           ${className}`}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
@@ -52,8 +52,10 @@ const Checkbox: React.FC<CheckboxProps> = ({
           </svg>
         )}
         {disabled && (
+          // Same tick, drawn in the pale sky tint via currentColor so the mark
+          // reads as "set, but not yours to change" rather than as active.
           <svg
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none top-1/2 left-1/2"
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none top-1/2 left-1/2 text-sky-2"
             xmlns="http://www.w3.org/2000/svg"
             width="14"
             height="14"
@@ -62,7 +64,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
           >
             <path
               d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
-              stroke="#E4E7EC"
+              stroke="currentColor"
               strokeWidth="2.33333"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -71,9 +73,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
         )}
       </div>
       {label && (
-        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-sky-ink">{label}</span>
       )}
     </label>
   );

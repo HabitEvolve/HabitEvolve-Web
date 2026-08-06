@@ -75,15 +75,18 @@ export default function NotificationDropdown() {
   return (
     <div className="relative">
       {/* ── BELL BUTTON ───────────────────────────────────────────── */}
+      {/* Unread uses warm peach — the palette's "needs attention" hue. Rose is
+          reserved for destructive, so an unread count must not borrow it. */}
       <button
+        type="button"
         onClick={handleClick}
         aria-label={t("notifications.title")}
-        className="relative flex items-center justify-center w-11 h-11 bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-full shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all text-gray-800 dark:text-gray-200"
+        className="relative flex items-center justify-center w-11 h-11 rounded-full sky-glass-chip sky-lift text-sky-ink-2 hover:text-sky-deep"
       >
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 z-10 flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75 animate-ping" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-orange-500 border-[1.5px] border-white" />
+          <span className="absolute top-1 right-1 z-10 flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-sky-peach opacity-75 animate-ping" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-peach-deep ring-2 ring-white" />
           </span>
         )}
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -95,21 +98,22 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute -right-[240px] lg:right-0 mt-3 w-[350px] sm:w-[370px] bg-white dark:bg-gray-800 border-4 border-black dark:border-gray-600 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] flex flex-col overflow-hidden"
+        className="absolute -right-[240px] lg:right-0 mt-3 w-[350px] sm:w-[370px] sky-glass-menu flex flex-col sky-in"
       >
         {/* Panel header */}
-        <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-700 dark:to-gray-700 border-b-2 border-black dark:border-gray-600 flex-shrink-0">
+        <div className="relative flex items-center justify-between px-4 py-3.5 bg-linear-to-r from-sky-3/55 to-transparent border-b border-sky-ink/10 shrink-0">
           <div className="flex items-center gap-2.5">
-            <h5 className="text-base font-black text-gray-900 dark:text-white">{t("notifications.title")}</h5>
+            <h5 className="font-display text-base font-semibold text-sky-ink">{t("notifications.title")}</h5>
             {unreadCount > 0 && (
-              <span className="flex items-center justify-center h-5 min-w-[22px] px-1.5 bg-orange-400 border-2 border-black rounded-full text-[10px] font-black text-white shadow-[1px_1px_0_0_#1A1D20]">
+              <span className="font-display flex items-center justify-center h-5 min-w-[22px] px-1.5 bg-sky-peach-deep rounded-full text-[10px] font-semibold text-white tabular-nums">
                 {unreadCount}
               </span>
             )}
           </div>
           <button
+            type="button"
             onClick={closeDropdown}
-            className="flex items-center justify-center w-7 h-7 bg-white dark:bg-gray-700 border-2 border-black dark:border-gray-500 rounded-lg shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-gray-800 dark:text-gray-300"
+            className="flex items-center justify-center w-7 h-7 rounded-full text-sky-ink-2 hover:bg-sky-3/60 hover:text-sky-ink active:scale-95 transition"
             aria-label={t("notifications.close")}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -120,27 +124,31 @@ export default function NotificationDropdown() {
         </div>
 
         {/* Notification list */}
-        <ul className="flex flex-col overflow-y-auto max-h-[380px] divide-y-2 divide-gray-100 dark:divide-gray-700">
+        <ul className="relative flex flex-col overflow-y-auto max-h-[380px] divide-y divide-sky-ink/8">
           {loading ? (
-            <li className="px-4 py-8 text-center text-sm text-gray-400 font-semibold">Loading…</li>
+            <li className="px-4 py-8 text-center text-sm text-sky-ink-3">Loading…</li>
           ) : items.length === 0 ? (
-            <li className="px-4 py-8 text-center text-sm text-gray-400 font-semibold">No notifications yet.</li>
+            <li className="px-4 py-8 text-center text-sm text-sky-ink-3">No notifications yet.</li>
           ) : (
             items.map((n) => (
               <li key={n.notificationId}>
+                {/* Unread carries three cues: peach dot, peach left rail, and a
+                    heavier title — never the dot alone. */}
                 <button
+                  type="button"
                   onClick={() => handleItemClick(n)}
-                  className={`w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-orange-50 dark:hover:bg-gray-700 transition-colors ${!n.isRead ? "bg-orange-50/50 dark:bg-gray-700/50" : ""}`}
+                  className={`relative w-full flex items-start gap-3 px-4 py-3.5 text-left transition hover:bg-sky-3/45 ${!n.isRead ? "bg-sky-peach/8" : ""}`}
                 >
-                  <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${n.isRead ? "bg-gray-300" : "bg-orange-500"}`} />
+                  {!n.isRead && <span aria-hidden className="absolute left-0 inset-y-0 w-[3px] bg-sky-peach-deep" />}
+                  <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.isRead ? "bg-sky-ink/20" : "bg-sky-peach-deep"}`} />
                   <span className="block flex-1 min-w-0">
-                    <span className="block text-sm text-gray-700 dark:text-gray-300 font-black leading-snug">
+                    <span className={`block text-sm leading-snug ${n.isRead ? "text-sky-ink-2 font-medium" : "text-sky-ink font-semibold"}`}>
                       {n.title}
                     </span>
-                    <span className="block text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5 line-clamp-2">
+                    <span className="block text-xs text-sky-ink-2 mt-0.5 line-clamp-2">
                       {n.body}
                     </span>
-                    <span className="flex items-center gap-1.5 mt-1 text-xs text-gray-400 font-semibold">
+                    <span className="flex items-center gap-1.5 mt-1 text-xs text-sky-ink-3">
                       {fmtRelative(n.createdAt)}
                     </span>
                   </span>
@@ -151,11 +159,12 @@ export default function NotificationDropdown() {
         </ul>
 
         {/* Footer CTA */}
-        <div className="p-3 border-t-2 border-black dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
+        <div className="relative p-3 border-t border-sky-ink/10 bg-sky-4/45 shrink-0">
           <button
+            type="button"
             onClick={handleMarkAllRead}
             disabled={unreadCount === 0}
-            className="flex items-center justify-center w-full py-2.5 border-2 border-black dark:border-gray-500 rounded-full bg-white dark:bg-gray-800 font-black text-sm text-gray-800 dark:text-gray-200 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-full py-2.5 rounded-sky-chip text-sm font-medium text-sky-deep transition hover:bg-sky-3/60 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             Mark all as read
           </button>

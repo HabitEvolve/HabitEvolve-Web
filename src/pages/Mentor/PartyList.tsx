@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { AlertTriangle, ArrowRight, Plus, Tent } from "lucide-react";
 import { useAlert } from "../../context/AlertContext";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -91,7 +92,7 @@ export default function PartyList() {
           <span className="inline-block text-xs font-semibold uppercase tracking-[0.16em] text-sky-deep mb-2">
             {t("admin.partyManagement.hub.kicker")}
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-sky-ink tracking-tight leading-[1.05]">
+          <h1 className="font-display text-3xl sm:text-4xl font-semibold text-sky-ink tracking-tight leading-[1.05]">
             {t("admin.partyManagement.pageTitle")}
           </h1>
           <p className="text-sm sm:text-base text-sky-ink-2 font-medium mt-2">
@@ -109,23 +110,17 @@ export default function PartyList() {
           className={`group w-full flex items-center gap-5 sm:gap-6 text-left bg-linear-to-br from-sky-deep-lo to-sky-deep text-white rounded-sky-card shadow-sky-fill hover:scale-[1.01] transition-transform duration-150 ${easeExpo} px-6 sm:px-8 py-6 sm:py-7 mb-8`}
         >
           <span className={`sky-glass-chip flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 group-hover:rotate-90 transition-transform duration-300 ${easeExpo}`}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-sky-deep">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Plus className="w-6 h-6 text-sky-deep" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="text-xl sm:text-2xl font-bold text-white leading-tight tracking-tight">
+            <p className="font-display text-xl sm:text-2xl font-semibold text-white leading-tight tracking-tight">
               {t("admin.partyManagement.hub.createCta")}
             </p>
             <p className="text-sm text-white/80 font-medium mt-0.5">
               {t("admin.partyManagement.hub.createSub")}
             </p>
           </div>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0 hidden sm:block group-hover:translate-x-1 transition-transform">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
+          <ArrowRight className="w-5 h-5 ml-auto shrink-0 hidden sm:block text-white transition-transform duration-150 group-hover:translate-x-1" aria-hidden="true" />
         </button>
 
         {/* Loading state */}
@@ -138,9 +133,12 @@ export default function PartyList() {
 
         {/* Error state */}
         {!loadingParties && partiesError && (
-          <div className="bg-error-50 border border-error-400 rounded-sky-card shadow-sky-tint px-6 py-5 flex items-center justify-between gap-4">
-            <span className="font-semibold text-error-800 text-sm">{partiesError}</span>
-            <SkyButton type="button" variant="secondary" size="sm" onClick={fetchParties}>
+          <div className="relative overflow-hidden rounded-sky-card sky-glass px-6 py-5 flex items-center justify-between gap-4">
+            <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+            <span className="relative inline-flex items-center gap-2 text-sm font-semibold text-sky-rose-deep">
+              <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" /> {partiesError}
+            </span>
+            <SkyButton type="button" variant="secondary" size="sm" onClick={fetchParties} className="relative shrink-0">
               {t("admin.partyManagement.retry")}
             </SkyButton>
           </div>
@@ -148,9 +146,11 @@ export default function PartyList() {
 
         {/* Empty state */}
         {!loadingParties && !partiesError && parties.length === 0 && (
-          <div className="text-center py-24 border border-dashed border-sky-ink/15 rounded-sky-card bg-white/40">
-            <div className="text-5xl mb-4">🏕️</div>
-            <p className="font-bold text-sky-ink text-xl">{t("admin.partyManagement.noParties")}</p>
+          <div className="text-center py-24 rounded-sky-card bg-white/45 ring-1 ring-white/70">
+            <span className="mx-auto mb-4 grid place-items-center w-14 h-14 rounded-full bg-sky-ink/6 ring-1 ring-sky-ink/12 text-sky-ink-3">
+              <Tent className="w-6 h-6" aria-hidden="true" />
+            </span>
+            <p className="font-display text-xl font-semibold text-sky-ink">{t("admin.partyManagement.noParties")}</p>
             <p className="text-sky-ink-2 text-sm mt-1 font-medium">
               {t("admin.partyManagement.noPartiesHint")}
             </p>
@@ -168,12 +168,12 @@ export default function PartyList() {
                 style={{ animationDelay: `${i * 45}ms` }}
                 className={`quest-row-in group w-full flex items-center gap-4 sm:gap-6 text-left px-5 sm:px-7 py-5 sm:py-6 hover:bg-sky-3/20 transition-colors duration-150 ${i % 2 === 1 ? "bg-sky-3/10" : ""}`}
               >
-                <span className="text-2xl sm:text-3xl font-bold text-sky-ink/10 group-hover:text-sky-deep/40 transition-colors w-9 sm:w-11 shrink-0 tabular-nums">
+                <span className="font-display text-2xl sm:text-3xl font-semibold text-sky-ink/12 group-hover:text-sky-deep/40 transition-colors w-9 sm:w-11 shrink-0 tabular-nums">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg sm:text-xl font-bold text-sky-ink truncate">{party.name}</h3>
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-sky-ink truncate">{party.name}</h3>
                     <JoinPolicyBadge policy={party.joinPolicy} />
                   </div>
                   <p className="text-sm text-sky-ink-2 font-medium truncate mt-0.5">
@@ -183,10 +183,7 @@ export default function PartyList() {
                 <div className="hidden sm:block w-32 shrink-0">
                   <CapacityMeter current={party.memberCount ?? 0} max={party.maxMembers || 1} />
                 </div>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-sky-ink-3 group-hover:text-sky-deep group-hover:translate-x-1 transition-all shrink-0">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
+                <ArrowRight className="w-5 h-5 shrink-0 text-sky-ink-3 transition-all duration-150 group-hover:text-sky-deep group-hover:translate-x-1" aria-hidden="true" />
               </button>
             ))}
           </SkyCard>
@@ -198,7 +195,7 @@ export default function PartyList() {
         <SkyModal title={t("admin.partyManagement.form.createTitle")} onClose={resetCreateModal}>
           <form onSubmit={handleCreateParty} className="space-y-5">
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3 mb-1.5">
                 {t("admin.partyManagement.form.nameLabel")}
               </label>
               <input
@@ -212,7 +209,7 @@ export default function PartyList() {
             </div>
 
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3 mb-1.5">
                 {t("admin.partyManagement.form.descLabel")}
               </label>
               <textarea
@@ -225,7 +222,7 @@ export default function PartyList() {
             </div>
 
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3 mb-2">
                 {t("admin.partyManagement.form.policyLabel")}
               </label>
               <div className="flex flex-col gap-2">
@@ -238,7 +235,7 @@ export default function PartyList() {
                       key={policy}
                       className={`flex items-center gap-3 px-4 py-3 rounded-sky-chip cursor-pointer transition-all duration-150 ${checked
                           ? `${s.bg} ring-2 ${s.ring}`
-                          : "border border-sky-surf-border bg-white/40 hover:border-sky-deep/30"
+                          : "ring-1 ring-white/75 bg-white/45 hover:ring-sky-deep/30"
                         }`}
                     >
                       <input
@@ -265,8 +262,8 @@ export default function PartyList() {
             </div>
 
             {createError && (
-              <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">
-                {createError}
+              <p className="relative inline-flex items-center gap-1.5 overflow-hidden rounded-sky-chip bg-sky-rose/10 ring-1 ring-sky-rose/26 px-3 py-2 text-xs font-semibold text-sky-rose-deep">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> {createError}
               </p>
             )}
 
@@ -279,10 +276,7 @@ export default function PartyList() {
                   <><Spinner size={13} /> {t("admin.partyManagement.form.creating")}</>
                 ) : (
                   <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                     {t("admin.partyManagement.form.createParty")}
                   </>
                 )}

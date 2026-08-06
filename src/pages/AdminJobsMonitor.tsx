@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Cpu, Play, PlayCircle, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Cpu, Play, PlayCircle, Loader2, CheckCircle2, XCircle, RefreshCw, Inbox } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -18,6 +18,8 @@ const fmtDateTime = (d: string | null) =>
 
 const durationMs = (start: string, end: string | null) =>
   end ? `${(new Date(end).getTime() - new Date(start).getTime())} ms` : "—";
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 
 export default function AdminJobsMonitor() {
   const globalAlert = useAlert();
@@ -66,13 +68,13 @@ export default function AdminJobsMonitor() {
       <PageBreadcrumb pageTitle="Jobs Monitor" />
 
       <div className="space-y-6 p-1">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="sky-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-sky-chip bg-blue-100 flex items-center justify-center shrink-0">
-              <Cpu className="w-6 h-6 text-blue-600" />
-            </div>
+            <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-deep/12 text-sky-deep shrink-0">
+              <Cpu className="w-6 h-6" />
+            </span>
             <div>
-              <h1 className="text-2xl font-black text-sky-ink">Jobs Monitor</h1>
+              <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">Jobs Monitor</h1>
               <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Trigger scheduled jobs manually and inspect execution history.</p>
             </div>
           </div>
@@ -81,8 +83,9 @@ export default function AdminJobsMonitor() {
           </SkyButton>
         </div>
 
-        <SkyCard variant="admin" className="p-4">
-          <div className="flex flex-wrap gap-3">
+        <SkyCard variant="admin" className="p-4 space-y-3">
+          <p className={eyebrow}>Trigger manually</p>
+          <div className="flex flex-wrap items-center gap-2.5">
             {KNOWN_JOBS.map(jobName => (
               <SkyButton
                 key={jobName}
@@ -96,45 +99,49 @@ export default function AdminJobsMonitor() {
               </SkyButton>
             ))}
             <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs} disabled={loading} className="ml-auto">
-              {loading ? "Loading…" : "Refresh"}
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} {loading ? "Loading…" : "Refresh"}
             </SkyButton>
           </div>
         </SkyCard>
 
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           {loading && logs.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3"><Loader2 className="w-8 h-8 animate-spin" /> Loading…</div>
-          ) : logs.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
-              <Cpu className="w-14 h-14 opacity-40" />
-              <p className="font-black text-lg text-sky-ink-2">No job executions logged yet</p>
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <p className="text-sm font-semibold">Loading…</p>
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16 text-center">
+              <span className="grid place-items-center w-14 h-14 mb-1 rounded-full bg-sky-deep/8 text-sky-deep"><Inbox className="w-6 h-6" /></span>
+              <p className="font-display text-base font-semibold text-sky-ink">No job executions logged yet</p>
+              <p className="text-xs font-medium text-sky-ink-3">Trigger a job above and its run will appear here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-sky-admin-bg-deep border-b border-slate-200">
+                  <tr className="sky-table-head">
                     {["#", "Job Name", "Started At", "Duration", "Result", "Summary"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-sky-ink">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="sky-stagger">
                   {logs.map(log => (
-                    <tr key={log.jobExecutionLogId} className="sky-table-row">
-                      <td className="px-4 py-3 text-xs font-semibold text-sky-ink-3">{log.jobExecutionLogId}</td>
-                      <td className="px-4 py-3 font-semibold text-sky-ink">{log.jobName}</td>
-                      <td className="px-4 py-3 text-xs text-sky-ink-2 whitespace-nowrap">{fmtDateTime(log.startedAt)}</td>
-                      <td className="px-4 py-3 text-xs text-sky-ink-2">{durationMs(log.startedAt, log.finishedAt)}</td>
+                    <tr key={log.jobExecutionLogId} className="sky-table-row group">
+                      <td className="px-4 py-3 font-mono text-xs font-medium text-sky-ink-3 tabular-nums">{log.jobExecutionLogId}</td>
+                      <td className="px-4 py-3 font-display text-sm font-semibold text-sky-ink whitespace-nowrap">{log.jobName}</td>
+                      <td className="px-4 py-3 text-xs font-medium text-sky-ink-2 whitespace-nowrap tabular-nums">{fmtDateTime(log.startedAt)}</td>
+                      <td className="px-4 py-3 text-xs font-medium text-sky-ink-2 whitespace-nowrap tabular-nums">{durationMs(log.startedAt, log.finishedAt)}</td>
                       <td className="px-4 py-3">
                         {log.success ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-success-700"><CheckCircle2 className="w-3.5 h-3.5" /> Success</span>
+                          <span className="sky-badge sky-badge-success"><CheckCircle2 className="w-3 h-3 shrink-0" /> Success</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-error-700"><XCircle className="w-3.5 h-3.5" /> Failed</span>
+                          <span className="sky-badge sky-badge-danger"><XCircle className="w-3 h-3 shrink-0" /> Failed</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-sky-ink-2 max-w-xs truncate" title={log.resultSummary ?? log.errorMessage ?? ""}>
-                        {log.errorMessage ?? log.resultSummary ?? "—"}
+                      <td className={`px-4 py-3 text-xs max-w-xs truncate ${log.success ? "text-sky-ink-2" : "font-medium text-sky-rose-deep"}`} title={log.resultSummary ?? log.errorMessage ?? ""}>
+                        {log.errorMessage ?? log.resultSummary ?? <span className="text-sky-ink-3">—</span>}
                       </td>
                     </tr>
                   ))}

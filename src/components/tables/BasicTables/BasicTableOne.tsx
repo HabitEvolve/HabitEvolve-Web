@@ -111,91 +111,81 @@ const tableData: Order[] = [
 
 export default function BasicTableOne() {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+    <div className="sky-glass-admin overflow-hidden rounded-sky-card">
       <div className="max-w-full overflow-x-auto">
         <Table>
           {/* Table Header */}
-          <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-            <TableRow>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
+          <TableHeader>
+            {/* sky-table-head tints the row and styles its cells in one pass, so
+                each heading only needs its alignment. */}
+            <TableRow className="sky-table-head">
+              <TableCell isHeader className="px-5 py-3 text-start">
                 User
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-5 py-3 text-start">
                 Project Name
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-5 py-3 text-start">
                 Team
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-5 py-3 text-start">
                 Status
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-5 py-3 text-start">
                 Budget
               </TableCell>
             </TableRow>
           </TableHeader>
 
           {/* Table Body */}
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+          <TableBody className="sky-stagger">
             {tableData.map((order) => (
-              <TableRow key={order.id}>
+              <TableRow key={order.id} className="sky-table-row">
                 <TableCell className="px-5 py-4 sm:px-6 text-start">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 overflow-hidden rounded-full">
+                    <div className="w-10 h-10 overflow-hidden rounded-full ring-2 ring-white/80 shrink-0">
                       <img
                         width={40}
                         height={40}
                         src={order.user.image}
                         alt={order.user.name}
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div>
-                      <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                      <span className="block font-semibold text-sky-ink text-sm">
                         {order.user.name}
                       </span>
-                      <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
+                      <span className="block text-sky-ink-3 text-xs font-medium">
                         {order.user.role}
                       </span>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                <TableCell className="px-4 py-3 text-sky-ink-2 text-start text-sm font-medium">
                   {order.projectName}
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                <TableCell className="px-4 py-3 text-start">
+                  {/* Overlapping avatars need a halo to stay separable on glass —
+                      a hairline border would disappear into the tint. */}
                   <div className="flex -space-x-2">
                     {order.team.images.map((teamImage, index) => (
                       <div
                         key={index}
-                        className="w-6 h-6 overflow-hidden border-2 border-white rounded-full dark:border-gray-900"
+                        className="w-6 h-6 overflow-hidden rounded-full ring-2 ring-white/85"
                       >
                         <img
                           width={24}
                           height={24}
                           src={teamImage}
                           alt={`Team member ${index + 1}`}
-                          className="w-full size-6"
+                          className="w-full size-6 object-cover"
                         />
                       </div>
                     ))}
                   </div>
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                <TableCell className="px-4 py-3 text-start">
                   <Badge
                     size="sm"
                     color={
@@ -209,7 +199,7 @@ export default function BasicTableOne() {
                     {order.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                <TableCell className="px-4 py-3 text-sky-ink text-sm font-semibold tabular-nums">
                   {order.budget}
                 </TableCell>
               </TableRow>

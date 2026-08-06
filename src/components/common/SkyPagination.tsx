@@ -1,12 +1,9 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // ── SKY PAGINATION ────────────────────────────────────────────────────────────
-// Sky-Pastel fork of Pagination.tsx. That component is still imported by 4
-// unmigrated Admin pages (AdminCombatItemManagement, AdminPartyManagement,
-// AdminSystemJobsPage, UserDetail) — restyling it in place would have
-// reskinned pagination controls on pages otherwise still neo-brutalism.
-// This is the shared control for every page migrated from here on; swap a
-// page's import from "./Pagination" to "./SkyPagination" as it's migrated.
+// The single pagination control for the whole app. It began as a fork of the
+// neo-brutalism Pagination.tsx so migrated pages could adopt it one at a time;
+// every consumer is on it now and the original has been deleted.
 interface SkyPaginationProps {
     currentPage: number;
     totalPages: number;
@@ -42,25 +39,28 @@ export default function SkyPagination({
         pages.push(totalPages);
     }
 
+    // tabular-nums keeps the row from reflowing as the digit widths change
+    // between pages — a 1px jitter on every click reads as sloppy.
     const btnBase =
-        "w-9 h-9 flex items-center justify-center rounded-sky-chip font-semibold text-sm transition-colors " +
-        "disabled:opacity-40 disabled:cursor-not-allowed";
+        "w-9 h-9 flex items-center justify-center rounded-sky-chip font-display font-semibold text-sm " +
+        "tabular-nums transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent";
+    const idle = "text-sky-ink-2 hover:bg-white/70 hover:text-sky-deep";
 
     return (
-        <div className="flex items-center justify-center gap-2 px-6 py-4 border-t border-gray-200">
+        <div className="flex items-center justify-center gap-1.5 px-6 py-4 border-t border-white/60">
             <button
                 type="button"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={!canGoPrev}
                 aria-label="Previous page"
-                className={`${btnBase} text-sky-ink-2 hover:bg-sky-3/20`}
+                className={`${btnBase} ${idle}`}
             >
                 <ChevronLeft className="w-4 h-4" />
             </button>
 
             {pages.map((page, idx) =>
                 page === "..." ? (
-                    <span key={`dots-${idx}`} className="text-sky-ink-3 font-semibold px-1 text-sm select-none">
+                    <span key={`dots-${idx}`} className="text-sky-ink-3 px-1 text-sm select-none">
                         …
                     </span>
                 ) : (
@@ -71,8 +71,8 @@ export default function SkyPagination({
                         aria-label={`Page ${page}`}
                         aria-current={page === currentPage ? "page" : undefined}
                         className={`${btnBase} ${page === currentPage
-                            ? "bg-sky-deep text-white"
-                            : "text-sky-ink-2 hover:bg-sky-3/20"
+                            ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill"
+                            : idle
                             }`}
                     >
                         {page}
@@ -85,7 +85,7 @@ export default function SkyPagination({
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={!canGoNext}
                 aria-label="Next page"
-                className={`${btnBase} text-sky-ink-2 hover:bg-sky-3/20`}
+                className={`${btnBase} ${idle}`}
             >
                 <ChevronRight className="w-4 h-4" />
             </button>

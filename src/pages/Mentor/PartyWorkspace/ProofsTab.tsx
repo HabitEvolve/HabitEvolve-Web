@@ -5,15 +5,22 @@ import { useTranslation } from "react-i18next";
 import mentorApi from "../../../api/mentorApi";
 import type { ProofDto, AiVerdict } from "../../../types/mentor.types";
 import { useAlert } from "../../../context/AlertContext";
-import { Bot, UserRoundPen } from "lucide-react";
+import {
+    Bot, UserRoundPen, X, Check, AlertTriangle, Clock, ShieldQuestion,
+    RefreshCw, Inbox, ZoomIn, MinusCircle,
+} from "lucide-react";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import { easeExpo, Spinner } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
 
-// Reserved for AI-flagged cards only — a genuine alert-red glow, not the
-// project's usual soft ink shadow. Deliberate one-off, not a reusable pattern.
-const flagGlow = "shadow-[0_0_0_3px_rgba(240,68,56,0.55),0_0_28px_rgba(240,68,56,0.5)]";
+// Reserved for AI-flagged cards only — a rose halo rather than the project's
+// usual soft ink shadow. Deliberate one-off, not a reusable pattern: it is the
+// single strongest visual signal on the page, so nothing else may borrow it.
+const flagGlow = "shadow-[0_0_0_3px_rgba(196,112,138,0.5),0_0_28px_rgba(196,112,138,0.42)]";
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const fieldLabel = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 
 // ── REJECT MODAL ──────────────────────────────────────────────────────────────
 interface RejectModalProps {
@@ -50,13 +57,23 @@ const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
             className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-sky-ink/60 backdrop-blur-sm"
             onClick={onClose}
         >
-            <SkyCard variant="mentor" className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                <h2 className="text-sky-h2 font-bold text-sky-ink mb-1">{t("mentor.proofQueue.rejectModal.title")}</h2>
-                <p className="text-sm text-sky-ink-2 mb-4">
-                    <strong className="text-sky-ink">{proof.username}</strong> — {proof.questTitle}
-                </p>
+            <SkyCard variant="mentor" className="w-full max-w-md sky-in" onClick={(e) => e.stopPropagation()}>
+                {/* Rose rail — this modal only ever ends in a rejection. */}
+                <span className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-sky-rose" aria-hidden="true" />
 
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-sky-ink-2">
+                <div className="relative flex items-start gap-3 mb-4">
+                    <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-rose/14 text-sky-rose-deep">
+                        <MinusCircle className="w-5 h-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                        <h2 className="font-display text-sky-h3 font-semibold text-sky-ink">{t("mentor.proofQueue.rejectModal.title")}</h2>
+                        <p className="text-sm text-sky-ink-2 truncate">
+                            <strong className="font-semibold text-sky-ink">{proof.username}</strong> — {proof.questTitle}
+                        </p>
+                    </div>
+                </div>
+
+                <label className={`relative block mb-2 ${fieldLabel}`}>
                     {t("mentor.proofQueue.rejectModal.reason")}
                 </label>
                 <textarea
@@ -64,16 +81,16 @@ const RejectModal = ({ proof, onClose, onRejected }: RejectModalProps) => {
                     onChange={(e) => setReason(e.target.value)}
                     placeholder={t("mentor.proofQueue.rejectModal.placeholder")}
                     rows={4}
-                    className="w-full p-3 rounded-sky-chip border border-sky-surf-border text-sm font-medium bg-transparent text-sky-ink focus:outline-none focus:border-error-400 focus:ring-3 focus:ring-error-400/20 resize-none placeholder:text-sky-ink-3"
+                    className="relative w-full p-3 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sm font-medium text-sky-ink transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-rose/45 resize-none placeholder:text-sky-ink-3"
                 />
 
                 {error && (
-                    <p className="mt-3 p-2.5 bg-error-100 border border-error-400 rounded-sky-chip text-sm font-semibold text-error-700">
-                        {error}
+                    <p className="relative mt-3 inline-flex items-start gap-2 w-full p-2.5 rounded-sky-chip bg-sky-rose/12 ring-1 ring-sky-rose/28 text-sm font-semibold text-sky-rose-deep">
+                        <AlertTriangle className="w-4 h-4 mt-px shrink-0" aria-hidden="true" /> {error}
                     </p>
                 )}
 
-                <div className="flex gap-3 mt-4">
+                <div className="relative flex gap-3 mt-4">
                     <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
                         {t("mentor.proofQueue.rejectModal.cancel")}
                     </SkyButton>
@@ -93,6 +110,13 @@ interface ComparisonModalProps {
     onClose: () => void;
 }
 
+const SpecRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+        <p className={fieldLabel}>{label}</p>
+        <div className="mt-0.5 text-sm font-semibold text-sky-ink">{children}</div>
+    </div>
+);
+
 const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
     const { t } = useTranslation();
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
@@ -104,11 +128,11 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
             className="modal-content fixed inset-0 z-99999 flex items-center justify-center p-4 bg-sky-ink/70 backdrop-blur-sm"
             onClick={onClose}
         >
-            <SkyCard variant="mentor" className="w-full max-w-3xl p-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-sky-surf-border">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-wider text-sky-ink-2">{t("mentor.proofQueue.grid.comparisonTitle")}</p>
-                        <h2 className="text-lg font-bold leading-tight text-sky-ink">{proof.questTitle ?? `Quest #${proof.questId}`}</h2>
+            <SkyCard variant="mentor" className="w-full max-w-3xl p-0 overflow-hidden sky-in" onClick={(e) => e.stopPropagation()}>
+                <div className="relative flex items-center justify-between gap-4 px-5 py-4 border-b border-sky-ink/10">
+                    <div className="min-w-0">
+                        <p className={eyebrow}>{t("mentor.proofQueue.grid.comparisonTitle")}</p>
+                        <h2 className="font-display text-lg font-semibold leading-tight text-sky-ink truncate">{proof.questTitle ?? `Quest #${proof.questId}`}</h2>
                     </div>
                     <SkyButton
                         type="button"
@@ -117,47 +141,55 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                         onClick={onClose}
                         aria-label={t("mentor.proofQueue.grid.comparisonClose")}
                     >
-                        <img src="/icon/UI/Close Button/64px/Close Button 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
+                        <X className="w-4 h-4" />
                     </SkyButton>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-dashed divide-sky-ink/15">
+                {/* Two columns, violet (what was asked) against peach (what came
+                    back) — a comparison, so neither side may read as a verdict. */}
+                <div className="relative grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-dashed divide-sky-ink/15">
                     <div className="p-5">
-                        <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-purple-600 mb-3">
+                        <span className="inline-flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-violet-deep">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-violet" aria-hidden="true" />
                             {t("mentor.proofQueue.grid.comparisonRequirement")}
                         </span>
                         <div className="space-y-3">
-                            <div>
-                                <p className="text-xs font-semibold text-sky-ink-2 uppercase">{t("mentor.proofQueue.grid.comparisonQuestType")}</p>
-                                <p className="text-sm font-semibold text-sky-ink">{proof.questType ?? "—"}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold text-sky-ink-2 uppercase">{t("mentor.proofQueue.grid.comparisonProofType")}</p>
-                                <p className="inline-block mt-0.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                            <SpecRow label={t("mentor.proofQueue.grid.comparisonQuestType")}>{proof.questType ?? "—"}</SpecRow>
+                            <SpecRow label={t("mentor.proofQueue.grid.comparisonProofType")}>
+                                <span className="inline-block px-2.5 py-1 rounded-sky-chip bg-sky-violet/14 text-xs font-semibold text-sky-violet-deep">
                                     {proof.proofType}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold text-sky-ink-2 uppercase">{t("mentor.proofQueue.grid.comparisonDeadline")}</p>
-                                <p className="text-sm font-semibold text-sky-ink">
+                                </span>
+                            </SpecRow>
+                            <SpecRow label={t("mentor.proofQueue.grid.comparisonDeadline")}>
+                                <span className="tabular-nums">
                                     {proof.deadlineAt ? new Date(proof.deadlineAt).toLocaleString() : t("mentor.proofQueue.grid.comparisonNoDeadline")}
-                                </p>
-                            </div>
+                                </span>
+                            </SpecRow>
 
                             {/* AI assessment — informational only, visually separate from the
                                 Approve/Reject action buttons on the card (AI assists, a mentor decides). */}
                             {proof.aiStatus && proof.aiStatus !== "Not Used" && (
-                                <div className="p-3 rounded-sky-chip bg-purple-50 border border-purple-200">
+                                <div className="p-3 rounded-sky-chip bg-sky-violet/8 ring-1 ring-sky-violet/22">
                                     <div className="flex items-center justify-between gap-2 mb-2">
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-700">
+                                        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-violet-deep">
                                             {t("mentor.proofQueue.grid.aiAssessment")}
                                         </span>
                                         <AiStatusBadge status={proof.aiStatus} />
                                     </div>
                                     {typeof proof.aiConfidence === "number" && (
-                                        <div className="flex items-center justify-between text-xs font-semibold text-purple-700 mb-1.5">
-                                            <span>{t("mentor.proofQueue.grid.aiConfidenceLabel")}</span>
-                                            <span>{Math.round(proof.aiConfidence * 100)}%</span>
+                                        <div className="mb-2">
+                                            <div className="flex items-center justify-between text-xs font-semibold text-sky-violet-deep mb-1">
+                                                <span>{t("mentor.proofQueue.grid.aiConfidenceLabel")}</span>
+                                                <span className="tabular-nums">{Math.round(proof.aiConfidence * 100)}%</span>
+                                            </div>
+                                            {/* Confidence as a bar as well as a number — the
+                                                mentor should feel the strength at a glance. */}
+                                            <div className="h-1.5 rounded-full bg-sky-ink/10 overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full bg-sky-violet transition-[width] duration-500"
+                                                    style={{ width: `${Math.round(proof.aiConfidence * 100)}%` }}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                     <p className="text-xs text-sky-ink-2 italic leading-relaxed">
@@ -172,22 +204,28 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                     </div>
 
                     <div className="p-5">
-                        <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-peach-deep mb-3">
+                        <span className="inline-flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-peach-deep">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-peach" aria-hidden="true" />
                             {t("mentor.proofQueue.grid.comparisonSubmitted")}
                         </span>
                         {hasMedia ? (
                             <div className="mb-3">
-                                <div className="w-full rounded-sky-chip overflow-hidden border border-sky-surf-border bg-sky-3/10">
+                                <div className="w-full rounded-sky-chip overflow-hidden ring-1 ring-white/80 bg-sky-ink/6">
                                     <img src={activeUrl} alt={`Submitted proof ${activeIndex + 1}/${proof.mediaUrls.length}`} className="w-full max-h-72 object-contain" />
                                 </div>
                                 {proof.mediaUrls.length > 1 && (
-                                    <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                                    <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
                                         {proof.mediaUrls.map((url, idx) => (
                                             <button
                                                 key={`${url}-${idx}`}
                                                 type="button"
                                                 onClick={() => setActiveIndex(idx)}
-                                                className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 ${idx === activeIndex ? "border-sky-peach" : "border-sky-surf-border opacity-70 hover:opacity-100"}`}
+                                                aria-current={idx === activeIndex}
+                                                className={`shrink-0 w-14 h-14 rounded-sky-chip overflow-hidden transition-all duration-150 ${easeExpo} ${
+                                                    idx === activeIndex
+                                                        ? "ring-2 ring-sky-peach-deep ring-offset-2 ring-offset-white/70"
+                                                        : "ring-1 ring-white/80 opacity-65 hover:opacity-100"
+                                                }`}
                                                 aria-label={`Media ${idx + 1}`}
                                             >
                                                 <img src={url} alt="" className="w-full h-full object-cover" />
@@ -197,15 +235,16 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                                 )}
                             </div>
                         ) : (
-                            <div className="w-full h-40 rounded-sky-chip border border-dashed border-sky-ink/20 bg-sky-3/10 flex items-center justify-center mb-3">
-                                <span className="text-sky-ink-3 text-xs font-semibold">{t("mentor.proofQueue.noMedia")}</span>
+                            <div className="w-full h-40 rounded-sky-chip border border-dashed border-sky-ink/20 bg-sky-ink/4 flex flex-col items-center justify-center gap-2 mb-3 text-sky-ink-3">
+                                <Inbox className="w-5 h-5" aria-hidden="true" />
+                                <span className="text-xs font-semibold">{t("mentor.proofQueue.noMedia")}</span>
                             </div>
                         )}
-                        <p className="text-xs font-semibold text-sky-ink-2 uppercase">{new Date(proof.submittedAt).toLocaleString()}</p>
+                        <p className={`tabular-nums ${fieldLabel}`}>{new Date(proof.submittedAt).toLocaleString()}</p>
                         {proof.textNote && (
                             <div className="mt-2">
-                                <p className="text-xs font-semibold text-sky-ink-2 uppercase">{t("mentor.proofQueue.grid.comparisonPlayerNote")}</p>
-                                <p className="text-sm italic text-sky-ink-2">"{proof.textNote}"</p>
+                                <p className={fieldLabel}>{t("mentor.proofQueue.grid.comparisonPlayerNote")}</p>
+                                <p className="mt-1 pl-3 border-l-2 border-sky-peach/45 text-sm italic text-sky-ink-2">"{proof.textNote}"</p>
                             </div>
                         )}
                     </div>
@@ -217,19 +256,21 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
 };
 
 // ── AI STATUS BADGE ───────────────────────────────────────────────────────────
-const AI_STATUS_STYLES: Record<AiVerdict, { bg: string; text: string; icon: string | null }> = {
-    "Not Used": { bg: "bg-gray-100", text: "text-gray-500", icon: null },
-    "Approved": { bg: "bg-success-100", text: "text-success-800", icon: "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" },
-    "Suspicious": { bg: "bg-warning-100", text: "text-warning-800", icon: "/icon/UI/Warning/64px/Warning 1st 64px.png" },
-    "Rejected": { bg: "bg-error-100", text: "text-error-800", icon: "/icon/UI/X/64px/X 1st 64px.png" },
+// Teal approve / peach suspicious / rose reject — never green. Each carries a
+// glyph so the verdict survives without colour.
+const AI_STATUS_STYLES: Record<AiVerdict, { cls: string; Icon: typeof Check | null }> = {
+    "Not Used": { cls: "bg-sky-ink/8 text-sky-ink-2", Icon: null },
+    "Approved": { cls: "bg-sky-teal-bg text-sky-teal", Icon: Check },
+    "Suspicious": { cls: "bg-sky-peach/22 text-sky-peach-deep", Icon: AlertTriangle },
+    "Rejected": { cls: "bg-sky-rose/16 text-sky-rose-deep", Icon: X },
 };
 
 const AiStatusBadge = ({ status }: { status: AiVerdict }) => {
     const s = AI_STATUS_STYLES[status];
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${s.bg} ${s.text}`}>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-sky-chip ${s.cls}`}>
             <Bot className="w-3 h-3" aria-hidden="true" />
-            {s.icon && <img src={s.icon} alt="" className="w-3 h-3 object-contain" />}
+            {s.Icon && <s.Icon className="w-3 h-3" aria-hidden="true" />}
             {status}
         </span>
     );
@@ -255,21 +296,23 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
     return (
         <SkyCard
             variant="mentor"
-            className={`relative p-0 overflow-hidden flex flex-col ${isSuspicious ? flagGlow : ""}`}
+            className={`relative p-0 overflow-hidden flex flex-col transition-shadow duration-300 ${
+                isSuspicious ? flagGlow : ""
+            } ${isSelected ? "ring-2 ring-sky-deep" : ""}`}
         >
-            <label className="absolute top-3 left-3 z-10 flex items-center justify-center">
+            <label className="absolute top-3 left-3 z-10 grid place-items-center w-7 h-7 rounded-sky-chip bg-white/85 ring-1 ring-white shadow-sky-chip cursor-pointer">
                 <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => onToggleSelect(proof.proofId)}
                     aria-label={t("mentor.proofQueue.grid.selectAria")}
-                    className="w-5 h-5 rounded-md accent-sky-deep bg-white cursor-pointer"
+                    className="w-4 h-4 rounded accent-sky-deep cursor-pointer"
                 />
             </label>
 
             {isSuspicious && (
-                <div className="bg-error-500 text-white text-center py-1.5 text-[11px] font-semibold tracking-wide uppercase inline-flex items-center justify-center gap-1.5 w-full">
-                    <img src="/icon/UI/Warning/64px/Warning White 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {t("mentor.proofQueue.grid.aiWarningTag")}
+                <div className="w-full inline-flex items-center justify-center gap-1.5 bg-linear-to-r from-sky-rose to-sky-rose-deep text-white text-center py-1.5 text-[11px] font-semibold tracking-[0.1em] uppercase">
+                    <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.aiWarningTag")}
                 </div>
             )}
 
@@ -277,7 +320,7 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                 <button
                     type="button"
                     onClick={() => onCompare(proof)}
-                    className="relative w-full h-64 bg-sky-3/10 overflow-hidden group cursor-zoom-in"
+                    className="relative w-full h-64 bg-sky-ink/6 overflow-hidden group cursor-zoom-in"
                     title={t("mentor.proofQueue.grid.viewComparison")}
                 >
                     <img
@@ -286,37 +329,40 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                         className={`w-full h-full object-cover transition-transform duration-300 ${easeExpo} group-hover:scale-105 ${isSuspicious ? "blur-sm" : ""}`}
                         onError={(e) => { (e.target as HTMLImageElement).src = ""; }}
                     />
-                    <div className="absolute inset-0 bg-sky-ink/0 group-hover:bg-sky-ink/30 transition-colors flex items-center justify-center">
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-semibold text-sky-ink">
-                            <img src="/icon/Main/Magnifying Glass/64w/Magnifying Glass 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {t("mentor.proofQueue.grid.viewComparison")}
+                    <div className="absolute inset-0 bg-sky-ink/0 group-hover:bg-sky-ink/35 transition-colors flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/92 rounded-sky-chip text-xs font-semibold text-sky-ink shadow-sky-chip">
+                            <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.viewComparison")}
                         </span>
                     </div>
                     {isSuspicious && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-error-900/30">
-                            <span className="inline-flex items-center gap-1.5 bg-warning-400 rounded-full px-3 py-1 text-xs font-semibold text-warning-950">
+                        <div className="absolute inset-0 flex items-center justify-center bg-sky-ink/28">
+                            <span className="inline-flex items-center gap-1.5 bg-white/92 rounded-sky-chip px-3 py-1.5 text-xs font-semibold text-sky-rose-deep shadow-sky-chip">
                                 <Bot className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.aiFlagged")}
                             </span>
                         </div>
                     )}
                     {proof.mediaUrls.length > 1 && (
-                        <span className="absolute bottom-2 right-2 bg-sky-ink/80 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="absolute bottom-2 right-2 bg-sky-ink/78 text-white text-xs font-semibold px-2 py-0.5 rounded-sky-chip tabular-nums">
                             +{proof.mediaUrls.length - 1} more
                         </span>
                     )}
                 </button>
             ) : (
-                <div className="w-full h-24 bg-sky-3/10 flex items-center justify-center border-b border-sky-surf-border">
-                    <span className="text-sky-ink-3 text-xs font-semibold">{t("mentor.proofQueue.noMedia")}</span>
+                <div className="w-full h-24 bg-sky-ink/5 flex items-center justify-center gap-2 border-b border-sky-ink/10 text-sky-ink-3">
+                    <Inbox className="w-4 h-4" aria-hidden="true" />
+                    <span className="text-xs font-semibold">{t("mentor.proofQueue.noMedia")}</span>
                 </div>
             )}
 
-            <div className="p-4 flex flex-col gap-2 flex-1">
+            <div className="relative p-4 flex flex-col gap-2 flex-1">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                        <p className="font-bold text-sm truncate text-sky-ink">{proof.questTitle ?? `Quest #${proof.questId}`}</p>
-                        <p className="text-xs text-sky-ink-2 font-medium truncate">by <strong className="text-sky-ink">{proof.username ?? `User #${proof.userId}`}</strong></p>
+                        <p className="font-display text-sm font-semibold truncate text-sky-ink">{proof.questTitle ?? `Quest #${proof.questId}`}</p>
+                        <p className="text-xs text-sky-ink-2 font-medium truncate">by <strong className="font-semibold text-sky-ink">{proof.username ?? `User #${proof.userId}`}</strong></p>
                     </div>
-                    <span className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${isSuspicious ? "bg-warning-100 text-warning-800" : "bg-teal-100 text-teal-800"}`}>
+                    {/* Pending review is peach when flagged, cool blue otherwise —
+                        it is a waiting state, so it never wears the success hue. */}
+                    <span className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-sky-chip ${isSuspicious ? "bg-sky-peach/22 text-sky-peach-deep" : "bg-sky-deep/12 text-sky-deep"}`}>
                         {proof.status}
                     </span>
                 </div>
@@ -326,36 +372,34 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                         <AiStatusBadge status={proof.aiStatus} />
                     )}
                     {proof.reviewType && (
-                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${proof.reviewType === "AI + Mentor" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"}`}>
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-sky-chip ${proof.reviewType === "AI + Mentor" ? "bg-sky-violet/14 text-sky-violet-deep" : "bg-sky-ink/8 text-sky-ink-2"}`}>
                             {proof.reviewType}
                         </span>
                     )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs text-sky-ink-2 font-medium">
-                    <span className="px-2 py-0.5 bg-gray-100 rounded-full">{proof.proofType}</span>
-                    <span>{new Date(proof.submittedAt).toLocaleString()}</span>
+                <div className="flex flex-wrap gap-2 items-center text-xs text-sky-ink-2 font-medium">
+                    <span className="px-2 py-0.5 rounded-sky-chip bg-sky-ink/7">{proof.proofType}</span>
+                    <span className="tabular-nums">{new Date(proof.submittedAt).toLocaleString()}</span>
                     {proof.deadlineMet && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-success-100 rounded-full text-success-700">
-                            {t("mentor.proofQueue.onTime")} <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-3 h-3 object-contain" />
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sky-chip bg-sky-teal-bg text-sky-teal">
+                            <Check className="w-3 h-3" aria-hidden="true" /> {t("mentor.proofQueue.onTime")}
                         </span>
                     )}
                 </div>
 
                 {proof.deadlineAt && (
-                    <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-lg ${isOverdue ? "bg-error-50 text-error-600" : "bg-gray-50 text-sky-ink-2"}`}>
-                        <img
-                            src={isOverdue ? "/icon/UI/Warning/64px/Warning 1st 64px.png" : "/icon/Item/Clock/64px/Clock 1st 64px.png"}
-                            alt=""
-                            className="w-3.5 h-3.5 object-contain"
-                        />
+                    <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-sky-chip tabular-nums ${isOverdue ? "bg-sky-rose/12 text-sky-rose-deep" : "bg-sky-ink/6 text-sky-ink-2"}`}>
+                        {isOverdue
+                            ? <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            : <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
                         {isOverdue ? "Overdue" : "Deadline"}:{" "}
                         {new Date(proof.deadlineAt).toLocaleString()}
                     </div>
                 )}
 
                 {proof.textNote && (
-                    <p className="text-xs text-sky-ink-2 bg-gray-50 rounded-lg p-2 italic line-clamp-2">
+                    <p className="text-xs text-sky-ink-2 pl-3 border-l-2 border-sky-ink/12 italic line-clamp-2">
                         "{proof.textNote}"
                     </p>
                 )}
@@ -370,7 +414,7 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                     >
                         {actionLoading
                             ? <Spinner size={14} />
-                            : <><img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> {t("mentor.proofQueue.approve")}</>
+                            : <><Check className="w-4 h-4" /> {t("mentor.proofQueue.approve")}</>
                         }
                     </SkyButton>
                     <SkyButton
@@ -380,7 +424,7 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                         disabled={actionLoading}
                         className="flex-1"
                     >
-                        <img src="/icon/UI/X/64px/X 1st 64px.png" alt="" className="w-4 h-4 object-contain" /> {t("mentor.proofQueue.reject")}
+                        <X className="w-4 h-4" /> {t("mentor.proofQueue.reject")}
                     </SkyButton>
                 </div>
             </div>
@@ -396,7 +440,7 @@ const FilterBar = ({ filter, onChange }: { filter: QueueFilter; onChange: (f: Qu
     const options: { key: QueueFilter; label: string; icon: React.ReactNode }[] = [
         { key: "all", label: t("mentor.proofQueue.grid.filterAll"), icon: null },
         { key: "flagged", label: t("mentor.proofQueue.grid.filterFlagged"), icon: <Bot className="w-3.5 h-3.5" aria-hidden="true" /> },
-        { key: "recent", label: t("mentor.proofQueue.grid.filterRecent"), icon: <img src="/icon/Item/Clock/64px/Clock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> },
+        { key: "recent", label: t("mentor.proofQueue.grid.filterRecent"), icon: <Clock className="w-3.5 h-3.5" aria-hidden="true" /> },
     ];
     return (
         <div className="flex flex-wrap gap-2">
@@ -407,8 +451,11 @@ const FilterBar = ({ filter, onChange }: { filter: QueueFilter; onChange: (f: Qu
                         key={o.key}
                         type="button"
                         onClick={() => onChange(o.key)}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-150 ${easeExpo} ${
-                            isActive ? "bg-sky-deep text-white shadow-sky-chip" : "bg-white/50 text-sky-ink-2 border border-sky-surf-border hover:border-sky-deep/30"
+                        aria-pressed={isActive}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-sky-chip text-xs font-semibold transition-all duration-150 ${easeExpo} ${
+                            isActive
+                                ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill"
+                                : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
                         }`}
                     >
                         {o.icon}
@@ -445,27 +492,43 @@ const QueueSection = ({
     return (
         <div>
             <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-xl font-bold text-sky-ink">{title}</h2>
-                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isAiQueue ? "bg-purple-500 text-white" : "bg-teal-500 text-white"}`}>
+                <h2 className="font-display text-xl font-semibold text-sky-ink">{title}</h2>
+                {/* Queue depth is a quantity, not a verdict: violet marks the AI
+                    lane, cool blue the mentor's own. */}
+                <span className={`inline-grid place-items-center min-w-7 h-7 px-2 text-sm font-display font-semibold rounded-sky-chip tabular-nums ${
+                    isAiQueue ? "bg-sky-violet/14 text-sky-violet-deep" : "bg-sky-deep/12 text-sky-deep"
+                }`}>
                     {count}
                 </span>
                 {loading && <Spinner size={16} />}
             </div>
 
             {loading && proofs.length === 0 ? (
-                <div className="flex items-center justify-center h-40 gap-3 text-sky-ink-3">
-                    <Spinner size={28} />
+                /* Skeletons in the grid's own shape — the page keeps its
+                   silhouette while data lands instead of collapsing. */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="rounded-sky-card bg-white/45 ring-1 ring-white/65 overflow-hidden animate-pulse">
+                            <div className="h-40 bg-sky-ink/7" />
+                            <div className="p-4 space-y-2">
+                                <div className="h-3.5 w-2/3 rounded-full bg-sky-ink/10" />
+                                <div className="h-3 w-1/3 rounded-full bg-sky-ink/8" />
+                                <div className="h-8 mt-3 rounded-sky-chip bg-sky-ink/7" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : proofs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 gap-3 border border-dashed border-sky-ink/15 rounded-sky-card bg-white/40">
-                    <span className="flex items-center justify-center w-16 h-16 rounded-full bg-sky-peach/15 text-sky-peach-deep">
+                <div className="flex flex-col items-center justify-center py-14 gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/45">
+                    {/* Teal — an empty queue is the good outcome here. */}
+                    <span className="grid place-items-center w-16 h-16 rounded-full bg-sky-teal-bg text-sky-teal ring-1 ring-sky-teal/20">
                         {emptyIcon}
                     </span>
-                    <p className="text-base font-bold text-sky-ink-2">{t("mentor.proofQueue.grid.mascotEmptyTitle")}</p>
-                    <p className="text-sm font-medium text-sky-ink-3">{emptyText || t("mentor.proofQueue.grid.mascotEmptySubtitle")}</p>
+                    <p className="font-display text-base font-semibold text-sky-ink">{t("mentor.proofQueue.grid.mascotEmptyTitle")}</p>
+                    <p className="text-sm font-medium text-sky-ink-2 max-w-sm text-center">{emptyText || t("mentor.proofQueue.grid.mascotEmptySubtitle")}</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sky-stagger">
                     {proofs.map((proof) => (
                         <ProofCard
                             key={proof.proofId}
@@ -657,8 +720,11 @@ export default function ProofsTab() {
         <>
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-sky-ink">{t("mentor.proofQueue.pendingReviews")}</h1>
-                    <span className="px-3 py-1 bg-teal-500 text-white text-sm font-semibold rounded-full">
+                    <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-deep/10 ring-1 ring-sky-deep/18 text-sky-deep">
+                        <ShieldQuestion className="w-5 h-5" aria-hidden="true" />
+                    </span>
+                    <h1 className="font-display text-2xl font-semibold text-sky-ink">{t("mentor.proofQueue.pendingReviews")}</h1>
+                    <span className="inline-grid place-items-center min-w-7 h-7 px-2 rounded-sky-chip bg-sky-deep/12 text-sky-deep text-sm font-display font-semibold tabular-nums">
                         {totalCount}
                     </span>
                 </div>
@@ -669,11 +735,7 @@ export default function ProofsTab() {
                     onClick={fetchQueues}
                     disabled={loadingManual && loadingAi}
                 >
-                    {loadingManual || loadingAi ? <Spinner size={14} /> : (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    )}
+                    {loadingManual || loadingAi ? <Spinner size={14} /> : <RefreshCw className="w-4 h-4" />}
                     {t("mentor.proofQueue.refresh")}
                 </SkyButton>
             </div>
@@ -681,15 +743,17 @@ export default function ProofsTab() {
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                 <FilterBar filter={filter} onChange={setFilter} />
                 {selectedIds.size > 0 && (
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-sky-peach/10 border border-sky-peach/30 shadow-sky-chip">
-                        <span className="text-xs font-semibold text-sky-peach-deep">
+                    /* Selection tray — peach, because a pending batch is
+                       something demanding attention, not yet an outcome. */
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-sky-chip bg-sky-peach/12 ring-1 ring-sky-peach/30 shadow-sky-chip sky-in">
+                        <span className="text-xs font-semibold text-sky-peach-deep tabular-nums">
                             {t("mentor.proofQueue.grid.selectedCount", { count: selectedIds.size })}
                         </span>
                         <button
                             type="button"
                             onClick={() => setSelectedIds(new Set())}
                             disabled={batchApproving}
-                            className="text-xs font-semibold text-sky-ink-2 hover:text-sky-ink disabled:opacity-50"
+                            className="text-xs font-semibold text-sky-ink-2 underline decoration-sky-ink/25 underline-offset-2 hover:text-sky-ink hover:decoration-sky-ink/50 disabled:opacity-50"
                         >
                             {t("mentor.proofQueue.grid.clearSelection")}
                         </button>
@@ -699,42 +763,54 @@ export default function ProofsTab() {
                             size="sm"
                             onClick={handleApproveSelected}
                             disabled={batchApproving}
-                            className="rounded-full"
                         >
-                            {batchApproving ? <><Spinner size={12} /> {t("mentor.proofQueue.grid.approvingSelected")}</> : <><img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain" /> {t("mentor.proofQueue.grid.approveSelected")}</>}
+                            {batchApproving ? <><Spinner size={12} /> {t("mentor.proofQueue.grid.approvingSelected")}</> : <><Check className="w-3.5 h-3.5" /> {t("mentor.proofQueue.grid.approveSelected")}</>}
                         </SkyButton>
                     </div>
                 )}
             </div>
 
             {error && (
-                <div className="mb-6 p-4 bg-error-100 border border-error-400 rounded-sky-card font-semibold text-error-700">
-                    {error}
+                <div className="relative mb-6 overflow-hidden rounded-sky-card sky-glass p-4 pl-5">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+                    <p className="relative inline-flex items-start gap-2 text-sm font-semibold text-sky-rose-deep">
+                        <AlertTriangle className="w-4 h-4 mt-px shrink-0" aria-hidden="true" /> {error}
+                    </p>
                 </div>
             )}
 
-            <div className="flex gap-2 mb-6 border-b border-sky-surf-border pb-0">
-                {(["manual", "ai"] as QueueTab[]).map((tab) => (
-                    <button
-                        type="button"
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-t-sky-chip transition-all ${activeTab === tab
-                            ? tab === "ai"
-                                ? "bg-purple-500 text-white -mb-px"
-                                : "bg-teal-500 text-white -mb-px"
-                            : "text-sky-ink-2 hover:bg-sky-3/20"
+            {/* Queue switcher — the active tab lifts on a deep fill and grows an
+                underline, so it never relies on hue alone. */}
+            <div className="flex gap-2 mb-6 border-b border-sky-ink/10">
+                {(["manual", "ai"] as QueueTab[]).map((tab) => {
+                    const isActive = activeTab === tab;
+                    const count = tab === "manual" ? visibleManual.length : visibleAi.length;
+                    return (
+                        <button
+                            type="button"
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            aria-pressed={isActive}
+                            className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-t-sky-chip transition-all duration-150 ${easeExpo} ${
+                                isActive
+                                    ? tab === "ai"
+                                        ? "bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-chip"
+                                        : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                                    : "text-sky-ink-2 hover:text-sky-ink hover:bg-white/50"
                             }`}
-                    >
-                        {tab === "manual"
-                            ? <img src="/icon/Player/Player/64px/Player 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
-                            : <Bot className="w-4 h-4" aria-hidden="true" />}
-                        {tab === "manual" ? t("Manual") : t("AI")}
-                        <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full bg-black/20">
-                            {tab === "manual" ? visibleManual.length : visibleAi.length}
-                        </span>
-                    </button>
-                ))}
+                        >
+                            {tab === "manual"
+                                ? <UserRoundPen className="w-4 h-4" aria-hidden="true" />
+                                : <Bot className="w-4 h-4" aria-hidden="true" />}
+                            {tab === "manual" ? t("Manual") : t("AI")}
+                            <span className={`ml-1 inline-grid place-items-center min-w-5 h-5 px-1.5 text-[11px] font-semibold rounded-full tabular-nums ${
+                                isActive ? "bg-white/22 text-white" : "bg-sky-ink/8 text-sky-ink-2"
+                            }`}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
 
             {activeTab === "manual" ? (
@@ -747,7 +823,7 @@ export default function ProofsTab() {
                     onReject={handleRejectClick}
                     onCompare={setCompareTarget}
                     actionLoading={actionLoading}
-                    emptyIcon={<UserRoundPen className="w-5 h-5" />}
+                    emptyIcon={<UserRoundPen className="w-6 h-6" />}
                     emptyText={t("Manual review queue is empty. All proofs have been reviewed!")}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelect}
@@ -762,7 +838,7 @@ export default function ProofsTab() {
                     onReject={handleRejectClick}
                     onCompare={setCompareTarget}
                     actionLoading={actionLoading}
-                    emptyIcon={<Bot className="w-5 h-5" />}
+                    emptyIcon={<Bot className="w-6 h-6" />}
                     emptyText={t("AI review queue is empty. All proofs have been reviewed!")}
                     isAiQueue
                     selectedIds={selectedIds}

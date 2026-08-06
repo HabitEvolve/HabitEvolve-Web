@@ -38,7 +38,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
   return (
     <div
       ref={dropdownRef}
-      className={`absolute z-40  right-0 mt-2  rounded-xl border border-gray-200 bg-white  shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark ${className}`}
+      // Floating menu surface: sky-glass-menu rather than sky-glass, because a
+      // menu floats OVER live content and the card recipe is too transparent to
+      // stop text underneath bleeding through. z-50 clears the sticky headers,
+      // which sit at z-40.
+      className={`absolute z-50 right-0 mt-2 sky-glass-menu sky-in ${className}`}
     >
       {children}
     </div>

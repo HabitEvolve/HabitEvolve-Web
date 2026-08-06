@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { AlertTriangle, Check, Info, X, XCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AlertVariant = "success" | "error" | "info" | "warning";
@@ -32,11 +33,17 @@ const VISIBLE_MS = 4000;
 const EXIT_MS    = 350;
 
 // ── Variant config ─────────────────────────────────────────────────────────────
-const VARIANT_CFG: Record<AlertVariant, { bg: string; iconSrc: string }> = {
-  success: { bg: "bg-green-400",  iconSrc: "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" },
-  error:   { bg: "bg-red-400",    iconSrc: "/icon/UI/X/64px/X 1st 64px.png"                 },
-  warning: { bg: "bg-yellow-400", iconSrc: "/icon/UI/Warning/64px/Warning 1st 64px.png"      },
-  info:    { bg: "bg-sky-400",    iconSrc: "/icon/UI/Info/64px/Info 1st 64px.png"            },
+// Sky-Pastel (§5). Each variant carries THREE cues, never colour alone: a 3px
+// accent rail down the leading edge, a tinted icon chip, and the icon glyph
+// itself. `rail` doubles as the icon-chip tint so the two always agree.
+// The glyphs are lucide lines drawn in the variant's deep ink — pixel-art
+// sprites at 16px turned to mush and clashed with every other icon in the app.
+const VARIANT_CFG: Record<AlertVariant, { rail: string; chip: string; ink: string; Icon: LucideIcon }> = {
+  // Teal for success — never green (§4).
+  success: { rail: "bg-sky-teal",       chip: "bg-sky-teal-bg",  ink: "text-sky-teal",       Icon: Check         },
+  error:   { rail: "bg-sky-rose",       chip: "bg-sky-rose/16",  ink: "text-sky-rose-deep",  Icon: XCircle       },
+  warning: { rail: "bg-sky-peach-deep", chip: "bg-sky-peach/22", ink: "text-sky-peach-deep", Icon: AlertTriangle },
+  info:    { rail: "bg-sky-deep",       chip: "bg-sky-deep/12",  ink: "text-sky-deep",       Icon: Info          },
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -91,27 +98,32 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
                 key={toast.id}
                 role="alert"
                 className={`
-                  pointer-events-auto
-                  flex items-start gap-3 px-4 py-3
-                  ${cfg.bg} border-4 border-black rounded-xl
-                  shadow-[4px_4px_0_0_#1A1D20]
+                  pointer-events-auto relative overflow-hidden
+                  flex items-start gap-3 pl-5 pr-4 py-3.5
+                  rounded-sky-md sky-glass
                   ${toast.exiting ? "habit-toast-exit" : "habit-toast-enter"}
                 `}
               >
-                <img
-                  src={cfg.iconSrc}
-                  alt=""
-                  className="w-5 h-5 object-contain shrink-0 mt-0.5"
+                {/* Accent rail — the primary status cue at a glance */}
+                <span
+                  className={`absolute left-0 top-0 bottom-0 w-[3px] ${cfg.rail}`}
+                  aria-hidden="true"
                 />
-                <p className="flex-1 text-sm font-black text-gray-900 leading-snug break-words">
+                <span
+                  className={`shrink-0 flex items-center justify-center w-7 h-7 rounded-full ${cfg.chip} ${cfg.ink}`}
+                  aria-hidden="true"
+                >
+                  <cfg.Icon className="w-4 h-4" strokeWidth={2.5} />
+                </span>
+                <p className="flex-1 pt-1 text-sm font-medium text-sky-ink leading-snug break-words">
                   {toast.message}
                 </p>
                 <button
                   onClick={() => dismiss(toast.id)}
                   aria-label="Dismiss"
-                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded-md hover:bg-black/15 transition-colors"
+                  className="shrink-0 mt-1 w-5 h-5 flex items-center justify-center rounded-md text-sky-ink-3 hover:bg-sky-ink/8 hover:text-sky-ink transition-colors"
                 >
-                  <X className="w-3.5 h-3.5 text-gray-900" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             );

@@ -1,5 +1,8 @@
 import { useState } from "react";
 
+// Sky-Pastel segmented control (design-system §5: "Segmented/Tabs → thanh kính,
+// pill active gradient deep"). Presentation only — the `selected` state and the
+// three option keys are unchanged.
 const ChartTab: React.FC = () => {
   const [selected, setSelected] = useState<
     "optionOne" | "optionTwo" | "optionThree"
@@ -7,14 +10,14 @@ const ChartTab: React.FC = () => {
 
   const getButtonClass = (option: "optionOne" | "optionTwo" | "optionThree") =>
     selected === option
-      ? "shadow-theme-xs text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-      : "text-gray-500 dark:text-gray-400";
+      ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill"
+      : "text-sky-ink-2 hover:text-sky-ink hover:bg-white/50";
 
   return (
-    <div className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900">
+    <div className="flex items-center gap-0.5 rounded-sky-sm sky-glass-chip p-1">
       <button
         onClick={() => setSelected("optionOne")}
-        className={`px-3 py-2 font-medium w-full rounded-md text-theme-sm hover:text-gray-900   dark:hover:text-white ${getButtonClass(
+        className={`px-3 py-2 font-medium w-full rounded-sky-chip text-theme-sm transition ${getButtonClass(
           "optionOne"
         )}`}
       >
@@ -23,7 +26,7 @@ const ChartTab: React.FC = () => {
 
       <button
         onClick={() => setSelected("optionTwo")}
-        className={`px-3 py-2 font-medium w-full rounded-md text-theme-sm hover:text-gray-900   dark:hover:text-white ${getButtonClass(
+        className={`px-3 py-2 font-medium w-full rounded-sky-chip text-theme-sm transition ${getButtonClass(
           "optionTwo"
         )}`}
       >
@@ -32,7 +35,7 @@ const ChartTab: React.FC = () => {
 
       <button
         onClick={() => setSelected("optionThree")}
-        className={`px-3 py-2 font-medium w-full rounded-md text-theme-sm hover:text-gray-900   dark:hover:text-white ${getButtonClass(
+        className={`px-3 py-2 font-medium w-full rounded-sky-chip text-theme-sm transition ${getButtonClass(
           "optionThree"
         )}`}
       >

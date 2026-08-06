@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { ArrowLeft, Check, MailCheck } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import AuthLayout from "./AuthPageLayout";
 import authApi from "../../api/authApi";
+import {
+  AuthError,
+  AuthField,
+  AuthGate,
+  AuthPane,
+  AuthSubmit,
+  authLink,
+} from "../../components/auth/authSky";
 
 export default function ForgotPassword() {
   const { t } = useTranslation();
@@ -35,80 +44,68 @@ export default function ForgotPassword() {
     <>
       <PageMeta title="Habit - Forgot Password" description="Reset your HabitEvolve account password." />
       <AuthLayout>
-        <section
-          className="hidden md:flex w-1/2 items-center justify-center relative p-12"
-          style={{ backgroundColor: "#1D2939" }}
+        {/* Same gate as sign-in/sign-up so the three screens are one flow — the old
+            inline dark panel and warm pill styles are gone. */}
+        <AuthGate
+          mascotAlt={t("auth.gate.mascotAlt")}
+          slogan="Forgot Password?"
+          tagline="Enter your email and we'll send you a temporary password."
+        />
+
+        <AuthPane
+          title="Forgot Password?"
+          subtitle="Enter your email and we'll send you a temporary password."
         >
-          <img
-            alt="Hero Fox Mascot"
-            className="w-full h-full object-cover relative z-10"
-            src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
-          />
-        </section>
-
-        <section className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-16 lg:p-24">
-          <div className="w-full max-w-md flex flex-col items-center">
-            <div className="text-center mb-6">
-              <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{ color: "#5d3b2a" }}>
-                Forgot Password?
-              </h1>
-              <p className="text-gray-500 text-lg">
-                Enter your email and we'll send you a temporary password.
-              </p>
+          {sent ? (
+            <div className="space-y-6 text-center">
+              {/* Success is teal, never green — rail + tint + glyph, three cues. */}
+              <div className="relative overflow-hidden rounded-sky-md bg-sky-teal/10 px-4 py-5 ring-1 ring-sky-teal/28">
+                <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-teal" aria-hidden="true" />
+                <span className="inline-grid place-items-center w-10 h-10 mx-auto mb-3 rounded-full bg-sky-teal-bg text-sky-teal">
+                  <MailCheck className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <p className="text-sm font-medium text-sky-ink-2">
+                  If an account exists for{" "}
+                  <strong className="font-semibold text-sky-ink">{email}</strong>, a temporary
+                  password has been sent to that email address.
+                </p>
+                <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-sky-teal">
+                  <Check className="w-3.5 h-3.5" aria-hidden="true" /> Instructions sent
+                </p>
+              </div>
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center gap-2 rounded-sky-md bg-linear-to-b from-sky-deep-lo to-sky-deep px-8 py-3.5 font-display text-base font-semibold text-white shadow-[0_10px_24px_-10px_rgba(36,52,77,0.55)] ring-1 ring-sky-deep/30 transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.99]"
+              >
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to Sign In
+              </Link>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              {error && <AuthError message={error} />}
 
-            {sent ? (
-              <div className="w-full space-y-6 text-center">
-                <div className="w-full p-4 bg-green-100 text-green-700 text-sm rounded-lg font-medium border border-green-200">
-                  If an account exists for <strong>{email}</strong>, a temporary password has been sent to that email address.
-                </div>
-                <Link
-                  to="/"
-                  className="inline-block btn-primary py-4 px-8 text-white text-lg font-bold shadow-sm"
-                  style={{ backgroundColor: "#f27b3d", borderRadius: "9999px" }}
-                >
-                  Back to Sign In
+              <AuthField
+                id="reset-email"
+                name="email"
+                type="email"
+                label={t("auth.common.emailLabel")}
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                placeholder={t("auth.common.emailPlaceholder")}
+              />
+
+              <AuthSubmit loading={submitting}>
+                {submitting ? "Sending…" : "Send Reset Instructions"}
+              </AuthSubmit>
+
+              <div className="text-center">
+                <Link to="/" className={`inline-flex items-center gap-1.5 text-sm ${authLink}`}>
+                  <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to Sign In
                 </Link>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="w-full space-y-4">
-                {error && (
-                  <div className="w-full p-3 bg-red-100 text-red-600 text-sm rounded-lg text-center font-medium border border-red-200">
-                    {error}
-                  </div>
-                )}
-
-                <div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                    className="pill-input w-full border-2 focus:ring-0 text-gray-700 text-lg"
-                    style={{ borderColor: "#a2e8c1", borderRadius: "9999px", paddingLeft: "1.5rem", paddingRight: "1.5rem", height: "3.5rem" }}
-                    placeholder={t("auth.common.emailPlaceholder")}
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={`btn-primary w-full py-4 text-white text-xl font-bold mt-2 shadow-sm ${submitting ? "opacity-70 cursor-not-allowed" : ""}`}
-                  style={{ backgroundColor: "#f27b3d", borderRadius: "9999px", transition: "background-color 0.2s" }}
-                >
-                  {submitting ? "Sending…" : "Send Reset Instructions"}
-                </button>
-
-                <div className="text-center mt-4">
-                  <Link to="/" className="font-medium underline hover:opacity-80 text-sm" style={{ color: "#5d3b2a" }}>
-                    Back to Sign In
-                  </Link>
-                </div>
-              </form>
-            )}
-          </div>
-        </section>
+            </form>
+          )}
+        </AuthPane>
       </AuthLayout>
     </>
   );

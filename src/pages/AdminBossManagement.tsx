@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   Swords, Plus, Pencil, Settings2, X, Save,
   ChevronLeft, ChevronRight, Loader2, Filter, Users,
   CalendarDays, Trash2, CalendarClock,
+  Upload, Archive, AlertTriangle, CheckCircle2,
+  ScrollText, Package, Leaf, Sword, Flame, Shield, Medal, Crown,
+  Star, Trophy, Zap, Activity, Coins, CalendarRange, Clock,
+  BookOpen, Skull, Check,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -52,9 +57,9 @@ const EMPTY_MODE: BossModePayload = {
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
 const inputCls = [
-  "w-full px-4 py-2.5 rounded-sky-chip border border-sky-surf-border bg-white",
-  "text-sm font-medium text-sky-ink",
-  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20",
+  "w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80",
+  "text-sky-ink text-sm font-medium transition-shadow",
+  "focus:outline-none focus:ring-2 focus:ring-sky-deep/45",
   "placeholder:text-sky-ink-3",
 ].join(" ");
 
@@ -93,61 +98,68 @@ const weekBounds = (dateStr: string): { start: string; end: string } | null => {
   return { start: toYmd(mon), end: toYmd(sun) };
 };
 
-const SI = (src: string) => (
-  <img src={src} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
-);
-
 // ── ICONS (lucide-react wrappers) ─────────────────────────────────────────────
 const SwordsIcon = ({ size = 20 }: { size?: number }) => <Swords width={size} height={size} />;
 const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animate-spin" width={size} height={size} />;
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
-const STATUS_CFG: Record<string, { cls: string; icon: ReactNode }> = {
-  "":        { cls: "bg-gray-100 text-gray-600",     icon: <Filter className="w-3.5 h-3.5 shrink-0" /> },
-  Draft:     { cls: "bg-warning-100 text-warning-800", icon: SI("/icon/Item/Scroll/64px/Scroll 1st 64px.png") },
-  Published: { cls: "bg-success-100 text-success-800", icon: SI("/icon/UI/Checkmark/64px/Checkmark 1st 64px.png") },
-  Archived:  { cls: "bg-gray-100 text-gray-600",     icon: SI("/icon/Item/Chest/64px/Chest 1st 64px.png") },
+// Each status carries a glyph as well as a hue, so the lifecycle stays readable
+// without colour: a draft is still being written, published is the only teal
+// state on the screen, archived is boxed away.
+const STATUS_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
+  "":        { cls: "sky-badge-neutral", Icon: Filter },
+  Draft:     { cls: "sky-badge-pending", Icon: ScrollText },
+  Published: { cls: "sky-badge-success", Icon: Check },
+  Archived:  { cls: "sky-badge-neutral", Icon: Package },
 };
 const STATUS_KEYS = ["", "Draft", "Published", "Archived"] as const;
 
 const StatusBadge = ({ status }: { status: BossTemplateStatus }) => {
   const c = STATUS_CFG[status] ?? STATUS_CFG.Draft;
-  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${c.cls}`}>{c.icon} {status}</span>;
+  return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3.5 h-3.5 shrink-0" /> {status}</span>;
 };
 
-const MODE_CFG: Record<BossModeType, { cls: string; cardBg: string; icon: ReactNode; iconSrc: string }> = {
-  Easy:   { cls: "bg-success-100 text-success-800", cardBg: "bg-success-50", icon: SI("/icon/Nature/Leaf/64px/Leaf 1st 64px.png"), iconSrc: "/icon/Nature/Leaf/64px/Leaf 1st 64px.png" },
-  Normal: { cls: "bg-blue-100 text-blue-800",       cardBg: "bg-blue-50",    icon: SI("/icon/Item/Sword/64px/Sword 1st 64px.png"), iconSrc: "/icon/Item/Sword/64px/Sword 1st 64px.png" },
-  Hard:   { cls: "bg-error-100 text-error-800",     cardBg: "bg-error-50",   icon: SI("/icon/Main/Fire 2/64w/Fire 64px.png"),      iconSrc: "/icon/Main/Fire 2/64w/Fire 64px.png" },
+// Difficulty is a temperature ramp, not a good/bad axis: pale cool → saturated
+// cool → hot, with a distinct glyph at each step. teal is deliberately absent —
+// everywhere else in the console teal means "live/approved", and an Easy mode is
+// not an approval. Hard borrows the warm damage accent, never destructive rose.
+const MODE_CFG: Record<BossModeType, { cls: string; cardBg: string; plate: string; Icon: LucideIcon }> = {
+  Easy:   { cls: "bg-sky-3/70 text-sky-deep",        cardBg: "bg-sky-4/70",   plate: "bg-sky-deep/10 text-sky-deep",    Icon: Leaf },
+  Normal: { cls: "bg-sky-deep/14 text-sky-deep",     cardBg: "bg-sky-deep/6", plate: "bg-sky-deep/16 text-sky-deep",    Icon: Sword },
+  Hard:   { cls: "bg-sky-dmg/14 text-sky-dmg-deep",  cardBg: "bg-sky-dmg/7",  plate: "bg-sky-dmg/14 text-sky-dmg-deep", Icon: Flame },
 };
 const ModeBadge = ({ mode }: { mode: BossModeType }) => {
   const c = MODE_CFG[mode] ?? MODE_CFG.Easy;
-  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${c.cls}`}>{c.icon} {mode}</span>;
+  return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3.5 h-3.5 shrink-0" /> {mode}</span>;
 };
 
-const TIER_CFG: Record<PackageTier, { cls: string; icon: ReactNode }> = {
-  Free:    { cls: "bg-gray-100 text-gray-700",     icon: SI("/icon/Item/Shield/64px/Shield 1st 64px.png") },
-  Basic:   { cls: "bg-blue-100 text-blue-700",     icon: SI("/icon/Item/Medal/64px/Bronze Medal 1st 64px.png") },
-  Premium: { cls: "bg-purple-100 text-purple-800", icon: SI("/icon/Item/Crown/64px/Crown 1st 64px.png") },
+// Entitlement tiers are a value ramp (neutral → cool → epic violet), not a
+// severity ramp — nothing here is a warning, so no warm hue is spent on them.
+const TIER_CFG: Record<PackageTier, { cls: string; Icon: LucideIcon }> = {
+  Free:    { cls: "sky-badge-neutral", Icon: Shield },
+  Basic:   { cls: "sky-badge-info",    Icon: Medal },
+  Premium: { cls: "sky-badge-epic",    Icon: Crown },
 };
 const TierBadge = ({ tier }: { tier: PackageTier }) => {
   const c = TIER_CFG[tier] ?? TIER_CFG.Free;
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${c.cls}`}>{c.icon} {tier}</span>;
+  return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3 h-3 shrink-0" /> {tier}</span>;
 };
 
-const REWARD_CFG: Record<RewardTierType, { cls: string; icon: ReactNode }> = {
-  BASIC:    { cls: "bg-gray-100 text-gray-700",     icon: SI("/icon/Item/Chest/64px/Chest 1st 64px.png") },
-  STANDARD: { cls: "bg-blue-100 text-blue-700",     icon: SI("/icon/Main/Star/64px/Golden Star 1st 64px.png") },
-  PREMIUM:  { cls: "bg-warning-100 text-warning-800", icon: SI("/icon/Item/Trophy/64w/Golden Trophy 1st 64px.png") },
+// Reward tiers climb towards the reward colour (neutral → cool → peach). The
+// peach at the top means "best payout", not "attention needed".
+const REWARD_CFG: Record<RewardTierType, { cls: string; Icon: LucideIcon }> = {
+  BASIC:    { cls: "sky-badge-neutral", Icon: Package },
+  STANDARD: { cls: "sky-badge-info",    Icon: Star },
+  PREMIUM:  { cls: "sky-badge-pending", Icon: Trophy },
 };
 const RewardBadge = ({ tier }: { tier: RewardTierType }) => {
   const c = REWARD_CFG[tier] ?? REWARD_CFG.BASIC;
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${c.cls}`}>{c.icon} {tier}</span>;
+  return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3 h-3 shrink-0" /> {tier}</span>;
 };
 
 // ── LABEL ─────────────────────────────────────────────────────────────────────
 const Label = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-xs font-bold text-sky-ink-2 uppercase tracking-wide mb-1.5">{children}</p>
+  <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] mb-1.5">{children}</p>
 );
 
 // ── MODE FIELDSET (one Easy/Normal/Hard block inside the atomic create form) ────
@@ -164,9 +176,11 @@ const ModeFieldset = ({ mode, value, onChange }: {
       className={inputCls} />
   );
   return (
-    <div className={`${c.cardBg} rounded-sky-card p-4 space-y-3`}>
-      <div className="flex items-center gap-2">
-        <img src={c.iconSrc} alt="" className="w-6 h-6 object-contain shrink-0" />
+    <div className={`${c.cardBg} rounded-sky-card border border-white/70 p-4 space-y-3`}>
+      <div className="flex items-center gap-2.5">
+        <span className={`grid place-items-center w-8 h-8 rounded-sky-chip shrink-0 ${c.plate}`}>
+          <c.Icon className="w-4 h-4" />
+        </span>
         <ModeBadge mode={mode} />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -267,17 +281,19 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm p-4">
-      <SkyCard variant="admin" className={`modal-content p-0 overflow-hidden w-full ${isEdit ? "max-w-xl" : "max-w-3xl"} max-h-[92vh] flex flex-col`}>
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-abyss/45 backdrop-blur-md p-4">
+      <SkyCard variant="admin" className={`modal-content relative p-0 overflow-hidden w-full ${isEdit ? "max-w-xl" : "max-w-3xl"} max-h-[92vh] flex flex-col sky-in`}>
+        {/* Violet rail — boss templates are game content, not an operational record. */}
+        <span className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-violet to-sky-violet-deep z-10" />
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-purple-50 shrink-0">
+        <div className="relative flex items-center justify-between px-6 py-4 border-b border-white/70 bg-white/45 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-sky-chip bg-purple-100 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-sky-chip bg-sky-violet/12 text-sky-violet-deep flex items-center justify-center shrink-0">
               <SwordsIcon size={17} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-sky-ink">{isEdit ? t("admin.bossManagement.form.editTitle") : t("admin.bossManagement.form.newTitle")}</h2>
-              <p className="text-xs font-medium text-sky-ink-3">{isEdit ? template.themeName : t("admin.bossManagement.form.subtitle")}</p>
+              <h2 className="font-display text-base font-semibold text-sky-ink">{isEdit ? t("admin.bossManagement.form.editTitle") : t("admin.bossManagement.form.newTitle")}</h2>
+              <p className="text-xs text-sky-ink-3">{isEdit ? template.themeName : t("admin.bossManagement.form.subtitle")}</p>
             </div>
           </div>
           <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}>
@@ -286,7 +302,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="relative flex-1 overflow-y-auto p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label>{t("admin.bossManagement.form.themeNameLabel")}</Label>
@@ -300,15 +316,17 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
             </div>
 
             {isEdit ? (
-              <div className="flex items-start gap-2 px-3 py-2.5 bg-blue-50 rounded-sky-chip">
-                <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
-                <p className="text-xs font-semibold text-blue-800">{t("admin.bossManagement.form.editModesHint")}</p>
+              <div className="relative overflow-hidden flex items-start gap-2 pl-4 pr-3 py-2.5 bg-sky-deep/8 rounded-sky-chip">
+                <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />
+                <BookOpen className="w-4 h-4 shrink-0 mt-0.5 text-sky-deep" />
+                <p className="text-xs font-medium text-sky-deep">{t("admin.bossManagement.form.editModesHint")}</p>
               </div>
             ) : (
               <>
-                <div className="flex items-start gap-2 px-3 py-2.5 bg-blue-50 rounded-sky-chip">
-                  <img src="/icon/Item/Book/64px/Blue Book 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
-                  <p className="text-xs font-semibold text-blue-800">{t("admin.bossManagement.form.createModesHint")}</p>
+                <div className="relative overflow-hidden flex items-start gap-2 pl-4 pr-3 py-2.5 bg-sky-deep/8 rounded-sky-chip">
+                  <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />
+                  <BookOpen className="w-4 h-4 shrink-0 mt-0.5 text-sky-deep" />
+                  <p className="text-xs font-medium text-sky-deep">{t("admin.bossManagement.form.createModesHint")}</p>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                   {MODE_ORDER.map(m => (
@@ -319,17 +337,18 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
             )}
 
             {(formError || fieldErrors.length > 0) && (
-              <div className="text-xs font-bold text-error-600 bg-error-50 rounded-sky-chip px-3 py-2 space-y-1">
-                {formError && <p>{formError}</p>}
+              <div className="relative overflow-hidden text-xs font-medium text-sky-rose-deep bg-sky-rose/12 border border-sky-rose/25 rounded-sky-chip pl-4 pr-3 py-2.5 space-y-1">
+                <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+                {formError && <p className="font-semibold">{formError}</p>}
                 {fieldErrors.length > 0 && (
-                  <ul className="list-disc list-inside font-semibold">
+                  <ul className="list-disc list-inside">
                     {fieldErrors.map((msg, i) => <li key={i}>{msg}</li>)}
                   </ul>
                 )}
               </div>
             )}
 
-            <div className="flex gap-3 pt-2 border-t border-gray-100">
+            <div className="flex gap-3 pt-2 border-t border-white/70">
               <SkyButton type="button" variant="secondary" onClick={onClose} disabled={saving} className="flex-1">{t("admin.bossManagement.form.cancel")}</SkyButton>
               <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <><Spinner size={13} /> {t("admin.bossManagement.form.saving")}</> : <><Save className="w-3.5 h-3.5" /> {isEdit ? t("admin.bossManagement.form.update") : t("admin.bossManagement.form.create")}</>}
@@ -390,18 +409,19 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm p-4">
-      <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-5xl max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-abyss/45 backdrop-blur-md p-4">
+      <SkyCard variant="admin" className="modal-content relative p-0 overflow-hidden w-full max-w-5xl max-h-[92vh] flex flex-col sky-in">
+        <span className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-deep-lo to-sky-deep z-10" />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
+        <div className="relative flex items-center justify-between px-6 py-4 border-b border-white/70 bg-white/45 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-sky-chip bg-orange-100 flex items-center justify-center">
-              <Settings2 className="w-3 h-3" />
+            <div className="w-9 h-9 rounded-sky-chip bg-sky-deep/10 text-sky-deep flex items-center justify-center shrink-0">
+              <Settings2 className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-sky-ink">{t("admin.bossManagement.modesModal.title")}</h2>
-              <p className="text-xs font-medium text-sky-ink-3">{templateName}</p>
+              <h2 className="font-display text-base font-semibold text-sky-ink">{t("admin.bossManagement.modesModal.title")}</h2>
+              <p className="text-xs text-sky-ink-3">{templateName}</p>
             </div>
           </div>
           <SkyButton type="button" variant="ghost" size="icon" onClick={onClose}>
@@ -410,78 +430,82 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+        <div className="relative flex-1 overflow-hidden flex flex-col lg:flex-row">
 
           {/* ── LEFT: CURRENT MODES ───────────────────────────────────── */}
-          <div className="lg:w-[52%] border-b lg:border-b-0 lg:border-r border-gray-200 overflow-y-auto p-5 space-y-3">
-            <p className="text-[10px] font-bold text-sky-ink-3 uppercase tracking-widest sticky top-0 bg-white pb-2">
-              {t("admin.bossManagement.modesModal.currentModes")} ({tpl?.modes.length ?? 0} / 3)
+          <div className="lg:w-[52%] border-b lg:border-b-0 lg:border-r border-white/70 overflow-y-auto p-5 space-y-3">
+            <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] sticky top-0 bg-white/80 backdrop-blur-sm pb-2 z-10">
+              {t("admin.bossManagement.modesModal.currentModes")} (<span className="tabular-nums">{tpl?.modes.length ?? 0}</span> / 3)
             </p>
 
             {loading ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-sky-ink-3">
-                <Spinner size={24} /><span className="text-sm font-bold">Loading…</span>
+              <div className="flex items-center justify-center gap-2 py-12 text-sky-ink-2">
+                <Spinner size={24} /><span className="text-sm font-medium">Loading…</span>
               </div>
             ) : !tpl || tpl.modes.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-12 text-sky-ink-3">
-                <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
-                <p className="font-bold text-sky-ink-2">{t("admin.bossManagement.modesModal.noModes")}</p>
-                <p className="text-xs font-medium">{t("admin.bossManagement.modesModal.addModeHint")}</p>
+              <div className="flex flex-col items-center gap-2.5 py-12">
+                <span className="grid place-items-center w-14 h-14 rounded-full bg-sky-violet/10 text-sky-violet-deep">
+                  <Skull className="w-6 h-6" />
+                </span>
+                <p className="font-display font-semibold text-sky-ink">{t("admin.bossManagement.modesModal.noModes")}</p>
+                <p className="text-xs text-sky-ink-2">{t("admin.bossManagement.modesModal.addModeHint")}</p>
               </div>
             ) : (
               tpl.modes.map(m => {
                 const mc = MODE_CFG[m.mode] ?? MODE_CFG.Easy;
                 return (
-                  <div key={m.mode} className={`${mc.cardBg} rounded-sky-card p-4`}>
+                  <div key={m.mode} className={`${mc.cardBg} rounded-sky-card border border-white/70 p-4 sky-lift`}>
                     {/* Mode header */}
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <img src={mc.iconSrc} alt="" className="w-8 h-8 object-contain shrink-0" />
-                        <div>
+                      <div className="flex items-center gap-2.5">
+                        <span className={`grid place-items-center w-9 h-9 rounded-sky-md shrink-0 ${mc.plate}`}>
+                          <mc.Icon className="w-4 h-4" />
+                        </span>
+                        <div className="space-y-1">
                           <ModeBadge mode={m.mode} />
-                          <p className="text-[10px] font-bold text-sky-ink-3 mt-0.5">Min: <TierBadge tier={m.minTier} /></p>
+                          <p className="text-[10px] text-sky-ink-3 flex items-center gap-1">Min: <TierBadge tier={m.minTier} /></p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-bold text-sky-ink-3 uppercase">Boss HP</p>
-                        <p className="text-xl font-bold text-sky-ink">{m.bossHp.toLocaleString()}</p>
+                        <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.12em]">Boss HP</p>
+                        <p className="font-display text-xl font-semibold text-sky-ink tabular-nums">{m.bossHp.toLocaleString()}</p>
                       </div>
                     </div>
 
                     {/* Stats grid */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-sky-ink-3 font-medium"><Users className="w-3.5 h-3.5 shrink-0" /> Party</span>
-                        <span className="font-bold text-sky-ink-2">{m.partyMin} – {m.partyMax}</span>
+                        <span className="flex items-center gap-1 text-sky-ink-3"><Users className="w-3.5 h-3.5 shrink-0" /> Party</span>
+                        <span className="font-semibold text-sky-ink-2 tabular-nums">{m.partyMin} – {m.partyMax}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-sky-ink-3 font-medium"><img src="/icon/Main/Lighting/64px/Lighting 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Max Dmg/Q</span>
-                        <span className="font-bold text-sky-ink-2">{m.maxDamagePerQuest.toLocaleString()}</span>
+                        <span className="flex items-center gap-1 text-sky-ink-3"><Zap className="w-3.5 h-3.5 shrink-0" /> Max Dmg/Q</span>
+                        <span className="font-semibold text-sky-ink-2 tabular-nums">{m.maxDamagePerQuest.toLocaleString()}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-sky-ink-3 font-medium"><img src="/icon/Main/Stats/64px/Stats 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Quests/Day</span>
-                        <span className="font-bold text-sky-ink-2">{m.maxQuestPerMemberPerDay}</span>
+                        <span className="flex items-center gap-1 text-sky-ink-3"><Activity className="w-3.5 h-3.5 shrink-0" /> Quests/Day</span>
+                        <span className="font-semibold text-sky-ink-2 tabular-nums">{m.maxQuestPerMemberPerDay}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-sky-ink-3 font-medium">
-                          <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Gold/Q
+                        <span className="flex items-center gap-1 text-sky-ink-3">
+                          <Coins className="w-3.5 h-3.5 shrink-0" /> Gold/Q
                         </span>
-                        <span className="font-bold text-sky-ink-2">{m.mGoldRewardCapPerQuest} mG</span>
+                        <span className="font-semibold text-sky-ink-2 tabular-nums">{m.mGoldRewardCapPerQuest} mG</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-sky-ink-3 font-medium"><img src="/icon/Item/Calendar/64px/Calendar 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Quests/Wk</span>
-                        <span className="font-bold text-sky-ink-2">{m.maxPartyQuestPerWeek}</span>
+                        <span className="flex items-center gap-1 text-sky-ink-3"><CalendarRange className="w-3.5 h-3.5 shrink-0" /> Quests/Wk</span>
+                        <span className="font-semibold text-sky-ink-2 tabular-nums">{m.maxPartyQuestPerWeek}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-sky-ink-3 font-medium"><img src="/icon/Item/Clock/64px/Clock 1st 64px.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" /> Deadline</span>
-                        <span className="font-bold text-sky-ink-2 text-[10px]">—</span>
+                        <span className="flex items-center gap-1 text-sky-ink-3"><Clock className="w-3.5 h-3.5 shrink-0" /> Deadline</span>
+                        <span className="font-semibold text-sky-ink-2 text-[10px]">—</span>
                       </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-black/10">
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-sky-ink/10">
                       <RewardBadge tier={m.rewardTier} />
-                      <span className="text-[10px] text-sky-ink-3 font-medium">Proof: per package</span>
+                      <span className="text-[10px] text-sky-ink-3">Proof: per package</span>
                     </div>
                   </div>
                 );
@@ -490,21 +514,23 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
           </div>
 
           {/* ── RIGHT: ADD MODE FORM ──────────────────────────────────── */}
-          <div className="lg:w-[48%] overflow-y-auto p-5">
-            <p className="text-[10px] font-bold text-sky-ink-3 uppercase tracking-widest mb-4">
+          <div className="lg:w-[48%] overflow-y-auto p-5 bg-sky-ink/[0.035]">
+            <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] mb-4">
               {tpl && tpl.modes.length >= 3 ? (
               <span className="inline-flex items-center gap-1.5">
                 {t("admin.bossManagement.modesModal.allConfigured")}
-                <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-3 h-3 object-contain" />
+                <Check className="w-3 h-3 text-sky-teal" />
               </span>
             ) : t("admin.bossManagement.modesModal.addMode")}
             </p>
 
             {tpl && tpl.modes.length >= 3 ? (
-              <div className="flex flex-col items-center gap-3 py-12 text-sky-ink-3">
-                <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
-                <p className="font-bold text-sky-ink-2">{t("admin.bossManagement.modesModal.allConfiguredHint")}</p>
-                <p className="text-xs font-medium text-center">{t("admin.bossManagement.modesModal.allModesSet")}</p>
+              <div className="flex flex-col items-center gap-3 py-12">
+                <span className="grid place-items-center w-16 h-16 rounded-full bg-sky-teal-bg text-sky-teal">
+                  <CheckCircle2 className="w-8 h-8" />
+                </span>
+                <p className="font-display font-semibold text-sky-ink">{t("admin.bossManagement.modesModal.allConfiguredHint")}</p>
+                <p className="text-xs text-sky-ink-2 text-center">{t("admin.bossManagement.modesModal.allModesSet")}</p>
               </div>
             ) : (
               <form onSubmit={handleAddMode} className="space-y-3">
@@ -518,7 +544,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                       {(["Easy", "Normal", "Hard"] as BossModeType[]).map(m => (
                         <option key={m} value={m}
                           disabled={tpl?.modes.some(ex => ex.mode === m)}>
-                          {m}{tpl?.modes.some(ex => ex.mode === m) ? " ✓" : ""}
+                          {m}{tpl?.modes.some(ex => ex.mode === m) ? " (added)" : ""}
                         </option>
                       ))}
                     </select>
@@ -579,7 +605,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                   </div>
                   <div>
                     <Label>
-                      <img src="/icon/Currency/Coin/64px/Golden Coin 1st 64px.png" alt="" className="inline w-4 h-4 mr-1 align-text-bottom" />
+                      <Coins className="inline w-3.5 h-3.5 mr-1 align-text-bottom text-sky-peach-deep" />
                       {t("admin.bossManagement.modesModal.goldCapLabel")}
                     </Label>
                     <input type="number" min={0} value={form.mGoldRewardCapPerQuest}
@@ -600,7 +626,10 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 </div>
 
                 {formError && (
-                  <p className="text-xs font-bold text-error-600 bg-error-50 rounded-sky-chip px-3 py-2">{formError}</p>
+                  <p className="relative overflow-hidden text-xs font-medium text-sky-rose-deep bg-sky-rose/12 border border-sky-rose/25 rounded-sky-chip pl-4 pr-3 py-2.5">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+                    {formError}
+                  </p>
                 )}
 
                 <div className="flex gap-3 pt-1">
@@ -649,34 +678,36 @@ const StatusConfirmModal = ({ templateId, templateName, action, onClose, onAlert
   const isPublish = action === "publish";
 
   return createPortal(
-    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm p-4">
-      <SkyCard variant="admin" className="modal-content w-full max-w-sm space-y-4">
-        <div className="flex items-center gap-3">
-          <img
-            src={isPublish ? "/icon/Main/Upgrade/64px/Green Upgrade 1st 64px.png" : "/icon/Item/Chest/64px/Chest 1st 64px.png"}
-            alt="" className="w-9 h-9 object-contain shrink-0"
-          />
-          <div>
-            <h3 className="font-bold text-sky-ink">{isPublish ? t("admin.bossManagement.publishModal.title") : t("admin.bossManagement.archiveModal.title")}</h3>
-            <p className="text-xs font-medium text-sky-ink-3 mt-0.5">"{templateName}"</p>
+    <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-abyss/45 backdrop-blur-md p-4">
+      <SkyCard variant="admin" className="modal-content sky-in relative w-full max-w-sm space-y-4 overflow-hidden">
+        {/* Rail carries the outcome: teal = goes live, peach = pulled from rotation. */}
+        <span className={`absolute inset-x-0 top-0 h-1 ${isPublish ? "bg-sky-teal" : "bg-linear-to-r from-sky-peach to-sky-peach-deep"}`} />
+        <div className="relative flex items-center gap-3 pt-1">
+          <span className={`grid place-items-center w-10 h-10 rounded-sky-md shrink-0 ${isPublish ? "bg-sky-teal-bg text-sky-teal" : "bg-sky-peach/20 text-sky-peach-deep"}`}>
+            {isPublish ? <Upload className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-display text-base font-semibold text-sky-ink">{isPublish ? t("admin.bossManagement.publishModal.title") : t("admin.bossManagement.archiveModal.title")}</h3>
+            <p className="text-xs font-medium text-sky-ink-3 mt-0.5 truncate">“{templateName}”</p>
           </div>
         </div>
-        <p className="text-sm font-medium text-sky-ink-2">
+        <p className="relative text-sm font-medium text-sky-ink-2 leading-relaxed">
           {isPublish
             ? t("admin.bossManagement.publishModal.message")
             : t("admin.bossManagement.archiveModal.message")}
         </p>
         {!isPublish && (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-warning-50 rounded-sky-chip">
-            <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
-            <p className="text-xs font-semibold text-warning-800">{t("admin.bossManagement.archiveModal.warning")}</p>
+          <div className="relative flex items-start gap-2.5 overflow-hidden pl-4 pr-3 py-2.5 bg-sky-peach/12 border border-sky-peach/25 rounded-sky-chip">
+            <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach-deep" />
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-px text-sky-peach-deep" />
+            <p className="text-xs font-semibold text-sky-peach-deep">{t("admin.bossManagement.archiveModal.warning")}</p>
           </div>
         )}
-        <div className="flex gap-3 pt-1">
+        <div className="relative flex gap-3 pt-1">
           <SkyButton type="button" variant="secondary" onClick={onClose} disabled={loading} className="flex-1">{t("admin.bossManagement.form.cancel")}</SkyButton>
           <SkyButton type="button" variant={isPublish ? "success" : "primary"} onClick={handleConfirm} disabled={loading} className="flex-1">
             {loading ? <><Spinner size={13} /> {isPublish ? t("admin.bossManagement.publishModal.publishing") : t("admin.bossManagement.archiveModal.archiving")}</> : (
-              <><img src={isPublish ? "/icon/Main/Upgrade/64px/Green Upgrade 1st 64px.png" : "/icon/Item/Chest/64px/Chest 1st 64px.png"} alt="" className="w-3.5 h-3.5 object-contain" /> {isPublish ? t("admin.bossManagement.publishModal.confirm") : t("admin.bossManagement.archiveModal.confirm")}</>
+              <>{isPublish ? <Upload className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />} {isPublish ? t("admin.bossManagement.publishModal.confirm") : t("admin.bossManagement.archiveModal.confirm")}</>
             )}
           </SkyButton>
         </div>
@@ -764,12 +795,12 @@ const ScheduleCard = ({ reloadKey, onAlert }: {
   return (
     <SkyCard variant="admin" className="p-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 bg-blue-50">
-        <div className="w-9 h-9 rounded-sky-chip bg-blue-100 flex items-center justify-center shrink-0">
-          <CalendarDays className="w-4 h-4" />
-        </div>
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/70 bg-white/45">
+        <span className="grid place-items-center w-10 h-10 rounded-sky-md bg-sky-deep/10 text-sky-deep shrink-0">
+          <CalendarDays className="w-5 h-5" />
+        </span>
         <div>
-          <h3 className="text-base font-bold text-sky-ink">{t("admin.bossManagement.schedule.title")}</h3>
+          <h3 className="font-display text-base font-semibold text-sky-ink">{t("admin.bossManagement.schedule.title")}</h3>
           <p className="text-xs font-medium text-sky-ink-3">{t("admin.bossManagement.schedule.subtitle")}</p>
         </div>
       </div>
@@ -777,9 +808,10 @@ const ScheduleCard = ({ reloadKey, onAlert }: {
       <div className="p-5 space-y-4">
         {/* Assign form */}
         {publishedTemplates.length === 0 ? (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-warning-50 rounded-sky-chip">
-            <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-4 h-4 object-contain shrink-0 mt-0.5" />
-            <p className="text-xs font-semibold text-warning-800">{t("admin.bossManagement.schedule.noPublished")}</p>
+          <div className="relative flex items-start gap-2.5 overflow-hidden pl-4 pr-3 py-2.5 bg-sky-peach/12 border border-sky-peach/25 rounded-sky-chip">
+            <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach-deep" />
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-px text-sky-peach-deep" />
+            <p className="text-xs font-semibold text-sky-peach-deep">{t("admin.bossManagement.schedule.noPublished")}</p>
           </div>
         ) : (
           <form onSubmit={handleAssign} className="flex flex-col sm:flex-row sm:items-end gap-3">
@@ -803,7 +835,7 @@ const ScheduleCard = ({ reloadKey, onAlert }: {
                 className={`${inputCls} cursor-pointer`}
               />
               {bounds && (
-                <p className="text-[11px] font-bold text-sky-deep mt-1">
+                <p className="text-[11px] font-semibold text-sky-deep tabular-nums mt-1.5">
                   {t("admin.bossManagement.schedule.weekPreview", { start: fmtDate(bounds.start), end: fmtDate(bounds.end) })}
                 </p>
               )}
@@ -817,69 +849,77 @@ const ScheduleCard = ({ reloadKey, onAlert }: {
         {/* Schedule table */}
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sky-ink-3">
-            <Spinner size={20} /><span className="text-sm font-bold">{t("admin.bossManagement.loading")}</span>
+            <Spinner size={20} /><span className="text-sm font-medium">{t("admin.bossManagement.loading")}</span>
           </div>
         ) : schedules.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-sky-ink-3">
-            <CalendarClock className="w-10 h-10 opacity-30" />
-            <p className="text-sm font-bold">{t("admin.bossManagement.schedule.empty")}</p>
+          <div className="flex flex-col items-center gap-2.5 py-10 text-sky-ink-3">
+            <span className="grid place-items-center w-14 h-14 rounded-full bg-sky-deep/8 text-sky-deep">
+              <CalendarClock className="w-6 h-6" />
+            </span>
+            <p className="text-sm font-medium">{t("admin.bossManagement.schedule.empty")}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-sky-md border border-white/70">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/60">
+              <thead className="sky-table-head">
+                <tr>
                   {[
                     t("admin.bossManagement.schedule.colWeek"),
                     t("admin.bossManagement.schedule.colTheme"),
                     t("admin.bossManagement.schedule.colStatus"),
                     "",
                   ].map((h, i) => (
-                    <th key={i} className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-sky-ink-3">{h}</th>
+                    <th key={i} className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="sky-stagger">
                 {schedules.map(s => {
                   const notPublished = s.bossStatus !== "Published";
                   return (
                     <tr key={s.weeklyBossScheduleId} className="sky-table-row">
                       <td className="px-3 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-sky-ink">{fmtDate(s.weekStart)} → {fmtDate(s.weekEnd)}</span>
+                          {/* The live week gets a filled dot as well as the chip — never colour alone. */}
+                          {s.isCurrentWeek && <span className="w-1.5 h-1.5 rounded-full bg-sky-teal shrink-0" />}
+                          <span className={`text-xs tabular-nums ${s.isCurrentWeek ? "font-semibold text-sky-ink" : "font-medium text-sky-ink-2"}`}>
+                            {fmtDate(s.weekStart)} → {fmtDate(s.weekEnd)}
+                          </span>
                           {s.isCurrentWeek && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-success-100 text-success-700">
+                            <span className="sky-badge sky-badge-success text-[9px] px-1.5 py-0.5">
                               {t("admin.bossManagement.schedule.thisWeek")}
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <span className="text-xs font-bold text-sky-ink">{s.themeName}</span>
+                        <span className="text-xs font-semibold text-sky-ink">{s.themeName}</span>
                       </td>
                       <td className="px-3 py-3">
-                        <div className={notPublished ? "inline-flex flex-col gap-0.5" : ""}>
+                        <div className={notPublished ? "inline-flex flex-col items-start gap-1" : ""}>
                           <StatusBadge status={s.bossStatus} />
                           {notPublished && (
-                            <span className="text-[10px] font-bold text-error-600">{t("admin.bossManagement.schedule.notPublishedWarn")}</span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-rose-deep">
+                              <AlertTriangle className="w-3 h-3" />
+                              {t("admin.bossManagement.schedule.notPublishedWarn")}
+                            </span>
                           )}
                         </div>
                       </td>
                       <td className="px-3 py-3 text-right">
                         {s.isCurrentWeek ? (
-                          <span className="text-[10px] font-bold text-sky-ink-3 uppercase">{t("admin.bossManagement.schedule.ongoing")}</span>
+                          <span className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.12em]">{t("admin.bossManagement.schedule.ongoing")}</span>
                         ) : (
-                          <SkyButton
+                          <button
                             type="button"
-                            variant="ghost"
-                            size="icon"
                             onClick={() => handleRemove(s.weeklyBossScheduleId)}
                             disabled={removingId === s.weeklyBossScheduleId}
                             title={t("admin.bossManagement.schedule.remove")}
-                            className="w-8 h-8 text-error-600 hover:bg-error-50"
+                            aria-label={t("admin.bossManagement.schedule.remove")}
+                            className="inline-grid place-items-center w-8 h-8 rounded-sky-chip border border-sky-rose/25 bg-sky-rose/10 text-sky-rose-deep transition hover:bg-sky-rose/18 hover:-translate-y-px active:translate-y-0 active:scale-95 disabled:opacity-50"
                           >
                             {removingId === s.weeklyBossScheduleId ? <Spinner size={13} /> : <Trash2 className="w-3.5 h-3.5" />}
-                          </SkyButton>
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -962,13 +1002,13 @@ export default function AdminBossManagement() {
 
       <div className="space-y-6 p-1">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="sky-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-sky-chip bg-purple-100 flex items-center justify-center shrink-0">
+            <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-violet/12 text-sky-violet-deep shrink-0">
               <SwordsIcon size={22} />
-            </div>
+            </span>
             <div>
-              <h1 className="text-2xl font-bold text-sky-ink">{t("admin.bossManagement.pageTitle")}</h1>
+              <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">{t("admin.bossManagement.pageTitle")}</h1>
               <p className="text-sm text-sky-ink-2 font-medium mt-0.5">{t("admin.bossManagement.subtitle")}</p>
             </div>
           </div>
@@ -978,21 +1018,30 @@ export default function AdminBossManagement() {
         </div>
 
         {/* Filter Bar */}
-        <SkyCard variant="admin" className="p-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold text-sky-ink-2 flex items-center gap-1.5 mr-1 shrink-0">
-            <Filter className="w-4 h-4" /> {t("admin.bossManagement.filterStatus")}
+        <SkyCard variant="admin" className="p-4 flex flex-wrap items-center gap-3">
+          <span className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5 shrink-0">
+            <Filter className="w-3.5 h-3.5" /> {t("admin.bossManagement.filterStatus")}
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          {/* A single recessed track rather than four floating pills: the group
+              reads as one control and only the chosen segment is allowed to lift. */}
+          <div className="flex flex-wrap gap-1 rounded-sky-chip bg-white/42 ring-1 ring-white/70 p-1">
             {STATUS_KEYS.map(key => {
               const cfg = STATUS_CFG[key];
               const label = key === "" ? t("admin.bossManagement.filterAll") : key;
+              const on = statusFilter === key;
               return (
                 <button
                   key={key}
+                  type="button"
+                  aria-pressed={on}
                   onClick={() => handleStatusFilterChange(key)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${cfg.cls} ${statusFilter === key ? "ring-2 ring-sky-deep ring-offset-1" : ""}`}
+                  className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs transition ${
+                    on
+                      ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white font-semibold shadow-sky-chip"
+                      : "text-sky-ink-2 font-medium hover:bg-white/70 hover:text-sky-ink"
+                  }`}
                 >
-                  {cfg.icon} {label}
+                  <cfg.Icon className="w-3.5 h-3.5 shrink-0" /> {label}
                 </button>
               );
             })}
@@ -1009,20 +1058,24 @@ export default function AdminBossManagement() {
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           {error ? (
             <div className="flex flex-col items-center gap-3 py-16">
-              <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-12 h-12 object-contain" />
-              <p className="font-bold text-sky-ink-2">{t("admin.bossManagement.loadError")}</p>
+              <span className="grid place-items-center w-14 h-14 rounded-full bg-sky-rose/12 text-sky-rose-deep">
+                <AlertTriangle className="w-6 h-6" />
+              </span>
+              <p className="font-display text-base font-semibold text-sky-ink">{t("admin.bossManagement.loadError")}</p>
               <p className="text-sm text-sky-ink-3">{error}</p>
-              <SkyButton type="button" variant="destructive" size="sm" onClick={fetchTemplates}>{t("admin.bossManagement.retry")}</SkyButton>
+              <SkyButton type="button" variant="secondary" size="sm" onClick={fetchTemplates}>{t("admin.bossManagement.retry")}</SkyButton>
             </div>
           ) : loading && templates.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
-              <Spinner size={32} /><p className="font-bold text-sm">{t("admin.bossManagement.loadingTemplates")}</p>
+              <Spinner size={32} /><p className="text-sm font-medium">{t("admin.bossManagement.loadingTemplates")}</p>
             </div>
           ) : templates.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
-              <img src="/icon/Player/Skull/64px/Skull 1st 64px.png" alt="" className="w-14 h-14 object-contain" />
-              <p className="font-bold text-lg text-sky-ink-2">{t("admin.bossManagement.noTemplates")}</p>
-              <p className="text-sm font-medium">{t("admin.bossManagement.createFirstBoss")}</p>
+            <div className="flex flex-col items-center gap-3 py-16">
+              <span className="grid place-items-center w-16 h-16 rounded-full bg-sky-violet/10 text-sky-violet-deep">
+                <Swords className="w-7 h-7" />
+              </span>
+              <p className="font-display text-lg font-semibold text-sky-ink">{t("admin.bossManagement.noTemplates")}</p>
+              <p className="text-sm font-medium text-sky-ink-3">{t("admin.bossManagement.createFirstBoss")}</p>
               <SkyButton type="button" variant="primary" onClick={() => setEditingTemplate("new")}>
                 <Plus className="w-3.5 h-3.5" /> {t("admin.bossManagement.newTemplate")}
               </SkyButton>
@@ -1030,8 +1083,8 @@ export default function AdminBossManagement() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50/60">
+                <thead className="sky-table-head">
+                  <tr>
                     {[
                       t("admin.bossManagement.table.num"),
                       t("admin.bossManagement.table.themeName"),
@@ -1040,23 +1093,23 @@ export default function AdminBossManagement() {
                       t("admin.bossManagement.table.status"),
                       t("admin.bossManagement.table.actions"),
                     ].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-sky-ink-3">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="sky-stagger">
                   {templates.map((tpl, idx) => (
                     <tr key={tpl.bossTemplateId} className="sky-table-row">
-                      <td className="px-4 py-3 text-xs font-bold text-sky-ink-3">
+                      <td className="px-4 py-3 text-xs font-semibold tabular-nums text-sky-ink-3">
                         {(page - 1) * PAGE_SIZE + idx + 1}
                       </td>
                       <td className="px-4 py-4 max-w-55">
-                        <p className="font-bold text-sky-ink truncate">{tpl.themeName}</p>
+                        <p className="font-semibold text-sky-ink truncate">{tpl.themeName}</p>
                         <p className="text-xs text-sky-ink-3 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <p className="text-xs font-bold text-sky-ink-2">{fmtDate(tpl.activeWeekStart)}</p>
-                        <p className="text-[10px] text-sky-ink-3 font-medium">→ {fmtDate(tpl.activeWeekEnd)}</p>
+                        <p className="text-xs font-semibold tabular-nums text-sky-ink-2">{fmtDate(tpl.activeWeekStart)}</p>
+                        <p className="text-[10px] text-sky-ink-3 font-medium tabular-nums">→ {fmtDate(tpl.activeWeekEnd)}</p>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-1">
@@ -1073,23 +1126,35 @@ export default function AdminBossManagement() {
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {/* Edit */}
-                          <SkyButton type="button" variant="ghost" size="icon" title="Edit template info" onClick={() => setEditingTemplate(tpl)} className="w-8 h-8">
-                            <Pencil className="w-3 h-3" />
-                          </SkyButton>
+                          <button
+                            type="button"
+                            title="Edit template info"
+                            aria-label="Edit template info"
+                            onClick={() => setEditingTemplate(tpl)}
+                            className="inline-grid place-items-center w-8 h-8 rounded-sky-chip border border-sky-deep/20 bg-sky-deep/8 text-sky-deep transition hover:bg-sky-deep/14 hover:-translate-y-px active:translate-y-0 active:scale-95"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
                           {/* Configure Modes */}
-                          <SkyButton type="button" variant="ghost" size="icon" title="Configure boss modes" onClick={() => setModesTemplate({ id: tpl.bossTemplateId, name: tpl.themeName })} className="w-8 h-8">
-                            <Settings2 className="w-3 h-3" />
-                          </SkyButton>
+                          <button
+                            type="button"
+                            title="Configure boss modes"
+                            aria-label="Configure boss modes"
+                            onClick={() => setModesTemplate({ id: tpl.bossTemplateId, name: tpl.themeName })}
+                            className="inline-grid place-items-center w-8 h-8 rounded-sky-chip border border-sky-violet/25 bg-sky-violet/10 text-sky-violet-deep transition hover:bg-sky-violet/18 hover:-translate-y-px active:translate-y-0 active:scale-95"
+                          >
+                            <Settings2 className="w-3.5 h-3.5" />
+                          </button>
                           {/* Publish */}
                           {tpl.status === "Draft" && (
                             <SkyButton type="button" variant="success" size="sm" onClick={() => setConfirmStatus({ templateId: tpl.bossTemplateId, templateName: tpl.themeName, action: "publish" })} title="Publish template">
-                              {t("admin.bossManagement.publish")}
+                              <Upload className="w-3 h-3" /> {t("admin.bossManagement.publish")}
                             </SkyButton>
                           )}
                           {/* Archive */}
                           {tpl.status === "Published" && (
                             <SkyButton type="button" variant="secondary" size="sm" onClick={() => setConfirmStatus({ templateId: tpl.bossTemplateId, templateName: tpl.themeName, action: "archive" })} title="Archive template">
-                              {t("admin.bossManagement.archive")}
+                              <Archive className="w-3 h-3" /> {t("admin.bossManagement.archive")}
                             </SkyButton>
                           )}
                         </div>
@@ -1105,7 +1170,7 @@ export default function AdminBossManagement() {
         {/* Pagination */}
         {!error && (templates.length > 0 || page > 1) && (
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-sky-ink-3">
+            <p className="text-xs font-medium tabular-nums text-sky-ink-3">
               {templates.length !== 1
                 ? t("admin.bossManagement.pageInfoPlural", { page, count: templates.length })
                 : t("admin.bossManagement.pageInfo", { page, count: templates.length })}

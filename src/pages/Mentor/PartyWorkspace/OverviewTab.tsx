@@ -1,15 +1,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { useOutletContext, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import {
+  Link2, Copy, Check, RefreshCw, Users, UserPlus, X,
+  Trash2, AlertTriangle, ShieldAlert,
+} from "lucide-react";
 import { useAlert } from "../../../context/AlertContext";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import {
-  inputCls, Spinner,
+  inputCls, eyebrow, fieldLabel, Spinner,
   Panel, SkyModal, CountBadge,
 } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
 import type { PartyMember, JoinRequestItem } from "../../../types/api.types";
+
+// Avatar tints are derived from the name, so a member keeps the same colour on
+// every visit and a roster never reads as one flat block of identical circles.
+// Teal is deliberately absent: these tiles are decoration, and teal is spoken
+// for by success/approved state (§4).
+const AVATAR_TINTS = [
+  "from-sky-deep-lo to-sky-deep",
+  "from-sky-violet to-sky-violet-deep",
+  "from-sky-peach to-sky-peach-deep",
+  "from-sky-rose to-sky-rose-deep",
+  "from-sky-1 to-sky-deep-lo",
+];
+const tintFor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i) * 31) % 997;
+  return AVATAR_TINTS[h % AVATAR_TINTS.length];
+};
+
+const softCard = "rounded-sky-chip bg-white/68 ring-1 ring-white/78";
 
 export default function OverviewTab() {
   const { party, partyId } = useOutletContext<PartyWorkspaceContext>();
@@ -188,86 +211,82 @@ export default function OverviewTab() {
 
   const disbandGateOpen = disbandConfirmInput.trim() === party.name;
 
+  // The code is shown as discrete character tiles — a redeem-code, not a line of
+  // body text. Purely presentational: the value itself is untouched, and the
+  // Copy button remains the reliable way to lift it.
+  const codeChars = (inviteCode || "————").split("");
+
   return (
-    <div className="space-y-6">
-      {/* ── SECRET KEY — premium, inverted-ink panel (always dark by design) ── */}
-      <div className="bg-sky-ink rounded-sky-card shadow-sky-glass p-6 sm:p-7">
-        <div className="flex items-center gap-2 mb-4">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-sky-3">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-          </svg>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-sky-3">
+    <div className="space-y-6 sky-stagger">
+      {/* ── SECRET KEY — inverted-ink panel; the one deliberately dark surface ── */}
+      <div className="relative overflow-hidden bg-sky-ink rounded-sky-card shadow-sky-glass p-6 sm:p-7">
+        {/* A single cool bloom so the dark panel is lit rather than merely filled. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-sky-deep/40 blur-3xl"
+        />
+        <div className="relative flex items-center gap-2 mb-4">
+          <span className="grid place-items-center w-8 h-8 rounded-sky-chip bg-white/10 ring-1 ring-inset ring-white/20 text-sky-3">
+            <Link2 size={15} strokeWidth={2.4} />
+          </span>
+          <h2 className="text-sky-small font-semibold uppercase tracking-[0.14em] text-sky-3">
             {t("admin.partyManagement.hub.secretKeyLabel")}
           </h2>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex-1 flex items-center bg-white/8 border border-white/15 rounded-sky-chip px-5 py-4 min-w-0">
-            <code className="flex-1 text-2xl sm:text-3xl font-bold tracking-[0.2em] text-white select-all truncate font-mono">
-              {inviteCode || "————"}
-            </code>
+        <div className="relative flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
+          <div
+            className="flex-1 flex flex-wrap items-center gap-1.5 min-w-0 select-all"
+            aria-label={inviteCode || undefined}
+          >
+            {codeChars.map((ch, i) => (
+              <span
+                key={i}
+                className="grid place-items-center min-w-9 h-13 px-2 rounded-sky-chip bg-white/10 ring-1 ring-inset ring-white/20 font-display text-2xl font-semibold text-white tabular-nums"
+              >
+                {ch}
+              </span>
+            ))}
           </div>
           <div className="flex gap-2 shrink-0">
             <SkyButton type="button" variant="secondary" size="sm" onClick={handleCopyCode} disabled={!inviteCode}>
               {codeCopied ? (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  {t("admin.partyManagement.copied")}
-                </>
+                <><Check size={13} strokeWidth={2.6} /> {t("admin.partyManagement.copied")}</>
               ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                  {t("admin.partyManagement.copy")}
-                </>
+                <><Copy size={13} strokeWidth={2.4} /> {t("admin.partyManagement.copy")}</>
               )}
             </SkyButton>
             <SkyButton type="button" variant="primary" size="sm" onClick={handleGenerateCode} disabled={generatingCode}>
               {generatingCode ? (
                 <><Spinner size={13} /> {t("admin.partyManagement.regenerating")}</>
               ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10" />
-                    <polyline points="1 20 1 14 7 14" />
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                  </svg>
-                  {t("admin.partyManagement.regenerate")}
-                </>
+                <><RefreshCw size={13} strokeWidth={2.4} /> {t("admin.partyManagement.regenerate")}</>
               )}
             </SkyButton>
           </div>
         </div>
-        <p className="text-xs text-sky-3/80 font-medium mt-3">
+        <p className="relative text-xs text-sky-3/80 font-medium mt-4">
           {t("admin.partyManagement.hub.secretKeyHint")}
         </p>
       </div>
 
-      {/* ── ACTIVE MEMBERS — equal-height grid, not a table ───────────── */}
+      {/* ── ACTIVE MEMBERS — equal-height roster tiles, not a table ───────────── */}
       <Panel
         title={t("admin.partyManagement.activeMembers")}
         tint="mint"
-        icon={
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        }
-        badge={<CountBadge count={members.length} color="bg-success-100 text-success-800" />}
+        icon={<Users size={17} strokeWidth={2.4} />}
+        // A roster size is a quantity, not a verdict — so it stays on the cool
+        // operational hue rather than borrowing the success tint.
+        badge={<CountBadge count={members.length} />}
       >
         {loadingMembers ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sky-ink-3">
-            <Spinner size={20} />
-            <span className="text-sm font-semibold">{t("admin.partyManagement.loadingMembers")}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={`${softCard} h-40 animate-pulse`} aria-hidden="true" />
+            ))}
+            <span className="sr-only">{t("admin.partyManagement.loadingMembers")}</span>
           </div>
         ) : members.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-success-300 rounded-sky-chip bg-white/40">
+          <div className="text-center py-10 rounded-sky-chip bg-white/40 border border-dashed border-sky-ink/16">
             <p className="text-sm font-semibold text-sky-ink-3">{t("admin.partyManagement.noMembers")}</p>
           </div>
         ) : (
@@ -275,27 +294,31 @@ export default function OverviewTab() {
             {members.map((m) => (
               <div
                 key={m.userId}
-                className="group relative h-full flex flex-col items-center justify-between gap-2 bg-white/70 border border-sky-surf-border rounded-sky-chip px-4 py-5 hover:shadow-sky-chip transition-shadow duration-150"
+                className={`group relative h-full flex flex-col items-center justify-between gap-2.5 ${softCard} px-4 py-5 transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:shadow-sky-chip`}
               >
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-linear-to-br from-purple-200 to-sky-3 text-base font-bold text-sky-ink">
+                <span
+                  className={`grid place-items-center w-13 h-13 rounded-full bg-linear-to-br ${tintFor(m.username)} font-display text-lg font-semibold text-white shadow-sky-chip`}
+                  aria-hidden="true"
+                >
                   {m.username.charAt(0).toUpperCase()}
                 </span>
                 <span className="text-sm font-semibold text-sky-ink truncate max-w-full">{m.username}</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-ink-3 min-h-3.5">
-                  {m.role ?? ""}
-                </span>
+                {m.role ? (
+                  <span className="px-2 py-0.5 rounded-full bg-sky-ink/8 text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-ink-2">
+                    {m.role}
+                  </span>
+                ) : (
+                  <span className="h-4" aria-hidden="true" />
+                )}
                 <SkyButton
                   type="button"
                   variant="destructive"
                   size="icon"
                   onClick={() => setMemberToKick(m)}
                   aria-label={t("admin.partyManagement.hub.kickAria", { username: m.username })}
-                  className="absolute -top-2.5 -right-2.5 rounded-full w-9 h-9 opacity-70 hover:opacity-100 focus-visible:opacity-100 hover:scale-110 focus-visible:scale-110"
+                  className="absolute -top-2.5 -right-2.5 rounded-full w-9 h-9 opacity-0 motion-safe:scale-90 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 focus-visible:opacity-100 focus-visible:scale-100"
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <X size={13} strokeWidth={3} />
                 </SkyButton>
               </div>
             ))}
@@ -303,32 +326,27 @@ export default function OverviewTab() {
         )}
       </Panel>
 
-      {/* ── PENDING REQUESTS — Tinder-style rapid accept/reject ───────── */}
+      {/* ── PENDING REQUESTS — rapid accept / reject ──────────────────── */}
       {party.joinPolicy === "APPROVAL_REQUIRED" && (
         <Panel
           title={t("admin.partyManagement.pendingRequests")}
           tint="peach"
-          icon={
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" y1="8" x2="19" y2="14" />
-              <line x1="22" y1="11" x2="16" y2="11" />
-            </svg>
-          }
+          icon={<UserPlus size={17} strokeWidth={2.4} />}
           badge={
             joinRequests.length > 0 ? (
-              <CountBadge count={joinRequests.length} color="bg-sky-peach/20 text-sky-peach-deep" />
+              <CountBadge count={joinRequests.length} color="bg-sky-peach/22 text-sky-peach-deep" />
             ) : undefined
           }
         >
           {loadingRequests ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-sky-ink-3">
-              <Spinner size={20} />
-              <span className="text-sm font-semibold">{t("admin.partyManagement.loadingRequests")}</span>
+            <div className="space-y-3">
+              {[0, 1].map((i) => (
+                <div key={i} className={`${softCard} h-20 animate-pulse`} aria-hidden="true" />
+              ))}
+              <span className="sr-only">{t("admin.partyManagement.loadingRequests")}</span>
             </div>
           ) : joinRequests.length === 0 ? (
-            <div className="text-center py-10 border border-dashed border-sky-peach/40 rounded-sky-chip bg-white/40">
+            <div className="text-center py-10 rounded-sky-chip bg-white/40 border border-dashed border-sky-peach/45">
               <p className="text-sm font-semibold text-sky-ink-3">{t("admin.partyManagement.noRequests")}</p>
               <p className="text-xs text-sky-ink-3 font-medium mt-1">
                 {t("admin.partyManagement.hub.requestsEmptyHint")}
@@ -339,56 +357,52 @@ export default function OverviewTab() {
               {joinRequests.map((req) => (
                 <div
                   key={req.requestId}
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white/70 border border-sky-surf-border rounded-sky-chip px-5 py-4"
+                  className={`relative overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-4 ${softCard} px-5 py-4`}
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="flex items-center justify-center w-11 h-11 rounded-full bg-linear-to-br from-sky-peach/40 to-warning-200 text-sm font-bold text-sky-ink shrink-0">
+                  {/* Peach rail: waiting on the mentor, not an error. */}
+                  <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" />
+                  <div className="flex items-center gap-3 flex-1 min-w-0 pl-1.5">
+                    <span
+                      className={`grid place-items-center w-11 h-11 rounded-full bg-linear-to-br ${tintFor(req.username)} font-display text-sm font-semibold text-white shrink-0`}
+                      aria-hidden="true"
+                    >
                       {req.username.charAt(0).toUpperCase()}
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-sky-ink truncate">{req.username}</p>
                       {req.message && (
-                        <p className="text-xs text-sky-ink-2 font-medium truncate italic">
-                          "{req.message}"
+                        <p className="mt-1 pl-2.5 border-l-2 border-sky-peach/45 text-xs text-sky-ink-2 font-medium italic truncate">
+                          {req.message}
                         </p>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center justify-center gap-3 shrink-0">
+                  <div className="flex items-center justify-center gap-2.5 shrink-0">
                     <SkyButton
                       type="button"
                       variant="destructive"
-                      size="icon"
+                      size="sm"
                       onClick={() => handleReject(req.requestId)}
                       disabled={processingReqId === req.requestId}
                       aria-label={t("admin.partyManagement.reject")}
-                      className="rounded-full w-12 h-12"
                     >
-                      {processingReqId === req.requestId ? (
-                        <Spinner size={16} />
-                      ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      )}
+                      {processingReqId === req.requestId
+                        ? <Spinner size={14} />
+                        : <X size={14} strokeWidth={2.8} />}
+                      <span className="hidden sm:inline">{t("admin.partyManagement.reject")}</span>
                     </SkyButton>
                     <SkyButton
                       type="button"
                       variant="success"
-                      size="icon"
+                      size="sm"
                       onClick={() => handleApprove(req.requestId)}
                       disabled={processingReqId === req.requestId}
                       aria-label={t("admin.partyManagement.approve")}
-                      className="rounded-full w-12 h-12"
                     >
-                      {processingReqId === req.requestId ? (
-                        <Spinner size={16} />
-                      ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                      {processingReqId === req.requestId
+                        ? <Spinner size={14} />
+                        : <Check size={14} strokeWidth={2.8} />}
+                      <span className="hidden sm:inline">{t("admin.partyManagement.approve")}</span>
                     </SkyButton>
                   </div>
                 </div>
@@ -398,36 +412,33 @@ export default function OverviewTab() {
         </Panel>
       )}
 
-      {/* ── DANGER ZONE — hazard, requires deliberate confirmation ────── */}
-      <div className="bg-error-50 border border-error-400 rounded-sky-card shadow-sky-tint p-6 sm:p-7">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+      {/* ── DANGER ZONE — hazard rail, deliberate confirmation ────────── */}
+      <div className="relative overflow-hidden rounded-sky-card bg-sky-rose/8 ring-1 ring-sky-rose/25 shadow-sky-tint p-6 sm:p-7">
+        {/* A caution stripe rather than a fully red panel: the page keeps its
+            calm, and the warning still reads as "stop and think". */}
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-0 bottom-0 w-1.5 bg-[repeating-linear-gradient(135deg,var(--color-sky-rose)_0_7px,var(--color-sky-rose-deep)_7px_14px)]"
+        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 pl-1.5">
           <div className="flex items-start gap-3 min-w-0">
-            <span className="flex items-center justify-center w-11 h-11 rounded-sky-chip border border-error-400 bg-white shrink-0">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f04438" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
+            <span className="grid place-items-center w-11 h-11 rounded-sky-chip bg-sky-rose/14 ring-1 ring-sky-rose/30 text-sky-rose-deep shrink-0">
+              <ShieldAlert size={19} strokeWidth={2.4} />
             </span>
             <div className="min-w-0">
-              <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-error-600 mb-1">
+              <span className={`inline-block mb-1 ${eyebrow} text-sky-rose-deep/70`}>
                 {t("admin.partyManagement.hub.hazardEyebrow")}
               </span>
-              <h3 className="font-bold text-error-800 text-lg leading-tight">
+              <h3 className="font-display text-sky-h3 font-semibold text-sky-rose-deep leading-tight">
                 {t("admin.partyManagement.dangerZone")}
               </h3>
-              <p className="text-sm text-error-700 font-medium mt-0.5">
+              <p className="text-sm text-sky-ink-2 font-medium mt-1">
                 {t("admin.partyManagement.disbandWarning")}
               </p>
             </div>
           </div>
           <SkyButton type="button" variant="destructive" onClick={openDisbandModal} className="shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
+            <Trash2 size={14} strokeWidth={2.4} />
             {t("admin.partyManagement.disbandParty")}
           </SkyButton>
         </div>
@@ -438,25 +449,22 @@ export default function OverviewTab() {
         <SkyModal title={t("admin.partyManagement.disbandModal.title")} onClose={closeDisbandModal}>
           <div className="space-y-5">
             <div className="flex items-center justify-center">
-              <span className="flex items-center justify-center w-16 h-16 rounded-full border border-error-400 bg-error-50 shadow-sky-chip">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f04438" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
+              <span className="grid place-items-center w-16 h-16 rounded-full bg-sky-rose/14 ring-1 ring-sky-rose/32 text-sky-rose-deep shadow-sky-chip">
+                <AlertTriangle size={27} strokeWidth={2.4} />
               </span>
             </div>
             <div className="text-center">
-              <p className="font-bold text-sky-ink text-lg">
+              <p className="font-display text-sky-h3 font-semibold text-sky-ink">
                 {t("admin.partyManagement.disbandModal.disbandVerb")}{" "}
-                <span className="text-error-600">{party.name}</span>?
+                <span className="text-sky-rose-deep">{party.name}</span>?
               </p>
-              <p className="text-sm text-sky-ink-2 font-medium mt-2 leading-relaxed bg-error-50 border border-error-200 rounded-sky-chip px-4 py-3">
+              <p className="relative text-sm text-sky-ink-2 font-medium mt-3 leading-relaxed text-left rounded-sky-chip bg-sky-rose/8 ring-1 ring-sky-rose/22 px-4 py-3 pl-5 overflow-hidden">
+                <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
                 {t("admin.partyManagement.disbandModal.message")}
               </p>
             </div>
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
+              <label className={fieldLabel}>
                 {t("admin.partyManagement.disbandModal.typeToConfirm", { name: party.name })}
               </label>
               <input
@@ -467,6 +475,12 @@ export default function OverviewTab() {
                 autoComplete="off"
                 className={inputCls}
               />
+              {/* The gate state is spelled out, never colour-only. */}
+              <p className="flex items-center gap-1.5 mt-1.5 text-[11px] font-semibold text-sky-ink-3">
+                {disbandGateOpen
+                  ? <><Check size={12} strokeWidth={3} className="text-sky-teal" /> {party.name}</>
+                  : <><AlertTriangle size={12} strokeWidth={2.6} className="text-sky-ink-3" /> {party.name}</>}
+              </p>
             </div>
             <div className="flex gap-3">
               <SkyButton type="button" variant="secondary" onClick={closeDisbandModal} disabled={disbanding} className="flex-1">
@@ -476,14 +490,7 @@ export default function OverviewTab() {
                 {disbanding ? (
                   <><Spinner size={13} /> {t("admin.partyManagement.disbandModal.disbanding")}</>
                 ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6M14 11v6" />
-                    </svg>
-                    {t("admin.partyManagement.disbandModal.confirm")}
-                  </>
+                  <><Trash2 size={14} strokeWidth={2.4} /> {t("admin.partyManagement.disbandModal.confirm")}</>
                 )}
               </SkyButton>
             </div>
@@ -496,19 +503,14 @@ export default function OverviewTab() {
         <SkyModal title={t("admin.partyManagement.kickModal.title")} onClose={() => setMemberToKick(null)}>
           <div className="text-center space-y-5">
             <div className="flex items-center justify-center">
-              <span className="flex items-center justify-center w-16 h-16 rounded-full border border-error-400 bg-error-50 shadow-sky-chip">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f04438" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                  <path d="M10 11v6M14 11v6" />
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                </svg>
+              <span className={`grid place-items-center w-16 h-16 rounded-full bg-linear-to-br ${tintFor(memberToKick.username)} font-display text-xl font-semibold text-white shadow-sky-chip`}>
+                {memberToKick.username.charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="font-bold text-sky-ink text-lg">
+              <p className="font-display text-sky-h3 font-semibold text-sky-ink">
                 {t("admin.partyManagement.kickModal.removeVerb")}{" "}
-                <span className="text-error-600 font-bold">{memberToKick.username}</span>?
+                <span className="text-sky-rose-deep">{memberToKick.username}</span>?
               </p>
               <p className="text-sm text-sky-ink-2 font-medium mt-1.5">
                 {t("admin.partyManagement.kickModal.message")}
@@ -522,14 +524,7 @@ export default function OverviewTab() {
                 {kicking ? (
                   <><Spinner size={13} /> {t("admin.partyManagement.kickModal.removing")}</>
                 ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6M14 11v6" />
-                    </svg>
-                    {t("admin.partyManagement.kickModal.confirm")}
-                  </>
+                  <><Trash2 size={14} strokeWidth={2.4} /> {t("admin.partyManagement.kickModal.confirm")}</>
                 )}
               </SkyButton>
             </div>

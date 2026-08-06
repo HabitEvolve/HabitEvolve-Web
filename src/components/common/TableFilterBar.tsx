@@ -1,15 +1,12 @@
 import type { FilterField } from "../../hooks/useTableFilters";
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
-const textInputCls =
-  "w-full pl-7 pr-3 py-[7px] text-sm font-medium border-2 border-black rounded-lg bg-white " +
-  "shadow-[2px_2px_0_0_#1A1D20] focus:outline-none focus:bg-amber-50 dark:focus:bg-amber-900/20 " +
-  "focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all placeholder:text-gray-400";
+const fieldBase =
+  "w-full py-[7px] text-sm rounded-sky-chip border border-white/80 bg-white/60 text-sky-ink transition " +
+  "focus:outline-hidden focus:border-sky-deep focus:bg-white/85 focus:ring-3 focus:ring-sky-deep/18";
 
-const selectCls =
-  "w-full px-3 py-[7px] text-sm font-medium border-2 border-black rounded-lg bg-white " +
-  "shadow-[2px_2px_0_0_#1A1D20] focus:outline-none focus:bg-amber-50 dark:focus:bg-amber-900/20 " +
-  "focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all cursor-pointer";
+const textInputCls = `${fieldBase} pl-7 pr-3 placeholder:text-sky-ink-3`;
+const selectCls = `${fieldBase} px-3 cursor-pointer`;
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 interface TableFilterBarProps<T extends Record<string, string>> {
@@ -39,17 +36,17 @@ export function TableFilterBar<T extends Record<string, string>>({
   hasActiveFilters,
 }: TableFilterBarProps<T>) {
   return (
-    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b-2 border-gray-100 bg-[#FAFAFA] dark:bg-gray-800/60">
+    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-white/60 bg-white/35">
       {fields.map(field => (
         <div key={field.key} className="flex flex-col gap-1.5 min-w-[150px]">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 select-none">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-sky-ink-3 select-none">
             {field.label}
           </label>
 
           {field.type === "text" ? (
             <div className="relative">
               <svg
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sky-ink-3 pointer-events-none"
                 width="12" height="12" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
               >
@@ -79,16 +76,16 @@ export function TableFilterBar<T extends Record<string, string>>({
         </div>
       ))}
 
-      {/* Clear button — only visible when at least one filter is active */}
+      {/* Clear button — only visible when at least one filter is active.
+          Low-emphasis rose tint: it undoes work, but it isn't destructive. */}
       {hasActiveFilters && (
         <button
           type="button"
           onClick={onClear}
           className={
-            "inline-flex items-center gap-1.5 self-end px-4 py-[7px] text-sm font-black " +
-            "border-2 border-black rounded-lg bg-red-200 text-red-900 " +
-            "shadow-[2px_2px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] " +
-            "transition-all whitespace-nowrap"
+            "inline-flex items-center gap-1.5 self-end px-4 py-[7px] text-sm font-medium " +
+            "rounded-sky-chip bg-sky-rose/14 text-sky-rose-deep border border-sky-rose/30 " +
+            "transition hover:bg-sky-rose/20 active:scale-[0.98] whitespace-nowrap"
           }
         >
           <svg

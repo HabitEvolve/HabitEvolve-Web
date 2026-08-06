@@ -1,0 +1,270 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
+  <diagram name="HabitEvolve Front-end Architecture" id="package-diagram">
+    <mxGraphModel dx="3805" dy="1505" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="main-container" value="HabitEvolve Front-end Solution" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontStyle=1;fontSize=14;strokeWidth=2;spacingBottom=0;spacingLeft=13;" parent="1" vertex="1">
+          <mxGeometry x="-10" y="20" width="1520" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-pkg" value="HabitEvolve.Pages" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontStyle=1;strokeWidth=2;spacingLeft=7;spacingRight=12;" parent="1" vertex="1">
+          <mxGeometry x="80" y="80" width="520" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-admin" value="Admin" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="100" y="120" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-mentor" value="Mentor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="120" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-auth" value="Auth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="440" y="120" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-dashboard" value="Dashboard" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="100" y="200" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-user" value="UserManagement" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="200" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-charts" value="Charts" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="440" y="200" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-forms" value="Forms" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="100" y="280" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-tables" value="Tables" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="280" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pages-ui" value="UiElements" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="440" y="280" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="components-pkg" value="HabitEvolve.Components" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontStyle=1;strokeWidth=2;spacingLeft=6;" parent="1" vertex="1">
+          <mxGeometry x="640" y="80" width="520" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-ui" value="UI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="660" y="120" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-common" value="Common" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="830" y="120" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-form" value="Form" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="120" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-game" value="Game" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="660" y="200" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-charts" value="Charts" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="830" y="200" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-tables" value="Tables" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="200" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-header" value="Header" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="660" y="280" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-chat" value="Chat" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="830" y="280" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-auth" value="Auth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="280" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-pkg" value="HabitEvolve.API" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontStyle=1;strokeWidth=2;spacingLeft=7;" parent="1" vertex="1">
+          <mxGeometry x="30" y="450" width="520" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="api-admin" value="AdminAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="520" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-mentor" value="MentorAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="220" y="520" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-auth" value="AuthAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="390" y="520" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-party" value="PartyAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="600" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-player" value="PlayerAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="220" y="600" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-notification" value="NotificationAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="390" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-axios" value="AxiosClient" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="680" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-upload" value="UploadAPIs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="220" y="680" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api-supabase" value="SupabaseClient" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="390" y="680" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="services-pkg" value="HabitEvolve.Services" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontStyle=1;strokeWidth=2;spacingLeft=3;" parent="1" vertex="1">
+          <mxGeometry x="645" y="430" width="520" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-partycall" value="PartyCallHub" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="660" y="480" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-partychat" value="PartyChatHub" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="830" y="480" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-signalr" value="SignalR Hubs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="480" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="core-pkg" value="HabitEvolve.Core" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontStyle=1;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="640" y="650" width="520" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="core-types" value="Types" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="660" y="680" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="core-hooks" value="Hooks" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="830" y="680" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="core-utils" value="Utils" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="680" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="core-context" value="Context" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="660" y="760" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="core-layout" value="Layout" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="830" y="760" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="core-i18n" value="i18n/Locales" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="760" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="backend" value="HabitEvolve API&#xa;(Backend Server)" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;dashed=1;fontStyle=1;align=left;spacingBottom=120;spacingRight=9;spacingLeft=15;" parent="1" vertex="1">
+          <mxGeometry x="10" y="910" width="530" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="backend-controllers" value="Controllers" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="40" y="990" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="backend-hubs" value="SignalR Hubs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="205" y="990" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="backend-services" value="Services" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="360" y="990" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="backend-db" value="Database Layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="40" y="1050" width="460" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="supabase" value="Supabase&#xa;(Auth &amp; Storage)" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;dashed=1;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="820" y="930" width="250" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="build-tools" value="Build &amp;amp; Dev Tools" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;dashed=1;fontStyle=1;align=center;spacing=-3;spacingBottom=140;" parent="1" vertex="1">
+          <mxGeometry x="1180" y="920" width="240" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="tool-vite" value="Vite" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1200" y="980" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="tool-typescript" value="TypeScript" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1200" y="1020" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="tool-react" value="React 19" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="1200" y="1060" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow-pages-comp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;" parent="1" source="pages-pkg" target="components-pkg" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="label-pages-comp" value="uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;" parent="arrow-pages-comp" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-pages-api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;" parent="1" source="pages-pkg" target="api-pkg" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="420" />
+              <mxPoint x="300" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-pages-api" value="uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;" parent="arrow-pages-api" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-comp-core" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;" parent="1" source="components-pkg" target="core-pkg" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260" y="240" />
+              <mxPoint x="1260" y="770" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-comp-core" value="uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;" parent="arrow-comp-core" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-api-backend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;strokeWidth=2;" parent="1" source="api-pkg" target="backend" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="120" y="860" />
+              <mxPoint x="120" y="860" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-api-backend" value="HTTP" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;labelBackgroundColor=#ffffff;" parent="arrow-api-backend" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-svc-backend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;strokeWidth=2;" parent="1" source="services-pkg" target="backend" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="620" y="520" />
+              <mxPoint x="620" y="1020" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-svc-backend" value="WebSocket" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;labelBackgroundColor=#ffffff;" parent="arrow-svc-backend" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-api-supabase" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;strokeWidth=2;exitX=0.711;exitY=1.001;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="api-pkg" target="supabase" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="900" />
+              <mxPoint x="945" y="900" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-api-supabase" value="SDK" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontStyle=1;labelBackgroundColor=#ffffff;" parent="arrow-api-supabase" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint y="10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-pages-svc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="pages-pkg" target="services-pkg" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345" y="70" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="345" y="80" />
+              <mxPoint x="345" y="60" />
+              <mxPoint x="1350" y="60" />
+              <mxPoint x="1350" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-pages-svc" value="uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;" parent="arrow-pages-svc" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow-pages-core" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;endFill=0;entryX=0.156;entryY=-0.018;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="pages-pkg" target="core-pkg" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="420" />
+              <mxPoint x="600" y="420" />
+              <mxPoint x="600" y="620" />
+              <mxPoint x="721" y="620" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-pages-core" value="uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;" parent="arrow-pages-core" vertex="1" connectable="0">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Outlet } from "react-router";
 import { useTranslation } from "react-i18next";
+import { AlertTriangle, ArrowLeft, Pencil, Save } from "lucide-react";
 import { useAlert } from "../../../context/AlertContext";
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
@@ -106,9 +107,12 @@ export default function PartyWorkspace() {
 
   if (error || !party) {
     return (
-      <div className="p-6 bg-error-50 border border-error-400 rounded-sky-card shadow-sky-tint flex items-center justify-between gap-4">
-        <span className="font-semibold text-error-800 text-sm">{error ?? t("admin.partyManagement.flashCreateFailed")}</span>
-        <SkyButton type="button" variant="secondary" onClick={() => navigate("/mentor/parties")}>
+      <div className="relative overflow-hidden rounded-sky-card sky-glass p-6 flex items-center justify-between gap-4">
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+        <span className="relative inline-flex items-center gap-2 text-sm font-semibold text-sky-rose-deep">
+          <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" /> {error ?? t("admin.partyManagement.flashCreateFailed")}
+        </span>
+        <SkyButton type="button" variant="secondary" onClick={() => navigate("/mentor/parties")} className="relative shrink-0">
           {t("admin.partyManagement.backToList")}
         </SkyButton>
       </div>
@@ -122,10 +126,7 @@ export default function PartyWorkspace() {
 
       <div className="space-y-6">
         <SkyButton type="button" variant="secondary" onClick={() => navigate("/mentor/parties")}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t("admin.partyManagement.backToList")}
         </SkyButton>
 
@@ -135,7 +136,7 @@ export default function PartyWorkspace() {
             <span className="inline-block text-xs font-semibold uppercase tracking-[0.16em] text-sky-deep mb-2">
               {t("admin.partyManagement.hub.commandKicker")}
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-sky-ink tracking-tight leading-[0.95] wrap-break-word">
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold text-sky-ink tracking-tight leading-[0.95] wrap-break-word">
               {party.name}
             </h1>
             <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -150,10 +151,7 @@ export default function PartyWorkspace() {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <SkyButton type="button" variant="secondary" onClick={openEditModal}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
+              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
               {t("admin.partyManagement.editParty")}
             </SkyButton>
           </div>
@@ -171,7 +169,7 @@ export default function PartyWorkspace() {
         <SkyModal title={t("admin.partyManagement.form.editTitle")} onClose={resetEditModal}>
           <form onSubmit={handleUpdateParty} className="space-y-5">
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3 mb-1.5">
                 {t("admin.partyManagement.form.nameLabel")}
               </label>
               <input
@@ -185,7 +183,7 @@ export default function PartyWorkspace() {
             </div>
 
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3 mb-1.5">
                 {t("admin.partyManagement.form.descLabel")}
               </label>
               <textarea
@@ -198,7 +196,7 @@ export default function PartyWorkspace() {
             </div>
 
             <div>
-              <label className="block text-sky-small font-semibold text-sky-ink-2 uppercase tracking-wide mb-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3 mb-2">
                 {t("admin.partyManagement.form.policyLabel")}
               </label>
               <div className="flex flex-col gap-2">
@@ -211,7 +209,7 @@ export default function PartyWorkspace() {
                       key={policy}
                       className={`flex items-center gap-3 px-4 py-3 rounded-sky-chip cursor-pointer transition-all duration-150 ${checked
                           ? `${s.bg} ring-2 ${s.ring}`
-                          : "border border-sky-surf-border bg-white/40 hover:border-sky-deep/30"
+                          : "ring-1 ring-white/75 bg-white/45 hover:ring-sky-deep/30"
                         }`}
                     >
                       <input
@@ -238,8 +236,8 @@ export default function PartyWorkspace() {
             </div>
 
             {editError && (
-              <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">
-                {editError}
+              <p className="relative inline-flex items-center gap-1.5 overflow-hidden rounded-sky-chip bg-sky-rose/10 ring-1 ring-sky-rose/26 px-3 py-2 text-xs font-semibold text-sky-rose-deep">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> {editError}
               </p>
             )}
 
@@ -252,11 +250,7 @@ export default function PartyWorkspace() {
                   <><Spinner size={13} /> {t("admin.partyManagement.form.saving")}</>
                 ) : (
                   <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                      <polyline points="17 21 17 13 7 13 7 21" />
-                      <polyline points="7 3 7 8 15 8" />
-                    </svg>
+                    <Save className="w-3.5 h-3.5" aria-hidden="true" />
                     {t("admin.partyManagement.form.saveChanges")}
                   </>
                 )}

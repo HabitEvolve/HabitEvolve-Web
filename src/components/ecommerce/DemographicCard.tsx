@@ -1,8 +1,21 @@
 import { useState } from "react";
+import { MoreHorizontal } from "lucide-react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { MoreDotIcon } from "../../icons";
+import SkyCard from "../ui/card/SkyCard";
 import CountryMap from "./CountryMap";
+
+// Share-of-total rows. Each bar states its own percentage in text next to the
+// track, so the ranking survives without relying on bar length or hue — and the
+// fill stays on the cool operational tone, since a customer count is a quantity
+// rather than a verdict (teal is reserved for success state, §4).
+const COUNTRIES = [
+  { name: "USA", flag: "./images/country/country-01.svg", customers: "2,379", pct: 79 },
+  { name: "France", flag: "./images/country/country-02.svg", customers: "589", pct: 23 },
+];
+
+const menuItemCls =
+  "flex w-full font-medium text-left text-sky-ink-2 rounded-sky-chip hover:bg-white/70 hover:text-sky-ink";
 
 export default function DemographicCard() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,41 +28,39 @@ export default function DemographicCard() {
     setIsOpen(false);
   }
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-      <div className="flex justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Customers Demographic
-          </h3>
-          <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Number of customer based on country
+    <SkyCard variant="admin" className="p-5 sm:p-6">
+      <div className="relative flex justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">
+            Demographic
           </p>
+          <h3 className="mt-1 font-display text-sky-h3 font-semibold text-sky-ink leading-tight">
+            Customers by country
+          </h3>
         </div>
-        <div className="relative inline-block">
-          <button className="dropdown-toggle" onClick={toggleDropdown}>
-            <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
-          </button>
-          <Dropdown
-            isOpen={isOpen}
-            onClose={closeDropdown}
-            className="w-40 p-2"
+        <div className="relative inline-block shrink-0">
+          <button
+            className="dropdown-toggle grid place-items-center w-9 h-9 rounded-sky-chip text-sky-ink-3 hover:bg-white/70 hover:text-sky-ink active:scale-95 transition-all duration-150"
+            onClick={toggleDropdown}
+            aria-label="Card options"
+            aria-expanded={isOpen}
           >
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-            >
+            <MoreHorizontal className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
+          </button>
+          <Dropdown isOpen={isOpen} onClose={closeDropdown} className="w-40 p-2">
+            <DropdownItem onItemClick={closeDropdown} className={menuItemCls}>
               View More
             </DropdownItem>
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-            >
+            <DropdownItem onItemClick={closeDropdown} className={menuItemCls}>
               Delete
             </DropdownItem>
           </Dropdown>
         </div>
       </div>
-      <div className="px-4 py-6 my-6 overflow-hidden border border-gary-200 rounded-2xl dark:border-gray-800 sm:px-6">
+
+      {/* The map sits in its own inset well so the vector art reads as a plate
+          inside the card rather than floating loose on the glass. */}
+      <div className="relative px-4 py-6 my-6 overflow-hidden rounded-sky-card bg-white/55 ring-1 ring-white/78 sm:px-6">
         <div
           id="mapOne"
           className="mapOne map-btn -mx-4 -my-6 h-[212px] w-[252px] 2xsm:w-[307px] xsm:w-[358px] sm:-mx-6 md:w-[668px] lg:w-[634px] xl:w-[393px] 2xl:w-[554px]"
@@ -58,57 +69,35 @@ export default function DemographicCard() {
         </div>
       </div>
 
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="items-center w-full rounded-full max-w-8">
-              <img src="./images/country/country-01.svg" alt="usa" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                USA
-              </p>
-              <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                2,379 Customers
+      <div className="relative space-y-4">
+        {COUNTRIES.map((c) => (
+          <div key={c.name} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="grid place-items-center w-9 h-9 shrink-0 overflow-hidden rounded-full bg-white/70 ring-1 ring-white/85">
+                <img src={c.flag} alt="" className="w-full h-full object-cover" />
               </span>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-sky-ink truncate">{c.name}</p>
+                <span className="block text-xs font-medium text-sky-ink-3 tabular-nums">
+                  {c.customers} customers
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex w-full max-w-[140px] items-center gap-3">
-            <div className="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-              <div className="absolute left-0 top-0 flex h-full w-[79%] items-center justify-center rounded-sm bg-brand-500 text-xs font-medium text-white"></div>
-            </div>
-            <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-              79%
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="items-center w-full rounded-full max-w-8">
-              <img src="./images/country/country-02.svg" alt="france" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                France
+            <div className="flex w-full max-w-[150px] items-center gap-3 shrink-0">
+              <div className="relative block h-2 w-full max-w-25 rounded-full bg-sky-ink/10 overflow-hidden">
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full bg-linear-to-r from-sky-deep-lo to-sky-deep"
+                  style={{ width: `${c.pct}%` }}
+                />
+              </div>
+              <p className="w-9 text-right font-display text-sm font-semibold text-sky-ink tabular-nums">
+                {c.pct}%
               </p>
-              <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                589 Customers
-              </span>
             </div>
           </div>
-
-          <div className="flex w-full max-w-[140px] items-center gap-3">
-            <div className="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-              <div className="absolute left-0 top-0 flex h-full w-[23%] items-center justify-center rounded-sm bg-brand-500 text-xs font-medium text-white"></div>
-            </div>
-            <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-              23%
-            </p>
-          </div>
-        </div>
+        ))}
       </div>
-    </div>
+    </SkyCard>
   );
 }

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   Settings2, RefreshCw, Loader2, X, Pencil,
   Bot, Gavel, Target, CalendarCheck, Gauge, Filter,
+  Check, Minus, AlertTriangle, LayoutGrid,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import { adminConfigApi } from "../api/adminConfigApi";
@@ -13,54 +15,44 @@ import { useAlert } from "../context/AlertContext";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 
+// ── TONE TAXONOMY ─────────────────────────────────────────────────────────────
+// Config groups are a *taxonomy of subsystems*, not a severity ramp — so the
+// hues here are picked for separation at a glance and deliberately spend no
+// teal and no rose: on this screen teal means a boolean is on, and rose means an
+// error. A subsystem label must never borrow either.
+type Tone = "deep" | "cool" | "peach" | "dmg" | "violet" | "teal" | "rose" | "neutral";
+const TONE: Record<Tone, { chip: string; wash: string; rail: string }> = {
+  deep:    { chip: "bg-sky-deep/12 ring-sky-deep/22 text-sky-deep",            wash: "bg-sky-deep/8",     rail: "bg-sky-deep" },
+  cool:    { chip: "bg-sky-deep-lo/14 ring-sky-deep-lo/24 text-sky-deep-lo",   wash: "bg-sky-deep-lo/9",  rail: "bg-sky-deep-lo" },
+  peach:   { chip: "bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep",    wash: "bg-sky-peach/14",   rail: "bg-sky-peach" },
+  dmg:     { chip: "bg-sky-dmg/14 ring-sky-dmg/26 text-sky-dmg-deep",          wash: "bg-sky-dmg/10",     rail: "bg-sky-dmg" },
+  violet:  { chip: "bg-sky-violet/14 ring-sky-violet/26 text-sky-violet-deep", wash: "bg-sky-violet/10",  rail: "bg-sky-violet" },
+  teal:    { chip: "bg-sky-teal-bg ring-sky-teal/26 text-sky-teal",            wash: "bg-sky-teal/10",    rail: "bg-sky-teal" },
+  rose:    { chip: "bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep",       wash: "bg-sky-rose/10",    rail: "bg-sky-rose" },
+  neutral: { chip: "bg-white/72 ring-white/85 text-sky-ink-2",                 wash: "bg-white/48",       rail: "bg-sky-ink/22" },
+};
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+
 // ── GROUP DISPLAY CONFIG ──────────────────────────────────────────────────────
 interface GroupDisplay {
   label: string;
-  icon: ReactNode;
-  headerBg: string;
-  headerText: string;
-  countBg: string;
-  countText: string;
+  Icon: LucideIcon;
+  tone: Tone;
 }
 
 const GROUP_CFG: Record<string, GroupDisplay> = {
-  ai: {
-    label: "AI System",
-    icon: <Bot className="w-4 h-4 shrink-0" />,
-    headerBg: "bg-violet-100", headerText: "text-violet-900",
-    countBg: "bg-violet-200", countText: "text-violet-900",
-  },
-  court: {
-    label: "Court & Karma",
-    icon: <Gavel className="w-4 h-4 shrink-0" />,
-    headerBg: "bg-warning-100", headerText: "text-warning-900",
-    countBg: "bg-warning-200", countText: "text-warning-900",
-  },
-  quest: {
-    label: "Quest Engine",
-    icon: <Target className="w-4 h-4 shrink-0" />,
-    headerBg: "bg-blue-100", headerText: "text-blue-900",
-    countBg: "bg-blue-200", countText: "text-blue-900",
-  },
-  daily_task: {
-    label: "Daily Tasks",
-    icon: <CalendarCheck className="w-4 h-4 shrink-0" />,
-    headerBg: "bg-teal-100", headerText: "text-teal-900",
-    countBg: "bg-teal-200", countText: "text-teal-900",
-  },
-  difficulty: {
-    label: "Difficulty",
-    icon: <Gauge className="w-4 h-4 shrink-0" />,
-    headerBg: "bg-error-100", headerText: "text-error-900",
-    countBg: "bg-error-200", countText: "text-error-900",
-  },
+  ai:         { label: "AI System",     Icon: Bot,           tone: "violet" },
+  court:      { label: "Court & Karma", Icon: Gavel,         tone: "peach" },
+  quest:      { label: "Quest Engine",  Icon: Target,        tone: "deep" },
+  daily_task: { label: "Daily Tasks",   Icon: CalendarCheck, tone: "cool" },
+  difficulty: { label: "Difficulty",    Icon: Gauge,         tone: "dmg" },
 };
 
 const DEFAULT_GROUP: GroupDisplay = {
   label: "Other",
-  icon: <Settings2 className="w-4 h-4 shrink-0" />,
-  headerBg: "bg-gray-100", headerText: "text-gray-700",
-  countBg: "bg-gray-200", countText: "text-gray-700",
+  Icon: Settings2,
+  tone: "neutral",
 };
 
 const getGroupDisplay = (group: string): GroupDisplay =>
@@ -73,15 +65,17 @@ const GROUP_I18N: Record<string, string> = {
 };
 
 // ── VALUE TYPE BADGE ──────────────────────────────────────────────────────────
-const TYPE_CLS: Record<string, string> = {
-  bool: "bg-violet-50 text-violet-700",
-  int: "bg-sky-deep/10 text-sky-deep",
-  double: "bg-cyan-50 text-cyan-700",
-  string: "bg-gray-50 text-sky-ink-3",
+// The value type is metadata, not a state, so it stays a quiet recessed tag —
+// it must never out-shout the value sitting next to it.
+const TYPE_TONE: Record<string, Tone> = {
+  bool: "violet",
+  int: "deep",
+  double: "cool",
+  string: "neutral",
 };
 
 const TypeBadge = ({ type }: { type: string }) => (
-  <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${TYPE_CLS[type] ?? TYPE_CLS.string} shrink-0`}>
+  <span className={`shrink-0 rounded-[7px] ring-1 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${TONE[TYPE_TONE[type] ?? "neutral"].chip}`}>
     {type}
   </span>
 );
@@ -90,29 +84,32 @@ const TypeBadge = ({ type }: { type: string }) => (
 const ValueBadge = ({ value, type }: { value: string; type: string }) => {
   const { t } = useTranslation();
   if (type === "bool") {
+    // A toggle that is on is genuinely an active state, so it takes teal; off is
+    // not a failure, so it takes neutral rather than red. Both carry a glyph so
+    // the state never rests on hue alone.
     const isTrue = value.toLowerCase() === "true";
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${
-        isTrue ? "bg-success-100 text-success-800" : "bg-error-100 text-error-800"
+      <span className={`inline-flex shrink-0 items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-xs font-semibold ${
+        isTrue ? TONE.teal.chip : TONE.neutral.chip
       }`}>
-        <img
-          src={isTrue ? "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" : "/icon/UI/X/64px/X 1st 64px.png"}
-          alt=""
-          className="w-3 h-3 object-contain shrink-0"
-        />
+        {isTrue
+          ? <Check className="w-3 h-3 shrink-0" strokeWidth={2.8} aria-hidden="true" />
+          : <Minus className="w-3 h-3 shrink-0" strokeWidth={2.8} aria-hidden="true" />}
         {value}
       </span>
     );
   }
   if (type === "int" || type === "double") {
+    // Numbers are what an operator actually compares between rows, so they get
+    // the display face and tabular figures — columns of digits line up.
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-sky-deep/10 text-sky-deep font-mono shrink-0">
+      <span className="inline-flex shrink-0 items-center rounded-sky-chip bg-sky-deep/10 ring-1 ring-sky-deep/20 px-2 py-0.5 font-display text-xs font-semibold text-sky-deep tabular-nums">
         {value}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-sky-ink-2 max-w-44 truncate shrink-0" title={value}>
+    <span className="inline-flex shrink-0 max-w-44 items-center truncate rounded-sky-chip bg-white/70 ring-1 ring-white/85 px-2 py-0.5 text-xs font-medium text-sky-ink-2" title={value}>
       {value || <span className="italic text-sky-ink-3">{t("admin.configPage.emptyValue")}</span>}
     </span>
   );
@@ -125,14 +122,19 @@ interface ConfigRowProps {
 }
 
 const ConfigRow = ({ cfg, onEdit }: ConfigRowProps) => (
-  <div className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-b-0 transition-colors hover:bg-gray-50/60 ${!cfg.isActive ? "opacity-50" : ""}`}>
-    {/* Key + description */}
+  <div className={`group relative flex items-center gap-3 px-4 py-3 border-b border-white/62 last:border-b-0 transition-colors hover:bg-white/58 ${!cfg.isActive ? "opacity-50" : ""}`}>
+    {/* An inactive config is still listed but does nothing, so it gets a muted
+        rail as well as the dimming — opacity alone reads as a loading state. */}
+    {!cfg.isActive && <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-ink/22" aria-hidden="true" />}
+
+    {/* Key + description. The key is the identifier an operator searches for, so
+        it holds full ink and the description recedes beneath it. */}
     <div className="flex-1 min-w-0 pr-2">
-      <code className="text-[11px] font-bold text-sky-ink-3 block truncate leading-tight">
+      <code className="block truncate font-mono text-[11px] font-semibold leading-tight text-sky-ink">
         {cfg.configKey}
       </code>
-      <p className="text-xs text-sky-ink-2 font-medium mt-0.5 line-clamp-1 leading-tight">
-        {cfg.description || <span className="italic text-sky-ink-3">No description</span>}
+      <p className="mt-0.5 line-clamp-1 text-xs font-medium leading-tight text-sky-ink-3">
+        {cfg.description || <span className="italic">No description</span>}
       </p>
     </div>
 
@@ -142,8 +144,14 @@ const ConfigRow = ({ cfg, onEdit }: ConfigRowProps) => (
       <ValueBadge value={cfg.configValue} type={cfg.valueType} />
     </div>
 
-    {/* Edit button */}
-    <SkyButton type="button" variant="ghost" size="icon" onClick={() => onEdit(cfg)} title={`Edit ${cfg.configKey}`} className="w-7 h-7 shrink-0">
+    {/* Edit button — always reachable by keyboard, but only fully opaque on
+        hover so a long list of rows isn't a wall of pencils. */}
+    <SkyButton
+      type="button" variant="ghost" size="icon"
+      onClick={() => onEdit(cfg)}
+      title={`Edit ${cfg.configKey}`} aria-label={`Edit ${cfg.configKey}`}
+      className="w-7 h-7 shrink-0 opacity-45 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+    >
       <Pencil className="w-3 h-3" />
     </SkyButton>
   </div>
@@ -160,15 +168,21 @@ const GroupCard = ({ group, configs, onEdit }: GroupCardProps) => {
   const { t } = useTranslation();
   const display = getGroupDisplay(group);
   const groupLabel = t(`admin.configPage.groups.${GROUP_I18N[group] ?? "other"}`);
+  const tone = TONE[display.tone];
+  const Icon = display.Icon;
   return (
     <SkyCard variant="admin" className="p-0 overflow-hidden flex flex-col">
-      {/* Card header */}
-      <div className={`flex items-center gap-2.5 px-4 py-3 border-b border-gray-200 ${display.headerBg}`}>
-        <span className={display.headerText}>{display.icon}</span>
-        <h3 className={`font-bold text-sm flex-1 ${display.headerText}`}>
+      {/* Card header. The rail is what lets an operator re-find a subsystem at a
+          glance once several of these cards are stacked in a grid. */}
+      <div className={`relative flex items-center gap-3 overflow-hidden border-b border-white/65 px-4 py-3.5 ${tone.wash}`}>
+        <span className={`absolute left-0 top-0 h-full w-[3px] ${tone.rail}`} aria-hidden="true" />
+        <span className={`grid place-items-center w-8 h-8 shrink-0 rounded-sky-chip ring-1 ${tone.chip}`}>
+          <Icon className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
+        </span>
+        <h3 className="flex-1 min-w-0 truncate font-display text-sm font-semibold text-sky-ink">
           {groupLabel}
         </h3>
-        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${display.countBg} ${display.countText}`}>
+        <span className={`shrink-0 rounded-sky-chip ring-1 px-2 py-0.5 text-[11px] font-semibold tabular-nums ${tone.chip}`}>
           {configs.length}
         </span>
       </div>
@@ -191,9 +205,9 @@ interface EditModalProps {
 }
 
 const inputCls = [
-  "w-full px-3 py-2.5 rounded-sky-chip border border-sky-surf-border bg-white",
-  "text-sm font-medium text-sky-ink",
-  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20",
+  "w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80",
+  "text-sm font-medium text-sky-ink transition-shadow",
+  "focus:outline-none focus:ring-2 focus:ring-sky-deep/45",
   "placeholder:text-sky-ink-3",
 ].join(" ");
 
@@ -231,28 +245,29 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
   const renderValueInput = () => {
     if (config.valueType === "bool") {
       return (
-        <div className="flex gap-2.5">
+        // Two exclusive options read best as one segmented track rather than two
+        // loose buttons — the recessed well makes the unpicked side obviously
+        // still pickable, and only the chosen segment lifts.
+        <div className="flex gap-1.5 rounded-sky-md bg-white/45 ring-1 ring-white/72 p-1.5">
           {(["true", "false"] as const).map(opt => {
             const active = value.toLowerCase() === opt;
             const isTrue = opt === "true";
+            const OptIcon = isTrue ? Check : Minus;
             return (
               <button
                 key={opt}
                 type="button"
                 onClick={() => setValue(opt)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-sky-chip font-bold text-sm transition-all capitalize ${
+                aria-pressed={active}
+                className={`flex-1 inline-flex items-center justify-center gap-2 rounded-sky-chip py-2.5 text-sm font-semibold capitalize transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   active
                     ? isTrue
-                      ? "bg-success-200 text-success-900"
-                      : "bg-error-200 text-error-900"
-                    : "bg-white border border-sky-surf-border text-sky-ink-3 hover:bg-gray-50"
+                      ? "bg-sky-teal text-white shadow-sky-chip"
+                      : "bg-sky-ink/70 text-white shadow-sky-chip"
+                    : "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink"
                 }`}
               >
-                <img
-                  src={isTrue ? "/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" : "/icon/UI/X/64px/X 1st 64px.png"}
-                  alt=""
-                  className="w-4 h-4 object-contain shrink-0"
-                />
+                <OptIcon className="w-4 h-4 shrink-0" strokeWidth={2.8} aria-hidden="true" />
                 {opt}
               </button>
             );
@@ -285,28 +300,35 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Modal header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
-          <div className="w-9 h-9 flex items-center justify-center bg-sky-deep rounded-sky-chip shrink-0">
-            <Settings2 className="w-5 h-5 text-white" />
-          </div>
+        <div className="relative flex items-center gap-3 overflow-hidden border-b border-white/65 bg-sky-deep/8 px-5 py-4">
+          <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-deep" aria-hidden="true" />
+          <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-deep/12 ring-1 ring-sky-deep/22 text-sky-deep">
+            <Settings2 className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+          </span>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-base leading-tight text-sky-ink">{t("admin.configPage.editModal.title")}</h2>
-            <code className="text-xs text-sky-ink-3 truncate block">{config.configKey}</code>
+            <p className={eyebrow}>{t("admin.configPage.editModal.title")}</p>
+            {/* Which key is being changed is the fact that must not be misread,
+                so it is the title here rather than a caption under one. */}
+            <code className="block truncate font-mono text-sm font-semibold leading-tight text-sky-ink">{config.configKey}</code>
           </div>
-          <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} className="shrink-0">
+          <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} className="shrink-0" aria-label="Close">
             <X className="w-4 h-4" />
           </SkyButton>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
           {/* Group + type info */}
-          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-sky-chip">
+          <div className="flex items-center gap-2.5 rounded-sky-chip bg-white/58 ring-1 ring-white/80 px-3.5 py-2.5">
             {(() => {
               const d = getGroupDisplay(config.configGroup);
+              const dTone = TONE[d.tone];
+              const DIcon = d.Icon;
               return (
                 <>
-                  <span className="text-sky-ink-3">{d.icon}</span>
-                  <span className="text-xs font-bold text-sky-ink-2">{t(`admin.configPage.groups.${GROUP_I18N[config.configGroup] ?? "other"}`)}</span>
+                  <span className={`grid place-items-center w-6 h-6 shrink-0 rounded-[8px] ring-1 ${dTone.chip}`}>
+                    <DIcon className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" />
+                  </span>
+                  <span className="text-xs font-semibold text-sky-ink">{t(`admin.configPage.groups.${GROUP_I18N[config.configGroup] ?? "other"}`)}</span>
                 </>
               );
             })()}
@@ -317,18 +339,18 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
 
           {/* Value input */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-sky-ink-3 mb-2">
+            <label className={`block mb-2 ${eyebrow}`}>
               {t("admin.configPage.editModal.valueLabel")}
             </label>
             {renderValueInput()}
             {config.valueType === "string" && (
-              <p className="text-[10px] text-sky-ink-3 mt-1">{t("admin.configPage.editModal.stringHint")}</p>
+              <p className="mt-1.5 text-[10px] font-medium text-sky-ink-3">{t("admin.configPage.editModal.stringHint")}</p>
             )}
           </div>
 
           {/* Description input */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-sky-ink-3 mb-2">
+            <label className={`block mb-2 ${eyebrow}`}>
               {t("admin.configPage.editModal.descLabel")} <span className="font-medium normal-case tracking-normal">{t("admin.configPage.editModal.optional")}</span>
             </label>
             <textarea
@@ -345,14 +367,11 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
             <SkyButton type="button" variant="secondary" onClick={onClose} disabled={saving} className="flex-1">
               {t("admin.configPage.editModal.cancel")}
             </SkyButton>
-            <SkyButton type="submit" variant="success" disabled={saving} className="flex-1">
+            <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
               {saving ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> {t("admin.configPage.editModal.saving")}</>
               ) : (
-                <>
-                  <img src="/icon/UI/Checkmark/64px/Checkmark 1st 64px.png" alt="" className="w-4 h-4 object-contain" />
-                  {t("admin.configPage.editModal.save")}
-                </>
+                <><Check className="w-4 h-4" /> {t("admin.configPage.editModal.save")}</>
               )}
             </SkyButton>
           </div>
@@ -454,22 +473,23 @@ export default function AdminConfigPage() {
       <PageBreadcrumb pageTitle={t("admin.configPage.pageTitle")} />
 
       {/* ── PAGE HEADER ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="w-11 h-11 flex items-center justify-center bg-sky-deep rounded-sky-chip shrink-0">
-            <Settings2 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold leading-tight text-sky-ink">{t("admin.configPage.pageTitle")}</h1>
-            <p className="text-xs text-sky-ink-3 font-medium">
-              {totalCount} configs across {orderedGroups.length} groups — {t("admin.configPage.subtitle")}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sky-in">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-md bg-sky-deep/12 ring-1 ring-sky-deep/22 text-sky-deep">
+            <Settings2 className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className={eyebrow}>Platform</p>
+            <h1 className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">{t("admin.configPage.pageTitle")}</h1>
+            <p className="mt-0.5 text-xs font-medium text-sky-ink-2">
+              <span className="tabular-nums">{totalCount}</span> configs across <span className="tabular-nums">{orderedGroups.length}</span> groups — {t("admin.configPage.subtitle")}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
           {/* Refresh list */}
-          <SkyButton type="button" variant="secondary" size="icon" onClick={fetchAll} disabled={loading} title="Refresh config list">
+          <SkyButton type="button" variant="secondary" size="icon" onClick={fetchAll} disabled={loading} title="Refresh config list" aria-label="Refresh config list">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </SkyButton>
 
@@ -482,41 +502,47 @@ export default function AdminConfigPage() {
       </div>
 
       {/* ── FILTER PILLS ───────────────────────────────────────────────────── */}
+      {/* The whole pill row sits in one recessed glass track, so it reads as a
+          single control rather than a scatter of loose buttons — and the
+          selected pill is the only thing that lifts out of it. */}
       {filterGroups.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-          <span className="text-xs font-bold text-sky-ink-3 flex items-center gap-1 mr-1">
-            <Filter className="w-3.5 h-3.5" /> {t("admin.configPage.groupFilter")}
+        <div className="flex flex-wrap items-center gap-1.5 mb-6 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
+          <span className={`mr-1 ml-1.5 inline-flex items-center gap-1.5 ${eyebrow}`}>
+            <Filter className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" /> {t("admin.configPage.groupFilter")}
           </span>
 
           {/* "All" pill */}
           <button
             onClick={() => setGroupFilter("")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            aria-pressed={groupFilter === ""}
+            className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs font-semibold transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               groupFilter === ""
-                ? "bg-sky-deep text-white"
-                : "bg-white border border-sky-surf-border text-sky-ink-2 hover:bg-gray-50"
+                ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                : "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink"
             }`}
           >
-            <Filter className="w-3.5 h-3.5 shrink-0" />
+            <LayoutGrid className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} aria-hidden="true" />
             {t("admin.configPage.groups.all")}
           </button>
 
           {filterGroups.map(g => {
             const d = getGroupDisplay(g);
             const active = groupFilter === g;
+            const DIcon = d.Icon;
             return (
               <button
                 key={g}
                 onClick={() => setGroupFilter(active ? "" : g)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-sky-chip px-3 py-1.5 text-xs font-semibold transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   active
-                    ? "bg-sky-deep text-white"
-                    : "bg-white border border-sky-surf-border text-sky-ink-2 hover:bg-gray-50"
+                    ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                    : "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink"
                 }`}
               >
-                {d.icon}
+                <DIcon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} aria-hidden="true" />
                 {t(`admin.configPage.groups.${GROUP_I18N[g] ?? "other"}`)}
-                <span className="text-[10px] opacity-60">({groupedMap.get(g)?.length ?? 0})</span>
+                <span className={`text-[10px] tabular-nums ${active ? "opacity-70" : "text-sky-ink-3"}`}>({groupedMap.get(g)?.length ?? 0})</span>
               </button>
             );
           })}
@@ -527,34 +553,39 @@ export default function AdminConfigPage() {
       {loading && (
         <div className="flex items-center justify-center gap-3 py-20 text-sky-ink-3">
           <Loader2 className="w-7 h-7 animate-spin" />
-          <span className="font-bold">{t("admin.configPage.loading")}</span>
+          <span className="text-sm font-medium">{t("admin.configPage.loading")}</span>
         </div>
       )}
 
       {/* ── FETCH ERROR ────────────────────────────────────────────────────── */}
       {!loading && fetchError && (
-        <div className="flex items-start gap-3 p-4 bg-error-50 rounded-sky-card text-error-700">
-          <img src="/icon/UI/Warning/64px/Warning 1st 64px.png" alt="" className="w-5 h-5 object-contain shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold">{t("admin.configPage.loadFailed")}</p>
-            <p className="text-sm font-medium mt-0.5">{fetchError}</p>
-            <button onClick={fetchAll} className="mt-2 text-xs font-bold underline">{t("admin.configPage.retry")}</button>
+        <div className="relative flex items-start gap-3 overflow-hidden rounded-sky-card bg-sky-rose/10 pl-5 pr-4 py-4">
+          <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-px text-sky-rose-deep" strokeWidth={2.2} aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="font-display text-sm font-semibold text-sky-rose-deep">{t("admin.configPage.loadFailed")}</p>
+            <p className="mt-0.5 text-sm font-medium text-sky-ink-2">{fetchError}</p>
+            <button onClick={fetchAll} className="mt-2.5 rounded-sky-chip bg-white/72 ring-1 ring-white/85 px-3 py-1.5 text-xs font-semibold text-sky-ink transition-colors hover:bg-white">
+              {t("admin.configPage.retry")}
+            </button>
           </div>
         </div>
       )}
 
       {/* ── EMPTY STATE ────────────────────────────────────────────────────── */}
       {!loading && !fetchError && configs.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-sky-ink-3">
-          <Settings2 className="w-14 h-14 opacity-20" />
-          <p className="font-bold text-lg">{t("admin.configPage.noConfigs")}</p>
-          <p className="text-sm">{t("admin.configPage.noConfigsHint")}</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/38 py-20">
+          <span className="grid place-items-center w-16 h-16 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">
+            <Settings2 className="w-7 h-7" strokeWidth={1.9} aria-hidden="true" />
+          </span>
+          <p className="font-display text-sky-h3 font-semibold text-sky-ink">{t("admin.configPage.noConfigs")}</p>
+          <p className="text-sm font-medium text-sky-ink-2">{t("admin.configPage.noConfigsHint")}</p>
         </div>
       )}
 
       {/* ── GROUP CARDS GRID ───────────────────────────────────────────────── */}
       {!loading && !fetchError && configs.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sky-stagger">
           {displayedGroups.map(group => {
             const groupConfigs = groupedMap.get(group);
             if (!groupConfigs?.length) return null;

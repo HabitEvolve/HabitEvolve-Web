@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&subset=vietnamese&display=swap')
+/* ── SKY PASTEL TYPEFACES ──────────────────────────────────────────────────
+   Two families only (design-system §1): Bricolage Grotesque for headings AND
+   every number; Onest for UI/body. No third font. */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Onest:wght@100..900&display=swap')
 layer(base);
 
 @import "tailwindcss";
@@ -7,8 +10,12 @@ layer(base);
 
 @theme {
   --font-*: initial;
-  --font-sans: 'Space Grotesk', sans-serif;
-  --font-space: 'Space Grotesk', sans-serif;
+  /* Body/UI — Onest */
+  --font-sans: 'Onest', system-ui, sans-serif;
+  /* Headings + ALL numerals — Bricolage Grotesque. `font-display` is the one
+     canonical utility; the `font-space` alias that carried the migration is
+     gone now that every call-site has moved off it. */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -40,122 +47,142 @@ layer(base);
   --color-current: currentColor;
   --color-transparent: transparent;
   --color-white: #ffffff;
-  --color-black: #101828;
+  --color-black: #24344D;
 
-  --color-brand-25: #f0fdf5;
-  --color-brand-50: #dcfce7;
-  --color-brand-100: #c7f0d8;
-  --color-brand-200: #b8dfc8;
-  --color-brand-300: #8fc8a8;
-  --color-brand-400: #4ade80;
-  --color-brand-500: #006d36;
-  --color-brand-600: #005a2e;
-  --color-brand-700: #004d26;
-  --color-brand-800: #003e1e;
-  --color-brand-900: #002f16;
-  --color-brand-950: #001f0e;
+  /* ── LEGACY RAMPS, REMAPPED ONTO SKY PASTEL ────────────────────────────────
+     These ramp NAMES are load-bearing: ~60 files reference the brand, success,
+     warning, error and gray ramps. Rather than rewrite every call-site (and risk
+     missing one, which is exactly how green kept coming back), the ramps are
+     re-pointed at Sky-Pastel hues here. `brand` is no longer green — it is
+     --deep. `success` is no longer green — it is --teal. Any file that still
+     says bg-brand-500 now paints Sky-Pastel blue.
+     Design-system §7: "Không hardcode hex ngoài file token." */
 
-  --color-blue-light-25: #f5fbff;
-  --color-blue-light-50: #f0f9ff;
-  --color-blue-light-100: #e0f2fe;
-  --color-blue-light-200: #b9e6fe;
-  --color-blue-light-300: #7cd4fd;
-  --color-blue-light-400: #36bffa;
-  --color-blue-light-500: #0ba5ec;
-  --color-blue-light-600: #0086c9;
-  --color-blue-light-700: #026aa2;
-  --color-blue-light-800: #065986;
-  --color-blue-light-900: #0b4a6f;
-  --color-blue-light-950: #062c41;
+  /* brand → --deep (#3D6DA6). Primary/action blue. WAS a green ramp (#006d36). */
+  --color-brand-25: #f4f8fc;
+  --color-brand-50: #eef6fd;
+  --color-brand-100: #d7eaf8;
+  --color-brand-200: #c0d8f1;
+  --color-brand-300: #a9c7e8;
+  --color-brand-400: #5c8cc4;
+  --color-brand-500: #3d6da6;
+  --color-brand-600: #345c8c;
+  --color-brand-700: #2b4b73;
+  --color-brand-800: #223b5a;
+  --color-brand-900: #1b2f48;
+  --color-brand-950: #142238;
 
-  --color-gray-25: #fcfcfd;
-  --color-gray-50: #f4fafd;
-  --color-gray-100: #f2f4f7;
-  --color-gray-200: #e4e7ec;
-  --color-gray-300: #d0d5dd;
-  --color-gray-400: #98a2b3;
-  --color-gray-500: #667085;
-  --color-gray-600: #475467;
-  --color-gray-700: #344054;
-  --color-gray-800: #1a2b1e;
-  --color-gray-900: #0e1a12;
-  --color-gray-950: #091210;
-  --color-gray-dark: #162a1e;
+  --color-blue-light-25: #f5fafd;
+  --color-blue-light-50: #eef6fd;
+  --color-blue-light-100: #d7eaf8;
+  --color-blue-light-200: #c0d8f1;
+  --color-blue-light-300: #a9c7e8;
+  --color-blue-light-400: #7ba6d5;
+  --color-blue-light-500: #5c8cc4;
+  --color-blue-light-600: #3d6da6;
+  --color-blue-light-700: #345c8c;
+  --color-blue-light-800: #2b4b73;
+  --color-blue-light-900: #223b5a;
+  --color-blue-light-950: #142238;
 
+  /* gray → navy-tinted slate, terminating at --ink (#24344D). The old 800/900/
+     950/dark steps were green-tinted (#1a2b1e, #0e1a12, #162a1e) — that is
+     where "green" leaked into every dark text colour and dark-mode surface. */
+  --color-gray-25: #fcfdfe;
+  --color-gray-50: #f5f8fb;
+  --color-gray-100: #edf2f7;
+  --color-gray-200: #dfe6ee;
+  --color-gray-300: #c6d1de;
+  --color-gray-400: #8695a8;
+  --color-gray-500: #64758c;
+  --color-gray-600: #4c5d75;
+  --color-gray-700: #3a4b63;
+  --color-gray-800: #2d3d54;
+  --color-gray-900: #24344d;
+  --color-gray-950: #1a2740;
+  --color-gray-dark: #24344d;
+
+  /* orange → --peach (reward / warm). */
   --color-orange-25: #fffaf5;
-  --color-orange-50: #fff6ed;
-  --color-orange-100: #ffead5;
-  --color-orange-200: #fddcab;
-  --color-orange-300: #feb273;
-  --color-orange-400: #fd853a;
-  --color-orange-500: #fb6514;
-  --color-orange-600: #ec4a0a;
-  --color-orange-700: #c4320a;
-  --color-orange-800: #9c2a10;
-  --color-orange-900: #7e2410;
-  --color-orange-950: #511c10;
+  --color-orange-50: #fdf2e8;
+  --color-orange-100: #fbe4d0;
+  --color-orange-200: #f7cea9;
+  --color-orange-300: #f0ac72;
+  --color-orange-400: #e29455;
+  --color-orange-500: #ce7c38;
+  --color-orange-600: #a85f1f;
+  --color-orange-700: #8c4e19;
+  --color-orange-800: #713e14;
+  --color-orange-900: #5a3110;
+  --color-orange-950: #3d210b;
 
-  --color-success-25: #f6fef9;
-  --color-success-50: #ecfdf3;
-  --color-success-100: #d1fadf;
-  --color-success-200: #a6f4c5;
-  --color-success-300: #6ce9a6;
-  --color-success-400: #32d583;
-  --color-success-500: #12b76a;
-  --color-success-600: #039855;
-  --color-success-700: #027a48;
-  --color-success-800: #05603a;
-  --color-success-900: #054f31;
-  --color-success-950: #053321;
+  /* success → --teal (#2E9C8E). NOT green. Design-system §4: approved/valid/
+     survived/active all resolve to teal, app-wide, no exceptions. */
+  --color-success-25: #f3fbf9;
+  --color-success-50: #eaf6f4;
+  --color-success-100: #d6ede9;
+  --color-success-200: #aedcd5;
+  --color-success-300: #7fc7bd;
+  --color-success-400: #4fb0a4;
+  --color-success-500: #2e9c8e;
+  --color-success-600: #268478;
+  --color-success-700: #1f6c62;
+  --color-success-800: #18544c;
+  --color-success-900: #124039;
+  --color-success-950: #0c2b27;
 
-  --color-error-25: #fffbfa;
-  --color-error-50: #fef3f2;
-  --color-error-100: #fee4e2;
-  --color-error-200: #fecdca;
-  --color-error-300: #fda29b;
-  --color-error-400: #f97066;
-  --color-error-500: #f04438;
-  --color-error-600: #d92d20;
-  --color-error-700: #b42318;
-  --color-error-800: #912018;
-  --color-error-900: #7a271a;
-  --color-error-950: #55160c;
+  /* error → --rose (destructive). */
+  --color-error-25: #fffafb;
+  --color-error-50: #fbeff3;
+  --color-error-100: #f6dee6;
+  --color-error-200: #ebbecd;
+  --color-error-300: #dc9ab0;
+  --color-error-400: #ce8299;
+  --color-error-500: #c4708a;
+  --color-error-600: #a34e6c;
+  --color-error-700: #8a4059;
+  --color-error-800: #6f3347;
+  --color-error-900: #592838;
+  --color-error-950: #3c1a26;
 
-  --color-warning-25: #fffcf5;
-  --color-warning-50: #fffaeb;
-  --color-warning-100: #fef0c7;
-  --color-warning-200: #fedf89;
-  --color-warning-300: #fec84b;
-  --color-warning-400: #fdb022;
-  --color-warning-500: #f79009;
-  --color-warning-600: #dc6803;
-  --color-warning-700: #b54708;
-  --color-warning-800: #93370d;
-  --color-warning-900: #7a2e0e;
-  --color-warning-950: #4e1d09;
+  /* warning → --peach, text-safe at 600 (--peachDeep). */
+  --color-warning-25: #fffcf7;
+  --color-warning-50: #fdf5ea;
+  --color-warning-100: #fbe8d2;
+  --color-warning-200: #f7d3ac;
+  --color-warning-300: #f0ac72;
+  --color-warning-400: #e29455;
+  --color-warning-500: #ce7c38;
+  --color-warning-600: #a85f1f;
+  --color-warning-700: #8c4e19;
+  --color-warning-800: #713e14;
+  --color-warning-900: #5a3110;
+  --color-warning-950: #3d210b;
 
-  --color-theme-pink-500: #ee46bc;
+  --color-theme-pink-500: #c4708a;
 
-  --color-theme-purple-500: #7a5af8;
+  --color-theme-purple-500: #7c6ac7;
 
-  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1),
-    0px 2px 4px -2px rgba(16, 24, 40, 0.06);
-  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08),
-    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
-  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1),
-    0px 1px 2px 0px rgba(16, 24, 40, 0.06);
-  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08),
-    0px 8px 8px -4px rgba(16, 24, 40, 0.03);
-  --shadow-datepicker: -5px 0 0 #1a2e22, 5px 0 0 #1a2e22;
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(0, 109, 54, 0.15);
-  --shadow-slider-navigation: 0px 1px 2px 0px rgba(16, 24, 40, 0.1),
-    0px 1px 3px 0px rgba(16, 24, 40, 0.1);
-  --shadow-tooltip: 0px 4px 6px -2px rgba(16, 24, 40, 0.05),
-    -8px 0px 20px 8px rgba(16, 24, 40, 0.05);
+  /* Shadows — navy-ink tinted (rgba(36,52,77,…)), never pure black.
+     Design-system §3/§7: "Bóng đổ luôn ám xanh navy, KHÔNG dùng bóng đen thuần." */
+  --shadow-theme-md: 0px 4px 8px -2px rgba(36, 52, 77, 0.12),
+    0px 2px 4px -2px rgba(36, 52, 77, 0.08);
+  --shadow-theme-lg: 0px 12px 16px -4px rgba(36, 52, 77, 0.10),
+    0px 4px 6px -2px rgba(36, 52, 77, 0.05);
+  --shadow-theme-sm: 0px 1px 3px 0px rgba(36, 52, 77, 0.12),
+    0px 1px 2px 0px rgba(36, 52, 77, 0.07);
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(36, 52, 77, 0.07);
+  --shadow-theme-xl: 0px 20px 24px -4px rgba(36, 52, 77, 0.10),
+    0px 8px 8px -4px rgba(36, 52, 77, 0.05);
+  --shadow-datepicker: -5px 0 0 #eef6fd, 5px 0 0 #eef6fd;
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(61, 109, 166, 0.18);
+  --shadow-slider-navigation: 0px 1px 2px 0px rgba(36, 52, 77, 0.12),
+    0px 1px 3px 0px rgba(36, 52, 77, 0.12);
+  --shadow-tooltip: 0px 4px 6px -2px rgba(36, 52, 77, 0.06),
+    -8px 0px 20px 8px rgba(36, 52, 77, 0.06);
 
-  --drop-shadow-4xl: 0 35px 35px rgba(0, 0, 0, 0.25),
-    0 45px 65px rgba(0, 0, 0, 0.15);
+  --drop-shadow-4xl: 0 35px 35px rgba(36, 52, 77, 0.25),
+    0 45px 65px rgba(36, 52, 77, 0.15);
 
   --z-index-1: 1;
   --z-index-9: 9;
@@ -165,70 +192,32 @@ layer(base);
   --z-index-99999: 99999;
   --z-index-999999: 999999;
 
-  /* ── ROLE-COLOR TOKENS (DESIGN.md's Role-Color Rule — sidebar wayfinding) ──
-     NOTE: these are intentionally NOT aliased to any sky-* token. Role color
-     is a wayfinding signal independent of the Sky-Pastel surface system —
-     Mentor's Signal Purple has no relationship to sky-deep (Sky-Pastel's
-     action blue), and Admin's Ember Orange has no relationship to sky-ink
-     (Sky-Pastel's text color). Aliasing them would silently swap the
-     sidebar identity colors for unrelated ones the next time either sky-*
-     token changes. */
-  --color-admin-active: #f7a561;  /* Ember Orange — Admin sidebar active state */
-  --color-mentor-active: #7C3AED; /* Signal Purple — Mentor sidebar active state, badges */
-  --color-admin-surface: #B5EBE0; /* Field Mint — Admin sidebar background. Formalizes the bg-[#B5EBE0] literal already in AppSidebar.tsx. */
+  /* ── ROLE-COLOR TOKENS ────────────────────────────────────────────────────
+     Sky-Pastel unifies the two portals, so role identity is now carried inside
+     the palette rather than by a foreign hue. Design-system §1: violet = epic/
+     mentor, deep = primary/UI, and NO green anywhere — which retires the old
+     Field Mint (#B5EBE0) sidebar surface and Ember Orange active state, since
+     mint is a green-family surface and orange now means "reward" only.
+     Active nav in both portals uses the deep gradient (§5 "active dùng deep"). */
+  --color-admin-active: #3D6DA6;  /* --deep — Admin sidebar active state */
+  --color-mentor-active: #7C6AC7; /* --violet — Mentor accent, badges */
+  --color-admin-surface: #EEF6FD; /* --sky4 — palest sky, glass-compatible sidebar wash */
 
-  /* ── GAME / NEO-BRUTALISM DESIGN TOKENS (ported from mobile colors.ts) ──── */
+  /* The game-*, brand-green-* , radius-game-* and shadow-neo-* ramps are gone.
+     They were the neo-brutalism / green-era palette, kept alive only as
+     re-pointed aliases while call-sites migrated. Nothing references them
+     now, so they are deleted rather than left as a second vocabulary for
+     the same colours. Use the sky-* tokens below. */
 
-  /* Game palette — exact hex values from HabitEvolve Stitch design system */
-  --color-game-primary: #006d36;
-  --color-game-primary-container: #4ade80;
-  --color-game-secondary: #b45309;
-  --color-game-secondary-container: #fbbf24;
-  --color-game-tertiary: #7e22ce;
-  --color-game-tertiary-container: #a855f7;
-  --color-game-tertiary-surface: #f3e8ff;
-  --color-game-accent: #92400e;
-  --color-game-accent-container: #fbbf24;
-  --color-game-coral: #ffdad6;
-  --color-game-coral-border: #FF8080;
-  --color-game-bg: #f4fafd;
-  --color-game-text: #2D3436;
-  --color-game-text-dark: #161d1f;
-  --color-game-border: #b8dfc8;
-  --color-game-outline: #3d4a3e;
-  --color-game-surface: #ffffff;
-  --color-game-surface-container: #e4f4ec;
-  --color-game-muted: #8E9AA0;
-  --color-game-primary-dark: #004d26;
-  --color-game-primary-shadow: #8fc8a8;
-  --color-game-streak: #E85D20;
-  --color-game-flame: #FF6B35;
+  /* ── SKY-PASTEL DESIGN TOKENS ─────────────────────────────────────────────
+     THE source of truth for the whole app, both portals (design-system §1).
+     Previously scoped "Mentor-portal-only"; Sky-Pastel is now unified — Admin
+     uses the same glass/mesh language, only with restraint on data-dense
+     surfaces (§5's table rules), never a different palette. */
 
-  /* Brand logo gradient — auth "Visual Gate" panel, matches the logo's own green */
-  --color-brand-green-dark: #0C6542;
-  --color-brand-green-light: #107D5A;
-
-  /* Border radii — from mobile spacing.ts BorderRadius */
-  --radius-game-primary: 1.5rem;   /* 24px */
-  --radius-game-secondary: 1rem;   /* 16px */
-  --radius-game-small: 0.75rem;    /* 12px */
-  --radius-game-xs: 0.5rem;        /* 8px */
-
-  /* Neo-brutalism shadows — solid hard-offset drop shadows (no blur) */
-  --shadow-neo-card: 4px 4px 0 0 #3d4a3e;
-  --shadow-neo-pressable: 4px 6px 0 0 #3d4a3e;
-  --shadow-neo-button: 4px 4px 0 0 #3d4a3e;
-  --shadow-neo-sticker: 2px 2px 0 0 #3d4a3e;
-  --shadow-neo-modal: 6px 6px 0 0 #3d4a3e;
-
-  /* ── SKY-PASTEL DESIGN TOKENS (ported from mobile theme/pastel.ts `sky`) ──
-     Mentor-portal-only glass layer. Keeps Space Grotesk (DESIGN.md's
-     One-Family Rule); only surface/shadow/color language is synced from
-     Mobile's current default layer, not the retired neo-brutalism Sticker
-     layer above. Do not use these on Admin surfaces. */
-
-  /* Mesh backdrop tints — atmosphere only (mesh/glass/chart fill), never text:
-     all four are <2:1 contrast on sky-cream. */
+  /* Mesh backdrop tints — atmosphere only (mesh/glass/chart fill), NEVER text:
+     all four are <2:1 contrast on sky-cream. §7: "Pastel nền không bao giờ
+     làm màu chữ." */
   --color-sky-1: #A9C7E8;
   --color-sky-2: #C0D8F1;
   --color-sky-3: #D7EAF8;
@@ -241,11 +230,20 @@ layer(base);
   --color-sky-ink-3: rgba(36, 52, 77, 0.38);
 
   /* The colours that actually run Sky-Pastel UI */
-  --color-sky-deep: #3D6DA6;       /* PRIMARY: buttons, XP, level, links */
+  --color-sky-deep: #3D6DA6;       /* PRIMARY: buttons, XP, level, links, active nav */
   --color-sky-deep-lo: #5C8CC4;    /* light head of the primary gradient */
-  --color-sky-peach: #F0AC72;      /* REWARD only: gold, streak, achievements */
+  --color-sky-peach: #F0AC72;      /* REWARD/warm: gold, streak, achievements, pending */
   --color-sky-peach-deep: #A85F1F; /* peach as a text colour */
-  --color-sky-rose: #C4708A;       /* destructive (e.g. remove mentee, revoke) */
+  --color-sky-dmg: #E8724A;        /* monster HP / damage */
+  --color-sky-dmg-deep: #B84A28;   /* dmg as a text colour */
+  --color-sky-violet: #7C6AC7;     /* epic / mentor accent */
+  --color-sky-violet-deep: #5B4699;
+  --color-sky-rose: #C4708A;       /* destructive (remove mentee, revoke, ban) */
+  --color-sky-rose-deep: #A34E6C;  /* rose as a text colour */
+
+  /* SUCCESS = TEAL, never green. §4: approved / valid / survived / active. */
+  --color-sky-teal: #2E9C8E;
+  --color-sky-teal-bg: #D6EDE9;
 
   /* Glass surface */
   --color-sky-surf: rgba(255, 255, 255, 0.72);
@@ -254,29 +252,36 @@ layer(base);
   /* Shadow tint — always blue-ink, never black (black reads "dirty" on cream) */
   --color-sky-shadow: #24344D;
 
-  /* Rarity tiers — boss raid / item badges */
-  --color-sky-rarity-common-fg: #7E8CA3;
-  --color-sky-rarity-common-bg: rgba(126, 140, 163, 0.12);
-  --color-sky-rarity-rare-fg: #4C8DD6;
-  --color-sky-rarity-rare-bg: rgba(76, 141, 214, 0.13);
-  --color-sky-rarity-epic-fg: #8B6DE0;
-  --color-sky-rarity-epic-bg: rgba(139, 109, 224, 0.13);
-  --color-sky-rarity-legendary-fg: #E0902F;
-  --color-sky-rarity-legendary-bg: rgba(224, 144, 47, 0.14);
+  /* Deep navy bed — the one dark surface in the system, for panels that must
+     out-contrast everything around them (the live-call leaderboard, video
+     tiles). Still navy, never black. Pairs as a gradient tail to sky-ink. */
+  --color-sky-abyss: #1B2A40;
+
+  /* Rarity tiers — boss raid / item badges (§1 rarity block) */
+  --color-sky-rarity-common-fg: #8695A8;
+  --color-sky-rarity-common-bg: rgba(134, 149, 168, 0.12);
+  --color-sky-rarity-rare-fg: #3D6DA6;
+  --color-sky-rarity-rare-bg: rgba(61, 109, 166, 0.13);
+  --color-sky-rarity-epic-fg: #7C6AC7;
+  --color-sky-rarity-epic-bg: rgba(124, 106, 199, 0.13);
+  --color-sky-rarity-legendary-fg: #C77A2E;
+  --color-sky-rarity-legendary-bg: rgba(199, 122, 46, 0.14);
 
   /* Currency text colours — Mentor wallet/subscription surfaces */
   --color-sky-currency-gold: #A85F1F;
   --color-sky-currency-gem: #3D6DA6;
   --color-sky-currency-mgold: #B07A16;
 
-  /* Radius — new steps introduced by Sky-Pastel, outside the 8/12/16/24 ladder.
-     Scoped to sky-* components only; everything else keeps the existing ladder. */
-  --radius-sky-card: 1.25rem;  /* 20px — SkyCard default */
-  --radius-sky-chip: 0.875rem; /* 14px — glass icon/back buttons */
+  /* Radius ladder — design-system §1 */
+  --radius-sky-xl: 30px;
+  --radius-sky-lg: 26px;
+  --radius-sky-md: 20px;
+  --radius-sky-sm: 14px;
+  --radius-sky-card: 1.625rem; /* 26px — --r-lg, the standard glass card */
+  --radius-sky-chip: 0.875rem; /* 14px — --r-sm, buttons / glass chips */
 
-  /* Type scale — Sky-Pastel's own size/weight steps, rendered in Space Grotesk
-     (not Plus Jakarta Sans) per the One-Family Rule. Weight is set per-use via
-     font-bold/font-extrabold etc., not baked into the token. */
+  /* Type scale — rendered in Bricolage Grotesque (display) for headings/numbers,
+     Onest for body. Weight is set per-use via font-bold etc. */
   --text-sky-h1: 28px;
   --text-sky-h1--line-height: 36px;
   --text-sky-h2: 24px;
@@ -290,23 +295,21 @@ layer(base);
   --text-sky-xs: 10px;
   --text-sky-xs--line-height: 16px;
 
-  /* Shadows — soft, blue-ink, real blur (never the hard zero-blur neo-* offset).
-     Web can afford genuine backdrop-blur (no RN Android perf constraint that
-     made Mobile drop its live BlurView), so glass utilities below pair these
-     with backdrop-filter rather than Mobile's static-gradient-frost workaround. */
-  --shadow-sky-glass: 0 6px 20px rgba(36, 52, 77, 0.16);  /* SkyCard surf variant */
-  --shadow-sky-tint: 0 8px 12px rgba(36, 52, 77, 0.20);   /* SkyCard tint variant */
-  --shadow-sky-chip: 0 8px 12px rgba(36, 52, 77, 0.14);   /* glass back button / icon chip */
-  --shadow-sky-fill: 0 14px 20px rgba(61, 109, 166, 0.40); /* deep-gradient CTA card */
+  /* Shadows — soft, navy-ink, real blur (never hard zero-blur offsets). */
+  --shadow-sky-glass: inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 12px 26px -14px rgba(36, 52, 77, 0.34);
+  --shadow-sky-tint: 0 8px 12px rgba(36, 52, 77, 0.20);
+  --shadow-sky-chip: 0 8px 12px rgba(36, 52, 77, 0.14);
+  --shadow-sky-fill: 0 10px 20px -10px rgba(61, 109, 166, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 
-  /* ── ADMIN-RESTRAINED SKY TOKENS ────────────────────────────────────────
-     Per PRODUCT.md: Sky-Pastel is unified across portals, but heavily
-     restrained on Admin — glass stays on container chrome (sidebar/topnav/
-     modal wrapper), never behind data-dense tables/forms/approval queues.
-     Muted slate, not the colorful Mentor mesh. */
-  --color-sky-admin-bg: #F8FAFC;      /* base slate wash */
-  --color-sky-admin-bg-deep: #F1F5F9; /* subtle gradient stop, still opaque */
-  --shadow-sky-admin: 0 2px 8px rgba(36, 52, 77, 0.08); /* restrained — lighter than shadow-sky-tint */
+  /* ── ADMIN RESTRAINT ──────────────────────────────────────────────────────
+     Admin shares the mesh + glass language (§2 "mọi trang admin"), but keeps
+     glass off data-dense rows so tables stay legible and cheap to render
+     (§5's table spec). These are the calmer variants, not a separate palette. */
+  --color-sky-admin-bg: #F5F0E8;      /* --cream, same canvas as Mentor */
+  --color-sky-admin-bg-deep: #EEF6FD;
+  --shadow-sky-admin: 0 8px 18px -12px rgba(36, 52, 77, 0.26);
 }
 
 /*
@@ -330,8 +333,45 @@ layer(base);
     cursor: pointer;
   }
   body {
-    @apply relative font-normal font-sans z-1 bg-gray-50;
+    @apply relative font-normal font-sans z-1 text-sky-ink;
+    background-color: var(--color-sky-cream);
   }
+  /* Headings and numerals in Bricolage Grotesque (design-system §1). Numerals
+     are handled per-use with font-display; headings get it structurally here so
+     no page has to remember. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+/* ── MESH BACKDROP + GRAIN (design-system §2 — every page, both portals) ─────
+   Exact 5-stop radial recipe from the spec, over --cream. `.app-bg` is the
+   canonical name; sky-mesh-bg / sky-admin-bg below are aliases so existing
+   call-sites in AppLayout/MentorLayout inherit it unchanged. */
+@utility app-bg {
+  position: relative;
+  background:
+    radial-gradient(58% 42% at 12% 4%,  #A9C7E8 0%, rgba(169, 199, 232, 0) 62%),
+    radial-gradient(52% 38% at 92% 14%, #D7EAF8 0%, rgba(215, 234, 248, 0) 60%),
+    radial-gradient(64% 40% at 78% 46%, #C0D8F1 0%, rgba(192, 216, 241, 0) 58%),
+    radial-gradient(50% 34% at 6% 62%,  #EEF6FD 0%, rgba(238, 246, 253, 0) 60%),
+    radial-gradient(70% 44% at 50% 96%, #C0D8F1 0%, rgba(192, 216, 241, 0) 62%),
+    var(--color-sky-cream);
+  background-attachment: fixed;
+}
+
+/* Grain overlay — feTurbulence, opacity .3, overlay blend, non-interactive.
+   Inlined as a data-URI SVG so there's no extra network request and no PNG
+   asset to keep in sync with the token file. */
+@utility app-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
 }
 
 @utility menu-item {
@@ -388,17 +428,6 @@ layer(base);
   @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
 }
 
-@utility menu-dropdown-badge {
-  @apply block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase text-brand-500 dark:text-brand-400;
-}
-
-@utility menu-dropdown-badge-active {
-  @apply bg-brand-100 dark:bg-brand-500/20;
-}
-
-@utility menu-dropdown-badge-inactive {
-  @apply bg-brand-50 group-hover:bg-brand-100 dark:bg-brand-500/15 dark:group-hover:bg-brand-500/20;
-}
 @utility no-scrollbar {
   /* Chrome, Safari and Opera */
   &::-webkit-scrollbar {
@@ -421,153 +450,83 @@ layer(base);
   }
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #344054;
+  background-color: var(--color-sky-ink);
 }
 
-/* ── GRADIENT BACKGROUND — brand palette: mint (primary) × gold (secondary) ─── */
-@utility dot-grid-bg {
-  background: linear-gradient(135deg, #f4fafd 0%, #e4f4ec 50%, #fef9ed 100%);
-
-  .dark & {
-    background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
-  }
-}
-
-/* ── NEO-BRUTALISM BUTTON — lift on hover, press on active ─────────────────── */
-/*
- * Usage: add btn-neo to any button alongside color classes.
- * Default → hard offset shadow at rest.
- * Hover   → lifts up-left (−4px each) + shadow grows.
- * Active  → presses down (+4px each) + shadow collapses.
+/* Retired: dot-grid-bg, btn-neo, neo-card, neo-button and neo-input were the
+ * neo-brutalism surface set. Every call-site now uses sky-mesh-bg / sky-glass /
+ * SkyButton / sky-input, so the shims are deleted rather than left to rot.
  */
-@utility btn-neo {
-  border-width: 4px;
-  border-style: solid;
-  border-color: #1A1D20;
-  box-shadow: 4px 4px 0 0 #1A1D20;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-
-  &:hover:not(:disabled) {
-    transform: translate(-0.25rem, -0.25rem);
-    box-shadow: 6px 6px 0 0 #1A1D20;
-  }
-
-  &:active:not(:disabled) {
-    transform: translate(0.25rem, 0.25rem);
-    box-shadow: none;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-}
-
-/* ── NEO-BRUTALISM COMPONENT UTILITIES ─────────────────────────────────────
- * Game-flavored component classes using the game.* design tokens.
- * Apply alongside color utilities, e.g. <div class="neo-card bg-game-surface">
- */
-
-/* Card container: chunky outline + hard drop shadow */
-@utility neo-card {
-  background-color: var(--color-game-surface);
-  border: 4px solid var(--color-game-outline);
-  border-radius: var(--radius-game-secondary);
-  box-shadow: var(--shadow-neo-card);
-}
-
-/* Pressable button: 3D lift on hover, presses down on active */
-@utility neo-button {
-  font-family: var(--font-space);
-  font-weight: 600;
-  border: 4px solid var(--color-game-outline);
-  border-radius: var(--radius-game-xs);
-  box-shadow: var(--shadow-neo-pressable);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-
-  &:hover:not(:disabled) {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 8px 0 0 var(--color-game-outline);
-  }
-
-  &:active:not(:disabled) {
-    transform: translate(2px, 2px);
-    box-shadow: none;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-}
 
 /* ── SKY-PASTEL COMPONENT UTILITIES ────────────────────────────────────────
- * Mentor-portal-only glass surfaces, ported from mobile SkyCard/SkyBackground/
- * SkyHeader. Never mix with neo-* (hard shadow) or apply to Admin surfaces.
+ * The single surface language for BOTH portals. Design-system §3.
  */
 
-/* Full-bleed mesh backdrop — mirrors mobile's SkyMesh (gradient wash + corner
-   blobs). Apply to a screen/section wrapper, position: relative on the parent. */
+/* Mesh backdrop — alias of app-bg (§2 applies the same mesh to every page). */
 @utility sky-mesh-bg {
   position: relative;
-  background: linear-gradient(160deg, var(--color-sky-4) 0%, var(--color-sky-cream) 70%);
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 5% -5%, color-mix(in srgb, var(--color-sky-1) 50%, transparent) 0%, transparent 30%),
-      radial-gradient(circle at 95% 5%, color-mix(in srgb, var(--color-sky-3) 60%, transparent) 0%, transparent 28%),
-      radial-gradient(circle at 100% 45%, color-mix(in srgb, var(--color-sky-2) 45%, transparent) 0%, transparent 30%),
-      radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--color-sky-2) 40%, transparent) 0%, transparent 32%);
-  }
+  background:
+    radial-gradient(58% 42% at 12% 4%,  #A9C7E8 0%, rgba(169, 199, 232, 0) 62%),
+    radial-gradient(52% 38% at 92% 14%, #D7EAF8 0%, rgba(215, 234, 248, 0) 60%),
+    radial-gradient(64% 40% at 78% 46%, #C0D8F1 0%, rgba(192, 216, 241, 0) 58%),
+    radial-gradient(50% 34% at 6% 62%,  #EEF6FD 0%, rgba(238, 246, 253, 0) 60%),
+    radial-gradient(70% 44% at 50% 96%, #C0D8F1 0%, rgba(192, 216, 241, 0) 62%),
+    var(--color-sky-cream);
+  background-attachment: fixed;
 }
 
-/* Glass card: frosted "liquid glass" surface over the mesh backdrop. Real
-   backdrop-blur (web has no RN Android perf constraint), translucent white/sky
-   wash, specular top edge, faint ink bevel at the bottom. */
+/* GLASS CARD — the §3 formula verbatim. Every card/panel/bento cell/table
+   wrapper/modal in the app is this. */
 @utility sky-glass {
   position: relative;
   border-radius: var(--radius-sky-card);
-  border: 1px solid var(--color-sky-surf-border);
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, white 88%, transparent),
-    color-mix(in srgb, white 52%, transparent)
-  );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sky-glass);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: linear-gradient(154deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.46) 56%);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 12px 26px -14px rgba(36, 52, 77, 0.34);
+  overflow: hidden;
 
-  &::before {
-    /* top specular hairline */
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1.5px;
-    border-radius: var(--radius-sky-card) var(--radius-sky-card) 0 0;
-    background: rgba(255, 255, 255, 0.9);
-  }
-
+  /* top-left specular highlight */
   &::after {
-    /* bottom ink bevel */
-    content: '';
+    content: "";
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(36, 52, 77, 0.1);
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 70% at 16% -12%, rgba(255, 255, 255, 0.7), transparent 52%);
   }
 }
 
-/* Flat tint card — secondary Sky-Pastel panel, no blur */
+/* Floating menu surface — dropdowns, popovers, context menus.
+   sky-glass is tuned for cards that SIT ON the page: its gradient falls to
+   alpha 0.46, which is fine over a quiet background but lets buttons and text
+   underneath bleed through a menu that FLOATS OVER live content. This keeps the
+   same glass recipe and specular highlight but holds a near-opaque floor, and
+   deepens the drop shadow so the panel reads as lifted off the page. */
+@utility sky-glass-menu {
+  position: relative;
+  border-radius: var(--radius-sky-md);
+  border: 1px solid rgba(255, 255, 255, 0.96);
+  background: linear-gradient(154deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.93) 56%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 18px 40px -16px rgba(36, 52, 77, 0.42),
+    0 4px 12px -6px rgba(36, 52, 77, 0.22);
+  overflow: hidden;
+
+  /* top-left specular highlight */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 70% at 16% -12%, rgba(255, 255, 255, 0.7), transparent 52%);
+  }
+}
+
+/* Flat tint card — secondary panel, no blur */
 @utility sky-glass-tint {
   border-radius: var(--radius-sky-card);
   border: 1px solid var(--color-sky-surf-border);
@@ -575,80 +534,230 @@ layer(base);
   box-shadow: var(--shadow-sky-tint);
 }
 
-/* Small glass chip — icon/back buttons (SkyHeader) */
+/* Small glass chip — icon/back buttons, secondary buttons (§5) */
 @utility sky-glass-chip {
   border-radius: var(--radius-sky-chip);
-  border: 1px solid var(--color-sky-surf-border);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(61, 109, 166, 0.25);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   box-shadow: var(--shadow-sky-chip);
 }
 
-/* Deep-gradient CTA / hero fill surface */
+/* Deep-gradient CTA / hero fill surface (§5 primary button gradient, card radius) */
 @utility sky-glass-fill {
   border-radius: var(--radius-sky-card);
-  background: linear-gradient(135deg, var(--color-sky-deep-lo), var(--color-sky-deep));
+  background: linear-gradient(180deg, var(--color-sky-deep-lo), var(--color-sky-deep));
   box-shadow: var(--shadow-sky-fill);
   color: white;
 }
 
-/* ── ADMIN-RESTRAINED SKY UTILITIES ────────────────────────────────────────
- * Container-chrome-only glass for the Admin portal. No mesh blobs, no heavy
- * blur, near-opaque white — data-dense content underneath stays legible and
- * cheap to render. See PRODUCT.md's "Restrain the glass on data-dense
- * surfaces" principle.
+/* ── ADMIN RESTRAINT ──────────────────────────────────────────────────────
+ * Admin gets the same mesh + glass, only calmer: glass stays on container
+ * chrome, and data rows stay opaque so dense tables remain legible (§5).
  */
 
-/* Static muted-slate backdrop for Admin shells (sidebar/topnav/page bg).
-   No radial blobs — a single subtle top-to-bottom wash, unlike sky-mesh-bg. */
+/* Admin page canvas — same mesh as Mentor (§2: "mọi trang admin"). */
 @utility sky-admin-bg {
-  background: linear-gradient(180deg, var(--color-sky-admin-bg) 0%, var(--color-sky-admin-bg-deep) 100%);
+  position: relative;
+  background:
+    radial-gradient(58% 42% at 12% 4%,  #A9C7E8 0%, rgba(169, 199, 232, 0) 62%),
+    radial-gradient(52% 38% at 92% 14%, #D7EAF8 0%, rgba(215, 234, 248, 0) 60%),
+    radial-gradient(64% 40% at 78% 46%, #C0D8F1 0%, rgba(192, 216, 241, 0) 58%),
+    radial-gradient(50% 34% at 6% 62%,  #EEF6FD 0%, rgba(238, 246, 253, 0) 60%),
+    radial-gradient(70% 44% at 50% 96%, #C0D8F1 0%, rgba(192, 216, 241, 0) 62%),
+    var(--color-sky-cream);
+  background-attachment: fixed;
 }
 
-/* Restrained glass shell for Admin containers only — sidebars, top navs,
-   modal wrappers. Higher opacity (92%) + lower blur (8px) than sky-glass's
-   72%/20px, so it reads as a calm solid panel with only a faint frost, never
-   the showy Mentor liquid-glass effect. Do not use inside tables/forms. */
+/* Restrained glass for Admin container chrome — lighter blur, higher opacity
+   than sky-glass so data-dense content underneath stays crisp. */
 @utility sky-glass-admin {
+  position: relative;
   border-radius: var(--radius-sky-card);
-  border: 1px solid var(--color-gray-200);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: var(--shadow-sky-admin);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: linear-gradient(154deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.66) 56%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 10px 22px -14px rgba(36, 52, 77, 0.30);
 }
 
-/* Opaque data row — explicitly no blur, no translucency. Apply to table rows,
-   list rows, and any repeated data-dense element. Zebra-striped against
-   sky-admin-bg, not the sky mesh. */
+/* Sidebar glass (§5 "Sidebar/Nav → glass hoặc nền kính"). A full-height rail
+   needs a vertical gradient (not the 154deg card sweep) so the top reads bright
+   and the bottom settles into the mesh, plus a single hairline on the trailing
+   edge instead of a full border box. */
+@utility sky-glass-sidebar {
+  position: relative;
+  border-right: 1px solid rgba(255, 255, 255, 0.75);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.42) 100%);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.6),
+    0 14px 30px -18px rgba(36, 52, 77, 0.28);
+}
+
+/* ── DATA TABLE (§5 admin-specific spec) ──────────────────────────────────
+   Header row: faint ink wash + small-caps ink2. Body: very light zebra.
+   Hover: faint deep tint. Whole table lives inside one .sky-glass wrapper, so
+   rows are translucent-over-glass rather than opaque white blocks. */
+@utility sky-table-head {
+  background-color: rgba(36, 52, 77, 0.04);
+
+  & th {
+    font-size: var(--text-sky-small);
+    line-height: var(--text-sky-small--line-height);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-sky-ink-2);
+  }
+}
+
 @utility sky-table-row {
-  background-color: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid rgba(36, 52, 77, 0.07);
+  transition: background-color 0.15s ease;
 
   &:nth-child(even) {
-    background-color: var(--color-sky-admin-bg);
+    background-color: rgba(255, 255, 255, 0.28);
   }
 
   &:hover {
-    background-color: var(--color-gray-100);
+    background-color: rgba(61, 109, 166, 0.05);
+  }
+
+  &:last-child {
+    border-bottom: none;
   }
 }
 
-/* Input field: thick green border, focus ring using primary color */
-@utility neo-input {
-  font-family: var(--font-space);
-  border: 2px solid var(--color-game-border);
-  border-radius: var(--radius-game-small);
-  background-color: var(--color-game-surface);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+/* ── STATUS BADGES (§5) — success=teal, pending=peach, info=deep,
+   neutral=ink, destructive=rose. No green, ever. */
+@utility sky-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: var(--r-pill, 999px);
+  padding: 0.125rem 0.625rem;
+  font-size: var(--text-sky-small);
+  line-height: var(--text-sky-small--line-height);
+  font-weight: 600;
+  white-space: nowrap;
+}
+@utility sky-badge-success {
+  color: var(--color-sky-teal);
+  background-color: var(--color-sky-teal-bg);
+}
+@utility sky-badge-pending {
+  color: var(--color-sky-peach-deep);
+  background-color: rgba(240, 172, 114, 0.22);
+}
+@utility sky-badge-info {
+  color: var(--color-sky-deep);
+  background-color: rgba(61, 109, 166, 0.12);
+}
+@utility sky-badge-neutral {
+  color: var(--color-sky-ink-2);
+  background-color: rgba(36, 52, 77, 0.07);
+}
+@utility sky-badge-danger {
+  color: var(--color-sky-rose-deep);
+  background-color: rgba(196, 112, 138, 0.16);
+}
+@utility sky-badge-epic {
+  color: var(--color-sky-violet-deep);
+  background-color: rgba(124, 106, 199, 0.14);
+}
+
+/* ── FORM INPUT (§Bước 3: glass field, deep focus ring) ────────────────────── */
+@utility sky-input {
+  width: 100%;
+  border-radius: var(--radius-sky-chip);
+  border: 1px solid rgba(61, 109, 166, 0.22);
+  background-color: rgba(255, 255, 255, 0.6);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-sky-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+  &::placeholder {
+    color: var(--color-sky-ink-3);
+  }
 
   &:focus {
     outline: none;
-    border-color: var(--color-game-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-game-primary) 20%, transparent);
+    border-color: var(--color-sky-deep);
+    background-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 3px rgba(61, 109, 166, 0.18);
   }
 
-  &::placeholder {
-    color: var(--color-game-muted);
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+/* ── MICRO-INTERACTIONS (§6) ───────────────────────────────────────────────
+   Card entrance fade-in-up with stagger, hover lift, press scale. All disabled
+   under prefers-reduced-motion. */
+@keyframes skyFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@utility sky-in {
+  animation: skyFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger helper — set --sky-i on the element (or use sky-stagger on a parent
+   to auto-index its first 12 children) to offset the entrance by 60ms/step. */
+@utility sky-stagger {
+  & > * {
+    animation: skyFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  & > *:nth-child(1)  { animation-delay: 0ms; }
+  & > *:nth-child(2)  { animation-delay: 60ms; }
+  & > *:nth-child(3)  { animation-delay: 120ms; }
+  & > *:nth-child(4)  { animation-delay: 180ms; }
+  & > *:nth-child(5)  { animation-delay: 240ms; }
+  & > *:nth-child(6)  { animation-delay: 300ms; }
+  & > *:nth-child(7)  { animation-delay: 360ms; }
+  & > *:nth-child(8)  { animation-delay: 420ms; }
+  & > *:nth-child(9)  { animation-delay: 480ms; }
+  & > *:nth-child(10) { animation-delay: 540ms; }
+  & > *:nth-child(11) { animation-delay: 600ms; }
+  & > *:nth-child(12) { animation-delay: 660ms; }
+}
+
+/* Hover lift + press, for cards and buttons (§6) */
+@utility sky-lift {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1),
+      0 18px 32px -16px rgba(36, 52, 77, 0.42);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-in,
+  .sky-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .sky-lift {
+    transition: none;
+  }
+  .sky-lift:hover,
+  .sky-lift:active {
+    transform: none;
   }
 }
 
@@ -661,115 +770,13 @@ layer(base);
     display: none;
     -webkit-appearance: none;
   }
-
-  /* Gradient backgrounds — apply as bg-dot-grid-light dark:bg-dot-grid-dark */
-  .bg-dot-grid-light {
-    background: linear-gradient(135deg, #f4fafd 0%, #e4f4ec 50%, #fef9ed 100%);
-  }
-  .bg-dot-grid-dark {
-    background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
-  }
-
-  /* Literal dot-texture — apply as bg-dot-pattern-light. Distinct from
-     bg-dot-grid-* above (those are gradients, not dots); used by the Mentor
-     "Command Ribbon" workspace background. Dark-mode swap is handled by the
-     .dark .bg-dot-pattern-light override below (same mechanism as bg-dot-grid-*,
-     since Tailwind v4 can't generate a dark: variant for a plain @layer class). */
-  .bg-dot-pattern-light {
-    background-image: radial-gradient(circle, rgba(61, 74, 62, 0.14) 1.5px, transparent 1.5px);
-    background-size: 22px 22px;
-  }
 }
 
-/* ── DARK MODE CONTENT AREA OVERRIDES ───────────────────────────────────────
-   Written outside @layer so they override Tailwind utility classes.
-   Scoped to .admin-content to avoid affecting sidebar / header.
-   Scoped to .modal-content for createPortal modals (rendered to document.body,
-   outside .admin-content). Elements with explicit dark: variants keep their own
-   styles — use .dark-preserve-bg on elements that must stay white. */
+/* Dark mode: Sky-Pastel is a light-only system (no Night-Pastel tokens yet) and
+   both layouts force <html> out of .dark, so the old .admin-content /
+   .modal-content green-tinted dark overrides have been removed rather than
+   left as dead rules that would reintroduce green the moment dark is re-enabled. */
 
-/* ── Gradient background dark mode override ─────────────────────────────────
-   bg-dot-grid-light/dark are in @layer, so Tailwind v4 can't generate dark:
-   variants for them. Override directly here for dark mode. */
-.dark .bg-dot-grid-light {
-  background: linear-gradient(135deg, #0f1720 0%, #0c2114 50%, #1a2430 100%);
-}
-
-.dark .bg-dot-pattern-light {
-  background-image: radial-gradient(circle, rgba(143, 200, 168, 0.16) 1.5px, transparent 1.5px);
-}
-
-/* ── Backgrounds ─────────────────────────────────────────────────────────── */
-.dark .admin-content .bg-white        { background-color: #1a2e22; }
-.dark .admin-content .bg-gray-50      { background-color: #142318; }
-.dark .admin-content .bg-gray-100     { background-color: #1e3427; }
-
-/* ── Text ────────────────────────────────────────────────────────────────── */
-.dark .admin-content .text-gray-900   { color: #f1f5f9; }
-.dark .admin-content .text-gray-800   { color: #e2e8f0; }
-.dark .admin-content .text-gray-700   { color: #cbd5e1; }
-.dark .admin-content .text-gray-600   { color: #94a3b8; }
-.dark .admin-content .text-gray-500   { color: #64748b; }
-.dark .admin-content .text-gray-400   { color: #475569; }
-
-/* ── Borders ─────────────────────────────────────────────────────────────── */
-.dark .admin-content .border-gray-300 { border-color: rgba(255, 255, 255, 0.18); }
-.dark .admin-content .border-gray-200 { border-color: rgba(255, 255, 255, 0.12); }
-.dark .admin-content .border-gray-100 { border-color: rgba(255, 255, 255, 0.07); }
-
-/* ── Inputs ──────────────────────────────────────────────────────────────── */
-.dark .admin-content input:not([type="checkbox"]):not([type="radio"]),
-.dark .admin-content textarea,
-.dark .admin-content select {
-  background-color: #142318;
-  color: #e2e8f0;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.dark .admin-content input::placeholder,
-.dark .admin-content textarea::placeholder {
-  color: #475569;
-}
-
-/* ── Shadow ──────────────────────────────────────────────────────────────── */
-.dark .admin-content .shadow-sm       { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
-
-/* ── Portal Modal dark mode overrides ───────────────────────────────────────
-   Same set as admin-content but scoped to .modal-content so it applies inside
-   createPortal modals which render directly into document.body. */
-
-/* ── Backgrounds ─────────────────────────────────────────────────────────── */
-.dark .modal-content .bg-white        { background-color: #1a2e22; }
-.dark .modal-content .bg-gray-50      { background-color: #142318; }
-.dark .modal-content .bg-gray-100     { background-color: #1e3427; }
-
-/* ── Text ────────────────────────────────────────────────────────────────── */
-.dark .modal-content .text-gray-900   { color: #f1f5f9; }
-.dark .modal-content .text-gray-800   { color: #e2e8f0; }
-.dark .modal-content .text-gray-700   { color: #cbd5e1; }
-.dark .modal-content .text-gray-600   { color: #94a3b8; }
-.dark .modal-content .text-gray-500   { color: #64748b; }
-.dark .modal-content .text-gray-400   { color: #475569; }
-
-/* ── Borders ─────────────────────────────────────────────────────────────── */
-.dark .modal-content .border-gray-300 { border-color: rgba(255, 255, 255, 0.18); }
-.dark .modal-content .border-gray-200 { border-color: rgba(255, 255, 255, 0.12); }
-.dark .modal-content .border-gray-100 { border-color: rgba(255, 255, 255, 0.07); }
-
-/* ── Divide ──────────────────────────────────────────────────────────────── */
-.dark .modal-content .divide-gray-100 > * + * { border-color: rgba(255, 255, 255, 0.07); }
-
-/* ── Inputs ──────────────────────────────────────────────────────────────── */
-.dark .modal-content input:not([type="checkbox"]):not([type="radio"]),
-.dark .modal-content textarea,
-.dark .modal-content select {
-  background-color: #142318;
-  color: #e2e8f0;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.dark .modal-content input::placeholder,
-.dark .modal-content textarea::placeholder {
-  color: #475569;
-}
 
 .tableCheckbox:checked ~ span span {
   @apply opacity-100;
@@ -962,7 +969,7 @@ span.flatpickr-weekday,
   @apply !bg-none;
 }
 .flatpickr-day.inRange {
-  box-shadow: -5px 0 0 #f4fafd, 5px 0 0 #f4fafd !important;
+  box-shadow: -5px 0 0 var(--color-sky-4), 5px 0 0 var(--color-sky-4) !important;
   @apply dark:!shadow-datepicker;
 }
 .flatpickr-day.inRange,
@@ -1003,13 +1010,13 @@ span.flatpickr-weekday,
 .flatpickr-day.selected.nextMonthDay,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
-  background: #006d36;
+  background: var(--color-sky-deep);
   @apply !border-brand-500 !bg-brand-500 hover:!border-brand-500 hover:!bg-brand-500;
 }
 .flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.endRange.startRange + .endRange:not(:nth-child(7n + 1)) {
-  box-shadow: -10px 0 0 #006d36;
+  box-shadow: -10px 0 0 var(--color-sky-deep);
 }
 
 .flatpickr-months .flatpickr-prev-month svg,
@@ -1054,53 +1061,50 @@ span.flatpickr-weekday,
 .fc-button-group {
   @apply gap-2;
 }
+/* Nav arrows are glass chips, matching every other icon control in the app. */
 .fc-button-group .fc-button {
-  @apply flex h-10 w-10 items-center justify-center !rounded-lg border border-gray-200 bg-transparent hover:border-gray-200 hover:bg-gray-50 focus:shadow-none active:!border-gray-200 active:!bg-transparent active:!shadow-none dark:border-gray-800 dark:hover:border-gray-800 dark:hover:bg-gray-900 dark:active:border-gray-800!;
+  @apply flex h-10 w-10 items-center justify-center !rounded-sky-chip !border-0 bg-white/60 ring-1 ring-white/80 transition-colors hover:bg-white/85 focus:shadow-none active:!bg-white/70 active:!shadow-none;
 }
 
 .fc-button-group .fc-button.fc-prev-button:before {
   @apply inline-block mt-1;
-  content: url("data:image/svg+xml,%3Csvg width='25' height='24' viewBox='0 0 25 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.0068 6L9.75684 12.25L16.0068 18.5' stroke='%23344054' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
+  content: url("data:image/svg+xml,%3Csvg width='25' height='24' viewBox='0 0 25 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.0068 6L9.75684 12.25L16.0068 18.5' stroke='%2324344D' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
 }
 .fc-button-group .fc-button.fc-next-button:before {
   @apply inline-block mt-1;
-  content: url("data:image/svg+xml,%3Csvg width='25' height='24' viewBox='0 0 25 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.50684 19L15.7568 12.75L9.50684 6.5' stroke='%23344054' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
-}
-.dark .fc-button-group .fc-button.fc-prev-button:before {
-  content: url("data:image/svg+xml,%3Csvg width='25' height='24' viewBox='0 0 25 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.0068 6L9.75684 12.25L16.0068 18.5' stroke='%2398A2B3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
-}
-.dark .fc-button-group .fc-button.fc-next-button:before {
-  content: url("data:image/svg+xml,%3Csvg width='25' height='24' viewBox='0 0 25 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.50684 19L15.7568 12.75L9.50684 6.5' stroke='%2398A2B3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
+  content: url("data:image/svg+xml,%3Csvg width='25' height='24' viewBox='0 0 25 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.50684 19L15.7568 12.75L9.50684 6.5' stroke='%2324344D' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E%0A");
 }
 .fc-button-group .fc-button .fc-icon {
   @apply hidden;
 }
+/* The one primary action in the toolbar, so it takes the deep gradient. */
 .fc-addEventButton-button {
-  @apply !rounded-lg !border-0 !bg-brand-500 !px-4 !py-2.5 !text-sm !font-medium hover:!bg-brand-600 focus:!shadow-none;
+  @apply !rounded-sky-chip !border-0 !bg-linear-to-b !from-sky-deep-lo !to-sky-deep !px-4 !py-2.5 !text-sm !font-semibold !text-white shadow-sky-chip transition-all hover:!brightness-105 focus:!shadow-none;
 }
 .fc-toolbar-title {
-  @apply !text-lg !font-medium text-gray-800 dark:text-white/90;
+  @apply !font-display !text-lg !font-semibold text-sky-ink;
 }
+/* Recessed segmented track: only the active view lifts out of the well. */
 .fc-header-toolbar.fc-toolbar .fc-toolbar-chunk:last-child {
-  @apply rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900;
+  @apply rounded-sky-chip bg-white/42 ring-1 ring-white/70 p-1;
 }
 .fc-header-toolbar.fc-toolbar .fc-toolbar-chunk:last-child .fc-button {
-  @apply !h-auto !w-auto rounded-md !border-0 bg-transparent !px-5 !py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus:!shadow-none dark:text-gray-400;
+  @apply !h-auto !w-auto !rounded-sky-sm !border-0 !bg-transparent !ring-0 !px-5 !py-2 text-sm font-medium text-sky-ink-2 hover:!bg-white/55 hover:text-sky-ink focus:!shadow-none;
 }
 .fc-header-toolbar.fc-toolbar
   .fc-toolbar-chunk:last-child
   .fc-button.fc-button-active {
-  @apply text-gray-900 bg-white dark:bg-gray-800 dark:text-white;
+  @apply !bg-linear-to-b !from-sky-deep-lo !to-sky-deep font-semibold !text-white shadow-sky-chip;
 }
 .fc-theme-standard th {
-  @apply !border-x-0 border-t !border-gray-200 bg-gray-50 !text-left dark:!border-gray-800 dark:bg-gray-900;
+  @apply !border-x-0 border-t !border-white/70 bg-sky-ink/[0.04] !text-left;
 }
 .fc-theme-standard td,
 .fc-theme-standard .fc-scrollgrid {
-  @apply !border-gray-200 dark:!border-gray-800;
+  @apply !border-white/70;
 }
 .fc .fc-col-header-cell-cushion {
-  @apply !px-5 !py-4 text-sm font-medium uppercase text-gray-400;
+  @apply !px-5 !py-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3;
 }
 .fc .fc-daygrid-day.fc-day-today {
   @apply bg-transparent;
@@ -1108,11 +1112,15 @@ span.flatpickr-weekday,
 .fc .fc-daygrid-day {
   @apply p-2;
 }
+/* Today is tinted *and* its numeral goes deep+semibold — never colour alone. */
 .fc .fc-daygrid-day.fc-day-today .fc-scrollgrid-sync-inner {
-  @apply rounded-sm bg-gray-100 dark:bg-white/[0.03];
+  @apply rounded-sky-sm bg-sky-3/55 ring-1 ring-white/70;
+}
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  @apply font-semibold text-sky-deep;
 }
 .fc .fc-daygrid-day-number {
-  @apply !p-3 text-sm font-medium text-gray-700 dark:text-gray-400;
+  @apply !p-3 text-sm font-medium text-sky-ink-2 tabular-nums;
 }
 .fc .fc-daygrid-day-top {
   @apply !flex-row;
@@ -1121,16 +1129,18 @@ span.flatpickr-weekday,
   opacity: 1;
 }
 .fc .fc-day-other .fc-daygrid-day-top .fc-daygrid-day-number {
-  @apply text-gray-400 dark:text-white/30;
+  @apply text-sky-ink-3;
 }
 .event-fc-color {
-  @apply rounded-lg py-2.5 pl-4 pr-3;
+  @apply rounded-sky-sm py-2.5 pl-4 pr-3 ring-1 ring-white/60;
 }
 .event-fc-color .fc-event-title {
-  @apply p-0 text-sm font-normal text-gray-700;
+  @apply p-0 text-sm font-medium text-sky-ink;
 }
+/* The dot is a rail, not a bullet: it carries the category colour at full
+   saturation while the chip behind it stays a quiet tint. */
 .fc-daygrid-event-dot {
-  @apply w-1 h-5 ml-0 mr-3 border-none rounded-sm;
+  @apply w-1 h-5 ml-0 mr-3 border-none rounded-full;
 }
 .fc-event {
   @apply focus:shadow-none;
@@ -1139,34 +1149,34 @@ span.flatpickr-weekday,
   @apply !ml-3;
 }
 .event-fc-color.fc-bg-success {
-  @apply border-success-50 bg-success-50;
+  @apply bg-sky-teal-bg/70;
 }
 .event-fc-color.fc-bg-danger {
-  @apply border-error-50 bg-error-50;
+  @apply bg-sky-rose/12;
 }
 .event-fc-color.fc-bg-primary {
-  @apply border-brand-50 bg-brand-50;
+  @apply bg-sky-3/70;
 }
 .event-fc-color.fc-bg-warning {
-  @apply border-orange-50 bg-orange-50;
+  @apply bg-sky-peach/18;
 }
 .event-fc-color.fc-bg-success .fc-daygrid-event-dot {
-  @apply bg-success-500;
+  @apply bg-sky-teal;
 }
 .event-fc-color.fc-bg-danger .fc-daygrid-event-dot {
-  @apply bg-error-500;
+  @apply bg-sky-rose-deep;
 }
 .event-fc-color.fc-bg-primary .fc-daygrid-event-dot {
-  @apply bg-brand-500;
+  @apply bg-sky-deep;
 }
 .event-fc-color.fc-bg-warning .fc-daygrid-event-dot {
-  @apply bg-orange-500;
+  @apply bg-sky-peach-deep;
 }
 .fc-direction-ltr .fc-timegrid-slot-label-frame {
-  @apply px-3 py-1.5 text-left text-sm font-medium text-gray-500 dark:text-gray-400;
+  @apply px-3 py-1.5 text-left text-sm font-medium text-sky-ink-2;
 }
 .fc .fc-timegrid-axis-cushion {
-  @apply text-sm font-medium text-gray-500 dark:text-gray-400;
+  @apply text-sm font-medium text-sky-ink-2;
 }
 
 .input-date-icon::-webkit-inner-spin-button,
@@ -1224,18 +1234,20 @@ span.flatpickr-weekday,
   @apply w-6.5 rounded-xl;
 }
 
+/* Radio dot: the ring collapses into a filled deep disc when checked, so the
+   selection reads at a glance without needing a second cue in markup. */
 .form-check-input:checked ~ span {
-  @apply border-[6px] border-brand-500 bg-brand-500 dark:border-brand-500;
+  @apply border-[6px] border-sky-deep bg-sky-deep;
 }
 
 .taskCheckbox:checked ~ .box span {
-  @apply opacity-100 bg-brand-500;
+  @apply opacity-100 bg-sky-deep;
 }
 .taskCheckbox:checked ~ p {
-  @apply text-gray-400 line-through;
+  @apply text-sky-ink-3 line-through;
 }
 .taskCheckbox:checked ~ .box {
-  @apply border-brand-500 bg-brand-500 dark:border-brand-500;
+  @apply border-sky-deep bg-sky-deep;
 }
 
 .task {
@@ -1253,7 +1265,7 @@ span.flatpickr-weekday,
 .custom-calendar .fc-h-event {
   background-color: transparent;
   border: none;
-  color: black;
+  color: var(--color-sky-ink);
 }
 .fc.fc-media-screen {
   @apply min-h-screen;

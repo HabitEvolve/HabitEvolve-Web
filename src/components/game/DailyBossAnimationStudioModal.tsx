@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Upload, Wand2, Trash2, X, ShieldAlert, Search } from 'lucide-react';
+import { Loader2, Upload, Wand2, Trash2, X, ShieldAlert, Search, Grid3x3, Rows3 } from 'lucide-react';
 import { adminDailyBossApi } from '../../api/adminDailyBossApi';
 import { Portal, inputCls, btnBase } from '../../pages/AdminDailyBossManagement';
 import SkyCard from '../ui/card/SkyCard';
@@ -20,6 +20,11 @@ interface Props {
 
 // Slicing defaults mirror the BE action signature (UploadDailyBossAnimationCommand).
 const DEFAULTS = { states: 'idle,attack,hit,defeat', margin: 15, minSize: 30, rgb: 245, alpha: 10, columns: 4, rows: 4 };
+
+// Small-caps label, same recipe as the rest of the console so tracking never
+// drifts between the studio and the screens that open it.
+const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3';
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
 
 export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose }: Props) {
   const [frames, setFrames] = useState<DailyBossAnimationFrameDto[]>([]);
@@ -125,35 +130,52 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
     <Portal>
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
         <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-2xl my-4">
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-sky-admin-bg-deep">
-            <div className="flex items-center gap-2 min-w-0">
-              <Wand2 className="w-5 h-5 shrink-0 text-sky-ink" />
-              <h2 className="font-bold text-lg text-sky-ink truncate">
-                Animation Studio — {boss.name}
-              </h2>
+          <div className="flex items-center justify-between p-5 border-b border-white/70 bg-sky-admin-bg-deep/70">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="grid place-items-center w-9 h-9 shrink-0 rounded-sky-chip bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
+                <Wand2 className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">Animation Studio</p>
+                <h2 className="font-display text-lg font-semibold text-sky-ink truncate leading-tight">
+                  {boss.name}
+                </h2>
+              </div>
             </div>
             <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} className="shrink-0"><X className="w-5 h-5" /></SkyButton>
           </div>
 
           <div className="p-5 space-y-5">
             {error && (
-              <p className="text-xs font-semibold text-error-600 bg-error-50 border border-error-300 rounded-sky-chip px-3 py-2">{error}</p>
+              <p className="relative overflow-hidden flex items-start gap-2 rounded-sky-chip bg-sky-rose/10 ring-1 ring-sky-rose/24 px-3 py-2 pl-4 text-xs font-semibold text-sky-rose-deep">
+                <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+                <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
+                {error}
+              </p>
             )}
 
             {/* ── PREVIEW ── */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-sky-ink-3 mb-2">Preview hiện tại</p>
+              <p className={`${eyebrow} mb-2`}>Preview hiện tại</p>
               {loadingFrames ? (
-                <div className="flex items-center justify-center h-64 border border-dashed border-sky-ink/15 rounded-sky-card text-sky-ink-3">
+                <div className="flex items-center justify-center h-64 border border-dashed border-sky-ink/16 rounded-sky-card text-sky-ink-3">
                   <Loader2 className="w-6 h-6 animate-spin" />
+                  <span className="sr-only">Đang tải frame…</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">
                   <DailyBossAnimation frames={frames} />
                   {frames.length > 0 && (
                     confirmingDelete ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-error-600">Xoá toàn bộ animation này?</span>
+                      /* The confirm strip states the stake in words and carries a
+                         rose rail, so it never relies on button colour alone.
+                         Safe choice sits on the right of the irreversible one. */
+                      <div className="relative overflow-hidden flex flex-wrap items-center justify-center gap-2 rounded-sky-chip bg-sky-rose/9 ring-1 ring-sky-rose/24 px-3.5 py-2.5 pl-4">
+                        <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-rose-deep">
+                          <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                          Xoá toàn bộ {frames.length} frame của boss này?
+                        </span>
                         <SkyButton type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
                           {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Xác nhận
                         </SkyButton>
@@ -170,13 +192,13 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
             </div>
 
             {/* ── UPLOAD FORM ── */}
-            <div className="border-t border-dashed border-sky-ink/15 pt-5 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-sky-ink-3">
+            <div className="border-t border-dashed border-sky-ink/16 pt-5 space-y-4">
+              <p className={eyebrow}>
                 Upload sprite sheet mới (sẽ thay thế toàn bộ frame hiện có)
               </p>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">Sprite sheet *</label>
+                <label className={fieldLabel}>Sprite sheet *</label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -187,7 +209,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-sky-ink-2 mb-1">
+                <label className={fieldLabel}>
                   Tên state theo từng dòng (trên → dưới)
                 </label>
                 <input
@@ -196,55 +218,63 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   className={inputCls}
                   placeholder="idle,attack,hit,defeat"
                 />
-                <p className="text-[11px] text-sky-ink-3 mt-1">
-                  Cách nhau bởi dấu phẩy, theo đúng thứ tự dòng trong ảnh. Có thể ghi số frame tối đa mỗi dòng: <code>idle:4,attack:6</code>. Để trống nếu để hệ thống tự đặt tên ROW_1, ROW_2…
+                <p className="text-[11px] text-sky-ink-3 mt-1.5 leading-relaxed">
+                  Cách nhau bởi dấu phẩy, theo đúng thứ tự dòng trong ảnh. Có thể ghi số frame tối đa mỗi dòng: <code className="px-1 py-0.5 rounded bg-sky-ink/7 font-medium text-sky-ink-2">idle:4,attack:6</code>. Để trống nếu để hệ thống tự đặt tên ROW_1, ROW_2…
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode('auto')}
-                  className={`${btnBase} ${mode === 'auto' ? 'bg-warning-100 text-warning-800' : 'bg-white border border-sky-surf-border text-sky-ink-2'}`}
-                >
-                  Tự động dò (khuyên dùng)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('grid')}
-                  className={`${btnBase} ${mode === 'grid' ? 'bg-warning-100 text-warning-800' : 'bg-white border border-sky-surf-border text-sky-ink-2'}`}
-                >
-                  Lưới cố định (cols × rows)
-                </button>
+              {/* Segmented control: one glass track, the live half filled deep —
+                  so the choice reads as a switch rather than two loose buttons. */}
+              <div className="inline-flex gap-1 p-1 rounded-sky-chip bg-white/58 ring-1 ring-white/80">
+                {([
+                  { key: 'auto', label: 'Tự động dò (khuyên dùng)', Icon: Wand2 },
+                  { key: 'grid', label: 'Lưới cố định (cols × rows)', Icon: Grid3x3 },
+                ] as const).map(({ key, label, Icon }) => {
+                  const on = mode === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setMode(key)}
+                      aria-pressed={on}
+                      className={`${btnBase} ${on
+                        ? 'bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25'
+                        : 'text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink'}`}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 ${on ? 'text-white' : 'text-sky-ink-3'}`} strokeWidth={2.3} aria-hidden="true" />
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               {mode === 'auto' ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Margin</label>
+                    <label className={fieldLabel}>Margin</label>
                     <input type="number" min={0} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Min size</label>
+                    <label className={fieldLabel}>Min size</label>
                     <input type="number" min={1} value={minSize} onChange={(e) => setMinSize(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">RGB ngưỡng</label>
+                    <label className={fieldLabel}>RGB ngưỡng</label>
                     <input type="number" min={0} max={255} value={rgb} onChange={(e) => setRgb(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Alpha ngưỡng</label>
+                    <label className={fieldLabel}>Alpha ngưỡng</label>
                     <input type="number" min={0} max={255} value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Số cột</label>
+                    <label className={fieldLabel}>Số cột</label>
                     <input type="number" min={1} value={columns} onChange={(e) => setColumns(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase text-sky-ink-3 mb-1">Số dòng</label>
+                    <label className={fieldLabel}>Số dòng</label>
                     <input type="number" min={1} value={rows} onChange={(e) => setRows(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
@@ -262,30 +292,47 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               </div>
 
               {detection && (
-                <div className="bg-blue-50 border border-blue-200 rounded-sky-chip p-3 text-xs space-y-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-blue-800">
-                    <span>Ảnh: {detection.imageWidth}×{detection.imageHeight}px</span>
-                    <span>Nền: {detection.backgroundMode}</span>
-                    <span>Số dòng dò được: {detection.rowCount}</span>
+                /* A dry-run report, not a verdict — so it sits on the cool
+                   operational hue. Teal would claim "approved" and rose "failed";
+                   neither is true of a measurement. */
+                <div className="relative overflow-hidden rounded-sky-card bg-sky-deep/7 ring-1 ring-sky-deep/18 p-3.5 text-xs space-y-3">
+                  <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep/45" />
+                  <div className="flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5 shrink-0 text-sky-deep" strokeWidth={2.4} aria-hidden="true" />
+                    <span className={eyebrow}>Kết quả dò thử</span>
+                  </div>
+                  {/* Read-outs as discrete stat chips: each number gets its own
+                      surface so the eye lands on the value, not the sentence. */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { k: 'Ảnh', v: `${detection.imageWidth}×${detection.imageHeight}px` },
+                      { k: 'Nền', v: detection.backgroundMode },
+                      { k: 'Số dòng', v: String(detection.rowCount) },
+                    ].map(({ k, v }) => (
+                      <span key={k} className="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-sky-chip bg-white/72 ring-1 ring-white/85">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-sky-ink-3">{k}</span>
+                        <span className="font-display text-sm font-semibold text-sky-ink tabular-nums">{v}</span>
+                      </span>
+                    ))}
                   </div>
                   {detection.rowCount > 0 && (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto rounded-sky-chip bg-white/62 ring-1 ring-white/80">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="text-[10px] uppercase text-blue-600">
-                            <th className="pr-3 py-1">#</th>
-                            <th className="pr-3 py-1">Y0–Y1</th>
-                            <th className="pr-3 py-1">Cao (px)</th>
-                            <th className="pr-3 py-1">Số frame</th>
+                          <tr className="text-[10px] uppercase tracking-[0.1em] text-sky-ink-3">
+                            <th className="px-3 py-2 font-semibold">#</th>
+                            <th className="px-3 py-2 font-semibold">Y0–Y1</th>
+                            <th className="px-3 py-2 font-semibold">Cao (px)</th>
+                            <th className="px-3 py-2 font-semibold">Số frame</th>
                           </tr>
                         </thead>
                         <tbody className="text-sky-ink-2 font-medium">
                           {detection.rows.map((r) => (
-                            <tr key={r.index} className="border-t border-blue-100">
-                              <td className="pr-3 py-1">{r.index + 1}</td>
-                              <td className="pr-3 py-1">{r.y0}–{r.y1}</td>
-                              <td className="pr-3 py-1">{r.height}</td>
-                              <td className="pr-3 py-1">{r.frameCount}</td>
+                            <tr key={r.index} className="border-t border-sky-ink/8">
+                              <td className="px-3 py-1.5 font-display font-semibold text-sky-ink tabular-nums">{r.index + 1}</td>
+                              <td className="px-3 py-1.5 tabular-nums">{r.y0}–{r.y1}</td>
+                              <td className="px-3 py-1.5 tabular-nums">{r.height}</td>
+                              <td className="px-3 py-1.5 tabular-nums">{r.frameCount}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -293,9 +340,15 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                     </div>
                   )}
                   {detection.rowCount !== statesInput.split(',').map((s) => s.trim()).filter(Boolean).length && statesInput.trim() && (
-                    <p className="flex items-center gap-1.5 text-warning-700 font-semibold">
-                      <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-                      Số dòng dò được ({detection.rowCount}) không khớp số nhãn state ({statesInput.split(',').map((s) => s.trim()).filter(Boolean).length}) — upload thật sẽ bị từ chối, hãy chỉnh lại nhãn hoặc ngưỡng dò.
+                    /* A mismatch will hard-fail the real upload, so it gets peach
+                       (attention, act before you continue) rather than rose —
+                       nothing has broken yet. */
+                    <p className="relative overflow-hidden flex items-start gap-2 rounded-sky-chip bg-sky-peach/16 ring-1 ring-sky-peach/30 px-3 py-2 pl-4 font-semibold text-sky-peach-deep leading-relaxed">
+                      <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" />
+                      <Rows3 className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2.4} aria-hidden="true" />
+                      <span>
+                        Số dòng dò được (<span className="tabular-nums">{detection.rowCount}</span>) không khớp số nhãn state (<span className="tabular-nums">{statesInput.split(',').map((s) => s.trim()).filter(Boolean).length}</span>) — upload thật sẽ bị từ chối, hãy chỉnh lại nhãn hoặc ngưỡng dò.
+                      </span>
                     </p>
                   )}
                 </div>

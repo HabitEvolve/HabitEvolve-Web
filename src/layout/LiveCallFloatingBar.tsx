@@ -25,26 +25,32 @@ export default function LiveCallFloatingBar() {
     };
 
     return (
-        <div className="fixed bottom-5 right-5 z-40 flex items-center gap-3 pl-3 pr-2 py-2 bg-[#1a1a2e] border-2 border-black rounded-full shadow-[4px_4px_0_0_#1A1D20] text-white">
+        // Deep navy-ink pill rather than glass: this floats over arbitrary page
+        // content and has to stay legible on every one of them, so it's the one
+        // surface that deliberately opts out of translucency.
+        <div className="fixed bottom-5 right-5 z-40 flex items-center gap-3 pl-3.5 pr-2 py-2 rounded-full bg-sky-ink/95 backdrop-blur-[14px] shadow-[0_18px_36px_-16px_rgba(36,52,77,0.75)] ring-1 ring-white/15 text-white sky-in">
             <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-rose opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-rose" />
             </span>
             <div className="min-w-0 leading-tight">
-                <p className="text-xs font-black tracking-wide">LIVE{partyName ? ` · ${partyName}` : ""}</p>
-                <p className="text-[11px] font-medium text-gray-300">{inCall} in call</p>
+                <p className="font-display text-xs font-semibold tracking-wide">LIVE{partyName ? ` · ${partyName}` : ""}</p>
+                <p className="text-[11px] text-white/65 tabular-nums">{inCall} in call</p>
             </div>
             <button
+                type="button"
                 onClick={() => navigate(arenaPath)}
-                className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-black bg-violet-500 hover:bg-violet-400 transition-colors shrink-0"
+                className="px-3 py-1.5 rounded-full text-xs font-semibold bg-linear-to-b from-sky-violet to-sky-violet-deep hover:brightness-110 active:scale-95 transition shrink-0"
             >
                 Open
             </button>
             <button
+                type="button"
                 onClick={handleEnd}
                 disabled={ending}
                 title="End session"
-                className="w-7 h-7 shrink-0 flex items-center justify-center border-2 border-black rounded-full bg-red-500 hover:bg-red-400 disabled:opacity-50 transition-colors"
+                aria-label="End session"
+                className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-sky-rose hover:bg-sky-rose-deep disabled:opacity-50 active:scale-95 transition"
             >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />

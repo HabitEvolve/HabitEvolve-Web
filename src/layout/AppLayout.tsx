@@ -26,7 +26,11 @@ const LayoutContent: React.FC = () => {
   }, [theme]);
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-screen flex overflow-hidden app-bg">
+      {/* Grain overlay — fixed, non-interactive, sits above the mesh and below
+          all content (design-system §2). One instance per layout. */}
+      <div className="app-grain" aria-hidden="true" />
+
       {/*
        * AppSidebar is fixed on mobile (slides in/out via isMobileOpen) and
        * relative/in-flow on desktop (collapses via isExpanded). No wrapper
@@ -35,13 +39,12 @@ const LayoutContent: React.FC = () => {
       <AppSidebar />
 
       {/* Content column — takes remaining flex space */}
-      <div className="flex-1 h-screen flex flex-col min-w-0">
+      <div className="flex-1 h-screen flex flex-col min-w-0 relative z-1">
         <AppHeader />
-        {/* admin-content kept intentionally: not-yet-migrated Admin pages
-            (user-management, court-management, etc.) still rely on its
-            .dark .admin-content overrides — inert for now since dark mode is
-            force-disabled above, needed again once Night-Pastel tokens land. */}
-        <div className="admin-content sky-admin-bg flex-1 overflow-y-auto p-8">
+        {/* Transparent so the app-bg mesh + grain show through; the page's own
+            glass cards provide all surface. No opaque wash here (§7: "Không
+            nền trắng phẳng trơn"). */}
+        <div className="admin-content flex-1 overflow-y-auto p-8">
           <Outlet />
         </div>
       </div>

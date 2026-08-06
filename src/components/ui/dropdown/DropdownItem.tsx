@@ -16,7 +16,9 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({
   to,
   onClick,
   onItemClick,
-  baseClassName = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+  // Rows hover to a tinted chip rather than a grey block, so the glass behind
+  // the menu stays visible and the hovered row reads as lifted, not filled-in.
+  baseClassName = "block w-full text-left px-4 py-2.5 rounded-sky-chip text-sm font-medium text-sky-ink-2 transition-colors hover:bg-white/70 hover:text-sky-ink",
   className = "",
   children,
 }) => {

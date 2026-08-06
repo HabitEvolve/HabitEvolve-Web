@@ -80,11 +80,12 @@ export default function UserDropdown() {
     <div className="relative">
       {/* ── TRIGGER ───────────────────────────────────────────────── */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 px-3 py-2 bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 rounded-full shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+        className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full sky-glass-chip sky-lift"
       >
         {/* Avatar: real image or gradient initials */}
-        <span className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-black overflow-hidden bg-gradient-to-br from-orange-300 to-yellow-300 flex-shrink-0">
+        <span className="flex items-center justify-center w-9 h-9 rounded-full border border-white/70 overflow-hidden bg-linear-to-br from-sky-3 to-sky-deep-lo shrink-0">
           {hasAvatar ? (
             <img
               src={user!.avatarUrl!}
@@ -92,18 +93,18 @@ export default function UserDropdown() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-xs font-black text-gray-900 dark:text-white leading-none select-none">
+            <span className="font-display text-xs font-semibold text-white leading-none select-none">
               {user ? getInitials(displayName) : "?"}
             </span>
           )}
         </span>
 
-        <span className="hidden sm:block text-sm font-black text-gray-900 dark:text-white max-w-[96px] truncate">
+        <span className="hidden sm:block text-sm font-medium text-sky-ink max-w-[96px] truncate">
           {displayName}
         </span>
 
         <svg
-          className={`transition-transform duration-200 text-gray-600 dark:text-gray-400 flex-shrink-0 ${isOpen ? "rotate-180" : ""}`}
+          className={`transition-transform duration-200 text-sky-ink-3 shrink-0 ${isOpen ? "rotate-180" : ""}`}
           width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
         >
           <polyline points="6 9 12 15 18 9" />
@@ -114,24 +115,24 @@ export default function UserDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute right-0 mt-3 w-64 bg-white dark:bg-gray-800 border-4 border-black dark:border-gray-600 rounded-2xl shadow-[4px_4px_0_0_#1A1D20] overflow-hidden"
+        className="absolute right-0 mt-3 w-64 sky-glass-menu sky-in"
       >
         {/* Header: name + email */}
-        <div className="px-4 py-4 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-700 dark:to-gray-700 border-b-2 border-black dark:border-gray-600">
-          <p className="font-black text-gray-900 dark:text-white text-sm leading-tight truncate">{displayName}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium truncate">{displayEmail}</p>
+        <div className="relative px-4 py-4 bg-linear-to-br from-sky-3/60 to-transparent border-b border-sky-ink/10">
+          <p className="font-display font-semibold text-sky-ink text-sm leading-tight truncate">{displayName}</p>
+          <p className="text-xs text-sky-ink-2 mt-0.5 truncate">{displayEmail}</p>
         </div>
 
         {/* Nav items */}
-        <ul className="p-2 space-y-0.5 border-b-2 border-black dark:border-gray-600">
+        <ul className="relative p-2 space-y-0.5 border-b border-sky-ink/10">
           {MENU_ITEMS.map(({ to, labelKey, icon }) => (
             <li key={labelKey}>
               <Link
                 to={to}
                 onClick={closeDropdown}
-                className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 border-2 border-transparent hover:bg-orange-100 dark:hover:bg-gray-700 hover:border-black dark:hover:border-gray-500 hover:shadow-[2px_2px_0_0_#1A1D20] hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                className="group flex items-center gap-3 px-3 py-2.5 rounded-sky-sm text-sm font-medium text-sky-ink hover:bg-sky-3/55 hover:text-sky-deep transition"
               >
-                <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors flex-shrink-0">
+                <span className="text-sky-ink-2 group-hover:text-sky-deep transition-colors shrink-0">
                   {icon}
                 </span>
                 {t(labelKey)}
@@ -141,12 +142,13 @@ export default function UserDropdown() {
         </ul>
 
         {/* Sign out */}
-        <div className="p-2">
+        <div className="relative p-2">
           <button
+            type="button"
             onClick={handleLogout}
-            className="group flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-bold text-red-600 dark:text-red-400 border-2 border-transparent hover:bg-red-100 dark:hover:bg-red-900/30 hover:border-red-400 hover:shadow-[2px_2px_0_0_#DC2626] hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+            className="group flex items-center gap-3 px-3 py-2.5 w-full rounded-sky-sm text-sm font-medium text-sky-rose-deep hover:bg-sky-rose/12 transition"
           >
-            <span className="text-red-400 group-hover:text-red-600 transition-colors flex-shrink-0">
+            <span className="text-sky-rose group-hover:text-sky-rose-deep transition-colors shrink-0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <polyline points="16 17 21 12 16 7" />

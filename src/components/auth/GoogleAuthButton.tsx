@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle } from 'lucide-react';
 import { supabase } from '../../api/supabaseClient';
 
 type AuthMode = 'login' | 'register';
@@ -51,22 +52,19 @@ export default function GoogleAuthButton({ mode, className = '' }: GoogleAuthBut
         aria-label={label}
         className={[
           'w-full flex items-center justify-center gap-3',
-          'bg-white font-bold text-black text-base',
-          'border-4 border-black rounded-xl',
-          'shadow-[4px_4px_0_0_#1A1D20]',
-          'transition-all duration-150',
-          'px-6',
-          'dark:bg-slate-800 dark:text-white dark:border-white dark:shadow-[4px_4px_0_0_#ffffff]',
+          'rounded-sky-md bg-white/78 text-base font-semibold text-sky-ink',
+          'ring-1 ring-white/90 shadow-sky-chip',
+          'transition-all duration-200 px-6',
           isLoading
             ? 'opacity-60 cursor-not-allowed'
-            : 'hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1A1D20] active:translate-x-1 active:translate-y-1 active:shadow-none dark:hover:shadow-[2px_2px_0_0_#ffffff]',
+            : 'hover:-translate-y-px hover:bg-white/90 active:translate-y-0 active:scale-[0.99]',
         ].join(' ')}
-        style={{ height: '3.5rem' }}
+        style={{ height: '3.25rem' }}
       >
         {isLoading ? (
           <>
             <div
-              className="w-5 h-5 border-[3px] border-black border-t-transparent rounded-full animate-spin shrink-0 dark:border-white dark:border-t-transparent"
+              className="w-4 h-4 border-2 border-sky-deep border-t-transparent rounded-full animate-spin shrink-0"
               role="status"
               aria-hidden="true"
             />
@@ -74,6 +72,9 @@ export default function GoogleAuthButton({ mode, className = '' }: GoogleAuthBut
           </>
         ) : (
           <>
+            {/* Official Google mark — brand-mandated colours, the one place in the
+                app where a non-token hex is correct (Google's brand guidelines
+                forbid recolouring it). */}
             <svg
               className="w-5 h-5 shrink-0"
               viewBox="0 0 24 24"
@@ -91,7 +92,8 @@ export default function GoogleAuthButton({ mode, className = '' }: GoogleAuthBut
       </button>
 
       {error && (
-        <p className="text-center text-sm font-bold text-red-600 border-2 border-red-400 rounded-lg px-3 py-2 bg-red-50 dark:text-red-400 dark:border-red-500/60 dark:bg-red-950/40">
+        <p className="inline-flex items-center justify-center gap-1.5 rounded-sky-chip bg-sky-rose/10 px-3 py-2 text-center text-xs font-semibold text-sky-rose-deep ring-1 ring-sky-rose/26">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}

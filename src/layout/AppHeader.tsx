@@ -31,12 +31,11 @@ const AppHeader: React.FC = () => {
   }, []);
 
   return (
-    // Restrained Sky-Pastel chrome, composed directly rather than the
-    // .sky-glass-admin utility class: that utility bakes in a 20px card
-    // radius + all-sides border meant for floating panels, which is wrong
-    // shape for a flush, edge-to-edge sticky bar. Same visual language
-    // (92% white, 8px blur, restrained shadow) applied to a header shape.
-    <header className="sticky top-0 flex w-full bg-white/92 backdrop-blur-sm border-b border-gray-200 shadow-sky-admin z-40">
+    // Glass chrome composed directly rather than via .sky-glass-admin: that
+    // utility bakes in a card radius + all-sides border meant for floating
+    // panels, which is the wrong shape for a flush, edge-to-edge sticky bar.
+    // Same language (§5 glass header), applied to a header shape.
+    <header className="sticky top-0 flex w-full bg-white/55 backdrop-blur-[18px] backdrop-saturate-150 border-b border-white/70 shadow-[0_10px_24px_-18px_rgba(36,52,77,0.30)] z-40">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
 
         {/* ── PRIMARY ROW ────────────────────────────────────────────────────── */}
@@ -129,7 +128,7 @@ const AppHeader: React.FC = () => {
         {/* ── MOBILE EXPANDED SECTION ──────────────────────────────────────── */}
         <div
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
-            } lg:hidden items-center gap-3 w-full px-4 pb-3 border-t border-dashed border-gray-200 pt-3`}
+            } lg:hidden items-center gap-3 w-full px-4 pb-3 border-t border-dashed border-sky-ink/15 pt-3`}
         >
           <UserDropdown />
         </div>

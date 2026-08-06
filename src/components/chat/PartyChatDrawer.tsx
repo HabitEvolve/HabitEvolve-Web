@@ -5,7 +5,7 @@ import {
   HubConnection,
   LogLevel,
 } from '@microsoft/signalr';
-import { PaperPlaneIcon } from '../../icons';
+import { MessageSquare, Send, X, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import partyChatApi from '../../api/partyChatApi';
 import type { ChatMessage } from '../../types/partyChat.types';
 
@@ -22,12 +22,26 @@ const senderInitial = (msg: ChatMessage) =>
   msg.senderUsername ? msg.senderUsername.charAt(0).toUpperCase() : '?';
 
 // This drawer renders via createPortal straight into document.body, so it sits
-// OUTSIDE the app's `.admin-content` wrapper and gets none of the ambient
-// `.dark .admin-content .bg-*` overrides. Every surface here needs its own
-// explicit dark: pair or it stays glaring-bright in dark mode.
-const inkBorder = 'border-game-outline dark:border-brand-300';
-const inkShadowSm = 'shadow-[2px_2px_0_0_var(--color-game-outline)] dark:shadow-[2px_2px_0_0_var(--color-brand-300)]';
-const inkShadowMd = 'shadow-[3px_3px_0_0_var(--color-game-outline)] dark:shadow-[3px_3px_0_0_var(--color-brand-300)]';
+// OUTSIDE the app's `.admin-content` wrapper and inherits none of its ambient
+// surface rules. Every surface here therefore states its own Sky-Pastel token
+// explicitly rather than relying on a parent.
+const timestamp = 'text-[10px] font-medium text-sky-ink-3 tabular-nums';
+
+// Peer avatars are tinted from the name so a conversation reads as several
+// distinct voices instead of a column of identical circles. Teal is absent on
+// purpose — it belongs to success/connected state, not decoration.
+const AVATAR_TINTS = [
+  'from-sky-deep-lo to-sky-deep',
+  'from-sky-violet to-sky-violet-deep',
+  'from-sky-peach to-sky-peach-deep',
+  'from-sky-rose to-sky-rose-deep',
+  'from-sky-1 to-sky-deep-lo',
+];
+const tintFor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i) * 31) % 997;
+  return AVATAR_TINTS[h % AVATAR_TINTS.length];
+};
 
 const Spinner = ({ size = 16 }: { size?: number }) => (
   <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -42,39 +56,46 @@ const Spinner = ({ size = 16 }: { size?: number }) => (
 
 // ── Bubble sub-components ──────────────────────────────────────────────────────
 
+// System notices are the room talking, not a person — centred, no avatar, no
+// tail, and peach rather than a status hue since they're informational.
 const SystemBubble = ({ msg }: { msg: ChatMessage }) => (
   <div className="flex justify-center px-4">
-    <div className={`bg-warning-100 dark:bg-warning-500/20 border-2 ${inkBorder} ${inkShadowSm} rounded-xl px-4 py-2 text-center max-w-[85%]`}>
-      <p className="text-xs font-black text-gray-900 dark:text-gray-100">{msg.content}</p>
-      <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-0.5 block">{fmtTime(msg.sentAt)}</span>
+    <div className="max-w-[85%] rounded-sky-chip bg-sky-peach/14 ring-1 ring-sky-peach/26 px-4 py-2 text-center">
+      <p className="text-xs font-semibold text-sky-peach-deep">{msg.content}</p>
+      <span className={`block mt-0.5 ${timestamp}`}>{fmtTime(msg.sentAt)}</span>
     </div>
   </div>
 );
 
+// The mentor's own messages get the deep fill — the one saturated surface in the
+// thread, so your own voice is instantly findable while scrolling.
 const MyBubble = ({ msg }: { msg: ChatMessage }) => (
   <div className="flex flex-col items-end gap-0.5">
     <div className="max-w-[78%]">
-      <div className={`bg-brand-200 dark:bg-brand-500/30 border-2 ${inkBorder} ${inkShadowSm} rounded-xl rounded-tr-none px-3 py-2`}>
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">{msg.content}</p>
+      <div className="rounded-sky-chip rounded-tr-md bg-linear-to-b from-sky-deep-lo to-sky-deep px-3.5 py-2.5 shadow-sky-chip">
+        <p className="text-sm font-medium text-white break-words whitespace-pre-wrap">{msg.content}</p>
       </div>
     </div>
-    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mr-1">{fmtTime(msg.sentAt)}</span>
+    <span className={`mr-1 ${timestamp}`}>{fmtTime(msg.sentAt)}</span>
   </div>
 );
 
 const PlayerBubble = ({ msg }: { msg: ChatMessage }) => (
   <div className="flex items-end gap-2">
-    <span className={`w-7 h-7 rounded-full border-2 ${inkBorder} bg-linear-to-br from-purple-200 to-blue-200 dark:from-purple-500/30 dark:to-blue-500/30 text-xs font-black flex items-center justify-center shrink-0`}>
+    <span
+      className={`grid place-items-center w-7 h-7 shrink-0 rounded-full bg-linear-to-br ${tintFor(msg.senderUsername ?? '?')} font-display text-[11px] font-semibold text-white`}
+      aria-hidden="true"
+    >
       {senderInitial(msg)}
     </span>
     <div className="max-w-[78%]">
-      <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 mb-0.5 ml-0.5">{msg.senderUsername ?? ''}</p>
-      <div className={`bg-gray-25 dark:bg-gray-800 border-2 ${inkBorder} ${inkShadowSm} rounded-xl rounded-tl-none px-3 py-2`}>
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">{msg.content}</p>
+      <p className="ml-0.5 mb-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-sky-ink-3">
+        {msg.senderUsername ?? ''}
+      </p>
+      <div className="rounded-sky-chip rounded-tl-md bg-white/78 ring-1 ring-white/85 px-3.5 py-2.5">
+        <p className="text-sm font-medium text-sky-ink break-words whitespace-pre-wrap">{msg.content}</p>
       </div>
-      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium ml-0.5 mt-0.5 block">
-        {fmtTime(msg.sentAt)}
-      </span>
+      <span className={`block ml-0.5 mt-0.5 ${timestamp}`}>{fmtTime(msg.sentAt)}</span>
     </div>
   </div>
 );
@@ -226,69 +247,85 @@ export default function PartyChatDrawer({
 
   if (!isOpen) return null;
 
+  // Connection state is never colour-only: hue, icon and words all agree.
+  const connLabel = connected ? 'Real-time connected' : 'Connecting to real-time…';
+
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex justify-end">
 
       {/* ── Backdrop ── */}
       <div
-        className={`absolute inset-0 bg-game-outline/50 backdrop-blur-sm transition-opacity duration-300 ${panelIn ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-sky-ink/45 backdrop-blur-[18px] transition-opacity duration-300 ${panelIn ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
         aria-label="Close chat"
       />
 
       {/* ── Drawer panel ── */}
       <div
-        className={`relative z-10 h-full w-[400px] max-w-[95vw] flex flex-col bg-gray-25 dark:bg-gray-800 border-l-4 ${inkBorder} shadow-[-8px_0_0_0_var(--color-game-outline)] dark:shadow-[-8px_0_0_0_var(--color-brand-300)] transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${panelIn ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`relative z-10 h-full w-100 max-w-[95vw] flex flex-col sky-mesh-bg shadow-[-24px_0_48px_-24px_rgba(36,52,77,0.34)] transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${panelIn ? 'translate-x-0' : 'translate-x-full'}`}
       >
 
         {/* ── Header ── */}
-        <div className={`flex items-center justify-between px-5 py-4 border-b-4 ${inkBorder} bg-gray-25 dark:bg-gray-800 shrink-0`}>
+        <div className="relative shrink-0 flex items-center justify-between gap-3 px-5 py-4 bg-white/62 backdrop-blur-xl border-b border-white/70">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`flex items-center justify-center w-9 h-9 rounded-full border-2 ${inkBorder} bg-brand-200 dark:bg-brand-500/30 ${inkShadowSm} shrink-0`}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </div>
+            <span className="grid place-items-center w-9 h-9 shrink-0 rounded-sky-chip bg-sky-deep/12 ring-1 ring-sky-deep/20 text-sky-deep">
+              <MessageSquare className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
+            </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Party Chat</p>
-              <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 truncate">{partyName}</h3>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">Party Chat</p>
+              <h3 className="font-display text-sm font-semibold text-sky-ink truncate">{partyName}</h3>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Connection status dot — real semantic state, not decoration */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Connection status — hue + glyph, and the full wording lives at the
+                bottom of the panel so the dot is never the only carrier. */}
             <span
-              title={connected ? 'Real-time connected' : 'Connecting…'}
-              className={`w-2 h-2 rounded-full border border-game-outline dark:border-brand-300 ${connected ? 'bg-success-500' : 'bg-warning-400 animate-pulse'}`}
-            />
+              title={connLabel}
+              className={`inline-grid place-items-center w-7 h-7 rounded-full ${
+                connected
+                  ? 'bg-sky-teal-bg text-sky-teal'
+                  : 'bg-sky-peach/22 text-sky-peach-deep motion-safe:animate-pulse'
+              }`}
+            >
+              {connected
+                ? <Wifi className="w-3.5 h-3.5" aria-hidden="true" />
+                : <WifiOff className="w-3.5 h-3.5" aria-hidden="true" />}
+              <span className="sr-only">{connLabel}</span>
+            </span>
             <button
               onClick={onClose}
               aria-label="Close drawer"
-              className={`flex items-center justify-center w-8 h-8 border-2 ${inkBorder} rounded-xl bg-gray-25 dark:bg-gray-700 ${inkShadowSm} hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)]`}
+              className="grid place-items-center w-8 h-8 rounded-sky-chip text-sky-ink-2 hover:bg-white/75 hover:text-sky-ink active:scale-95 transition-all duration-150"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <X className="w-4 h-4" strokeWidth={2.4} />
             </button>
           </div>
         </div>
 
         {/* ── Message area ── */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
+        <div ref={scrollRef} className="relative flex-1 overflow-y-auto p-4 space-y-3">
           {loading && messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400 dark:text-gray-500">
-              <Spinner size={24} />
-              <span className="text-sm font-bold">Loading messages…</span>
+            /* Skeleton keeps the thread silhouette — alternating sides — instead
+               of collapsing to a centred spinner and jumping on load. */
+            <div className="space-y-3" aria-hidden="true">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={`flex ${i % 2 ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className="h-11 rounded-sky-chip bg-white/55 ring-1 ring-white/70 animate-pulse"
+                    style={{ width: `${52 + ((i * 13) % 26)}%` }}
+                  />
+                </div>
+              ))}
+              <span className="sr-only">Loading messages…</span>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-center px-8">
-              <span className={`flex items-center justify-center w-14 h-14 rounded-full border-[3px] ${inkBorder} bg-brand-100 dark:bg-brand-500/20`}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700 dark:text-brand-300">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
+              <span className="relative grid place-items-center w-15 h-15 rounded-full bg-white/60 ring-1 ring-white/80 text-sky-deep">
+                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-sky-1/45 blur-xl" />
+                <MessageSquare className="relative w-6 h-6" strokeWidth={2.2} />
               </span>
-              <p className="font-black text-gray-700 dark:text-gray-200 text-base">No messages yet</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium max-w-[200px] leading-relaxed">
+              <p className="font-display text-base font-semibold text-sky-ink">No messages yet</p>
+              <p className="text-sm text-sky-ink-3 font-medium max-w-50 leading-relaxed">
                 Be the first to say something to your party!
               </p>
             </div>
@@ -303,9 +340,11 @@ export default function PartyChatDrawer({
         </div>
 
         {/* ── Input area ── */}
-        <div className={`shrink-0 border-t-4 ${inkBorder} p-4 bg-gray-25 dark:bg-gray-800`}>
+        <div className="relative shrink-0 p-4 bg-white/62 backdrop-blur-xl border-t border-white/70">
           {sendError && (
-            <p className="text-xs font-bold text-error-600 dark:text-error-300 bg-error-50 dark:bg-error-500/15 border border-error-200 rounded-lg px-3 py-1.5 mb-2">
+            <p className="relative overflow-hidden flex items-center gap-2 mb-2 rounded-sky-chip bg-sky-rose/10 ring-1 ring-sky-rose/24 px-3 py-2 pl-4 text-xs font-semibold text-sky-rose-deep">
+              <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               {sendError}
             </p>
           )}
@@ -318,29 +357,30 @@ export default function PartyChatDrawer({
               onKeyDown={handleKeyDown}
               placeholder="Type a message… (Enter to send)"
               maxLength={500}
-              className={`flex-1 border-4 ${inkBorder} rounded-lg px-4 py-2.5 text-sm font-medium bg-gray-25 dark:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-brand-200 dark:focus:ring-brand-500/20 focus:border-brand-400 placeholder:text-gray-400`}
+              className="flex-1 min-w-0 px-4 py-2.5 rounded-sky-chip bg-white/72 ring-1 ring-white/85 text-sm font-medium text-sky-ink transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || sending}
               aria-label="Send message"
               className={[
-                'flex items-center justify-center w-11 h-11 shrink-0',
-                `bg-brand-300 border-2 ${inkBorder} rounded-xl`,
-                inkShadowMd,
-                'active:shadow-none active:translate-x-[3px] active:translate-y-[3px]',
+                'grid place-items-center w-11 h-11 shrink-0 rounded-sky-chip text-white',
+                'bg-linear-to-b from-sky-deep-lo to-sky-deep shadow-sky-fill',
                 'transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)]',
-                'disabled:opacity-40 disabled:cursor-not-allowed',
-                'disabled:translate-x-0 disabled:translate-y-0',
-                'disabled:shadow-[3px_3px_0_0_var(--color-game-outline)] dark:disabled:shadow-[3px_3px_0_0_var(--color-brand-300)]',
+                'motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-95',
+                'disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none',
+                'disabled:translate-y-0 disabled:scale-100',
               ].join(' ')}
             >
-              {sending ? <Spinner size={14} /> : <PaperPlaneIcon className="w-4 h-4" />}
+              {sending ? <Spinner size={15} /> : <Send className="w-4 h-4" strokeWidth={2.3} />}
             </button>
           </div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1.5 flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-success-500' : 'bg-warning-400 animate-pulse'}`} />
-            {connected ? 'Real-time connected' : 'Connecting to real-time…'}
+          <p className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-sky-ink-3">
+            <span
+              aria-hidden="true"
+              className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-sky-teal' : 'bg-sky-peach motion-safe:animate-pulse'}`}
+            />
+            {connLabel}
           </p>
         </div>
       </div>

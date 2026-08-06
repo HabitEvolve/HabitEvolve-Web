@@ -1,119 +1,77 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import {
+  ArrowLeft, Save, ImageIcon, Clock, Bell, Lock, Loader2,
+  CheckCircle2, AlertTriangle, ChevronDown,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import playerProfileApi from "../api/userProfileApi";
 import { UpdatePlayerProfilePayload } from "../types/api.types";
 import { uploadApi } from "../api/uploadApi";
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
-const ArrowLeftIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const SaveIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
-  </svg>
-);
-const ImageIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-    <circle cx="8.5" cy="8.5" r="1.5" />
-    <polyline points="21 15 16 10 5 21" />
-  </svg>
-);
-const ClockIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-  </svg>
-);
-const BellIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-  </svg>
-);
-const LockIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-);
-const SmallSpinner = () => (
-  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+// ── SHARED STYLES ─────────────────────────────────────────────────────────────
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const inputCls =
+  "w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sky-ink text-sm font-medium transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3";
 
 // ── LOADING SKELETON ──────────────────────────────────────────────────────────
 const EditSkeleton = () => (
-  <div className="animate-pulse space-y-5">
-    <div className="bg-white border-4 border-gray-200 rounded-3xl p-6 space-y-5">
-      <div className="h-7 w-40 bg-gray-200 rounded-full" />
-      <div className="h-4 w-72 bg-gray-200 rounded-full" />
-      <div className="space-y-3">
-        <div className="h-4 w-24 bg-gray-200 rounded-full" />
-        <div className="h-12 bg-gray-200 rounded-2xl" />
+  <div className="max-w-2xl justify-self-center w-full animate-pulse">
+    <div className="sky-glass-admin rounded-sky-card p-6 space-y-5">
+      <div className="h-7 w-40 bg-sky-ink/8 rounded-full" />
+      <div className="h-4 w-72 bg-sky-ink/8 rounded-full" />
+      <div className="space-y-2.5">
+        <div className="h-3 w-24 bg-sky-ink/8 rounded-full" />
+        <div className="h-11 bg-sky-ink/8 rounded-sky-chip" />
       </div>
-      <div className="space-y-3">
-        <div className="h-4 w-32 bg-gray-200 rounded-full" />
-        <div className="h-12 bg-gray-200 rounded-2xl" />
+      <div className="space-y-2.5">
+        <div className="h-3 w-32 bg-sky-ink/8 rounded-full" />
+        <div className="h-11 bg-sky-ink/8 rounded-sky-chip" />
       </div>
-      <div className="space-y-3">
-        <div className="h-4 w-36 bg-gray-200 rounded-full" />
-        <div className="h-12 bg-gray-200 rounded-2xl" />
+      <div className="space-y-2.5">
+        <div className="h-3 w-36 bg-sky-ink/8 rounded-full" />
+        <div className="h-11 bg-sky-ink/8 rounded-sky-chip" />
       </div>
     </div>
   </div>
 );
 
 // ── SHARED FORM FIELD WRAPPER ─────────────────────────────────────────────────
+// The glyph sits inside the label row in quiet ink so it identifies the field
+// without competing with the value the user is about to type.
 const FormField = ({
-  label, hint, icon, children,
+  label, hint, Icon, children,
 }: {
   label: string;
   hint?: string;
-  icon: React.ReactNode;
+  Icon: LucideIcon;
   children: React.ReactNode;
 }) => (
   <div>
     <div className="flex items-center gap-2 mb-1.5">
-      <span className="text-gray-500">{icon}</span>
-      <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
-        {label}
-      </label>
+      <Icon className="w-3.5 h-3.5 shrink-0 text-sky-ink-3" />
+      <label className={eyebrow}>{label}</label>
     </div>
     {children}
-    {hint && <p className="text-xs text-gray-400 mt-1.5 font-medium">{hint}</p>}
+    {hint && <p className="text-xs font-medium text-sky-ink-3 mt-1.5">{hint}</p>}
   </div>
 );
 
 // ── LOCKED FIELD ──────────────────────────────────────────────────────────────
+// Recessed and dashed rather than raised: the well reads as "you cannot type
+// here" before the padlock is even noticed.
 const LockedField = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <label className="block text-xs font-black text-gray-700 uppercase tracking-wide mb-1.5">
-      {label}
-    </label>
-    <div className="flex items-center gap-2 w-full px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 text-sm font-medium text-gray-500">
-      <span className="text-gray-400"><LockIcon /></span>
-      {value}
+    <label className={`block mb-1.5 ${eyebrow}`}>{label}</label>
+    <div className="flex items-center gap-2 w-full px-3.5 py-2.5 rounded-sky-chip bg-white/38 border border-dashed border-sky-ink/20 text-sm font-medium text-sky-ink-2">
+      <Lock className="w-3.5 h-3.5 shrink-0 text-sky-ink-3" />
+      <span className="truncate">{value}</span>
     </div>
   </div>
 );
-
-const inputCls =
-  "w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white placeholder:text-gray-400";
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function EditProfile() {
@@ -233,35 +191,38 @@ export default function EditProfile() {
       {loading ? (
         <EditSkeleton />
       ) : (
-        <div className="max-w-2xl justify-self-center">
+        <div className="max-w-2xl justify-self-center w-full">
 
           {/* ── SUCCESS BANNER ──────────────────────────────────────────────── */}
+          {/* teal is the only success hue in the system — never green (§4). */}
           {success && (
-            <div className="mb-5 flex items-center gap-3 bg-green-50 border-4 border-green-400 rounded-3xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-4">
-              <span className="text-green-500"><CheckIcon /></span>
-              <div>
-                <p className="font-black text-green-800">{t("editProfile.profileUpdated")}</p>
-                <p className="text-xs text-green-700">{t("editProfile.redirecting")}</p>
+            <div className="sky-in relative overflow-hidden mb-5 flex items-start gap-3 rounded-sky-card bg-sky-teal-bg/70 ring-1 ring-sky-teal/30 shadow-sky-glass pl-6 pr-5 py-4">
+              <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-sky-teal" />
+              <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-sky-teal text-white shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-display text-sm font-semibold text-sky-ink">{t("editProfile.profileUpdated")}</p>
+                <p className="text-xs font-medium text-sky-ink-2 mt-0.5">{t("editProfile.redirecting")}</p>
               </div>
             </div>
           )}
 
           {/* ── ERROR BANNER ────────────────────────────────────────────────── */}
           {error && !success && (
-            <div className="mb-5 bg-red-50 border-4 border-red-400 rounded-3xl shadow-[4px_4px_0_0_#1A1D20] px-5 py-4">
-              <p className="font-black text-red-800 text-sm">{error}</p>
+            <div className="sky-in relative overflow-hidden mb-5 flex items-start gap-3 rounded-sky-card bg-sky-rose/10 ring-1 ring-sky-rose/25 shadow-sky-glass pl-6 pr-5 py-4">
+              <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-linear-to-b from-sky-rose to-sky-rose-deep" />
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-sky-rose-deep" />
+              <p className="text-sm font-semibold text-sky-rose-deep">{error}</p>
             </div>
           )}
 
           {/* ── FORM CARD ───────────────────────────────────────────────────── */}
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0_0_#1A1D20]"
-          >
-            {/* Card header */}
-            <div className="px-6 pt-6 pb-5 border-b-2 border-gray-200">
-              <h2 className="text-lg font-black text-gray-900">{t("editProfile.title")}</h2>
-              <p className="text-sm text-gray-500 mt-0.5">
+          <form onSubmit={handleSubmit} className="sky-glass-admin rounded-sky-card overflow-hidden">
+            {/* Card header — a tinted strip so the title reads as chrome, not content */}
+            <div className="px-6 pt-5 pb-4 bg-white/45 border-b border-white/70">
+              <h2 className="font-display text-lg font-semibold text-sky-ink tracking-[-0.01em]">{t("editProfile.title")}</h2>
+              <p className="text-xs font-medium text-sky-ink-2 mt-0.5">
                 Update your avatar, schedule time, and notification preferences.
               </p>
             </div>
@@ -270,9 +231,9 @@ export default function EditProfile() {
 
               {/* ── READ-ONLY ACCOUNT INFO ──────────────────────────────────── */}
               <div>
-                <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-3">
+                <p className={`${eyebrow} mb-3`}>
                   {t("editProfile.accountInfo")}
-                  <span className="ml-2 normal-case font-semibold text-gray-400">
+                  <span className="ml-2 normal-case tracking-normal text-sky-ink-3">
                     {t("editProfile.managedByAdmin")}
                   </span>
                 </p>
@@ -282,19 +243,19 @@ export default function EditProfile() {
                 </div>
               </div>
 
-              <hr className="border-dashed border-gray-200" />
+              <hr className="border-t border-dashed border-sky-ink/12" />
 
               {/* ── AVATAR ──────────────────────────────────────────────────── */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-gray-500"><ImageIcon /></span>
-                  <span className="text-xs font-black text-gray-700 uppercase tracking-wide">{t("editProfile.avatarLabel")}</span>
+                  <ImageIcon className="w-3.5 h-3.5 shrink-0 text-sky-ink-3" />
+                  <span className={eyebrow}>{t("editProfile.avatarLabel")}</span>
                 </div>
 
                 <div className="flex items-start gap-5">
                   {/* Preview circle with upload overlay */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-20 h-20 rounded-full border-4 border-black overflow-hidden bg-gradient-to-br from-orange-200 to-pink-300 shadow-[4px_4px_0_0_#1A1D20]">
+                  <div className="relative shrink-0">
+                    <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-white/85 bg-linear-to-br from-sky-2 to-sky-violet/45 shadow-sky-glass">
                       {formData.avatarUrl ? (
                         <img
                           src={formData.avatarUrl}
@@ -306,33 +267,33 @@ export default function EditProfile() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-2xl font-black text-gray-800 select-none">
+                          <span className="font-display text-2xl font-semibold text-white select-none drop-shadow-[0_2px_6px_rgba(36,52,77,0.35)]">
                             {username ? username.slice(0, 2).toUpperCase() : "?"}
                           </span>
                         </div>
                       )}
                     </div>
                     {isUploading && (
-                      <div className="absolute inset-0 rounded-full bg-black/55 flex items-center justify-center">
-                        <SmallSpinner />
+                      <div className="absolute inset-0 rounded-full bg-sky-abyss/55 backdrop-blur-sm flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
                       </div>
                     )}
                   </div>
 
                   {/* Upload controls */}
-                  <div className="flex-1 space-y-2.5 pt-1">
+                  <div className="flex-1 min-w-0 space-y-2.5 pt-1">
                     <button
                       type="button"
                       disabled={isUploading || submitting}
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-2 border-2 border-black rounded-full font-black text-sm bg-sky-100 text-sky-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-sky-chip bg-white/70 ring-1 ring-white/85 text-sky-ink text-sm font-semibold shadow-sky-chip transition hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45"
                     >
                       {isUploading
-                        ? <><SmallSpinner /> {t("editProfile.uploadingAvatar")}</>
-                        : <><ImageIcon /> {t("editProfile.changeAvatar")}</>
+                        ? <><Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> {t("editProfile.uploadingAvatar")}</>
+                        : <><ImageIcon className="w-3.5 h-3.5 shrink-0" /> {t("editProfile.changeAvatar")}</>
                       }
                     </button>
-                    <p className="text-xs text-gray-400 font-medium">{t("editProfile.avatarHint")}</p>
+                    <p className="text-xs font-medium text-sky-ink-3">{t("editProfile.avatarHint")}</p>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -349,13 +310,13 @@ export default function EditProfile() {
               <FormField
                 label={t("editProfile.reminderLabel")}
                 hint={t("editProfile.scheduleHint")}
-                icon={<ClockIcon />}
+                Icon={Clock}
               >
                 <input
                   type="time"
                   value={formData.dailyScheduleTime ?? ""}
                   onChange={(e) => set("dailyScheduleTime", e.target.value)}
-                  className={`${inputCls} cursor-pointer`}
+                  className={`${inputCls} cursor-pointer tabular-nums`}
                 />
               </FormField>
 
@@ -363,38 +324,49 @@ export default function EditProfile() {
               <FormField
                 label={t("editProfile.reminderPrefLabel")}
                 hint={t("editProfile.reminderPrefHint")}
-                icon={<BellIcon />}
+                Icon={Bell}
               >
-                <select
-                  value={formData.reminderPreference ?? ""}
-                  onChange={(e) => set("reminderPreference", e.target.value)}
-                  className={inputCls}
-                >
-                  {REMINDER_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value} disabled={value === ""}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                {/* Native select keeps its keyboard behaviour; the stock arrow is
+                    swapped for a token glyph so it matches every other control. */}
+                <div className="relative">
+                  <select
+                    value={formData.reminderPreference ?? ""}
+                    onChange={(e) => set("reminderPreference", e.target.value)}
+                    className={`${inputCls} appearance-none pr-10 cursor-pointer`}
+                  >
+                    {REMINDER_OPTIONS.map(({ value, label }) => (
+                      <option key={value} value={value} disabled={value === ""}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-ink-3" />
+                </div>
               </FormField>
 
             </div>
 
             {/* ── FORM ACTIONS ──────────────────────────────────────────────── */}
-            <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+            {/* Save is the one filled control on the page; going back is a glass
+                chip, so the hierarchy is visible before either label is read. */}
+            <div className="px-6 py-5 bg-white/45 border-t border-white/70 flex flex-col sm:flex-row gap-3">
               <Link
                 to="/profile"
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/85 text-sky-ink-2 text-sm font-semibold shadow-sky-chip transition hover:bg-white/90 hover:text-sky-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45"
               >
-                <ArrowLeftIcon />
+                <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
                 {t("editProfile.backToProfile")}
               </Link>
               <button
                 type="submit"
                 disabled={submitting || success}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-black rounded-full font-black text-sm bg-orange-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-sky-chip bg-linear-to-b from-sky-deep-lo to-sky-deep text-white text-sm font-semibold shadow-sky-fill transition hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45"
               >
-                <SaveIcon />
+                {submitting
+                  ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" />
+                  : success
+                    ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    : <Save className="w-3.5 h-3.5 shrink-0" />}
                 {submitting ? t("editProfile.saving") : success ? t("editProfile.saved") : t("editProfile.saveChanges")}
               </button>
             </div>

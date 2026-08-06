@@ -25,14 +25,17 @@ export const formatDate = (dateStr: string) =>
     day: "numeric",
   });
 
+// Identity gradients, drawn only from the Sky-Pastel palette (§4) — no green,
+// no off-palette rainbow. Deterministic per user id, so the same person keeps
+// the same colour across the table, the detail page, and the modals.
 const AVATAR_GRADIENTS = [
-  "from-orange-200 to-pink-300",
-  "from-sky-200 to-indigo-300",
-  "from-emerald-200 to-teal-300",
-  "from-purple-200 to-fuchsia-300",
-  "from-yellow-200 to-orange-300",
-  "from-rose-200 to-red-300",
-  "from-cyan-200 to-blue-300",
+  "from-sky-3 to-sky-deep-lo",
+  "from-sky-peach to-sky-peach-deep",
+  "from-sky-violet to-sky-violet-deep",
+  "from-sky-teal to-sky-deep",
+  "from-sky-4 to-sky-3",
+  "from-sky-rose to-sky-rose-deep",
+  "from-sky-deep-lo to-sky-violet",
 ];
 const getAvatarGradient = (id: number) =>
   AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
@@ -59,8 +62,8 @@ export const UserAvatar = ({
   const showImage = !!avatarUrl && !imgError;
   return (
     <div
-      className={`${sizeMap[size]} flex-shrink-0 rounded-full border-black flex items-center justify-center font-black overflow-hidden ${
-        showImage ? "" : `text-gray-800 bg-gradient-to-br ${getAvatarGradient(userId)}`
+      className={`${sizeMap[size]} shrink-0 rounded-full border-white/70 flex items-center justify-center font-display font-semibold overflow-hidden shadow-sky-chip ${
+        showImage ? "" : `text-white bg-linear-to-br ${getAvatarGradient(userId)}`
       }`}
     >
       {showImage ? (
@@ -113,88 +116,32 @@ const UserGroupIcon = () => (
   </svg>
 );
 // ── ROLE BADGE ────────────────────────────────────────────────────────────────
+// §4 role mapping: admin = rose (highest privilege, reads as "careful"),
+// mentor = violet (matches the Mentor portal's identity colour), player = deep
+// blue (the default user colour).
 const ROLE_STYLES: Record<string, string> = {
-  ADMIN:  "bg-red-100 border-red-400 text-red-800",
-  MENTOR: "bg-purple-100 border-purple-400 text-purple-800",
-  PLAYER: "bg-blue-100 border-blue-400 text-blue-800",
+  ADMIN:  "bg-sky-rose/16 text-sky-rose-deep",
+  MENTOR: "bg-sky-violet/16 text-sky-violet-deep",
+  PLAYER: "bg-sky-deep/12 text-sky-deep",
 };
 // Exported: reused by UserDetail.tsx (Admin 360 view).
 export const RoleBadge = ({ role }: { role: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-black rounded-full border-2 ${ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700"}`}>
+  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full ${ROLE_STYLES[role] ?? "bg-sky-ink/7 text-sky-ink-2"}`}>
     {role}
   </span>
 );
 
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
+// Active = TEAL, never green (§4). Dot + label together, so status never rests
+// on colour alone.
 const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
-  Active:  { badge: "bg-green-100 border-green-400 text-green-800", dot: "bg-green-500" },
-  Banned:  { badge: "bg-red-100 border-red-400 text-red-800",       dot: "bg-red-500"   },
-  Deleted: { badge: "bg-gray-100 border-gray-400 text-gray-500",    dot: "bg-gray-400"  },
+  Active:  { badge: "bg-sky-teal-bg text-sky-teal",         dot: "bg-sky-teal"      },
+  Banned:  { badge: "bg-sky-rose/16 text-sky-rose-deep",    dot: "bg-sky-rose"      },
+  Deleted: { badge: "bg-sky-ink/7 text-sky-ink-2",          dot: "bg-sky-ink-3"     },
 };
 // Exported: reused by UserDetail.tsx (Admin 360 view).
 export const StatusBadge = ({ status }: { status: string }) => {
-  const s = STATUS_STYLES[status] ?? { badge: "bg-gray-100 border-gray-400 text-gray-600", dot: "bg-gray-400" };
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 ${s.badge}`}>
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
-      {status}
-    </span>
-  );
-};
-
-// ── SKY-PASTEL TABLE ATOMS ────────────────────────────────────────────────────
-// Forked from UserAvatar/RoleBadge/StatusBadge above rather than restyling
-// those in place: UserDetail.tsx imports the originals directly (`import {
-// UserAvatar, StatusBadge, RoleBadge, RolesEditor, formatDate } from
-// "./UserManagement"`), and that page hasn't been migrated yet. Restyling
-// the exports would have silently reskinned badges on an otherwise-untouched
-// neo-brutalism page. These Table-prefixed versions are local to this file's
-// table only; the exported originals (and the CRUD modals that use them,
-// also out of scope for this pass) are untouched.
-
-const TableUserAvatar = ({
-  username, userId, avatarUrl,
-}: { username: string; userId: number; avatarUrl?: string | null }) => {
-  const [imgError, setImgError] = useState(false);
-  const showImage = !!avatarUrl && !imgError;
-  return (
-    <div
-      className={`w-9 h-9 text-xs shrink-0 rounded-full flex items-center justify-center font-bold overflow-hidden ${
-        showImage ? "" : `text-sky-ink bg-linear-to-br ${getAvatarGradient(userId)}`
-      }`}
-    >
-      {showImage ? (
-        <img
-          src={avatarUrl!}
-          alt={username}
-          className="w-full h-full object-cover"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <span className="leading-none">{getInitials(username)}</span>
-      )}
-    </div>
-  );
-};
-
-const TABLE_ROLE_STYLES: Record<string, string> = {
-  ADMIN: "bg-error-100 text-error-800",
-  MENTOR: "bg-purple-100 text-purple-800",
-  PLAYER: "bg-blue-100 text-blue-800",
-};
-const TableRoleBadge = ({ role }: { role: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full ${TABLE_ROLE_STYLES[role] ?? "bg-gray-100 text-gray-700"}`}>
-    {role}
-  </span>
-);
-
-const TABLE_STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
-  Active: { badge: "bg-success-100 text-success-800", dot: "bg-success-500" },
-  Banned: { badge: "bg-error-100 text-error-800", dot: "bg-error-500" },
-  Deleted: { badge: "bg-gray-100 text-gray-500", dot: "bg-gray-400" },
-};
-const TableStatusBadge = ({ status }: { status: string }) => {
-  const s = TABLE_STATUS_STYLES[status] ?? { badge: "bg-gray-100 text-gray-600", dot: "bg-gray-400" };
+  const s = STATUS_STYLES[status] ?? { badge: "bg-sky-ink/7 text-sky-ink-2", dot: "bg-sky-ink-3" };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${s.badge}`}>
       <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
@@ -203,34 +150,70 @@ const TableStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-// ── GAMIFIED MODAL WRAPPER ────────────────────────────────────────────────────
+// ── SKY-PASTEL TABLE ATOMS ────────────────────────────────────────────────────
+// These were forked from UserAvatar/RoleBadge/StatusBadge above while
+// UserDetail.tsx (which imports the exported originals) was still on the old
+// skin — restyling the exports back then would have reskinned badges on an
+// unmigrated page. Both pages are Sky-Pastel now, so the fork is gone: the
+// Table* names are thin aliases kept only so the table's JSX call-sites don't
+// need editing. One definition, no drift.
+
+const TableUserAvatar = ({
+  username, userId, avatarUrl,
+}: { username: string; userId: number; avatarUrl?: string | null }) => (
+  <UserAvatar username={username} userId={userId} avatarUrl={avatarUrl} size="sm" />
+);
+
+const TableRoleBadge = RoleBadge;
+const TableStatusBadge = StatusBadge;
+
+// ── MODAL WRAPPER ─────────────────────────────────────────────────────────────
+// Name kept (call-sites unchanged) but the "game" skin is gone: navy blurred
+// scrim + a single glass panel. The accent strip along the top edge is the only
+// per-action colour, so create/edit/delete are distinguishable at a glance
+// without three differently-coloured modals.
+const MODAL_ACCENTS: Record<string, string> = {
+  deep: "from-sky-deep-lo to-sky-deep",
+  violet: "from-sky-violet to-sky-violet-deep",
+  rose: "from-sky-rose to-sky-rose-deep",
+};
+
 const GameModal = ({
-  isOpen, onClose, title, children, maxWidth = "max-w-lg",
+  isOpen, onClose, title, children, maxWidth = "max-w-lg", accent = "deep",
 }: {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  accent?: keyof typeof MODAL_ACCENTS;
 }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-sky-ink/45 backdrop-blur-[18px]" onClick={onClose} />
       <div
-        className={`relative z-10 w-full ${maxWidth} my-4 bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0_0_#1A1D20]`}
+        className={`relative z-10 w-full ${maxWidth} my-4 sky-glass rounded-sky-card sky-in`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b-2 border-gray-200">
-          <h2 className="text-base font-black text-gray-900">{title}</h2>
+        <span
+          aria-hidden
+          className={`absolute inset-x-0 top-0 h-1 bg-linear-to-r ${MODAL_ACCENTS[accent]}`}
+        />
+        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/60">
+          <h2 className="font-display text-base font-semibold text-sky-ink">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-black bg-gray-100 hover:bg-red-200 active:translate-x-0.5 active:translate-y-0.5 transition-all font-bold text-gray-700 text-sm leading-none"
+            aria-label="Close"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink active:scale-95 transition"
           >
-            ✕
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
-        <div className="px-6 pb-6 pt-5">{children}</div>
+        <div className="relative px-6 pb-6 pt-5">{children}</div>
       </div>
     </div>
   );
@@ -244,15 +227,20 @@ const FormField = ({
   children: React.ReactNode;
 }) => (
   <div>
-    <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wide">
+    <label className="block text-xs font-semibold text-sky-ink-2 mb-1.5">
       {label}
     </label>
     {children}
   </div>
 );
 
-const inputCls = (accent = "orange") =>
-  `w-full px-4 py-2.5 border-2 border-black rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-${accent}-300 bg-white placeholder:text-gray-400`;
+// One field treatment for every modal. The old signature took an `accent` so
+// each modal could tint its focus ring a different colour — and it interpolated
+// that into the class name, which Tailwind can't see at build time, so the ring
+// never actually rendered. Focus is now always the primary deep ring: one
+// consistent, and real, focus affordance.
+const inputCls = () =>
+  "w-full px-4 py-2.5 rounded-sky-chip border border-white/80 bg-white/60 text-sm text-sky-ink transition placeholder:text-sky-ink-3 focus:outline-hidden focus:border-sky-deep focus:bg-white/85 focus:ring-3 focus:ring-sky-deep/18";
 
 // ── MODAL: CREATE ─────────────────────────────────────────────────────────────
 const CreateUserForm = ({
@@ -294,7 +282,7 @@ const CreateUserForm = ({
           value={form.username}
           onChange={(e) => setForm({ ...form, username: e.target.value })}
           placeholder={t("admin.userManagement.form.usernamePlaceholder")}
-          className={inputCls("orange")}
+          className={inputCls()}
         />
       </FormField>
       <FormField label={t("admin.userManagement.form.emailLabel")}>
@@ -304,7 +292,7 @@ const CreateUserForm = ({
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           placeholder={t("admin.userManagement.form.emailPlaceholder")}
-          className={inputCls("orange")}
+          className={inputCls()}
         />
       </FormField>
       <FormField label={t("admin.userManagement.form.passwordLabel")}>
@@ -314,14 +302,14 @@ const CreateUserForm = ({
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           placeholder={t("admin.userManagement.form.passwordPlaceholder")}
-          className={inputCls("orange")}
+          className={inputCls()}
         />
       </FormField>
       <FormField label={t("admin.userManagement.form.roleLabel")}>
         <select
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
-          className={inputCls("orange")}
+          className={inputCls()}
         >
           <option value="PLAYER">PLAYER</option>
           <option value="MENTOR">MENTOR</option>
@@ -329,20 +317,12 @@ const CreateUserForm = ({
         </select>
       </FormField>
       <div className="flex gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
-        >
+        <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
           {t("admin.userManagement.form.cancel")}
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-orange-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-        >
+        </SkyButton>
+        <SkyButton type="submit" variant="primary" disabled={submitting} className="flex-1">
           {submitting ? t("admin.userManagement.form.creating") : t("admin.userManagement.form.createTitle")}
-        </button>
+        </SkyButton>
       </div>
     </form>
   );
@@ -406,16 +386,17 @@ const UpdateUserForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {apiError && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-3 text-sm text-red-700 font-semibold">
+        <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/12 border border-sky-rose/30 p-3 pl-4 text-sm text-sky-rose-deep font-medium">
+          <span aria-hidden className="absolute left-0 inset-y-0 w-[3px] bg-sky-rose" />
           {apiError}
         </div>
       )}
 
-      <div className={`flex items-center gap-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-2xl`}>
+      <div className="flex items-center gap-3 p-3 rounded-sky-chip bg-white/55 border border-white/80">
         <UserAvatar username={user.username} userId={user.userId} size="md" />
         <div>
-          <p className="font-black text-gray-800 text-sm">{user.username}</p>
-          <p className="text-xs text-gray-500">ID: #{user.userId}</p>
+          <p className="font-display font-semibold text-sky-ink text-sm">{user.username}</p>
+          <p className="text-xs text-sky-ink-3">ID: #{user.userId}</p>
         </div>
       </div>
 
@@ -424,7 +405,7 @@ const UpdateUserForm = ({
           required
           value={profileForm.username}
           onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-          className={inputCls("amber")}
+          className={inputCls()}
         />
       </FormField>
       <FormField label={t("admin.userManagement.form.emailLabel")}>
@@ -433,16 +414,16 @@ const UpdateUserForm = ({
           type="email"
           value={profileForm.email}
           onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-          className={inputCls("amber")}
+          className={inputCls()}
         />
       </FormField>
 
-      <div className="border-t-2 border-dashed border-gray-200 pt-4 space-y-3">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{t("admin.userManagement.form.statusLabel")}</p>
+      <div className="border-t border-dashed border-sky-ink/15 pt-4 space-y-3">
+        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wider">{t("admin.userManagement.form.statusLabel")}</p>
         <select
           value={statusForm.status}
           onChange={(e) => setStatusForm({ ...statusForm, status: e.target.value })}
-          className={inputCls("amber")}
+          className={inputCls()}
         >
           <option value="Active">{t("admin.userManagement.form.statusActive")}</option>
           <option value="Banned">{t("admin.userManagement.form.statusBanned")}</option>
@@ -452,7 +433,7 @@ const UpdateUserForm = ({
             value={statusForm.reason}
             onChange={(e) => setStatusForm({ ...statusForm, reason: e.target.value })}
             placeholder={t("admin.userManagement.form.reasonPlaceholder")}
-            className={inputCls("amber")}
+            className={inputCls()}
           />
         )}
       </div>
@@ -460,20 +441,12 @@ const UpdateUserForm = ({
       <RolesEditor user={user} onRefresh={onSuccess} />
 
       <div className="flex gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
-        >
+        <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
           {t("admin.userManagement.form.cancel")}
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-amber-300 text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-        >
+        </SkyButton>
+        <SkyButton type="submit" variant="primary" disabled={submitting} className="flex-1">
           {submitting ? t("admin.userManagement.form.saving") : t("admin.userManagement.form.saveChanges")}
-        </button>
+        </SkyButton>
       </div>
     </form>
   );
@@ -507,35 +480,36 @@ const DeleteConfirm = ({
   return (
     <div className="space-y-5">
       <div className="text-center py-2">
-        <div className="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-black bg-red-100 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-sky-rose/14 border border-sky-rose/30 text-sky-rose-deep flex items-center justify-center">
           <TrashIcon />
         </div>
-        <p className="font-black text-gray-900 text-lg">{t("admin.userManagement.deleteModal.title")}</p>
-        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+        <p className="font-display font-semibold text-sky-ink text-lg">{t("admin.userManagement.deleteModal.title")}</p>
+        <p className="text-sm text-sky-ink-2 mt-1.5 leading-relaxed">
           {t("admin.userManagement.deleteModal.message")}{" "}
-          <span className="font-black text-gray-800">{user.username}</span>.
+          <span className="font-semibold text-sky-ink">{user.username}</span>.
           <br />
           {t("admin.userManagement.deleteModal.warning")}
         </p>
       </div>
-      <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-3.5 text-sm text-red-700 font-semibold text-center">
+      <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/12 border border-sky-rose/30 p-3.5 pl-4 text-sm text-sky-rose-deep font-medium text-center">
+        <span aria-hidden className="absolute left-0 inset-y-0 w-[3px] bg-sky-rose" />
         {t("admin.userManagement.deleteModal.dataLoss")}
       </div>
       <div className="flex gap-3">
-        <button
-          onClick={onClose}
-          disabled={deleting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-bold text-sm bg-white text-gray-700 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 transition-all"
-        >
+        <SkyButton type="button" variant="secondary" onClick={onClose} disabled={deleting} className="flex-1">
           {t("admin.userManagement.deleteModal.keepUser")}
-        </button>
-        <button
+        </SkyButton>
+        {/* The one saturated-rose fill in the app: an irreversible action is the
+            only thing that earns more weight than the primary CTA. */}
+        <SkyButton
+          type="button"
+          variant="destructive"
           onClick={handleDelete}
           disabled={deleting}
-          className="flex-1 py-2.5 border-2 border-black rounded-full font-black text-sm bg-red-400 text-white shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="flex-1 bg-sky-rose text-white border-sky-rose shadow-[0_10px_20px_-10px_rgba(196,112,138,0.95)] hover:bg-sky-rose-deep"
         >
           {deleting ? t("admin.userManagement.deleteModal.deleting") : t("admin.userManagement.deleteModal.deleteForever")}
-        </button>
+        </SkyButton>
       </div>
     </div>
   );
@@ -607,22 +581,22 @@ export const RolesEditor = ({
   };
 
   return (
-    <div className="border-t-2 border-dashed border-gray-200 pt-4 space-y-3">
-      <p className="text-xs font-black text-gray-400 uppercase tracking-wide">
+    <div className="border-t border-dashed border-sky-ink/15 pt-4 space-y-3">
+      <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wider">
         {t("admin.userManagement.rolesModal.title")}
       </p>
 
       {localRoles.length === 0 ? (
-        <p className="text-sm text-gray-400 italic">{t("admin.userManagement.rolesModal.noRoles")}</p>
+        <p className="text-sm text-sky-ink-3 italic">{t("admin.userManagement.rolesModal.noRoles")}</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {localRoles.map((role) => {
-            const style = ROLE_STYLES[role] ?? "bg-gray-100 border-gray-400 text-gray-700";
+            const style = ROLE_STYLES[role] ?? "bg-sky-ink/7 text-sky-ink-2";
             const isRemoving = removingRole === role;
             return (
               <span
                 key={role}
-                className={`inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-xl border-2 font-black text-xs ${style}`}
+                className={`inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full font-semibold text-xs ${style}`}
               >
                 {isRemoving && (
                   <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
@@ -633,7 +607,7 @@ export const RolesEditor = ({
                   onClick={() => handleRemove(role)}
                   disabled={!!removingRole}
                   title={`Remove ${role}`}
-                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/15 disabled:cursor-not-allowed transition-colors leading-none font-black text-sm shrink-0"
+                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-sky-ink/15 disabled:cursor-not-allowed transition-colors leading-none font-semibold text-sm shrink-0"
                 >
                   ×
                 </button>
@@ -644,7 +618,8 @@ export const RolesEditor = ({
       )}
 
       {availableRoles.length === 0 ? (
-        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-2.5 text-xs text-green-700 font-semibold text-center">
+        // "All roles assigned" is a success state → TEAL, never green (§4).
+        <div className="rounded-sky-chip bg-sky-teal-bg border border-sky-teal/30 p-2.5 text-xs text-sky-teal font-semibold text-center">
           {t("admin.userManagement.rolesModal.allRolesAssigned")}
         </div>
       ) : (
@@ -652,7 +627,7 @@ export const RolesEditor = ({
           <select
             value={dropdownValue}
             onChange={(e) => setSelectedNewRole(e.target.value)}
-            className="flex-1 px-3 py-2 border-2 border-black rounded-xl text-sm font-bold bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="flex-1 px-3 py-2 rounded-sky-chip border border-white/80 bg-white/60 text-sm font-medium text-sky-ink transition focus:outline-hidden focus:border-sky-deep focus:bg-white/85 focus:ring-3 focus:ring-sky-deep/18"
           >
             {availableRoles.map((r) => (
               <option key={r} value={r}>
@@ -660,14 +635,16 @@ export const RolesEditor = ({
               </option>
             ))}
           </select>
-          <button
+          {/* Violet = the mentor/role-grant accent, matching the MENTOR badge. */}
+          <SkyButton
             type="button"
+            size="sm"
             onClick={handleAssign}
             disabled={assigning || !dropdownValue}
-            className="px-4 py-2 bg-violet-300 border-2 border-black rounded-xl font-black text-sm text-gray-900 shadow-[3px_3px_0_0_#1A1D20] hover:shadow-none hover:translate-x-0.75 hover:translate-y-0.75 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_0_#1A1D20] transition-all whitespace-nowrap"
+            className="whitespace-nowrap from-sky-violet to-sky-violet-deep shadow-[0_10px_20px_-10px_rgba(124,106,199,0.95)]"
           >
             {assigning ? t("admin.userManagement.rolesModal.adding") : t("admin.userManagement.rolesModal.assign")}
-          </button>
+          </SkyButton>
         </div>
       )}
     </div>
@@ -675,11 +652,14 @@ export const RolesEditor = ({
 };
 
 // ── SKELETON ROW ─────────────────────────────────────────────────────────────
+// Widths are fixed arbitrary values, not `w-${w}` interpolation — Tailwind
+// scans source text, so a computed class name produces no CSS at all.
+const SKELETON_WIDTHS = ["10rem", "16rem", "8rem", "7rem", "9rem", "6rem"];
 const SkeletonRow = () => (
   <tr className="sky-table-row">
-    {[40, 64, 32, 28, 36, 24].map((w, i) => (
+    {SKELETON_WIDTHS.map((w, i) => (
       <td key={i} className="px-5 py-4">
-        <div className={`h-4 w-${w} rounded-full bg-gray-200 animate-pulse`} />
+        <div className="h-4 max-w-full rounded-full bg-sky-ink/10 animate-pulse" style={{ width: w }} />
       </td>
     ))}
   </tr>
@@ -789,7 +769,7 @@ export default function UserManagement() {
               placeholder={t("admin.userManagement.searchPlaceholder")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-sky-chip border border-sky-surf-border bg-white text-sky-ink text-sm font-medium focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 transition-all placeholder:text-sky-ink-3"
+              className="w-full pl-10 pr-4 py-2.5 rounded-sky-chip border border-white/80 bg-white/60 text-sky-ink text-sm font-medium transition focus:outline-hidden focus:border-sky-deep focus:bg-white/85 focus:ring-3 focus:ring-sky-deep/18 placeholder:text-sky-ink-3"
             />
           </div>
 
@@ -803,15 +783,15 @@ export default function UserManagement() {
         {/* ── TABLE CARD ──────────────────────────────────────────────────── */}
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           {/* Card header */}
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2 bg-sky-admin-bg-deep">
-            <span className="text-sky-ink-2">
+          <div className="px-6 py-4 border-b border-white/60 flex items-center gap-2 bg-white/40">
+            <span className="text-sky-deep">
               <UserGroupIcon />
             </span>
-            <span className="font-semibold text-sky-ink text-sm">
+            <span className="font-display font-semibold text-sky-ink text-sm">
               {t("admin.userManagement.allUsers")}
             </span>
             {!loading && (
-              <span className="ml-auto bg-admin-active/15 text-sky-ink text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              <span className="ml-auto font-display bg-sky-deep/12 text-sky-deep text-xs font-semibold px-2.5 py-0.5 rounded-full tabular-nums">
                 {totalRecords}
               </span>
             )}
@@ -819,12 +799,13 @@ export default function UserManagement() {
 
           {/* Error banner */}
           {fetchError && (
-            <div className="mx-6 mt-5 bg-error-50 border border-error-300 rounded-sky-chip p-3 text-sm text-error-700 font-semibold flex items-center justify-between">
+            <div className="relative overflow-hidden mx-6 mt-5 rounded-sky-chip bg-sky-rose/12 border border-sky-rose/30 p-3 pl-4 text-sm text-sky-rose-deep font-medium flex items-center justify-between gap-3">
+              <span aria-hidden className="absolute left-0 inset-y-0 w-[3px] bg-sky-rose" />
               <span>{fetchError}</span>
               <button
                 type="button"
                 onClick={fetchUsers}
-                className="underline font-semibold hover:no-underline"
+                className="underline decoration-sky-rose/40 underline-offset-2 font-semibold hover:decoration-sky-rose-deep shrink-0"
               >
                 {t("admin.userManagement.retry")}
               </button>
@@ -835,12 +816,9 @@ export default function UserManagement() {
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
-                <tr className="bg-sky-admin-bg-deep border-b border-slate-200">
+                <tr className="sky-table-head border-b border-sky-ink/8">
                   {TABLE_HEADERS.map((h) => (
-                    <th
-                      key={h}
-                      className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-sky-ink"
-                    >
+                    <th key={h} className="px-5 py-3 text-left">
                       {h}
                     </th>
                   ))}
@@ -854,10 +832,10 @@ export default function UserManagement() {
                 ) : users.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-20 text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-sky-deep/8 text-sky-deep flex items-center justify-center">
                         <SearchIcon />
                       </div>
-                      <p className="text-sky-ink-2 text-sm font-semibold">
+                      <p className="font-display text-sky-ink text-sm font-semibold">
                         {t("admin.userManagement.noUsersFound")}
                       </p>
                       <p className="text-sky-ink-3 text-xs mt-1">
@@ -954,8 +932,8 @@ export default function UserManagement() {
             onPageChange={setCurrentPage}
           />
 
-          <div className="px-6 py-3 border-t border-gray-200 bg-sky-admin-bg-deep">
-            <span className="text-xs text-sky-ink-3 font-medium">
+          <div className="px-6 py-3 border-t border-white/60 bg-white/40">
+            <span className="text-xs text-sky-ink-3 font-medium tabular-nums">
               {loading ? t("admin.userManagement.loading") : `Showing ${users.length} of ${totalRecords} users — page ${currentPage} of ${totalPages}`}
             </span>
           </div>
@@ -963,11 +941,11 @@ export default function UserManagement() {
       </div>
 
       {/* ── MODALS ────────────────────────────────────────────────────────────── */}
-      <GameModal isOpen={activeModal === "create"} onClose={closeModal} title={t("admin.userManagement.form.createTitle")}>
+      <GameModal isOpen={activeModal === "create"} onClose={closeModal} title={t("admin.userManagement.form.createTitle")} accent="deep">
         <CreateUserForm onClose={closeModal} onSuccess={handleMutationSuccess} />
       </GameModal>
 
-      <GameModal isOpen={activeModal === "update"} onClose={closeModal} title={t("admin.userManagement.form.editTitle")}>
+      <GameModal isOpen={activeModal === "update"} onClose={closeModal} title={t("admin.userManagement.form.editTitle")} accent="violet">
         {selectedUser && (
           <UpdateUserForm
             user={selectedUser}
@@ -982,6 +960,7 @@ export default function UserManagement() {
         onClose={closeModal}
         title={t("admin.userManagement.deleteModal.title")}
         maxWidth="max-w-md"
+        accent="rose"
       >
         {selectedUser && (
           <DeleteConfirm

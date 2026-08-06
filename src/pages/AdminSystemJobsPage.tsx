@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Cog, Play, Zap, Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Cog, Play, Zap, Loader2, CheckCircle2, XCircle, RefreshCw, AlertTriangle, Inbox, Terminal } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -13,10 +14,14 @@ import type { JobExecutionLogDto } from "../types/adminJobs.types";
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10;
 
-const inputCls =
-    "w-full px-4 py-2.5 rounded-sky-chip border border-sky-surf-border text-sm font-medium " +
-    "bg-white text-sky-ink focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 " +
-    "placeholder:text-sky-ink-3";
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+
+const inputCls = [
+    "w-full px-4 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80",
+    "text-sky-ink text-sm font-medium transition-shadow",
+    "focus:outline-none focus:ring-2 focus:ring-sky-deep/45",
+    "placeholder:text-sky-ink-3",
+].join(" ");
 
 const errMsg = (e: unknown) =>
     (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
@@ -25,14 +30,17 @@ const Spinner = ({ size = 18 }: { size?: number }) => <Loader2 className="animat
 
 // BE JobExecutionLogDto only exposes a `success` boolean (no "Running" state — the log row is
 // written after the job finishes), so the badge collapses to Success/Failed.
-const STATUS_CFG: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-    Success: { bg: "bg-success-100", text: "text-success-800", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    Failed: { bg: "bg-error-100", text: "text-error-800", icon: <XCircle className="w-3.5 h-3.5" /> },
+// teal is the one success hue in the console; a failed run is a real fault, so it
+// takes destructive rose rather than the warm attention accent. Glyph + word mean
+// the outcome survives greyscale.
+const STATUS_CFG: Record<string, { cls: string; Icon: LucideIcon }> = {
+    Success: { cls: "sky-badge-success", Icon: CheckCircle2 },
+    Failed: { cls: "sky-badge-danger", Icon: XCircle },
 };
 const StatusBadge = ({ success }: { success: boolean }) => {
     const status = success ? "Success" : "Failed";
     const c = STATUS_CFG[status];
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
+    return <span className={`sky-badge ${c.cls}`}><c.Icon className="w-3 h-3 shrink-0" /> {status}</span>;
 };
 
 const fmtDateTime = (d: string | null) =>
@@ -50,16 +58,17 @@ interface ConfirmModalProps {
 
 const ConfirmModal = ({ title, message, confirmLabel, loading, onConfirm, onClose }: ConfirmModalProps) =>
     createPortal(
-        <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-ink/60 backdrop-blur-sm p-4">
-            <SkyCard variant="admin" className="modal-content w-full max-w-sm space-y-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
-                        <Zap className="w-4.5 h-4.5 text-warning-600" />
-                    </div>
-                    <h3 className="font-bold text-sky-ink">{title}</h3>
+        <div className="fixed inset-0 z-99999 w-screen h-screen flex items-center justify-center bg-sky-abyss/45 backdrop-blur-md p-4">
+            <SkyCard variant="admin" className="modal-content sky-in relative w-full max-w-sm space-y-4 overflow-hidden">
+                <span className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-peach to-sky-peach-deep" />
+                <div className="flex items-center gap-3 pt-1">
+                    <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-sky-peach/18 text-sky-peach-deep shrink-0">
+                        <Zap className="w-4 h-4" />
+                    </span>
+                    <h3 className="font-display text-base font-semibold text-sky-ink">{title}</h3>
                 </div>
                 <p className="text-sm font-medium text-sky-ink-2">{message}</p>
-                <div className="flex gap-3 pt-1">
+                <div className="flex gap-3 pt-2 border-t border-white/70">
                     <SkyButton type="button" variant="secondary" onClick={onClose} disabled={loading} className="flex-1">Cancel</SkyButton>
                     <SkyButton type="button" variant="primary" onClick={onConfirm} disabled={loading} className="flex-1">
                         {loading ? <><Spinner size={13} /> Running…</> : <><Play className="w-3.5 h-3.5" /> {confirmLabel}</>}
@@ -159,13 +168,13 @@ export default function AdminSystemJobsPage() {
 
             <div className="space-y-6 p-1">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="sky-in flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-sky-chip bg-warning-100 flex items-center justify-center shrink-0">
-                            <Cog className="w-6 h-6 text-warning-600" />
-                        </div>
+                        <span className="grid place-items-center w-12 h-12 rounded-sky-md bg-sky-peach/18 text-sky-peach-deep shrink-0">
+                            <Cog className="w-6 h-6" />
+                        </span>
                         <div>
-                            <h1 className="text-2xl font-black text-sky-ink">System Jobs</h1>
+                            <h1 className="font-display text-2xl font-semibold text-sky-ink tracking-[-0.01em]">System Jobs</h1>
                             <p className="text-sm text-sky-ink-2 font-medium mt-0.5">Trigger background jobs and review recent execution logs</p>
                         </div>
                     </div>
@@ -176,22 +185,36 @@ export default function AdminSystemJobsPage() {
 
                 {/* Run specific job */}
                 <SkyCard variant="admin" className="p-0 overflow-hidden">
-                    <div className="bg-warning-50 px-5 py-4 border-b border-gray-200">
-                        <h3 className="font-bold text-sky-ink">Run a Specific Job</h3>
+                    <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/70 bg-white/45">
+                        <Play className="w-4 h-4 shrink-0 text-sky-deep" />
+                        <h3 className="font-display text-base font-semibold text-sky-ink">Run a Specific Job</h3>
                     </div>
                     <div className="px-5 py-5 space-y-4">
+                        {/* The chips are a picker for the field below, so they live in one
+                            recessed well and the chip matching the field lifts — the link
+                            between the two controls is visible without a label saying so. */}
                         {knownJobNames.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                                {knownJobNames.map(name => (
-                                    <button key={name} type="button" onClick={() => setJobName(name)}
-                                        className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-sky-ink-2 hover:bg-warning-100 transition-colors">
-                                        {name}
-                                    </button>
-                                ))}
+                            <div>
+                                <p className={`${eyebrow} mb-2`}>Seen recently</p>
+                                <div className="flex flex-wrap gap-1.5 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
+                                    {knownJobNames.map(name => {
+                                        const on = jobName.trim() === name;
+                                        return (
+                                            <button key={name} type="button" onClick={() => setJobName(name)} aria-pressed={on}
+                                                className={`px-3 py-1.5 rounded-sky-chip text-xs transition ${
+                                                    on
+                                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white font-semibold shadow-sky-chip"
+                                                        : "text-sky-ink-2 font-medium hover:bg-white/70 hover:text-sky-ink"
+                                                }`}>
+                                                {name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                         <div className="flex gap-3">
-                            <input value={jobName} onChange={e => setJobName(e.target.value)}
+                            <input value={jobName} onChange={e => setJobName(e.target.value)} aria-label="Job name"
                                 placeholder="e.g. DailyStreakFinalizer" className={inputCls} />
                             <SkyButton
                                 type="button"
@@ -208,46 +231,62 @@ export default function AdminSystemJobsPage() {
 
                 {/* Recent logs table */}
                 <SkyCard variant="admin" className="p-0 overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-                        <h3 className="font-bold text-sky-ink">Recent Job Logs</h3>
+                    <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/70 bg-white/45">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <Terminal className="w-4 h-4 shrink-0 text-sky-deep" />
+                            <h3 className="font-display text-base font-semibold text-sky-ink truncate">Recent Job Logs</h3>
+                            {logs.length > 0 && (
+                                <span className="inline-flex items-baseline gap-1 shrink-0">
+                                    <span className="font-display text-sm font-semibold text-sky-ink tabular-nums">{logs.length}</span>
+                                    <span className={eyebrow}>runs</span>
+                                </span>
+                            )}
+                        </div>
                         <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs} disabled={loading}>
                             {loading ? <Spinner size={13} /> : <RefreshCw className="w-3.5 h-3.5" />} Refresh
                         </SkyButton>
                     </div>
 
                     {error ? (
-                        <div className="flex flex-col items-center gap-3 py-16">
-                            <p className="font-bold text-sky-ink-2">Couldn't load logs</p>
-                            <p className="text-sm text-sky-ink-3">{error}</p>
-                            <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs}>Retry</SkyButton>
+                        <div className="p-5">
+                            <div className="relative flex items-start gap-3 overflow-hidden rounded-sky-md bg-sky-rose/10 ring-1 ring-sky-rose/25 pl-5 pr-4 py-4">
+                                <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-sky-rose-deep" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-display text-sm font-semibold text-sky-rose-deep">Couldn't load logs</p>
+                                    <p className="text-xs font-medium text-sky-ink-2 mt-1">{error}</p>
+                                </div>
+                                <SkyButton type="button" variant="secondary" size="sm" onClick={fetchLogs} className="shrink-0">Retry</SkyButton>
+                            </div>
                         </div>
                     ) : loading && logs.length === 0 ? (
                         <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
                             <Spinner size={32} /><p className="font-semibold text-sm">Loading logs…</p>
                         </div>
                     ) : logs.length === 0 ? (
-                        <div className="flex flex-col items-center gap-3 py-16 text-sky-ink-3">
-                            <Cog className="w-12 h-12" />
-                            <p className="font-black text-lg text-sky-ink-2">No job runs yet</p>
+                        <div className="flex flex-col items-center gap-2 py-16 text-center">
+                            <span className="grid place-items-center w-14 h-14 mb-1 rounded-full bg-sky-deep/8 text-sky-deep"><Inbox className="w-6 h-6" /></span>
+                            <p className="font-display text-base font-semibold text-sky-ink">No job runs yet</p>
+                            <p className="text-xs font-medium text-sky-ink-3">Trigger a job above and its result will land here.</p>
                         </div>
                     ) : (
                         <div className={`overflow-x-auto max-h-125 overflow-y-auto transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>
                             <table className="w-full text-sm">
-                                <thead className="sticky top-0 bg-sky-admin-bg-deep z-10">
-                                    <tr className="border-b border-slate-200">
+                                <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm">
+                                    <tr className="sky-table-head">
                                         {["Job", "Status", "Started", "Finished", "Message"].map(h => (
-                                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-sky-ink">{h}</th>
+                                            <th key={h} className="px-4 py-3 text-left">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="sky-stagger">
                                     {pagedLogs.map((log, index) => (
                                         <tr key={log.jobExecutionLogId ?? index} className="sky-table-row">
-                                            <td className="px-4 py-3 font-semibold text-sky-ink whitespace-nowrap">{log.jobName}</td>
+                                            <td className="px-4 py-3 font-display text-sm font-semibold text-sky-ink whitespace-nowrap">{log.jobName}</td>
                                             <td className="px-4 py-3"><StatusBadge success={log.success} /></td>
-                                            <td className="px-4 py-3 text-xs text-sky-ink-2 whitespace-nowrap">{fmtDateTime(log.startedAt)}</td>
-                                            <td className="px-4 py-3 text-xs text-sky-ink-2 whitespace-nowrap">{fmtDateTime(log.finishedAt)}</td>
-                                            <td className="px-4 py-3 text-xs text-sky-ink-2 max-w-70 truncate" title={log.resultSummary ?? log.errorMessage ?? ""}>{log.resultSummary ?? log.errorMessage ?? "—"}</td>
+                                            <td className="px-4 py-3 text-xs font-medium text-sky-ink-2 whitespace-nowrap tabular-nums">{fmtDateTime(log.startedAt)}</td>
+                                            <td className="px-4 py-3 text-xs font-medium text-sky-ink-2 whitespace-nowrap tabular-nums">{fmtDateTime(log.finishedAt)}</td>
+                                            <td className={`px-4 py-3 text-xs max-w-70 truncate ${log.success ? "text-sky-ink-2" : "font-medium text-sky-rose-deep"}`} title={log.resultSummary ?? log.errorMessage ?? ""}>{log.resultSummary ?? log.errorMessage ?? <span className="text-sky-ink-3">—</span>}</td>
                                         </tr>
                                     ))}
                                 </tbody>

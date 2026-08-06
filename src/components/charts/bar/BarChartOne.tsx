@@ -1,27 +1,20 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { SKY, skyChartBase, skyBarPlotOptions } from "../../../utils/skyChart";
 
 export default function BarChartOne() {
+  // Palette + typography come from utils/skyChart — this chart owns no hexes and
+  // no font name of its own, so a token change reaches it for free.
   const options: ApexOptions = {
-    colors: ["#465fff"],
+    ...skyChartBase,
+    colors: [SKY.deep],
     chart: {
-      fontFamily: "Space Grotesk, sans-serif",
+      ...skyChartBase.chart,
       type: "bar",
       height: 180,
-      toolbar: {
-        show: false,
-      },
     },
     plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "39%",
-        borderRadius: 5,
-        borderRadiusApplication: "end",
-      },
-    },
-    dataLabels: {
-      enabled: false,
+      bar: { ...skyBarPlotOptions.bar, horizontal: false, columnWidth: "39%" },
     },
     stroke: {
       show: true,
@@ -29,6 +22,7 @@ export default function BarChartOne() {
       colors: ["transparent"],
     },
     xaxis: {
+      ...skyChartBase.xaxis,
       categories: [
         "Jan",
         "Feb",
@@ -43,29 +37,17 @@ export default function BarChartOne() {
         "Nov",
         "Dec",
       ],
-      axisBorder: {
-        show: false,
-      },
-      axisTicks: {
-        show: false,
-      },
     },
     legend: {
+      ...skyChartBase.legend,
       show: true,
       position: "top",
       horizontalAlign: "left",
-      fontFamily: "Space Grotesk",
     },
     yaxis: {
+      ...skyChartBase.yaxis,
       title: {
         text: undefined,
-      },
-    },
-    grid: {
-      yaxis: {
-        lines: {
-          show: true,
-        },
       },
     },
     fill: {
@@ -73,6 +55,7 @@ export default function BarChartOne() {
     },
 
     tooltip: {
+      ...skyChartBase.tooltip,
       x: {
         show: false,
       },

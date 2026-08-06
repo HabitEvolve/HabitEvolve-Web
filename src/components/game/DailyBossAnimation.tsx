@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationFrame, useMotionValue } from "framer-motion";
+import { Moon, Swords, Zap, Skull, Film, type LucideIcon } from "lucide-react";
 import type { DailyBossAnimationFrameDto } from "../../types/adminDailyBoss.types";
 
 // ── CONFIG ──────────────────────────────────────────────────────────────────
@@ -16,13 +17,18 @@ const EASE_EXPO = "ease-[cubic-bezier(0.16,1,0.3,1)]";
 // được (fallback badge trung tính bên dưới).
 const KNOWN_STATES = ["IDLE", "ATTACK", "HIT", "DEFEAT"] as const;
 
-const STATE_META: Record<string, { label: string; icon: string; accent: string }> = {
-    IDLE: { label: "Idle", icon: "💤", accent: "bg-brand-100 text-brand-800" },
-    ATTACK: { label: "Attack", icon: "⚔️", accent: "bg-warning-100 text-warning-800" },
-    HIT: { label: "Hit", icon: "💥", accent: "bg-error-100 text-error-800" },
-    DEFEAT: { label: "Defeat", icon: "☠️", accent: "bg-gray-200 text-gray-700" },
+// Emoji are retired as icons (§4): they render at the mercy of the host font,
+// break alignment against Onest, and never match the lucide vocabulary the rest
+// of the console speaks. The tints are a taxonomy of what the boss is *doing*,
+// not a verdict — so teal (success) stays out of it entirely: calm=deep,
+// striking=peach, taking damage=damage-orange, dead=rose.
+const STATE_META: Record<string, { label: string; Icon: LucideIcon; accent: string }> = {
+    IDLE: { label: "Idle", Icon: Moon, accent: "bg-sky-deep/12 text-sky-deep ring-sky-deep/22" },
+    ATTACK: { label: "Attack", Icon: Swords, accent: "bg-sky-peach/20 text-sky-peach-deep ring-sky-peach/34" },
+    HIT: { label: "Hit", Icon: Zap, accent: "bg-sky-dmg/16 text-sky-dmg-deep ring-sky-dmg/30" },
+    DEFEAT: { label: "Defeat", Icon: Skull, accent: "bg-sky-rose/14 text-sky-rose-deep ring-sky-rose/28" },
 };
-const FALLBACK_META = { label: "", icon: "🎞️", accent: "bg-gray-200 text-gray-700" };
+const FALLBACK_META = { label: "", Icon: Film, accent: "bg-sky-ink/8 text-sky-ink-2 ring-sky-ink/14" };
 
 type StateMotion = { animate: Record<string, number[] | number>; transition: Record<string, unknown> };
 
@@ -157,19 +163,27 @@ export default function DailyBossAnimation({ frames, initialState = "IDLE", hide
     const meta = STATE_META[activeState] ?? { ...FALLBACK_META, label: activeState ?? "" };
     const motionProps = STATE_MOTION[activeState] ?? FALLBACK_MOTION;
     const hasFrames = !!framesByState[activeState]?.length;
+    const MetaIcon = meta.Icon;
 
     return (
         <div className="inline-flex flex-col items-center gap-4">
-            {/* ── KHUNG BOSS (Sky-Pastel: viền mảnh + đổ bóng mềm, ink-blue) ── */}
-            <div className="relative w-64 h-64 flex items-center justify-center overflow-hidden rounded-sky-card shadow-sky-glass bg-warning-100">
+            {/* ── SÂN KHẤU BOSS ──
+                A lit diorama, not a flat swatch: a vertical sky wash for depth, a
+                soft bloom behind the sprite so it reads as spotlit, and a ground
+                ellipse so the boss looks planted instead of floating in a box. */}
+            <div className="relative w-64 h-64 flex items-center justify-center overflow-hidden rounded-sky-card shadow-sky-glass bg-linear-to-b from-sky-3 to-sky-4 ring-1 ring-inset ring-white/60">
+                <span aria-hidden="true" className="absolute -top-10 left-1/2 -translate-x-1/2 w-52 h-52 rounded-full bg-white/55 blur-3xl" />
+                <span aria-hidden="true" className="absolute bottom-7 left-1/2 -translate-x-1/2 w-36 h-4 rounded-[100%] bg-sky-ink/12 blur-md" />
+
                 {activeState && (
                     // Badge trạng thái: luôn có icon + label chữ, KHÔNG chỉ dựa vào màu
                     // (đúng nguyên tắc "state is never color-only" của DESIGN.md).
                     <span
-                        className={`absolute top-2 left-2 z-10 inline-flex items-center gap-1 px-2 py-0.5
-                            rounded-full text-xs font-semibold ${meta.accent}`}
+                        className={`absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1
+                            rounded-full ring-1 backdrop-blur-sm text-[11px] font-semibold uppercase tracking-[0.08em] ${meta.accent}`}
                     >
-                        {meta.icon} {meta.label}
+                        <MetaIcon className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" />
+                        {meta.label}
                     </span>
                 )}
 
@@ -181,14 +195,17 @@ export default function DailyBossAnimation({ frames, initialState = "IDLE", hide
                         key={activeState}
                         ref={imgRef}
                         alt={`Daily Boss - ${meta.label}`}
-                        className="w-full h-full object-contain select-none pointer-events-none"
+                        className="relative w-full h-full object-contain select-none pointer-events-none [image-rendering:pixelated]"
                         draggable={false}
                         animate={motionProps.animate}
                         transition={motionProps.transition}
                     />
                 ) : (
-                    <span className="text-sm font-semibold text-sky-ink/60 px-4 text-center">
-                        Chưa có frame nào — hãy upload sprite sheet
+                    <span className="relative flex flex-col items-center gap-2 px-6 text-center">
+                        <Film className="w-7 h-7 text-sky-ink-3" strokeWidth={2} aria-hidden="true" />
+                        <span className="text-sm font-semibold text-sky-ink-2 leading-snug">
+                            Chưa có frame nào — hãy upload sprite sheet
+                        </span>
                     </span>
                 )}
             </div>
@@ -199,18 +216,25 @@ export default function DailyBossAnimation({ frames, initialState = "IDLE", hide
                     {availableStates.map((state) => {
                         const isActive = state === activeState;
                         const stateMeta = STATE_META[state] ?? { ...FALLBACK_META, label: state };
+                        const StateIcon = stateMeta.Icon;
                         return (
                             <button
                                 key={state}
                                 type="button"
                                 onClick={() => setActiveState(state)}
+                                aria-pressed={isActive}
                                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-sky-chip
                                     font-semibold text-sm transition-all duration-150 ${EASE_EXPO}
                                     ${isActive
-                                        ? "bg-warning-400 text-warning-950 shadow-sky-chip"
-                                        : "bg-white text-sky-ink-2 border border-sky-surf-border hover:border-warning-400/60"}`}
+                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-fill ring-1 ring-inset ring-white/25"
+                                        : "bg-white/62 ring-1 ring-white/80 text-sky-ink-2 hover:bg-white/80 hover:text-sky-ink motion-safe:hover:-translate-y-px active:translate-y-0"}`}
                             >
-                                {stateMeta.icon} {stateMeta.label}
+                                <StateIcon
+                                    className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-sky-ink-3"}`}
+                                    strokeWidth={2.3}
+                                    aria-hidden="true"
+                                />
+                                {stateMeta.label}
                             </button>
                         );
                     })}

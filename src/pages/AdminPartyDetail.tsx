@@ -3,7 +3,10 @@ import { useParams, useNavigate } from "react-router";
 import {
   ArrowLeft, Users, ClipboardList, Swords, UserCog, UserRoundCog,
   Loader2, Trash2, Copy, Check, KeyRound,
+  Archive, CircleSlash, Globe, Lock, UserCheck, Play, Send, X, Clock,
+  CalendarClock, Trophy, Skull, Minus, AlertTriangle, Ticket,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import adminPartyApi from "../api/adminPartyApi";
@@ -21,57 +24,96 @@ const errMsg = (e: unknown) =>
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 const fmtDateTime = (d: string) => new Date(d).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
+// ── TONE TAXONOMY ─────────────────────────────────────────────────────────────
+// One hue per meaning, reused wherever that meaning shows up. teal is spent only
+// on a state that genuinely succeeded (party live, quest approved, boss down),
+// rose only on failure or a destructive control, peach on "needs a human",
+// violet on the party/game concept itself, deep on the operational default.
+type Tone = "deep" | "peach" | "dmg" | "violet" | "teal" | "rose" | "neutral";
+const TONE: Record<Tone, { chip: string; wash: string; rail: string }> = {
+  deep:    { chip: "bg-sky-deep/12 ring-sky-deep/22 text-sky-deep",            wash: "bg-sky-deep/8",    rail: "bg-sky-deep" },
+  peach:   { chip: "bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep",    wash: "bg-sky-peach/14",  rail: "bg-sky-peach" },
+  dmg:     { chip: "bg-sky-dmg/14 ring-sky-dmg/26 text-sky-dmg-deep",          wash: "bg-sky-dmg/10",    rail: "bg-sky-dmg" },
+  violet:  { chip: "bg-sky-violet/14 ring-sky-violet/26 text-sky-violet-deep", wash: "bg-sky-violet/10", rail: "bg-sky-violet" },
+  teal:    { chip: "bg-sky-teal-bg ring-sky-teal/26 text-sky-teal",            wash: "bg-sky-teal/10",   rail: "bg-sky-teal" },
+  rose:    { chip: "bg-sky-rose/14 ring-sky-rose/26 text-sky-rose-deep",       wash: "bg-sky-rose/10",   rail: "bg-sky-rose" },
+  neutral: { chip: "bg-white/72 ring-white/85 text-sky-ink-2",                 wash: "bg-white/48",      rail: "bg-sky-ink/22" },
+};
+
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const sectionLabel = `mb-3 ${eyebrow}`;
+const fieldLabel = `block mb-1.5 ${eyebrow}`;
+
+// Inner panels sit *inside* an already-glass card, so they take a lighter fill
+// than the card itself — the same glass nested twice just reads as flat.
+const panelCls = "rounded-sky-md bg-white/55 ring-1 ring-white/78 p-4";
+const rowCls =
+  "rounded-sky-md bg-white/58 ring-1 ring-white/78 shadow-sky-tint transition-all duration-200 " +
+  "ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-white/72 hover:-translate-y-px";
+
 const inputCls =
-  "w-full px-3.5 py-2 rounded-sky-chip border border-sky-surf-border text-sm font-medium bg-white text-sky-ink " +
-  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 placeholder:text-sky-ink-3";
+  "w-full px-3.5 py-2.5 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sm font-medium text-sky-ink " +
+  "transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3";
 
 // ── BADGES ────────────────────────────────────────────────────────────────────
-const STATUS_STYLES: Record<string, string> = {
-  Active: "bg-success-100 text-success-800",
-  Disbanded: "bg-gray-100 text-gray-500",
-  Archived: "bg-warning-100 text-warning-800",
+// Every state carries a glyph as well as a hue, so none of them can only be told
+// apart by colour.
+type PillCfg = { tone: Tone; Icon: LucideIcon };
+const FALLBACK_PILL: PillCfg = { tone: "neutral", Icon: Minus };
+
+const StatePill = ({ value, map, tiny = false }: { value: string; map: Record<string, PillCfg>; tiny?: boolean }) => {
+  const { tone, Icon } = map[value] ?? FALLBACK_PILL;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-sky-chip ring-1 font-semibold ${TONE[tone].chip} ${tiny ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs"}`}>
+      <Icon className={tiny ? "w-2.5 h-2.5" : "w-3 h-3"} strokeWidth={2.8} aria-hidden="true" />
+      {value}
+    </span>
+  );
 };
-const StatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
-);
-const POLICY_STYLES: Record<string, string> = {
-  PUBLIC: "bg-blue-100 text-blue-800",
-  APPROVAL_REQUIRED: "bg-warning-100 text-warning-800",
-  INVITE_ONLY: "bg-purple-100 text-purple-800",
+
+const STATUS_PILL: Record<string, PillCfg> = {
+  Active:    { tone: "teal",    Icon: Check },
+  Disbanded: { tone: "neutral", Icon: CircleSlash },
+  Archived:  { tone: "peach",   Icon: Archive },
 };
-const PolicyBadge = ({ policy }: { policy: string }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${POLICY_STYLES[policy] ?? "bg-gray-100 text-gray-700"}`}>{policy}</span>
-);
-const QUEST_STATUS_STYLES: Record<string, string> = {
-  InProgress: "bg-blue-100 text-blue-800",
-  Submitted: "bg-warning-100 text-warning-800",
-  Approved: "bg-success-100 text-success-800",
-  Rejected: "bg-error-100 text-error-800",
-  Expired: "bg-gray-100 text-gray-600",
-  Failed: "bg-error-100 text-error-800",
-  NotStarted: "bg-gray-100 text-gray-500",
+const StatusBadge = ({ status }: { status: string }) => <StatePill value={status} map={STATUS_PILL} />;
+
+// A join policy is a *setting*, not a verdict — so the three hues are picked for
+// separation (open / gated / closed) and none of them means "good" or "bad".
+const POLICY_PILL: Record<string, PillCfg> = {
+  PUBLIC:            { tone: "deep",   Icon: Globe },
+  APPROVAL_REQUIRED: { tone: "peach",  Icon: UserCheck },
+  INVITE_ONLY:       { tone: "violet", Icon: Lock },
 };
-const QuestStatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${QUEST_STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
-);
-const RAID_STATUS_STYLES: Record<string, string> = {
-  Upcoming: "bg-blue-100 text-blue-800",
-  Active: "bg-warning-100 text-warning-800",
-  Defeated: "bg-success-100 text-success-800",
-  Failed: "bg-error-100 text-error-800",
-  Expired: "bg-gray-100 text-gray-600",
-  WipeOut: "bg-error-100 text-error-800",
+const PolicyBadge = ({ policy }: { policy: string }) => <StatePill value={policy} map={POLICY_PILL} tiny />;
+
+const QUEST_STATUS_PILL: Record<string, PillCfg> = {
+  InProgress: { tone: "deep",    Icon: Play },
+  Submitted:  { tone: "peach",   Icon: Send },
+  Approved:   { tone: "teal",    Icon: Check },
+  Rejected:   { tone: "rose",    Icon: X },
+  Expired:    { tone: "neutral", Icon: Clock },
+  Failed:     { tone: "rose",    Icon: X },
+  NotStarted: { tone: "neutral", Icon: Minus },
 };
-const RaidStatusBadge = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${RAID_STATUS_STYLES[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
-);
+const QuestStatusBadge = ({ status }: { status: string }) => <StatePill value={status} map={QUEST_STATUS_PILL} />;
+
+const RAID_STATUS_PILL: Record<string, PillCfg> = {
+  Upcoming: { tone: "deep",    Icon: CalendarClock },
+  Active:   { tone: "peach",   Icon: Swords },
+  Defeated: { tone: "teal",    Icon: Trophy },
+  Failed:   { tone: "rose",    Icon: X },
+  Expired:  { tone: "neutral", Icon: Clock },
+  WipeOut:  { tone: "rose",    Icon: Skull },
+};
+const RaidStatusBadge = ({ status }: { status: string }) => <StatePill value={status} map={RAID_STATUS_PILL} />;
 
 // ── SKELETONS ─────────────────────────────────────────────────────────────────
 const SkeletonBlock = ({ className = "" }: { className?: string }) => (
-  <div className={`animate-pulse bg-gray-200 rounded-sky-chip ${className}`} />
+  <div className={`animate-pulse bg-sky-ink/8 rounded-sky-md ${className}`} />
 );
 const CardSkeletonGrid = ({ count = 3 }: { count?: number }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sky-stagger">
     {Array.from({ length: count }).map((_, i) => <SkeletonBlock key={i} className="h-20" />)}
   </div>
 );
@@ -80,11 +122,13 @@ const ListSkeleton = ({ rows = 4 }: { rows?: number }) => (
 );
 
 // ── EMPTY STATE ───────────────────────────────────────────────────────────────
+// An empty panel gets a dashed outline and a plated glyph so it reads as "this
+// is a real, currently-empty list" rather than as content that failed to load.
 const EmptyState = ({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) => (
-  <div className="flex flex-col items-center gap-2 py-14 text-sky-ink-3">
-    {icon}
-    <p className="font-bold text-sm text-sky-ink-2">{title}</p>
-    {subtitle && <p className="text-xs text-sky-ink-3">{subtitle}</p>}
+  <div className="flex flex-col items-center gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/38 py-14">
+    <span className="grid place-items-center w-14 h-14 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">{icon}</span>
+    <p className="font-display text-sm font-semibold text-sky-ink">{title}</p>
+    {subtitle && <p className="text-xs font-medium text-sky-ink-2">{subtitle}</p>}
   </div>
 );
 
@@ -178,27 +222,35 @@ const OverviewTab = ({ party, onPartyChange }: { party: PartyItem; onPartyChange
     <div className="space-y-6">
       {/* ── Basic Info ───────────────────────────────────────────────────── */}
       <div>
-        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide mb-2">Basic Info</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <p className={sectionLabel}>Basic Info</p>
+        {/* These four are the facts an operator reads off the party before doing
+            anything else, so the figure is the display face and the label
+            recedes above it — never the other way round. */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sky-stagger">
           {[
             { label: "Party ID", value: `#${party.partyId}` },
             { label: "Members", value: party.maxMembers > 0 ? `${party.memberCount} / ${party.maxMembers}` : `${party.memberCount}` },
             { label: "Created At", value: fmtDate(party.createdAt) },
             { label: "Updated At", value: party.updatedAt ? fmtDate(party.updatedAt) : "—" },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-gray-50 border border-gray-200 rounded-sky-chip p-3">
-              <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-semibold text-sky-ink mt-0.5">{value}</p>
+            <div key={label} className="rounded-sky-md bg-white/55 ring-1 ring-white/78 px-3.5 py-3">
+              <p className={eyebrow}>{label}</p>
+              <p className="mt-1 font-display text-sm font-semibold text-sky-ink tabular-nums">{value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── Invite Code ──────────────────────────────────────────────────── */}
-      <div className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint">
-        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide mb-3">Invite Code</p>
+      <div className={panelCls}>
+        <p className={`inline-flex items-center gap-1.5 ${sectionLabel}`}>
+          <Ticket className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" /> Invite Code
+        </p>
         <div className="flex flex-wrap items-center gap-3">
-          <code className="px-4 py-2 bg-gray-100 rounded-sky-chip font-bold text-sm tracking-widest text-sky-ink">{party.inviteCode || "— none —"}</code>
+          {/* The code itself is what gets copied out of this screen, so it is
+              plated and wide-tracked — a string of look-alike characters has to
+              be readable one glyph at a time. */}
+          <code className={`rounded-sky-chip px-4 py-2 font-mono text-sm font-semibold tracking-[0.22em] ${party.inviteCode ? "bg-sky-deep/10 ring-1 ring-sky-deep/20 text-sky-deep" : "bg-white/62 ring-1 ring-white/85 text-sky-ink-3 tracking-normal italic"}`}>{party.inviteCode || "— none —"}</code>
           {party.inviteCode && (
             <SkyButton type="button" variant="secondary" size="sm" onClick={copyInviteCode}>
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copied ? "Copied" : "Copy"}
@@ -211,19 +263,19 @@ const OverviewTab = ({ party, onPartyChange }: { party: PartyItem; onPartyChange
       </div>
 
       {/* ── Edit Info ────────────────────────────────────────────────────── */}
-      <div className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint space-y-3">
-        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide">Edit Party Info</p>
+      <div className={`${panelCls} space-y-3.5`}>
+        <p className={eyebrow}>Edit Party Info</p>
         <div>
-          <label className="block text-xs font-semibold text-sky-ink-2 mb-1">Name</label>
+          <label className={fieldLabel}>Name</label>
           <input required maxLength={200} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={inputCls} />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-sky-ink-2 mb-1">Description</label>
+          <label className={fieldLabel}>Description</label>
           <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className={inputCls} />
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-45">
-            <label className="block text-xs font-semibold text-sky-ink-2 mb-1">Join Policy</label>
+            <label className={fieldLabel}>Join Policy</label>
             <select value={editForm.joinPolicy} onChange={(e) => setEditForm({ ...editForm, joinPolicy: e.target.value as JoinPolicy })} className={inputCls}>
               <option value="APPROVAL_REQUIRED">APPROVAL_REQUIRED</option>
               <option value="PUBLIC">PUBLIC</option>
@@ -234,14 +286,27 @@ const OverviewTab = ({ party, onPartyChange }: { party: PartyItem; onPartyChange
             {savingInfo ? "Saving…" : "Save Changes"}
           </SkyButton>
         </div>
+        {/* Unsaved edits are stated in words next to the button rather than left
+            to the button's enabled-ness, which is easy to miss. */}
+        {infoChanged && !savingInfo && (
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-sky-peach-deep">
+            <AlertTriangle className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> Unsaved changes
+          </p>
+        )}
       </div>
 
       {/* ── Transfer Mentor ──────────────────────────────────────────────── */}
-      <div className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint">
-        <p className="text-xs font-semibold text-sky-ink-3 uppercase tracking-wide mb-3">Transfer Ownership</p>
-        <p className="text-sm text-sky-ink-2 mb-3">Currently owned by <span className="font-bold text-sky-ink">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>.</p>
+      {/* Handing a party to another mentor is the one consequential action on this
+          tab, so it gets its own railed panel instead of sitting flush with the
+          ordinary edit fields above it. */}
+      <div className={`relative overflow-hidden ${panelCls} pl-5`}>
+        <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+        <p className={`inline-flex items-center gap-1.5 ${sectionLabel}`}>
+          <UserCog className="w-3.5 h-3.5" strokeWidth={2.4} aria-hidden="true" /> Transfer Ownership
+        </p>
+        <p className="mb-3.5 text-sm font-medium text-sky-ink-2">Currently owned by <span className="font-display font-semibold text-sky-ink">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>.</p>
         {mentorsLoading ? (
-          <div className="flex items-center gap-2 text-sky-ink-3 text-sm font-semibold py-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading mentors…</div>
+          <div className="flex items-center gap-2 py-2 text-sm font-medium text-sky-ink-3"><Loader2 className="w-4 h-4 animate-spin" /> Loading mentors…</div>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <select value={newMentorId} onChange={(e) => setNewMentorId(e.target.value)} className={`${inputCls} flex-1 min-w-50`}>
@@ -279,15 +344,22 @@ const MembersTab = ({ partyId, members, loading, onRefresh }: { partyId: number;
   };
 
   if (loading) return <ListSkeleton />;
-  if (members.length === 0) return <EmptyState icon={<Users className="w-10 h-10 opacity-40" />} title="No members yet" />;
+  if (members.length === 0) return <EmptyState icon={<Users className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />} title="No members yet" />;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 sky-stagger">
       {members.map((m) => (
-        <div key={m.partyMemberId} className="flex items-center justify-between rounded-sky-chip px-4 py-3 bg-white border border-sky-surf-border shadow-sky-tint">
-          <div>
-            <p className="font-bold text-sm text-sky-ink">{m.username}</p>
-            <p className="text-xs text-sky-ink-3">#{m.userId} · Joined {m.joinedAt ? fmtDate(m.joinedAt) : "—"}</p>
+        <div key={m.partyMemberId} className={`flex items-center justify-between gap-3 px-4 py-3 ${rowCls}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            {/* An initial-plate gives a long roster a vertical rhythm to scan
+                down, which a column of bare names does not have. */}
+            <span className="grid place-items-center w-9 h-9 shrink-0 rounded-sky-chip bg-sky-violet/12 ring-1 ring-sky-violet/22 font-display text-sm font-semibold uppercase text-sky-violet-deep">
+              {m.username?.charAt(0) ?? "?"}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-display text-sm font-semibold text-sky-ink">{m.username}</p>
+              <p className="text-xs font-medium text-sky-ink-3 tabular-nums">#{m.userId} · Joined {m.joinedAt ? fmtDate(m.joinedAt) : "—"}</p>
+            </div>
           </div>
           <SkyButton
             type="button"
@@ -296,8 +368,9 @@ const MembersTab = ({ partyId, members, loading, onRefresh }: { partyId: number;
             onClick={() => handleRemove(m.userId)}
             disabled={removingId === m.userId}
             title="Remove from party"
+            aria-label={`Remove ${m.username} from party`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            {removingId === m.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
           </SkyButton>
         </div>
       ))}
@@ -325,20 +398,30 @@ const JoinRequestsTab = ({ partyId, requests, loading, onRefresh }: { partyId: n
   };
 
   if (loading) return <ListSkeleton />;
-  if (requests.length === 0) return <EmptyState icon={<ClipboardList className="w-10 h-10 opacity-40" />} title="No pending join requests" />;
+  if (requests.length === 0) return <EmptyState icon={<ClipboardList className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />} title="No pending join requests" />;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 sky-stagger">
       {requests.map((r) => (
-        <div key={r.requestId} className="flex items-center justify-between gap-3 rounded-sky-chip px-4 py-3 bg-white border border-sky-surf-border shadow-sky-tint">
+        <div key={r.requestId} className={`relative flex items-center justify-between gap-3 overflow-hidden pl-5 pr-4 py-3 ${rowCls}`}>
+          {/* Every row in this list is waiting on a decision, so each one carries
+              the same peach rail — the tab badge says how many, the rail says
+              which. */}
+          <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
           <div className="min-w-0">
-            <p className="font-bold text-sm text-sky-ink">{r.username}</p>
-            {r.message && <p className="text-xs text-sky-ink-2 truncate">"{r.message}"</p>}
-            <p className="text-xs text-sky-ink-3">Requested {fmtDateTime(r.requestedAt)}</p>
+            <p className="truncate font-display text-sm font-semibold text-sky-ink">{r.username}</p>
+            {r.message && <p className="truncate text-xs font-medium italic text-sky-ink-2">"{r.message}"</p>}
+            <p className="text-xs font-medium text-sky-ink-3 tabular-nums">Requested {fmtDateTime(r.requestedAt)}</p>
           </div>
+          {/* Approve is a genuinely affirmative outcome (teal) and reject closes
+              the door (rose) — the pair reads as one decision, not two buttons. */}
           <div className="flex items-center gap-2 shrink-0">
-            <SkyButton type="button" variant="success" size="sm" onClick={() => handleDecision(r.requestId, true)} disabled={processingId === r.requestId}>Approve</SkyButton>
-            <SkyButton type="button" variant="destructive" size="sm" onClick={() => handleDecision(r.requestId, false)} disabled={processingId === r.requestId}>Reject</SkyButton>
+            <SkyButton type="button" variant="success" size="sm" onClick={() => handleDecision(r.requestId, true)} disabled={processingId === r.requestId}>
+              <Check className="w-3.5 h-3.5" /> Approve
+            </SkyButton>
+            <SkyButton type="button" variant="destructive" size="sm" onClick={() => handleDecision(r.requestId, false)} disabled={processingId === r.requestId}>
+              <X className="w-3.5 h-3.5" /> Reject
+            </SkyButton>
           </div>
         </div>
       ))}
@@ -349,23 +432,38 @@ const JoinRequestsTab = ({ partyId, requests, loading, onRefresh }: { partyId: n
 // ── TAB: QUESTS ───────────────────────────────────────────────────────────────
 const QuestsTab = ({ quests, loading }: { quests: UserQuestDto[]; loading: boolean }) => {
   if (loading) return <CardSkeletonGrid />;
-  if (quests.length === 0) return <EmptyState icon={<ClipboardList className="w-10 h-10 opacity-40" />} title="No quests assigned to this party yet" />;
+  if (quests.length === 0) return <EmptyState icon={<ClipboardList className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />} title="No quests assigned to this party yet" />;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sky-stagger">
       {quests.map((q) => (
-        <div key={q.questId} className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint space-y-2">
+        <div key={q.questId} className={`flex flex-col gap-2.5 p-4 ${rowCls}`}>
           <div className="flex items-start justify-between gap-2">
-            <p className="font-bold text-sm text-sky-ink leading-snug">{q.title}</p>
+            {/* The title is what an operator scans this grid by, so it is the
+                only display-face element in the card. */}
+            <p className="font-display text-sm font-semibold leading-snug text-sky-ink">{q.title}</p>
             <QuestStatusBadge status={q.status} />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800">{q.questType}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">{q.difficulty}</span>
+            <span className={`inline-flex items-center rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${TONE.violet.chip}`}>{q.questType}</span>
+            <span className={`inline-flex items-center rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${TONE.deep.chip}`}>{q.difficulty}</span>
           </div>
-          <div className="flex items-center justify-between text-xs text-sky-ink-2 font-medium pt-1 border-t border-dashed border-sky-ink/15">
-            <span>{q.deadlineAt ? `Due ${fmtDate(q.deadlineAt)}` : "No deadline"}</span>
-            <span className="font-bold text-sky-ink">{q.rewardGold}g · {q.rewardXp}xp{q.damage > 0 ? ` · ${q.damage} dmg` : ""}</span>
+          {/* Each payout is tinted by what it *is* — gold is a reward (peach), xp
+              is progress (deep), damage is damage (dmg) — so the three numbers
+              stay distinguishable when they sit on one line. */}
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/72 pt-2.5">
+            <span className="text-[11px] font-medium text-sky-ink-3">{q.deadlineAt ? `Due ${fmtDate(q.deadlineAt)}` : "No deadline"}</span>
+            <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-semibold tabular-nums">
+              <span className="text-sky-peach-deep">{q.rewardGold}g</span>
+              <span className="text-sky-ink-3">·</span>
+              <span className="text-sky-deep">{q.rewardXp}xp</span>
+              {q.damage > 0 && (
+                <>
+                  <span className="text-sky-ink-3">·</span>
+                  <span className="text-sky-dmg-deep">{q.damage} dmg</span>
+                </>
+              )}
+            </span>
           </div>
         </div>
       ))}
@@ -376,24 +474,32 @@ const QuestsTab = ({ quests, loading }: { quests: UserQuestDto[]; loading: boole
 // ── TAB: BOSS RAID ────────────────────────────────────────────────────────────
 const RaidsTab = ({ raids, loading }: { raids: PartyRaidDto[]; loading: boolean }) => {
   if (loading) return <ListSkeleton />;
-  if (raids.length === 0) return <EmptyState icon={<Swords className="w-10 h-10 opacity-40" />} title="No boss raid history for this party" />;
+  if (raids.length === 0) return <EmptyState icon={<Swords className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />} title="No boss raid history for this party" />;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 sky-stagger">
       {raids.map((r) => {
         const pct = Math.max(0, Math.min(100, r.healthPercentage));
         return (
-          <div key={r.raidId} className="rounded-sky-chip p-4 bg-white border border-sky-surf-border shadow-sky-tint space-y-2">
+          <div key={r.raidId} className={`space-y-2.5 p-4 ${rowCls}`}>
             <div className="flex items-start justify-between gap-2">
-              <p className="font-bold text-sm text-sky-ink">{r.bossName}</p>
+              <p className="inline-flex items-center gap-2 font-display text-sm font-semibold text-sky-ink">
+                <span className="grid place-items-center w-7 h-7 shrink-0 rounded-[10px] bg-sky-dmg/12 ring-1 ring-sky-dmg/22 text-sky-dmg-deep">
+                  <Skull className="w-3.5 h-3.5" strokeWidth={2.3} aria-hidden="true" />
+                </span>
+                {r.bossName}
+              </p>
               <RaidStatusBadge status={r.status} />
             </div>
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-error-500" style={{ width: `${pct}%` }} />
+            {/* Remaining boss HP is a damage quantity, so the fill is the damage
+                orange on a recessed navy well — and the percentage is printed
+                next to it, because a bar alone can't be read precisely. */}
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-sky-ink/10">
+              <div className="h-full rounded-full bg-linear-to-r from-sky-peach to-sky-dmg transition-[width] duration-500 ease-out" style={{ width: `${pct}%` }} />
             </div>
-            <div className="flex items-center justify-between text-xs text-sky-ink-2 font-medium">
-              <span>{r.currentHp.toLocaleString()} / {r.maxHp.toLocaleString()} HP ({pct.toFixed(0)}%)</span>
-              <span>{fmtDate(r.weekStartDate)} → {fmtDate(r.weekEndDate)}</span>
+            <div className="flex items-center justify-between gap-2 text-xs font-medium text-sky-ink-2 tabular-nums">
+              <span><span className="font-display font-semibold text-sky-ink">{r.currentHp.toLocaleString()}</span> / {r.maxHp.toLocaleString()} HP ({pct.toFixed(0)}%)</span>
+              <span className="text-sky-ink-3">{fmtDate(r.weekStartDate)} → {fmtDate(r.weekEndDate)}</span>
             </div>
           </div>
         );
@@ -405,12 +511,12 @@ const RaidsTab = ({ raids, loading }: { raids: PartyRaidDto[]; loading: boolean 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 type TabId = "overview" | "members" | "joinRequests" | "quests" | "raids";
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "overview", label: "Overview", icon: <UserRoundCog className="w-4 h-4" /> },
-  { id: "members", label: "Members", icon: <Users className="w-4 h-4" /> },
-  { id: "joinRequests", label: "Join Requests", icon: <ClipboardList className="w-4 h-4" /> },
-  { id: "quests", label: "Quests", icon: <ClipboardList className="w-4 h-4" /> },
-  { id: "raids", label: "Boss Raid", icon: <Swords className="w-4 h-4" /> },
+const TABS: { id: TabId; label: string; Icon: LucideIcon }[] = [
+  { id: "overview", label: "Overview", Icon: UserRoundCog },
+  { id: "members", label: "Members", Icon: Users },
+  { id: "joinRequests", label: "Join Requests", Icon: ClipboardList },
+  { id: "quests", label: "Quests", Icon: ClipboardList },
+  { id: "raids", label: "Boss Raid", Icon: Swords },
 ];
 
 export default function AdminPartyDetail() {
@@ -484,7 +590,7 @@ export default function AdminPartyDetail() {
   }, [partyId]);
 
   if (!partyId || Number.isNaN(partyId)) {
-    return <EmptyState icon={<ClipboardList className="w-10 h-10 opacity-40" />} title="Invalid party id" />;
+    return <EmptyState icon={<ClipboardList className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />} title="Invalid party id" />;
   }
 
   return (
@@ -493,8 +599,8 @@ export default function AdminPartyDetail() {
       <PageBreadcrumb pageTitle="Party Detail" />
 
       <div className="space-y-6">
-        <button type="button" onClick={() => navigate("/admin/parties")} className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-ink-2 hover:text-sky-ink transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Party Management
+        <button type="button" onClick={() => navigate("/admin/parties")} className="group inline-flex items-center gap-1.5 rounded-sky-chip bg-white/55 ring-1 ring-white/78 px-3 py-1.5 text-sm font-semibold text-sky-ink-2 transition-all hover:bg-white/78 hover:text-sky-ink">
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" aria-hidden="true" /> Back to Party Management
         </button>
 
         {partyLoading ? (
@@ -503,19 +609,32 @@ export default function AdminPartyDetail() {
             <div className="space-y-2"><SkeletonBlock className="h-6 w-40" /><SkeletonBlock className="h-4 w-56" /></div>
           </div>
         ) : partyError || !party ? (
-          <div className="bg-error-50 border border-error-300 rounded-sky-chip p-4 text-sm text-error-700 font-semibold">{partyError ?? "Party not found."}</div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="w-16 h-16 rounded-sky-card bg-purple-100 flex items-center justify-center shrink-0">
-              <Users className="w-7 h-7 text-purple-700" />
+          <div className="relative flex items-start gap-3 overflow-hidden rounded-sky-card bg-sky-rose/10 pl-5 pr-4 py-4">
+            <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
+            <AlertTriangle className="w-5 h-5 shrink-0 mt-px text-sky-rose-deep" strokeWidth={2.2} aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-display text-sm font-semibold text-sky-rose-deep">Couldn't load this party</p>
+              <p className="mt-0.5 text-sm font-medium text-sky-ink-2">{partyError ?? "Party not found."}</p>
             </div>
-            <div>
-              <p className="text-xl font-bold text-sky-ink">{party.name}</p>
-              {party.description && <p className="text-sm text-sky-ink-2 mt-0.5">{party.description}</p>}
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-4 sky-in">
+            {/* A party is a game/social object, so its plate is violet — the same
+                hue the party concept carries everywhere else in the console. */}
+            <div className="grid place-items-center w-16 h-16 shrink-0 rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
+              <Users className="w-7 h-7" strokeWidth={2} aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <p className={eyebrow}>Party</p>
+              <p className="font-display text-sky-h2 font-semibold leading-tight text-sky-ink">{party.name}</p>
+              {party.description && <p className="mt-0.5 text-sm font-medium text-sky-ink-2">{party.description}</p>}
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <StatusBadge status={party.status} />
                 <PolicyBadge policy={party.joinPolicy} />
-                <span className="text-xs text-sky-ink-3 font-medium">Mentor: {party.mentorUsername ?? `#${party.mentorUserId}`}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-sky-chip bg-white/62 ring-1 ring-white/85 px-2 py-0.5 text-xs font-medium text-sky-ink-2">
+                  <UserRoundCog className="w-3 h-3" strokeWidth={2.4} aria-hidden="true" />
+                  Mentor: <span className="font-semibold text-sky-ink">{party.mentorUsername ?? `#${party.mentorUserId}`}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -523,24 +642,34 @@ export default function AdminPartyDetail() {
 
         {!partyLoading && party && (
           <>
-            <div className="flex items-end gap-1 border-b border-gray-200 overflow-x-auto">
-              {TABS.map((tt) => (
-                <button
-                  type="button"
-                  key={tt.id}
-                  onClick={() => setTab(tt.id)}
-                  className={`px-5 py-2.5 font-semibold text-sm rounded-t-sky-chip transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                    tab === tt.id
-                      ? "bg-purple-100 text-purple-800 -mb-px"
-                      : "text-sky-ink-2 hover:bg-sky-3/20"
-                  }`}
-                >
-                  {tt.icon} {tt.label}
-                  {tt.id === "joinRequests" && !joinRequestsLoading && joinRequests.length > 0 && (
-                    <span className="bg-error-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">{joinRequests.length}</span>
-                  )}
-                </button>
-              ))}
+            {/* One recessed track holding five segments, so the tab strip reads as
+                a single control and only the active segment lifts out of it —
+                cleaner than an underline that fights the glass card below. */}
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
+              {TABS.map((tt) => {
+                const active = tab === tt.id;
+                const TabIcon = tt.Icon;
+                return (
+                  <button
+                    type="button"
+                    key={tt.id}
+                    onClick={() => setTab(tt.id)}
+                    aria-pressed={active}
+                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sky-chip px-4 py-2 text-sm font-semibold transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      active
+                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                        : "text-sky-ink-2 hover:bg-white/72 hover:text-sky-ink"
+                    }`}
+                  >
+                    <TabIcon className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" /> {tt.label}
+                    {/* Pending requests are the one thing on this page that wants a
+                        human, so the count is peach — attention, not error. */}
+                    {tt.id === "joinRequests" && !joinRequestsLoading && joinRequests.length > 0 && (
+                      <span className={`rounded-sky-chip px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${active ? "bg-white/25 text-white" : "bg-sky-peach/24 text-sky-peach-deep"}`}>{joinRequests.length}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             <SkyCard variant="admin">

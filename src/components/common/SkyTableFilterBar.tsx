@@ -2,13 +2,15 @@ import { Search, X } from "lucide-react";
 import type { FilterField } from "../../hooks/useTableFilters";
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+
 const textInputCls =
-  "w-full pl-7 pr-3 py-[7px] text-sm font-medium rounded-sky-chip border border-sky-surf-border bg-white " +
-  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 transition-all placeholder:text-sky-ink-3";
+  "w-full pl-8 pr-3 py-2 text-sm font-medium rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sky-ink " +
+  "transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3";
 
 const selectCls =
-  "w-full px-3 py-[7px] text-sm font-medium rounded-sky-chip border border-sky-surf-border bg-white " +
-  "focus:outline-none focus:border-sky-deep focus:ring-3 focus:ring-sky-deep/20 transition-all cursor-pointer";
+  "w-full px-3 py-2 text-sm font-medium rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sky-ink " +
+  "transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 cursor-pointer";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 interface SkyTableFilterBarProps<T extends Record<string, string>> {
@@ -38,16 +40,16 @@ export function SkyTableFilterBar<T extends Record<string, string>>({
   hasActiveFilters,
 }: SkyTableFilterBarProps<T>) {
   return (
-    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-gray-200 bg-gray-50/60">
+    <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-white/70 bg-white/40">
       {fields.map(field => (
-        <div key={field.key} className="flex flex-col gap-1.5 min-w-37.5">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-sky-ink-3 select-none">
+        <div key={field.key} className="flex flex-col gap-1.5 min-w-[150px]">
+          <label className={`${eyebrow} select-none`}>
             {field.label}
           </label>
 
           {field.type === "text" ? (
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sky-ink-3 pointer-events-none w-3 h-3" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-ink-3 pointer-events-none w-3.5 h-3.5" />
               <input
                 type="text"
                 value={(filters[field.key] as string | undefined) ?? ""}
@@ -71,14 +73,16 @@ export function SkyTableFilterBar<T extends Record<string, string>>({
         </div>
       ))}
 
-      {/* Clear button — only visible when at least one filter is active */}
+      {/* Clear button — only visible when at least one filter is active.
+          Clearing a filter is not destructive, so it stays a quiet glass chip
+          that warms to rose ink on hover rather than shouting in red. */}
       {hasActiveFilters && (
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex items-center gap-1.5 self-end px-4 py-[7px] text-sm font-bold rounded-sky-chip bg-error-100 text-error-700 hover:bg-error-200 transition-all whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 self-end px-4 py-2 text-sm font-semibold rounded-sky-chip bg-white/65 ring-1 ring-white/85 text-sky-ink-2 shadow-sky-chip transition-colors hover:bg-white/90 hover:text-sky-rose-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45 whitespace-nowrap"
         >
-          <X className="w-3 h-3" />
+          <X className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           Clear Filters
         </button>
       )}

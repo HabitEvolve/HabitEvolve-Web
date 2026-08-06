@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -14,6 +14,7 @@ import {
     Plus,
     RotateCcw,
     ScrollText,
+    Sparkles,
     TrendingDown,
     X,
 } from "lucide-react";
@@ -55,29 +56,51 @@ const GemIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 );
 
 // ── PRICING CARD PIECES ───────────────────────────────────────────────────────
-// The old card printed all seven features as one flat bulleted list at 12px, so
-// "20 members" and "Proof: PHOTO,VIDEO,GPS,STEP_COUNTER" carried identical
-// weight and the eye had nowhere to land. Two kinds of information are mixed in
-// there, and they now get two different treatments:
+// Two rounds of notes, because the first pass fixed the wrong half of the problem.
 //
-//   QUOTAS  — three numbers a mentor actually compares across tiers. Promoted to
-//             a 3-up row of large display numerals; scanning the row reads
-//             "3 / 6 / 20 members" down the grid without reading any prose.
-//   TRAITS  — capability strings (boss modes, proof types, AI). Demoted to chips,
-//             since their value is "which ones", not "how many".
+// Round 1 split the flat seven-bullet feature list into QUOTAS (numbers you
+// compare) and TRAITS (capabilities you check off). That was right, but it left
+// every card weighing exactly the same — three identical rectangles side by
+// side. A pricing grid where nothing is heavier than anything else is a spec
+// sheet, not an offer: the mentor has to read all three in full before the page
+// tells them anything.
 //
-// Comma-joined API strings ("EASY,NORMAL,HARD") were being printed raw; they are
-// split so each mode is its own chip.
+// So this pass adds emphasis at two scales:
+//
+//   BETWEEN CARDS — one tier is featured (the mentor's actual next upgrade) and
+//                   physically outweighs the others: lifted, violet-ringed,
+//                   bigger price, filled CTA. The rest recede to a quiet ghost
+//                   treatment so the featured one has something to be louder than.
+//   INSIDE A CARD — the quotas were three equal numerals, which is the same
+//                   flat-list mistake one level down. Seats-per-party is the
+//                   number mentors actually shop on, so it becomes a hero
+//                   numeral; parties and quests/day drop to a small inline pair.
+//
+// Comma-joined API strings ("EASY,NORMAL,HARD") are still split per value.
 
-/** One quota figure: big numeral over a quiet caption. */
-const QuotaStat = ({ value, caption }: { value: number | string; caption: string }) => (
-    <div className="min-w-0 text-center">
-        <div className="font-display text-xl font-semibold text-sky-ink tabular-nums leading-none">{value}</div>
-        <div className="mt-1 text-[10px] font-medium leading-tight text-sky-ink-3">{caption}</div>
+/** The one number a mentor shops on — oversized, with the unit beside it. */
+const QuotaHero = ({ value, caption, big }: { value: number | string; caption: string; big: boolean }) => (
+    <div className="flex items-baseline gap-2">
+        <span
+            className={`font-display font-semibold leading-none tabular-nums text-sky-ink ${
+                big ? "text-[2.5rem]" : "text-[2rem]"
+            }`}
+        >
+            {value}
+        </span>
+        <span className="text-xs font-semibold leading-tight text-sky-ink-2">{caption}</span>
     </div>
 );
 
-/** A capability group: tiny label, then one chip per comma-separated value. */
+/** A supporting quota: figure and caption on one line, deliberately small. */
+const QuotaStat = ({ value, caption }: { value: number | string; caption: string }) => (
+    <div className="flex min-w-0 items-baseline gap-1.5">
+        <span className="font-display text-sm font-semibold tabular-nums text-sky-ink">{value}</span>
+        <span className="truncate text-[11px] font-medium text-sky-ink-3">{caption}</span>
+    </div>
+);
+
+/** A capability group: fixed-width label, then one chip per comma-separated value. */
 const TraitRow = ({
     label,
     value,
@@ -112,6 +135,9 @@ const TraitRow = ({
         </div>
     );
 };
+
+/** Hairline rule between card sections — lighter than a border, enough to group. */
+const CardRule = () => <div className="relative my-4 h-px bg-sky-ink/8" aria-hidden="true" />;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getMentorId = () => {
@@ -769,6 +795,25 @@ export default function SubscriptionWallet() {
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
+    // Which tier the grid should shout about. A pricing grid needs one card that
+    // outweighs the others, and the honest candidate is the mentor's next step
+    // up — the cheapest plan that costs more than what they're on (or, on the
+    // free default, the cheapest paid plan). Falls back to the priciest tier when
+    // they're already at the top, so the featured slot is never empty and never
+    // lands on the plan they already own. Pure derivation from state already
+    // fetched — no new request, no change to what's purchasable.
+    const featuredPkgId = useMemo(() => {
+        if (packages.length === 0) return null;
+        const currentPrice = activeSub?.isDefaultFree ? 0 : (activeSub?.package.price ?? 0);
+        const currentId = activeSub?.package.packageId;
+        const upgrades = packages
+            .filter((p) => p.packageId !== currentId && p.price > currentPrice)
+            .sort((a, b) => a.price - b.price);
+        if (upgrades.length > 0) return upgrades[0].packageId;
+        const priciest = [...packages].sort((a, b) => b.price - a.price)[0];
+        return priciest.packageId === currentId ? null : priciest.packageId;
+    }, [packages, activeSub]);
+
     // ── TRANSACTION LOGBOOK — additive, wired to the already-implemented
     // GET /mentor/wallet/transactions endpoint (not previously called by this page).
     const [transactions, setTransactions] = useState<GemTransactionDto[]>([]);
@@ -987,15 +1032,29 @@ export default function SubscriptionWallet() {
             <div>
                 <p className={eyebrow}>{t("mentor.subscriptionWallet.gemStore")}</p>
                 <h2 className="font-display text-sky-h2 font-semibold text-sky-ink mb-4 mt-1">{t("mentor.subscriptionWallet.availablePlans")}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-stretch sky-stagger">
+                {/* items-end, not items-stretch: the featured card is deliberately
+                    taller (pb-8, -mt-2), and stretching the row would erase the very
+                    size difference that marks it. Bottom-aligning instead keeps every
+                    CTA on one line while letting the featured card grow upward. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-end sky-stagger">
                     {packages.map((pkg) => {
                         const isCurrent = activeSub?.package.packageId === pkg.packageId;
+                        const isFeatured = !isCurrent && pkg.packageId === featuredPkgId;
                         return (
                             <SkyCard
                                 key={pkg.packageId}
                                 variant="mentor"
                                 className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${
-                                    isCurrent ? "ring-1 ring-sky-teal/35" : ""
+                                    isFeatured
+                                        ? // The featured tier physically outweighs its neighbours:
+                                          // taller box, violet ring, deeper shadow, a lift that
+                                          // survives at rest rather than only on hover.
+                                          "z-10 pb-8 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-mt-2"
+                                        : isCurrent
+                                          ? "ring-1 ring-sky-teal/35"
+                                          : // Unfeatured tiers recede so the featured one has
+                                            // something to be louder than.
+                                            "ring-1 ring-white/60 opacity-[0.94]"
                                 }`}
                             >
                                 {/* Current plan gets three cues: a teal rail, a teal wash
@@ -1004,41 +1063,87 @@ export default function SubscriptionWallet() {
                                     <>
                                         <span className="absolute left-0 right-0 top-0 h-1 bg-sky-teal" aria-hidden="true" />
                                         <div className="absolute inset-0 bg-sky-teal/5 pointer-events-none" aria-hidden="true" />
-                                        <span className="absolute top-3 right-3 sky-badge sky-badge-success">
-                                            <Check className="w-3 h-3" />
-                                            CURRENT
-                                        </span>
                                     </>
+                                )}
+                                {/* Featured gets the same three-cue treatment in violet, so
+                                    the two states stay distinguishable without relying on
+                                    hue alone (DESIGN.md: state is never colour-only). */}
+                                {isFeatured && (
+                                    <>
+                                        <span className="absolute left-0 right-0 top-0 h-1 bg-sky-violet" aria-hidden="true" />
+                                        <div className="absolute inset-0 bg-sky-violet/[0.06] pointer-events-none" aria-hidden="true" />
+                                    </>
+                                )}
+
+                                {/* Status badge — one slot, so the name never has to reserve
+                                    room for two. */}
+                                {(isCurrent || isFeatured) && (
+                                    <span
+                                        className={`absolute top-3 right-3 sky-badge ${
+                                            isCurrent ? "sky-badge-success" : "sky-badge-epic"
+                                        }`}
+                                    >
+                                        {isCurrent ? <Check className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                                        {isCurrent
+                                            ? t("mentor.subscriptionWallet.activeBadge")
+                                            : t("mentor.subscriptionWallet.recommendedBadge")}
+                                    </span>
                                 )}
 
                                 {/* Name + blurb. min-h keeps one- and two-line
                                     descriptions from shifting the price line
                                     between cards in the same row. */}
                                 <div className="relative pr-24">
-                                    <h3 className="font-display text-sky-h3 font-semibold text-sky-ink">{pkg.name}</h3>
+                                    <h3
+                                        className={`font-display font-semibold text-sky-ink ${
+                                            isFeatured ? "text-sky-h2" : "text-sky-h3"
+                                        }`}
+                                    >
+                                        {pkg.name}
+                                    </h3>
                                     <p className="mt-0.5 min-h-8 text-xs leading-snug text-sky-ink-2">{pkg.description}</p>
                                 </div>
 
                                 {/* Price is the decision the card exists to support, so it
-                                    is the largest thing on it — was tied with the button. */}
+                                    is the largest thing on it — and larger still when
+                                    featured. */}
                                 <div className="relative mt-4 flex items-baseline gap-1.5">
-                                    <span className="font-display text-[2rem] font-semibold leading-none text-sky-peach-deep tabular-nums">
+                                    <span
+                                        className={`font-display font-semibold leading-none text-sky-peach-deep tabular-nums ${
+                                            isFeatured ? "text-[2.75rem]" : "text-[2rem]"
+                                        }`}
+                                    >
                                         {pkg.price.toLocaleString()}
                                     </span>
-                                    <GemIcon className="w-4 h-4" />
+                                    <GemIcon className={isFeatured ? "w-5 h-5" : "w-4 h-4"} />
                                     <span className="text-xs font-medium text-sky-ink-3">/ {pkg.durationDays}d</span>
                                 </div>
 
-                                {/* Quotas — the three comparable numbers, in a fixed row so
-                                    they line up across cards. */}
-                                <div className="relative mt-4 grid grid-cols-3 gap-1 rounded-sky-md bg-sky-deep/5 px-2 py-3 ring-1 ring-sky-deep/8">
-                                    <QuotaStat value={pkg.maxParties} caption={t("mentor.subscriptionWallet.usageParties")} />
-                                    <QuotaStat value={pkg.maxMembersPerParty} caption={t("mentor.subscriptionWallet.membersPerParty")} />
-                                    <QuotaStat value={pkg.questsPerMemberPerDay} caption={t("mentor.subscriptionWallet.questsPerMemberDay")} />
+                                <CardRule />
+
+                                {/* Quotas. Seats-per-party is the figure mentors actually
+                                    shop on, so it gets hero size; parties and quests/day
+                                    are supporting detail on one quiet line below. Three
+                                    equal numerals was the flat-list mistake one level down. */}
+                                <div className="relative">
+                                    <QuotaHero
+                                        value={pkg.maxMembersPerParty}
+                                        caption={t("mentor.subscriptionWallet.membersPerParty")}
+                                        big={isFeatured}
+                                    />
+                                    <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                                        <QuotaStat value={pkg.maxParties} caption={t("mentor.subscriptionWallet.usageParties")} />
+                                        <QuotaStat
+                                            value={pkg.questsPerMemberPerDay}
+                                            caption={t("mentor.subscriptionWallet.questsPerMemberDay")}
+                                        />
+                                    </div>
                                 </div>
 
+                                <CardRule />
+
                                 {/* Traits — what you get, not how much. */}
-                                <div className="relative mt-4 space-y-2">
+                                <div className="relative space-y-2">
                                     <TraitRow label={t("mentor.subscriptionWallet.bossModes")} value={pkg.bossModes} />
                                     <TraitRow label={t("mentor.subscriptionWallet.rewardTier")} value={pkg.rewardTier} />
                                     {pkg.proofTypes && <TraitRow label="Proof" value={pkg.proofTypes} />}
@@ -1060,11 +1165,12 @@ export default function SubscriptionWallet() {
                                     )}
                                 </div>
 
-                                {/* mt-auto pins every button to the same baseline regardless
-                                    of how many trait rows a tier has. */}
+                                {/* Only the featured card carries a filled CTA — three
+                                    primary buttons in a row is three cards asking equally
+                                    loudly, which is no ask at all. */}
                                 <SkyButton
                                     type="button"
-                                    variant={isCurrent ? "secondary" : "primary"}
+                                    variant={isCurrent || !isFeatured ? "secondary" : "primary"}
                                     disabled={isCurrent}
                                     onClick={() => setPurchasePkg(pkg)}
                                     className="relative mt-6"

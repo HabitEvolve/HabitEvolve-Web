@@ -430,6 +430,7 @@
       "freeBadge": "FREE",
       "activeBadge": "ACTIVE",
       "currentPlanBtn": "Current Plan",
+      "recommendedBadge": "RECOMMENDED",
       "buyUpgrade": "Buy / Upgrade",
       "failedToLoad": "Failed to load subscription data.",
       "purchaseFailed": "Purchase failed.",

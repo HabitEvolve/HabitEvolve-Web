@@ -145,7 +145,9 @@ const mentorApi = {
 
     rejectQuest: async (questId: number, reason?: string): Promise<ApiResponse<QuestDto>> => {
         const r = await axiosClient.post<ApiResponse<QuestDto>>(
-            `/mentorquest/${questId}/reject`, { reason }
+            `/mentorquest/${questId}/reject`,
+            { reason },
+            { params: { mentorUserId: mid() } }
         );
         return r.data;
     },
@@ -178,7 +180,9 @@ const mentorApi = {
         proofId: number, reason?: string
     ): Promise<ApiResponse<ProofDto>> => {
         const r = await axiosClient.post<ApiResponse<ProofDto>>(
-            `/mentor/proofs/${proofId}/reject`, { reason }
+            `/mentor/proofs/${proofId}/reject`,
+            { reason },
+            { params: { mentorUserId: mid() } }
         );
         return r.data;
     },

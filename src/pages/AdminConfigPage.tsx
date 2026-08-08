@@ -386,7 +386,9 @@ const EditModal = ({ config, onClose, onSaved }: EditModalProps) => {
 };
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
-const KNOWN_GROUPS = ["ai", "court", "quest", "daily_task", "difficulty"] as const;
+// `weekly_boss` giữ luôn các key thưởng Rương Tuần (weekly_chest.gold_* / weekly_chest.mgold_*) — đây là
+// nơi DUY NHẤT đổi được số Gold/M-Gold mỗi thành viên nhận khi hạ Boss, nên đưa lên nhóm biết trước.
+const KNOWN_GROUPS = ["ai", "court", "quest", "daily_task", "difficulty", "weekly_boss"] as const;
 
 export default function AdminConfigPage() {
   const { t } = useTranslation();

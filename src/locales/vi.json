@@ -945,6 +945,7 @@
         "goldCapLabel": "Giới Hạn Vàng/Nhiệm Vụ (mG)",
         "proofTypesLabel": "Loại Bằng Chứng Cho Phép *",
         "rewardTierLabel": "Cấp Phần Thưởng *",
+        "rewardTierHint": "Chỉ là nhãn hiển thị. Tiền thưởng thật của Rương Tuần lấy theo độ khó từ Cấu Hình Hệ Thống → weekly_boss (weekly_chest.gold_easy/normal/hard, weekly_chest.mgold_*), tính cho MỖI thành viên. Rương chỉ sinh ra khi hạ được Boss — nhóm bị hạ gục thì không có rương.",
         "errorNoProof": "Chọn ít nhất một loại bằng chứng.",
         "errorAddMode": "Thêm chế độ boss thất bại.",
         "errorSaveTemplate": "Lưu mẫu boss thất bại."

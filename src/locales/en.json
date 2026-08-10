@@ -38,6 +38,7 @@
       "subtitle": "Create your account to begin your journey.",
       "usernamePlaceholder": "User Name",
       "usernameLabel": "Hero Name",
+      "emailLabel": "Email",
       "termsText": "By creating an account, I agree to the",
       "termsLink": "Terms and Conditions",
       "and": "and",
@@ -47,6 +48,13 @@
       "orSignUpWith": "Or sign up with:",
       "haveAccount": "Already have an account?",
       "signInLink": "Sign In"
+    },
+    "registerSuccess": {
+      "title": "Your Account Is Ready!",
+      "subtitle": "Welcome to the guild — your adventure starts now.",
+      "accountLabel": "Registered Account",
+      "nextStep": "Sign in with the email and password you just chose to pick your first goal and begin your journey.",
+      "signInBtn": "Sign In Now"
     },
     "google": {
       "signIn": "Sign in with Google",
@@ -114,6 +122,29 @@
     "themeDisabledMentor": "Dark mode isn't available in the Mentor portal yet",
     "themeDisabledAdmin": "Dark mode isn't available in the Admin console yet",
     "openMenu": "Open menu"
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Stuck on something? Here is how to reach the HabitEvolve team.",
+    "emailSection": "Email Us",
+    "emailHint": "The fastest way to reach us. Write in English or Vietnamese — either is fine.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "hoursSection": "Support Hours",
+    "weekdays": "Monday – Friday",
+    "weekend": "Saturday",
+    "hoursHint": "Times are shown in {{timezone}}. Messages sent outside these hours are answered on the next working day.",
+    "beforeYouWriteSection": "Before You Write",
+    "checklist": {
+      "account": "Your account email or user ID, so we can find you.",
+      "steps": "What you were doing, step by step, right before the problem.",
+      "screenshot": "A screenshot of the error, including any code such as 403 or 500.",
+      "time": "Roughly when it happened — it helps us locate the matching log entry."
+    },
+    "selfServeSection": "Fix It Yourself",
+    "selfServeHint": "Password, avatar, schedule and reminder settings are all yours to change — no ticket needed.",
+    "linkProfile": "My Profile & Password",
+    "linkEditProfile": "Edit Profile Settings"
   },
   "userDropdown": {
     "editProfile": "Edit profile",
@@ -289,6 +320,8 @@
       "noActiveBoss": "No active boss this week",
       "checkBack": "Check back when the next boss template is published.",
       "yourTier": "Your Tier",
+      "registrationWindow": "Register: any time this week",
+      "registrationHint": "A Boss scheduled for this week can be registered at any point during it. Registration only closes once the week has ended.",
       "registerParty": "Register Party",
       "selectParty": "Select Party",
       "chooseParty": "— Choose a party —",
@@ -312,8 +345,14 @@
       "couldNotLoad": "Could not load boss template.",
       "failedToLoad": "Failed to load boss data.",
       "registrationFailed": "Registration failed.",
-      "chestClaimSuccess": "Reward claimed successfully!",
-      "chestClaimFailed": "Failed to claim reward.",
+      "chest": {
+        "title": "Weekly Chest",
+        "perMember": "each member",
+        "claimProgress": "Collected {{claimed}} / {{total}}",
+        "pending": "{{n}} member(s) haven't collected yet.",
+        "allClaimed": "Everyone has collected this chest.",
+        "readonlyNote": "Members collect their own chest in the app — as their Mentor you only track who has. The eligible list is locked the moment the Boss falls: members who join afterwards get nothing, members who leave later still keep their share. A chest never expires."
+      },
       "unexpectedError": "An unexpected error occurred.",
       "party": "Party",
       "boss": "Boss",
@@ -643,7 +682,25 @@
     "saving": "Saving…",
     "saved": "Saved!",
     "profileUpdated": "Profile updated!",
-    "redirecting": "Redirecting to your profile…"
+    "redirecting": "Redirecting to your profile…",
+    "password": {
+      "sectionTitle": "Change Password",
+      "sectionHint": "Enter your current password to confirm it is you, then choose a new one.",
+      "currentLabel": "Current Password",
+      "newLabel": "New Password",
+      "confirmLabel": "Confirm New Password",
+      "show": "Show passwords",
+      "hide": "Hide passwords",
+      "submit": "Update Password",
+      "submitting": "Updating…",
+      "changed": "Password updated. Use the new one next time you sign in.",
+      "errorOldRequired": "Enter your current password.",
+      "errorNewRequired": "Enter a new password.",
+      "errorTooShort": "New password must be at least {{min}} characters.",
+      "errorSameAsOld": "New password must be different from your current one.",
+      "errorMismatch": "The two new passwords do not match.",
+      "errorFailed": "Could not change the password. Please try again."
+    }
   },
   "pages": {
     "notFound": {
@@ -873,7 +930,6 @@
       "table": {
         "num": "#",
         "themeName": "Theme Name",
-        "activePeriod": "Active Period",
         "modes": "Modes",
         "status": "Status",
         "actions": "Actions"

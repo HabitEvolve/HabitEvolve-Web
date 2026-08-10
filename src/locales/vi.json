@@ -38,6 +38,7 @@
       "subtitle": "Tạo tài khoản để bắt đầu hành trình của bạn.",
       "usernamePlaceholder": "Tên người dùng",
       "usernameLabel": "Tên Anh Hùng",
+      "emailLabel": "Email",
       "termsText": "Bằng cách tạo tài khoản, tôi đồng ý với",
       "termsLink": "Điều Khoản và Điều Kiện",
       "and": "và",
@@ -47,6 +48,13 @@
       "orSignUpWith": "Hoặc đăng ký với:",
       "haveAccount": "Đã có tài khoản?",
       "signInLink": "Đăng Nhập"
+    },
+    "registerSuccess": {
+      "title": "Tài Khoản Đã Sẵn Sàng!",
+      "subtitle": "Chào mừng tới guild — cuộc phiêu lưu của bạn bắt đầu từ đây.",
+      "accountLabel": "Tài Khoản Đã Đăng Ký",
+      "nextStep": "Đăng nhập bằng email và mật khẩu bạn vừa tạo để chọn mục tiêu đầu tiên và bắt đầu hành trình.",
+      "signInBtn": "Đăng Nhập Ngay"
     },
     "google": {
       "signIn": "Đăng nhập với Google",
@@ -114,6 +122,29 @@
     "themeDisabledMentor": "Chế độ tối chưa khả dụng cho khu vực Mentor",
     "themeDisabledAdmin": "Chế độ tối chưa khả dụng cho khu vực Admin",
     "openMenu": "Mở menu"
+  },
+  "support": {
+    "title": "Hỗ Trợ",
+    "subtitle": "Đang gặp trục trặc? Đây là cách liên hệ với đội ngũ HabitEvolve.",
+    "emailSection": "Gửi Email",
+    "emailHint": "Cách liên hệ nhanh nhất. Bạn viết tiếng Việt hay tiếng Anh đều được.",
+    "copy": "Sao chép",
+    "copied": "Đã chép",
+    "hoursSection": "Giờ Hỗ Trợ",
+    "weekdays": "Thứ Hai – Thứ Sáu",
+    "weekend": "Thứ Bảy",
+    "hoursHint": "Giờ hiển thị theo {{timezone}}. Tin nhắn gửi ngoài khung giờ này sẽ được trả lời vào ngày làm việc kế tiếp.",
+    "beforeYouWriteSection": "Trước Khi Gửi",
+    "checklist": {
+      "account": "Email hoặc ID tài khoản của bạn, để chúng tôi tìm đúng người.",
+      "steps": "Bạn đang thao tác gì, theo từng bước, ngay trước khi gặp lỗi.",
+      "screenshot": "Ảnh chụp màn hình lỗi, kèm mã lỗi nếu có như 403 hay 500.",
+      "time": "Khoảng thời gian xảy ra — giúp chúng tôi tra đúng dòng log."
+    },
+    "selfServeSection": "Tự Xử Lý Nhanh",
+    "selfServeHint": "Mật khẩu, ảnh đại diện, giờ nhắc và tuỳ chọn nhắc nhở bạn tự đổi được, không cần gửi yêu cầu hỗ trợ.",
+    "linkProfile": "Hồ Sơ & Mật Khẩu",
+    "linkEditProfile": "Chỉnh Sửa Hồ Sơ"
   },
   "userDropdown": {
     "editProfile": "Chỉnh sửa hồ sơ",
@@ -289,6 +320,8 @@
       "noActiveBoss": "Không có trùm nào trong tuần này",
       "checkBack": "Quay lại khi mẫu trùm tiếp theo được công bố.",
       "yourTier": "Cấp Độ Của Bạn",
+      "registrationWindow": "Đăng ký: bất kỳ lúc nào trong tuần",
+      "registrationHint": "Boss đã xếp lịch cho tuần này thì đăng ký được bất kỳ lúc nào trong tuần. Chỉ đóng đăng ký khi tuần đó đã kết thúc.",
       "registerParty": "Đăng Ký Nhóm",
       "selectParty": "Chọn Nhóm",
       "chooseParty": "— Chọn một nhóm —",
@@ -312,8 +345,14 @@
       "couldNotLoad": "Không thể tải mẫu trùm.",
       "failedToLoad": "Không thể tải dữ liệu trùm.",
       "registrationFailed": "Đăng ký thất bại.",
-      "chestClaimSuccess": "Đã nhận phần thưởng thành công!",
-      "chestClaimFailed": "Nhận phần thưởng thất bại.",
+      "chest": {
+        "title": "Rương Tuần",
+        "perMember": "mỗi thành viên",
+        "claimProgress": "Đã nhận {{claimed}} / {{total}}",
+        "pending": "Còn {{n}} thành viên chưa nhận.",
+        "allClaimed": "Tất cả thành viên đã nhận rương này.",
+        "readonlyNote": "Thành viên tự nhận rương trong app — Mentor chỉ theo dõi ai đã nhận. Danh sách được nhận chốt ngay lúc hạ Boss: vào party sau đó thì không có phần, còn người đã góp công rồi rời party vẫn nhận được. Rương không hết hạn."
+      },
       "unexpectedError": "Đã xảy ra lỗi không mong đợi.",
       "party": "Nhóm",
       "boss": "Trùm",
@@ -643,7 +682,25 @@
     "saving": "Đang lưu…",
     "saved": "Đã lưu!",
     "profileUpdated": "Cập nhật hồ sơ thành công!",
-    "redirecting": "Đang chuyển hướng về hồ sơ của bạn…"
+    "redirecting": "Đang chuyển hướng về hồ sơ của bạn…",
+    "password": {
+      "sectionTitle": "Đổi Mật Khẩu",
+      "sectionHint": "Nhập mật khẩu hiện tại để xác nhận chính bạn, sau đó chọn mật khẩu mới.",
+      "currentLabel": "Mật Khẩu Hiện Tại",
+      "newLabel": "Mật Khẩu Mới",
+      "confirmLabel": "Xác Nhận Mật Khẩu Mới",
+      "show": "Hiện mật khẩu",
+      "hide": "Ẩn mật khẩu",
+      "submit": "Cập Nhật Mật Khẩu",
+      "submitting": "Đang cập nhật…",
+      "changed": "Đã đổi mật khẩu. Lần đăng nhập tới hãy dùng mật khẩu mới.",
+      "errorOldRequired": "Vui lòng nhập mật khẩu hiện tại.",
+      "errorNewRequired": "Vui lòng nhập mật khẩu mới.",
+      "errorTooShort": "Mật khẩu mới phải có ít nhất {{min}} ký tự.",
+      "errorSameAsOld": "Mật khẩu mới phải khác mật khẩu hiện tại.",
+      "errorMismatch": "Hai mật khẩu mới không khớp nhau.",
+      "errorFailed": "Không đổi được mật khẩu. Vui lòng thử lại."
+    }
   },
   "pages": {
     "notFound": {
@@ -873,7 +930,6 @@
       "table": {
         "num": "#",
         "themeName": "Tên Chủ Đề",
-        "activePeriod": "Thời Gian Hoạt Động",
         "modes": "Chế Độ",
         "status": "Trạng Thái",
         "actions": "Hành Động"

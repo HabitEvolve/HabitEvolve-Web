@@ -4,7 +4,7 @@ import {
   ArrowLeft, Users, ClipboardList, Swords, UserCog, UserRoundCog,
   Loader2, Trash2, Copy, Check, KeyRound,
   Archive, CircleSlash, Globe, Lock, UserCheck, Play, X, Clock,
-  CalendarClock, Skull, Minus, AlertTriangle, Ticket,
+  CalendarClock, Skull, Minus, AlertTriangle, Ticket, Gift,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -17,7 +17,7 @@ import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import SharedStatusBadge, { type StatusTone } from "../components/common/StatusBadge";
 import { PartyItem, PartyMember, JoinRequestItem, JoinPolicy, UserItem } from "../types/api.types";
-import { PartyRaidDto } from "../types/adminParty.types";
+import { PartyRaidDto, PartyWeeklyChestDto } from "../types/adminParty.types";
 import { UserQuestDto } from "../types/userWorkspace.types";
 
 const errMsg = (e: unknown) =>
@@ -484,9 +484,41 @@ const QuestsTab = ({ quests, loading }: { quests: UserQuestDto[]; loading: boole
 };
 
 // ── TAB: BOSS RAID ────────────────────────────────────────────────────────────
-const RaidsTab = ({ raids, loading }: { raids: PartyRaidDto[]; loading: boolean }) => {
+// Rương tuần chỉ sinh khi Boss bị hạ (WipeOut là thua → không rương) và danh sách người được nhận được
+// chốt NGAY lúc hạ Boss, nên tiến độ "đã nhận / được nhận" ở đây là dữ liệu hỗ trợ khi player khiếu nại.
+const RaidChestLine = ({ raid, chest }: { raid: PartyRaidDto; chest?: PartyWeeklyChestDto }) => {
+  if (!chest) {
+    if (raid.status === "WipeOut")
+      return <p className="text-xs font-medium text-sky-ink-3">No Weekly Chest — the party wiped out.</p>;
+    if (raid.status !== "Defeated") return null;
+    return <p className="text-xs font-medium text-sky-ink-3">Boss defeated but no Weekly Chest record found.</p>;
+  }
+
+  const pending = Math.max(0, chest.eligibleMemberCount - chest.claimedCount);
+  return (
+    <div className="rounded-sky-md bg-sky-peach/12 ring-1 ring-sky-peach/28 px-3 py-2 space-y-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-xs font-semibold text-sky-peach-deep tabular-nums">
+        <span className="inline-flex items-center gap-1.5">
+          <Gift className="w-3.5 h-3.5" strokeWidth={2.3} aria-hidden="true" /> Weekly Chest
+        </span>
+        <span>{chest.goldReward.toLocaleString()} Gold</span>
+        <span>{chest.mgoldReward.toLocaleString()} M-Gold</span>
+        <span className="font-medium text-sky-ink-2">per member</span>
+      </div>
+      <p className="text-xs font-medium text-sky-ink-2 tabular-nums">
+        Collected {chest.claimedCount} / {chest.eligibleMemberCount}
+        {pending > 0 ? ` — ${pending} still pending` : " — all collected"}
+        {" · "}eligible list locked at defeat time
+      </p>
+    </div>
+  );
+};
+
+const RaidsTab = ({ raids, chests, loading }: { raids: PartyRaidDto[]; chests: PartyWeeklyChestDto[]; loading: boolean }) => {
   if (loading) return <ListSkeleton />;
   if (raids.length === 0) return <EmptyState icon={<Swords className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />} title="No boss raid history for this party" />;
+
+  const chestByRaid = new Map(chests.map((c) => [c.raidId, c]));
 
   return (
     <div className="space-y-3 sky-stagger">
@@ -513,6 +545,7 @@ const RaidsTab = ({ raids, loading }: { raids: PartyRaidDto[]; loading: boolean 
               <span><span className="font-display font-semibold text-sky-ink">{r.currentHp.toLocaleString()}</span> / {r.maxHp.toLocaleString()} HP ({pct.toFixed(0)}%)</span>
               <span className="text-sky-ink-3">{fmtDate(r.weekStartDate)} → {fmtDate(r.weekEndDate)}</span>
             </div>
+            <RaidChestLine raid={r} chest={chestByRaid.get(r.raidId)} />
           </div>
         );
       })}
@@ -550,6 +583,7 @@ export default function AdminPartyDetail() {
   const [questsLoading, setQuestsLoading] = useState(true);
   const [raids, setRaids] = useState<PartyRaidDto[]>([]);
   const [raidsLoading, setRaidsLoading] = useState(true);
+  const [chests, setChests] = useState<PartyWeeklyChestDto[]>([]);
 
   const fetchMembers = useCallback(() => {
     setMembersLoading(true);
@@ -596,6 +630,11 @@ export default function AdminPartyDetail() {
       if (!cancelled && res.success) setRaids(res.data ?? []);
     }).catch(() => { if (!cancelled) alert.error("Failed to load boss raid history."); })
       .finally(() => { if (!cancelled) setRaidsLoading(false); });
+
+    // Rương tuần đi kèm lịch sử raid. Party chưa từng hạ Boss thì BE trả lỗi/rỗng — im lặng, không báo đỏ.
+    adminPartyApi.getWeeklyChests(partyId).then((res) => {
+      if (!cancelled && res.success) setChests(res.data ?? []);
+    }).catch(() => { /* chưa có rương nào */ });
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -688,7 +727,7 @@ export default function AdminPartyDetail() {
               {tab === "members" && <MembersTab partyId={party.partyId} members={members} loading={membersLoading} onRefresh={fetchMembers} />}
               {tab === "joinRequests" && <JoinRequestsTab partyId={party.partyId} requests={joinRequests} loading={joinRequestsLoading} onRefresh={() => { fetchJoinRequests(); fetchMembers(); }} />}
               {tab === "quests" && <QuestsTab quests={quests} loading={questsLoading} />}
-              {tab === "raids" && <RaidsTab raids={raids} loading={raidsLoading} />}
+              {tab === "raids" && <RaidsTab raids={raids} chests={chests} loading={raidsLoading} />}
             </SkyCard>
           </>
         )}

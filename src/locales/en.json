@@ -946,6 +946,7 @@
         "goldCapLabel": "Gold Cap/Quest (mG)",
         "proofTypesLabel": "Allowed Proof Types *",
         "rewardTierLabel": "Reward Tier *",
+        "rewardTierHint": "Display label only. The Weekly Chest actually pays out by difficulty from System Configuration → weekly_boss (weekly_chest.gold_easy/normal/hard, weekly_chest.mgold_*), per member. A chest is created only when the Boss is defeated — a party wipe pays nothing.",
         "errorNoProof": "Select at least one proof type.",
         "errorAddMode": "Failed to add boss mode.",
         "errorSaveTemplate": "Failed to save template."

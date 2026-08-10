@@ -151,6 +151,10 @@ const Label = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] mb-1.5">{children}</p>
 );
 
+const Hint = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-xs font-medium text-sky-ink-3 mt-1.5 leading-snug">{children}</p>
+);
+
 // ── MODE FIELDSET (one Easy/Normal/Hard block inside the atomic create form) ────
 const ModeFieldset = ({ mode, value, onChange }: {
   mode: BossModeType;
@@ -191,6 +195,7 @@ const ModeFieldset = ({ mode, value, onChange }: {
         <Label>{t("admin.bossManagement.modesModal.rewardTierLabel")}</Label>
         <input type="text" value={value.rewardTier} onChange={e => onChange({ rewardTier: e.target.value })}
           placeholder="BRONZE / SILVER / GOLD" className={inputCls} />
+        <Hint>{t("admin.bossManagement.modesModal.rewardTierHint")}</Hint>
       </div>
     </div>
   );
@@ -612,6 +617,7 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
+                  <Hint>{t("admin.bossManagement.modesModal.rewardTierHint")}</Hint>
                 </div>
 
                 {formError && (

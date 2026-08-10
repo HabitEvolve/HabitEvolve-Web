@@ -9,7 +9,7 @@ import {
     UpdatePartyPayload,
 } from '../types/api.types';
 import { UserQuestDto } from '../types/userWorkspace.types';
-import { AdminGetPartiesQueryParams, AdminTransferMentorPayload, PartyRaidDto } from '../types/adminParty.types';
+import { AdminGetPartiesQueryParams, AdminTransferMentorPayload, PartyRaidDto, PartyWeeklyChestDto } from '../types/adminParty.types';
 
 const ADMIN_PARTY_URL = '/admin/parties';
 
@@ -50,6 +50,13 @@ const adminPartyApi = {
     // GET /admin/parties/{partyId}/raids
     getRaids: async (partyId: number): Promise<ApiResponse<PartyRaidDto[]>> => {
         const response = await axiosClient.get<ApiResponse<PartyRaidDto[]>>(`${ADMIN_PARTY_URL}/${partyId}/raids`);
+        return response.data;
+    },
+
+    // GET /weekly-boss/party/{partyId}/weekly-chests — chưa có endpoint admin riêng cho rương tuần.
+    // Không truyền userId: admin chỉ đọc tiến độ nhận của party, không phải người được nhận.
+    getWeeklyChests: async (partyId: number): Promise<ApiResponse<PartyWeeklyChestDto[]>> => {
+        const response = await axiosClient.get<ApiResponse<PartyWeeklyChestDto[]>>(`/weekly-boss/party/${partyId}/weekly-chests`);
         return response.data;
     },
 

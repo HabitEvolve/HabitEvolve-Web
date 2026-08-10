@@ -1066,7 +1066,6 @@ export default function AdminBossManagement() {
                     {[
                       t("admin.bossManagement.table.num"),
                       t("admin.bossManagement.table.themeName"),
-                      t("admin.bossManagement.table.activePeriod"),
                       t("admin.bossManagement.table.modes"),
                       t("admin.bossManagement.table.status"),
                       t("admin.bossManagement.table.actions"),
@@ -1084,10 +1083,6 @@ export default function AdminBossManagement() {
                       <td className="px-4 py-4 max-w-55">
                         <p className="font-semibold text-sky-ink truncate">{tpl.themeName}</p>
                         <p className="text-xs text-sky-ink-3 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <p className="text-xs font-semibold tabular-nums text-sky-ink-2">{fmtDate(tpl.activeWeekStart)}</p>
-                        <p className="text-[10px] text-sky-ink-3 font-medium tabular-nums">→ {fmtDate(tpl.activeWeekEnd)}</p>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-1">

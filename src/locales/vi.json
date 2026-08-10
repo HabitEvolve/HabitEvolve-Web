@@ -320,6 +320,20 @@
       "noActiveBoss": "Không có trùm nào trong tuần này",
       "checkBack": "Quay lại khi mẫu trùm tiếp theo được công bố.",
       "yourTier": "Cấp Độ Của Bạn",
+      "view": {
+        "current": "Tuần Này",
+        "history": "Các Tuần Trước"
+      },
+      "history": {
+        "emptyTitle": "Chưa có trận nào đã kết thúc",
+        "emptyHint": "Hết mỗi tuần, Boss và Rương Tuần của tuần đó sẽ được lưu lại ở đây.",
+        "noChestDefeated": "Đã hạ Boss nhưng không tìm thấy Rương Tuần cho trận này.",
+        "noChestWipe": "Không có Rương Tuần — party bị hạ gục ở Boss này."
+      },
+      "previous": {
+        "pointer": "Trận tuần trước: {{boss}}",
+        "pointerCta": "Xem ở Các Tuần Trước"
+      },
       "registrationWindow": "Đăng ký: bất kỳ lúc nào trong tuần",
       "registrationHint": "Boss đã xếp lịch cho tuần này thì đăng ký được bất kỳ lúc nào trong tuần. Chỉ đóng đăng ký khi tuần đó đã kết thúc.",
       "registerParty": "Đăng Ký Nhóm",

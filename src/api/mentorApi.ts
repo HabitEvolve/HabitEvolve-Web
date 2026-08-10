@@ -8,7 +8,7 @@ import type {
     CreateMentorQuestRequest, CreatePartyQuestRequest, CreatePartyQuestResultDto,
     ProofDto,
     BossTemplateDto, RegisterWeeklyBossRequest, WeeklyBossRegisterResultDto,
-    WeeklyBossStatusDto, RaidActivityDto, SharedHpDto, WeeklyChestDto,
+    WeeklyBossStatusDto, RaidActivityDto, SharedHpDto, WeeklyChestDto, RaidHistoryDto,
 } from '../types/mentor.types';
 
 const mid = (): number => {
@@ -231,6 +231,19 @@ const mentorApi = {
     getSharedHp: async (raidId: number): Promise<ApiResponse<SharedHpDto>> => {
         const r = await axiosClient.get<ApiResponse<SharedHpDto>>(
             `/raids/${raidId}/shared-hp`
+        );
+        return r.data;
+    },
+
+    /**
+     * Every raid this party has run, newest first — the source for the history
+     * tab. getPartyBossStatus cannot serve it: it returns the raid in progress,
+     * or the most recent one when none is active, so earlier weeks become
+     * unreachable the moment this week's Boss is registered.
+     */
+    getPartyRaids: async (partyId: number): Promise<ApiResponse<RaidHistoryDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<RaidHistoryDto[]>>(
+            `/weekly-boss/party/${partyId}/raids`
         );
         return r.data;
     },

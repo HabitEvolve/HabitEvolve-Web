@@ -320,6 +320,20 @@
       "noActiveBoss": "No active boss this week",
       "checkBack": "Check back when the next boss template is published.",
       "yourTier": "Your Tier",
+      "view": {
+        "current": "This Week",
+        "history": "Past Weeks"
+      },
+      "history": {
+        "emptyTitle": "No past raids yet",
+        "emptyHint": "Once a week wraps up, its Boss and Weekly Chest are archived here.",
+        "noChestDefeated": "Boss defeated but no Weekly Chest record was found for this raid.",
+        "noChestWipe": "No Weekly Chest — the party wiped out on this Boss."
+      },
+      "previous": {
+        "pointer": "Last week's raid: {{boss}}",
+        "pointerCta": "View in Past Weeks"
+      },
       "registrationWindow": "Register: any time this week",
       "registrationHint": "A Boss scheduled for this week can be registered at any point during it. Registration only closes once the week has ended.",
       "registerParty": "Register Party",

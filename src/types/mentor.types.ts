@@ -320,6 +320,25 @@ export interface RaidParticipantDto {
     questsCompleted: number;
 }
 
+/**
+ * One row of a party's raid history (BE RaidDto), newest first.
+ *
+ * Needed because /party/{id}/status only ever returns the raid in progress, or
+ * the most recent one when none is active — so once this week's Boss is
+ * registered there is no other way to reach the weeks before it.
+ */
+export interface RaidHistoryDto {
+    raidId: number;
+    partyId: number;
+    bossName: string;
+    maxHp: number;
+    currentHp: number;
+    status: string;
+    healthPercentage: number;
+    weekStartDate: string;
+    weekEndDate: string;
+}
+
 /** Cosmetic scene the *viewer* has equipped. Only populated when the status call
  *  passes a userId; the mentor view does not, so it stays null there. */
 export interface ActiveSceneDto {

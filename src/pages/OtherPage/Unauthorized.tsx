@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ShieldOff, LayoutDashboard, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -6,6 +6,18 @@ import { useAuth } from '../../context/AuthContext';
 export default function Unauthorized() {
     const { t } = useTranslation();
     const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    // Everywhere else, logout() alone is enough: those buttons live inside a
+    // ProtectedRoute, which re-renders on isAuthenticated === false and sends
+    // the user to "/". This page is registered as a bare public route, so
+    // nothing watches that flag here — logout() would clear the session and
+    // leave the same 403 card on screen, looking like a dead button while the
+    // user was in fact silently signed out. Navigate explicitly instead.
+    const handleLogout = (): void => {
+        logout();
+        navigate('/', { replace: true });
+    };
 
     return (
         <div className="sky-mesh-bg min-h-screen flex items-center justify-center p-8">
@@ -43,7 +55,7 @@ export default function Unauthorized() {
                             {t("pages.unauthorized.goToDashboard")}
                         </Link>
                         <button
-                            onClick={logout}
+                            onClick={handleLogout}
                             className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-sky-md bg-white/65 ring-1 ring-white/85 font-display text-base font-semibold text-sky-ink-2 shadow-sky-chip transition-all duration-200 hover:bg-white/85 hover:text-sky-ink hover:-translate-y-px active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/45"
                         >
                             <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />

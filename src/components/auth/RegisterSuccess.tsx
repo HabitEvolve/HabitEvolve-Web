@@ -61,7 +61,7 @@ export default function RegisterSuccess() {
 
           {/* A link, not a submit: there is nothing left to post from here. */}
           <Link
-            to="/"
+            to="/login"
             className={[
               "inline-flex w-full items-center justify-center gap-2 rounded-sky-md py-3.5",
               "bg-linear-to-b from-sky-deep-lo to-sky-deep font-display text-base font-semibold text-white",

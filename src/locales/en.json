@@ -63,6 +63,64 @@
       "error": "Could not connect to Google. Please try again."
     }
   },
+  "landing": {
+    "header": {
+      "loginBtn": "Login"
+    },
+    "hero": {
+      "titleLine1": "Level Up Your Habits",
+      "titleHighlight": "in the Sky",
+      "subtitle": "HabitEvolve turns daily habits into an RPG adventure — quests, parties, and boss raids that make consistency actually fun.",
+      "ctaPrimary": "Choose Your Path",
+      "ctaSecondary": "For Admins & Mentors"
+    },
+    "roles": {
+      "sectionLabel": "Choose Your Path",
+      "sectionTitle": "One Platform, Three Ways to Play",
+      "admin": {
+        "title": "System Overwatch",
+        "subtitle": "For Internal Admins",
+        "description": "Run the whole platform — users, quest library, goals, bosses, subscriptions, and system config.",
+        "cta": "Login as Admin"
+      },
+      "mentor": {
+        "title": "Guild Master",
+        "subtitle": "For Coaches & Mentors",
+        "description": "Form parties, assign epic quests, review proof submissions, and lead your guild through weekly boss raids.",
+        "cta": "Login as Mentor"
+      },
+      "player": {
+        "title": "Hero (Player)",
+        "subtitle": "For Habit Adventurers",
+        "description": "Players live on the HabitEvolve mobile app — track quests, join a party, and battle bosses on the go.",
+        "mobileOnly": "Mobile app only — no web login for Heroes.",
+        "appStore": "App Store",
+        "googlePlay": "Google Play"
+      }
+    },
+    "mentorMarketing": {
+      "sectionLabel": "For Mentors",
+      "heading": "Why Become a Guild Master?",
+      "subheading": "Coach real people through real habits — with the tools of an RPG game master.",
+      "featureA": {
+        "title": "Form Your Party",
+        "description": "Invite mentees into a party and manage the whole roster from one dashboard."
+      },
+      "featureB": {
+        "title": "Assign Epic Quests",
+        "description": "Craft custom daily habits, fan them out to individuals or the whole party, and review proof submissions."
+      },
+      "featureC": {
+        "title": "Slay Weekly Bosses",
+        "description": "Run shared boss raids and watch your party's combined effort chip away at a monster's HP."
+      },
+      "cta": "Become a Mentor"
+    },
+    "footer": {
+      "tagline": "Level up your habits, one quest at a time.",
+      "rights": "All rights reserved."
+    }
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",

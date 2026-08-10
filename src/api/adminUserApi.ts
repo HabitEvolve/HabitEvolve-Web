@@ -7,7 +7,7 @@ import {
     UpdateUserStatusPayload,
     AssignRolePayload
 } from '../types/api.types';
-import { UserQuestsDto, UserStatsDto, UserActivityDto } from '../types/userWorkspace.types';
+import { UserQuestsDto, UserStatsDto, UserActivityDto, GoalSummaryDto, UserTaskSubscriptionDto } from '../types/userWorkspace.types';
 
 const ADMIN_USER_URL = '/admin/users';
 
@@ -106,6 +106,22 @@ const adminUserApi = {
         const response = await axiosClient.get<ApiResponse<UserActivityDto[]>>(
             `${ADMIN_USER_URL}/${userId}/history`,
             { params: { limit } }
+        );
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/goals — Admin 360 view, Tab "Tasks by Goal"
+    getUserGoals: async (userId: number): Promise<ApiResponse<GoalSummaryDto[]>> => {
+        const response = await axiosClient.get<ApiResponse<GoalSummaryDto[]>>(
+            `${ADMIN_USER_URL}/${userId}/goals`
+        );
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/tasks — Admin 360 view, Tab "Tasks by Goal"
+    getUserTasks: async (userId: number): Promise<ApiResponse<UserTaskSubscriptionDto[]>> => {
+        const response = await axiosClient.get<ApiResponse<UserTaskSubscriptionDto[]>>(
+            `${ADMIN_USER_URL}/${userId}/tasks`
         );
         return response.data;
     },

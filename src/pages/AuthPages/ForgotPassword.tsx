@@ -74,7 +74,7 @@ export default function ForgotPassword() {
                 </p>
               </div>
               <Link
-                to="/"
+                to="/login"
                 className="inline-flex items-center justify-center gap-2 rounded-sky-md bg-linear-to-b from-sky-deep-lo to-sky-deep px-8 py-3.5 font-display text-base font-semibold text-white shadow-[0_10px_24px_-10px_rgba(36,52,77,0.55)] ring-1 ring-sky-deep/30 transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.99]"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to Sign In
@@ -99,7 +99,7 @@ export default function ForgotPassword() {
               </AuthSubmit>
 
               <div className="text-center">
-                <Link to="/" className={`inline-flex items-center gap-1.5 text-sm ${authLink}`}>
+                <Link to="/login" className={`inline-flex items-center gap-1.5 text-sm ${authLink}`}>
                   <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to Sign In
                 </Link>
               </div>

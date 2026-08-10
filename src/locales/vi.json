@@ -63,6 +63,64 @@
       "error": "Không thể kết nối với Google. Vui lòng thử lại."
     }
   },
+  "landing": {
+    "header": {
+      "loginBtn": "Đăng nhập"
+    },
+    "hero": {
+      "titleLine1": "Nâng Cấp Thói Quen",
+      "titleHighlight": "Giữa Bầu Trời",
+      "subtitle": "HabitEvolve biến thói quen hằng ngày thành một cuộc phiêu lưu nhập vai — nhiệm vụ, party và boss raid khiến sự kiên trì trở nên thú vị thật sự.",
+      "ctaPrimary": "Chọn Con Đường Của Bạn",
+      "ctaSecondary": "Dành cho Admin & Mentor"
+    },
+    "roles": {
+      "sectionLabel": "Chọn Con Đường Của Bạn",
+      "sectionTitle": "Một Nền Tảng, Ba Cách Chơi",
+      "admin": {
+        "title": "Giám Sát Hệ Thống",
+        "subtitle": "Dành cho Admin nội bộ",
+        "description": "Vận hành toàn bộ nền tảng — người dùng, kho nhiệm vụ, mục tiêu, boss, gói đăng ký và cấu hình hệ thống.",
+        "cta": "Đăng nhập với vai trò Admin"
+      },
+      "mentor": {
+        "title": "Guild Master",
+        "subtitle": "Dành cho Huấn luyện viên & Mentor",
+        "description": "Lập party, giao nhiệm vụ, duyệt minh chứng hoàn thành và dẫn dắt guild của bạn qua các trận boss raid hằng tuần.",
+        "cta": "Đăng nhập với vai trò Mentor"
+      },
+      "player": {
+        "title": "Anh Hùng (Player)",
+        "subtitle": "Dành cho những người xây dựng thói quen",
+        "description": "Player sinh sống trên ứng dụng di động HabitEvolve — theo dõi nhiệm vụ, tham gia party và chiến đấu với boss mọi lúc mọi nơi.",
+        "mobileOnly": "Chỉ có trên ứng dụng di động — Anh Hùng không đăng nhập trên web.",
+        "appStore": "App Store",
+        "googlePlay": "Google Play"
+      }
+    },
+    "mentorMarketing": {
+      "sectionLabel": "Dành cho Mentor",
+      "heading": "Vì Sao Nên Trở Thành Guild Master?",
+      "subheading": "Huấn luyện những con người thật với những thói quen thật — bằng công cụ của một game master.",
+      "featureA": {
+        "title": "Lập Party Của Bạn",
+        "description": "Mời mentee vào party và quản lý toàn bộ đội hình chỉ từ một dashboard."
+      },
+      "featureB": {
+        "title": "Giao Nhiệm Vụ Sử Thi",
+        "description": "Tạo thói quen hằng ngày tùy chỉnh, giao cho từng cá nhân hoặc cả party, và duyệt minh chứng hoàn thành."
+      },
+      "featureC": {
+        "title": "Hạ Gục Boss Hằng Tuần",
+        "description": "Tổ chức boss raid chung và theo dõi nỗ lực của cả party cùng nhau bào mòn HP quái vật."
+      },
+      "cta": "Trở Thành Mentor"
+    },
+    "footer": {
+      "tagline": "Nâng cấp thói quen của bạn, từng nhiệm vụ một.",
+      "rights": "Đã đăng ký bản quyền."
+    }
+  },
   "nav": {
     "admin": {
       "dashboard": "Bảng Điều Khiển",

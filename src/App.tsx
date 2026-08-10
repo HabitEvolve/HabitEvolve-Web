@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
+import LandingPage from "./pages/LandingPage";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import RegisterSuccess from "./pages/AuthPages/RegisterSuccess";
@@ -72,7 +73,8 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          <Route path="/" element={<SignIn />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signup/success" element={<RegisterSuccess />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />

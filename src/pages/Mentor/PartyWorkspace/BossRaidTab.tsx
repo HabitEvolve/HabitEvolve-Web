@@ -295,7 +295,7 @@ export default function BossRaidTab() {
                 setPartyStatus(status);
                 const [hpRes, actRes] = await Promise.all([
                     mentorApi.getSharedHp(status.raidId).catch(() => null),
-                    mentorApi.getPartyActivity(partyId).catch(() => null),
+                    mentorApi.getPartyActivity(partyId, status.raidId).catch(() => null),
                 ]);
                 if (hpRes?.success) setSharedHp(hpRes.data ?? null);
                 if (actRes?.success) setActivity(actRes.data ?? []);

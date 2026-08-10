@@ -218,11 +218,17 @@ const mentorApi = {
         return r.data;
     },
 
+    /**
+     * Damage feed for one raid. `raidId` is passed explicitly so the feed is tied
+     * to the Boss actually on screen — omitting it makes the BE guess the party's
+     * current raid, which is right but leaves the pairing implicit.
+     */
     getPartyActivity: async (
-        partyId: number, limit = 20
+        partyId: number, raidId?: number, limit = 20
     ): Promise<ApiResponse<RaidActivityDto[]>> => {
         const r = await axiosClient.get<ApiResponse<RaidActivityDto[]>>(
-            `/weekly-boss/party/${partyId}/activity`, { params: { limit } }
+            `/weekly-boss/party/${partyId}/activity`,
+            { params: raidId ? { limit, raidId } : { limit } }
         );
         return r.data;
     },

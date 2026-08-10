@@ -17,6 +17,7 @@ import {
   Gem,
   Goal,
   LayoutDashboard,
+  Link2,
   Scale,
   ServerCog,
   Settings,
@@ -83,6 +84,11 @@ const navItems: NavItem[] = [
     nameKey: "nav.admin.goalEngine",
     path: "/goal-engine",
     sectionKey: "nav.sections.PERSONALIZATION",
+  },
+  {
+    icon: <Link2 className={navIcon} aria-hidden="true" />,
+    nameKey: "nav.admin.goalRelationships",
+    path: "/goal-relationships",
   },
   {
     icon: <ClipboardList className={navIcon} aria-hidden="true" />,

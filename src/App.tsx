@@ -62,6 +62,7 @@ import LiveChallengeSession from "./pages/Mentor/LiveChallengeSession";
 import QuestionBank from "./pages/Mentor/QuestionBank";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
+import AdminGoalRelationshipManagement from "./pages/AdminGoalRelationshipManagement";
 
 export default function App() {
   return (
@@ -93,6 +94,7 @@ export default function App() {
               <Route path="/admin/parties/:partyId" element={<AdminPartyDetail />} />
               <Route path="/target-rules" element={<TargetRuleManagement />} />
               <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
+              <Route path="/goal-relationships" element={<AdminGoalRelationshipManagement />} />
               <Route path="/questionnaires" element={<QuestionnaireManagement />} />
               <Route path="/court-management" element={<AdminCourtManagement />} />
               <Route path="/boss-management" element={<AdminBossManagement />} />

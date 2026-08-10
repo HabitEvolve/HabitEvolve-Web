@@ -227,6 +227,39 @@ export interface UpdateConditionPayload {
 }
 
 // ==========================================
+// GOAL RELATIONSHIPS (Lifestyle Evolution — SUPPORTS/CONFLICTS pairs)
+// BE: GoalRelationshipController [Route("api/admin/goal-relationships")]
+// ==========================================
+
+export type GoalRelationType = "SUPPORTS" | "CONFLICTS";
+
+// Matches BE GoalRelationshipDto
+export interface GoalRelationshipDto {
+    goalRelationshipId: number;
+    goalId: number;
+    goalName: string | null;
+    relatedGoalId: number;
+    relatedGoalName: string | null;
+    relationType: GoalRelationType;
+    reasonText: string | null;
+    createdAt: string;
+}
+
+// POST body — CreateGoalRelationshipRequest(GoalId, RelatedGoalId, RelationType, ReasonText?)
+export interface CreateGoalRelationshipPayload {
+    goalId: number;
+    relatedGoalId: number;
+    relationType: GoalRelationType;
+    reasonText?: string;
+}
+
+// PUT body — UpdateGoalRelationshipRequest(RelationType, ReasonText?)
+export interface UpdateGoalRelationshipPayload {
+    relationType: GoalRelationType;
+    reasonText?: string;
+}
+
+// ==========================================
 // TARGET CALCULATION RULES (MODULE 4B)
 // ==========================================
 

@@ -73,7 +73,11 @@ export default function SignUpForm() {
         password: formData.password,
       });
 
-      navigate("/");
+      // register returns no JWT, so the user is still signed out here. Send them
+      // to the confirmation screen rather than dropping them on the login form
+      // with no sign the account was actually created. `replace` keeps Back from
+      // returning to a form whose data has already been submitted.
+      navigate("/signup/success", { replace: true, state: { email: formData.email } });
     } catch (error: any) {
       console.error("Lỗi đăng ký:", error);
       setErrors({
@@ -113,7 +117,7 @@ export default function SignUpForm() {
             id="email"
             name="email"
             type="email"
-            label={t("auth.common.emailLabel")}
+            label={t("auth.signUp.emailLabel")}
             value={formData.email}
             onChange={handleChange}
             placeholder={t("auth.common.emailPlaceholder")}

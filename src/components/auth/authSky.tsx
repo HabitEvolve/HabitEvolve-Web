@@ -57,20 +57,27 @@ export const AuthGate = ({
   </section>
 );
 
-/** Right-hand pane: mesh background + the glass card that holds the form. */
+/**
+ * Right-hand pane: mesh background + the glass card that holds the form.
+ * `icon` is an optional badge above the title — the forms leave it off; the
+ * post-register confirmation uses it to lead with its success glyph.
+ */
 export const AuthPane = ({
   title,
   subtitle,
+  icon,
   children,
 }: {
   title: string;
   subtitle: string;
+  icon?: ReactNode;
   children: ReactNode;
 }) => (
   <section className="sky-mesh-bg relative flex flex-1 items-center justify-center overflow-y-auto px-6 py-12 sm:px-10 lg:px-16">
     <div className="w-full max-w-md">
       <div className="sky-glass rounded-sky-card p-8 sky-in">
         <div className="relative mb-8 text-center">
+          {icon && <div className="mb-5 flex justify-center">{icon}</div>}
           <h1 className="font-display text-3xl font-semibold tracking-tight text-sky-ink sm:text-4xl">
             {title}
           </h1>

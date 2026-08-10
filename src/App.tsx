@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import RegisterSuccess from "./pages/AuthPages/RegisterSuccess";
 import OAuthCallback from "./pages/AuthPages/OAuthCallback";
 import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -35,6 +36,7 @@ import UserDetail from "./pages/UserDetail";
 import AdminPartyManagement from "./pages/AdminPartyManagement";
 import AdminPartyDetail from "./pages/AdminPartyDetail";
 import EditProfile from "./pages/EditProfile";
+import Support from "./pages/Support";
 import TargetRuleManagement from "./pages/TargetRuleManagement";
 import QuestionnaireManagement from "./pages/QuestionnaireManagement";
 import AdminCourtManagement from "./pages/AdminCourtManagement";
@@ -72,6 +74,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/signup/success" element={<RegisterSuccess />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route path="/reset-password" element={<ForgotPassword />} />
           {/* Shared profile routes — accessible by ADMIN and MENTOR, layout auto-selected */}
@@ -79,6 +82,7 @@ export default function App() {
             <Route element={<RoleLayout />}>
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/edit-profile" element={<EditProfile />} />
+              <Route path="/support" element={<Support />} />
             </Route>
           </Route>
 

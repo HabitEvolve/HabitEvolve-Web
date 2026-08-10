@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import { ApiResponse, RegisterPayload, LoginPayload, GoogleLoginPayload, AuthUser } from '../types/api.types';
+import { ApiResponse, RegisterPayload, LoginPayload, GoogleLoginPayload, AuthUser, ChangePasswordPayload } from '../types/api.types';
 
 const authApi = {
     register: async (payload: RegisterPayload) => {
@@ -31,6 +31,16 @@ const authApi = {
     resetPassword: async (email: string): Promise<ApiResponse<{ email: string; message: string }>> => {
         const response = await axiosClient.post('/User/reset-password', { email });
         return response.data as ApiResponse<{ email: string; message: string }>;
+    },
+
+    // POST /api/user/change-password — requires a valid JWT; the BE resolves the
+    // caller from the token, so no userId is sent. It re-checks oldPassword before
+    // applying the change.
+    changePassword: async (
+        payload: ChangePasswordPayload
+    ): Promise<ApiResponse<{ message: string }>> => {
+        const response = await axiosClient.post('/User/change-password', payload);
+        return response.data as ApiResponse<{ message: string }>;
     },
 };
 

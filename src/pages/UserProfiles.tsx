@@ -10,6 +10,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import PageHeader from "../components/common/PageHeader";
 import playerProfileApi from "../api/userProfileApi";
+import ChangePasswordCard from "../components/UserProfile/ChangePasswordCard";
 import { PlayerProfile } from "../types/api.types";
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -330,6 +331,11 @@ export default function UserProfiles() {
               ))}
             </div>
           </div>
+
+          {/* ── CHANGE PASSWORD ────────────────────────────────────────────── */}
+          {/* Last in the stack: it is the one destructive-ish action here, and it
+              posts on its own rather than reading the profile above it. */}
+          <ChangePasswordCard />
 
         </div>
       ) : null}

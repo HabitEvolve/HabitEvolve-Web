@@ -31,6 +31,14 @@ export interface LoginPayload {
     password: string;
 }
 
+// POST /api/user/change-password — the caller is identified by the JWT, so the
+// body carries only the two passwords. BE rules (ChangePasswordCommandValidator):
+// both required, newPassword >= 6 chars and different from oldPassword.
+export interface ChangePasswordPayload {
+    oldPassword: string;
+    newPassword: string;
+}
+
 
 // BASE RESPONSES
 

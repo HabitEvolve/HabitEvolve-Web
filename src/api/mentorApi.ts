@@ -236,18 +236,20 @@ const mentorApi = {
     },
 
     // ── WEEKLY CHEST ─────────────────────────────────────────────────────────
-    getWeeklyChest: async (partyId: number): Promise<ApiResponse<WeeklyChestDto>> => {
-        const r = await axiosClient.get<ApiResponse<WeeklyChestDto>>(
-            `/weekly-boss/party/${partyId}/weekly-chest`,
-            { params: { userId: mid() } }
-        );
-        return r.data;
-    },
-
-    claimWeeklyChest: async (partyId: number): Promise<ApiResponse<WeeklyChestDto>> => {
-        const r = await axiosClient.post<ApiResponse<WeeklyChestDto>>(
-            `/weekly-boss/party/${partyId}/weekly-chest/claim`,
-            { userId: mid() }
+    /**
+     * All chests of a party, newest first — a party that has downed the Boss in
+     * several weeks holds several chests.
+     *
+     * Deliberately sends NO `userId`. The claimants are frozen when the Boss
+     * falls and a Mentor is not a PartyMember, so a Mentor is never in that
+     * snapshot; passing the mentor's id would only make `eligible` /
+     * `alreadyClaimed` read as that mentor's state and invite the UI to offer a
+     * claim the BE always rejects. The mentor screen is read-only — members
+     * collect their own reward in the app.
+     */
+    getWeeklyChests: async (partyId: number): Promise<ApiResponse<WeeklyChestDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<WeeklyChestDto[]>>(
+            `/weekly-boss/party/${partyId}/weekly-chests`
         );
         return r.data;
     },

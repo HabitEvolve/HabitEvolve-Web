@@ -304,18 +304,28 @@ export interface WeeklyBossRegisterResultDto {
     difficulty: string;
     maxHp: number;
     currentHp: number;
-    sharedHpMax: number;
-    sharedHpCurrent: number;
+    /** Nullable on the BE (int?) — a raid can exist before Shared HP is provisioned. */
+    sharedHpMax: number | null;
+    sharedHpCurrent: number | null;
     rewardTier: string;
     weekStartDate: string;
     weekEndDate: string;
     status: string;
 }
 
+/** BE has no username on this DTO — the UI can only show the id. */
 export interface RaidParticipantDto {
     userId: number;
     damageDealt: number;
     questsCompleted: number;
+}
+
+/** Cosmetic scene the *viewer* has equipped. Only populated when the status call
+ *  passes a userId; the mentor view does not, so it stays null there. */
+export interface ActiveSceneDto {
+    code: string;
+    name: string;
+    backgroundUrl?: string | null;
 }
 
 export interface WeeklyBossStatusDto {
@@ -333,10 +343,13 @@ export interface WeeklyBossStatusDto {
     weekEndDate: string;
     defeatedAt?: string;
     participants: RaidParticipantDto[];
+    activeScene?: ActiveSceneDto | null;
 }
 
 export interface RaidActivityDto {
+    userId: number;
     username: string;
+    questId?: number | null;
     questTitle: string;
     damageDealt: number;
     bossHpAfter: number;
@@ -382,13 +395,35 @@ export interface UpdateReminderSettingsPayload extends Omit<PartyReminderSetting
     mentorUserId: number;
 }
 
+/**
+ * Weekly Chest — created when the Boss is defeated (HP 0). A party WIPE produces
+ * no chest. The list of people who may claim is frozen at the moment the Boss
+ * falls (BE `EligibleUserIds`): joining afterwards earns nothing, and leaving
+ * later still keeps your share. Chests never expire, so a party that has downed
+ * several bosses carries several chests.
+ *
+ * A Mentor is not a PartyMember, so a Mentor is never eligible — the BE rejects
+ * their claim outright. The mentor-facing UI therefore tracks progress only.
+ */
 export interface WeeklyChestDto {
+    weeklyChestId: number;
+    raidId: number;
+    partyId: number;
+    /** Only filled by GET /api/me/weekly-chests; party-scoped endpoints leave it "". */
+    partyName: string;
     bossName: string;
     rewardTier: string;
+    /** Gold EACH member receives — not the pot to divide. */
     goldReward: number;
     mgoldReward: number;
     badge: string;
+    /** Size of the snapshot taken when the Boss fell. */
     eligibleMemberCount: number;
     claimedCount: number;
+    /** Relative to the userId passed on the query — false when none was sent. */
     alreadyClaimed: boolean;
+    /** Whether that userId is in the snapshot. BE contract: enable Claim on
+     *  `eligible && !alreadyClaimed`. False when no userId was sent. */
+    eligible: boolean;
+    createdAt: string;
 }

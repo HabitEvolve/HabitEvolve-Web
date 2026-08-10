@@ -236,10 +236,10 @@ export default function BossRaidTab() {
     const [partyStatus, setPartyStatus] = useState<WeeklyBossStatusDto | null>(null);
     const [registerResult, setRegisterResult] = useState<WeeklyBossRegisterResultDto | null>(null);
     const [sharedHp, setSharedHp] = useState<SharedHpDto | null>(null);
-    const [weeklyChest, setWeeklyChest] = useState<WeeklyChestDto | null>(null);
+    // All chests the party has earned, newest first — chests never expire, so a
+    // party that has downed the Boss in several weeks holds several.
+    const [chests, setChests] = useState<WeeklyChestDto[]>([]);
     const [activity, setActivity] = useState<RaidActivityDto[]>([]);
-    const [claimLoading, setClaimLoading] = useState(false);
-    const [claimSuccess, setClaimSuccess] = useState(false);
 
     const [loading, setLoading] = useState(true);
     const [statusLoading, setStatusLoading] = useState(false);
@@ -267,7 +267,7 @@ export default function BossRaidTab() {
         setStatusLoading(true);
         setPartyStatus(null);
         setSharedHp(null);
-        setWeeklyChest(null);
+        setChests([]);
         setActivity([]);
         try {
             const res = await mentorApi.getPartyBossStatus(partyId);
@@ -280,10 +280,11 @@ export default function BossRaidTab() {
                 ]);
                 if (hpRes?.success) setSharedHp(hpRes.data ?? null);
                 if (actRes?.success) setActivity(actRes.data ?? []);
-                if (status.status === "Defeated") {
-                    const chestRes = await mentorApi.getWeeklyChest(partyId).catch(() => null);
-                    if (chestRes?.success) setWeeklyChest(chestRes.data ?? null);
-                }
+                // Not gated on the current raid being Defeated: chests from earlier
+                // weeks stay claimable, so they must stay visible while this week's
+                // Boss is still standing.
+                const chestRes = await mentorApi.getWeeklyChests(partyId).catch(() => null);
+                if (chestRes?.success) setChests(chestRes.data ?? []);
             }
         } catch {
             // 404 = no active raid — silent
@@ -328,25 +329,6 @@ export default function BossRaidTab() {
     const handleSummon = (diff: BossMode) => {
         setSelectedDifficulty(diff);
         handleRegister(diff);
-    };
-
-    const handleClaimChest = async () => {
-        if (claimSuccess) return;
-        setClaimLoading(true);
-        try {
-            const res = await mentorApi.claimWeeklyChest(partyId);
-            if (res.success) {
-                setWeeklyChest(res.data ?? weeklyChest);
-                setClaimSuccess(true);
-                alert.success(t("mentor.bossRaid.chestClaimSuccess"));
-            } else {
-                alert.error(res.message || t("mentor.bossRaid.chestClaimFailed"));
-            }
-        } catch (e: any) {
-            alert.error(e?.response?.data?.message || t("mentor.bossRaid.unexpectedError"));
-        } finally {
-            setClaimLoading(false);
-        }
     };
 
     // ── Mode gating via ActiveSubscriptionDto ─────────────────────────────────
@@ -440,21 +422,19 @@ export default function BossRaidTab() {
                                             <span className="tabular-nums">{boss.startTime} — {boss.endTime}</span>
                                         </span>
                                     )}
-                                    {boss.registrationWindow && (
-                                        <span className={metaChip} title="Cửa sổ đăng ký chuẩn">
-                                            <BookOpen className="w-3.5 h-3.5 text-sky-ink-3" aria-hidden="true" />
-                                            <span className="tabular-nums">Đăng ký: {boss.registrationWindow}</span>
-                                        </span>
-                                    )}
-                                    {boss.lateRegistrationWindow && (
-                                        <span
-                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sky-chip bg-sky-peach/18 ring-1 ring-sky-peach/30 text-xs font-semibold text-sky-peach-deep"
-                                            title="Đăng ký muộn"
-                                        >
-                                            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-                                            <span className="tabular-nums">Muộn: {boss.lateRegistrationWindow}</span>
-                                        </span>
-                                    )}
+                                    {/* Static, not boss.registrationWindow / boss.lateRegistrationWindow.
+                                        BR-13 was simplified: there is no early window and no late
+                                        window any more — a Published Boss scheduled for a week can be
+                                        registered at ANY point in that week (RegisterWeeklyBoss only
+                                        rejects `today > weekEndDate`). Those two template columns are
+                                        still stored and still carry their old seeded text, but nothing
+                                        reads them for gating and the Admin UI cannot even edit them, so
+                                        printing them told mentors about a deadline that no longer
+                                        exists. The rule is global now, so it belongs in the locale. */}
+                                    <span className={metaChip} title={t("mentor.bossRaid.registrationHint")}>
+                                        <BookOpen className="w-3.5 h-3.5 text-sky-ink-3" aria-hidden="true" />
+                                        <span>{t("mentor.bossRaid.registrationWindow")}</span>
+                                    </span>
                                 </div>
                             </div>
 
@@ -580,39 +560,59 @@ export default function BossRaidTab() {
                                     </div>
                                 )}
 
-                                {partyStatus!.status === "Defeated" && weeklyChest && (
-                                    /* Loot is warm peach — reward, not success. */
-                                    <div className="relative overflow-hidden rounded-sky-card bg-sky-peach/12 ring-1 ring-sky-peach/28 p-4 pl-5">
+                                {/* Read-only by design: a Mentor is not a PartyMember, so the BE
+                                    always rejects their claim ("not an active member of this
+                                    party"). This tracks who has collected instead of offering an
+                                    action that can only fail. Loot is warm peach — reward, not
+                                    success. Not gated on the current raid being Defeated: chests
+                                    from earlier weeks stay claimable, so they stay visible while
+                                    this week's Boss is still standing. */}
+                                {chests.map((chest) => {
+                                    const pending = Math.max(0, chest.eligibleMemberCount - chest.claimedCount);
+                                    return (
+                                    <div key={chest.weeklyChestId} className="relative overflow-hidden rounded-sky-card bg-sky-peach/12 ring-1 ring-sky-peach/28 p-4 pl-5">
                                         <span className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-sky-peach to-sky-peach-deep" aria-hidden="true" />
                                         <div className="flex items-center gap-3 mb-3">
                                             <img src={CHEST_ART} alt="" className="w-9 h-9 object-contain shrink-0" />
                                             <div className="min-w-0">
-                                                <p className="font-display text-sm font-semibold text-sky-ink">Weekly Chest</p>
+                                                <p className="font-display text-sm font-semibold text-sky-ink truncate">
+                                                    {t("mentor.bossRaid.chest.title")} — {chest.bossName}
+                                                </p>
                                                 <p className="text-[11px] text-sky-ink-2 tabular-nums">
-                                                    {weeklyChest.claimedCount} / {weeklyChest.eligibleMemberCount} claimed
+                                                    {t("mentor.bossRaid.chest.claimProgress", {
+                                                        claimed: chest.claimedCount,
+                                                        total: chest.eligibleMemberCount,
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
                                         <dl className="space-y-1.5 text-xs font-medium">
-                                            <StatLine label="Gold" value={<span className="text-sky-peach-deep">{weeklyChest.goldReward.toLocaleString()}</span>} />
-                                            <StatLine label="M-Gold" value={<span className="text-sky-peach-deep">{weeklyChest.mgoldReward.toLocaleString()}</span>} />
+                                            <StatLine
+                                                label="Gold"
+                                                value={<span className="text-sky-peach-deep">{chest.goldReward.toLocaleString()} <span className="font-normal text-sky-ink-3">/ {t("mentor.bossRaid.chest.perMember")}</span></span>}
+                                            />
+                                            <StatLine
+                                                label="M-Gold"
+                                                value={<span className="text-sky-peach-deep">{chest.mgoldReward.toLocaleString()} <span className="font-normal text-sky-ink-3">/ {t("mentor.bossRaid.chest.perMember")}</span></span>}
+                                            />
                                             <StatLine
                                                 label="Badge"
-                                                value={<span className="inline-flex items-center gap-1"><Medal className="w-3.5 h-3.5 text-sky-peach-deep" aria-hidden="true" /> {weeklyChest.badge}</span>}
+                                                value={<span className="inline-flex items-center gap-1"><Medal className="w-3.5 h-3.5 text-sky-peach-deep" aria-hidden="true" /> {chest.badge}</span>}
                                             />
                                         </dl>
-                                        <SkyButton
-                                            type="button"
-                                            variant="primary"
-                                            onClick={handleClaimChest}
-                                            disabled={claimLoading || weeklyChest.alreadyClaimed || claimSuccess}
-                                            className="mt-3 w-full"
-                                        >
-                                            {claimLoading ? <><Spinner size={14} /> Claiming…</> :
-                                             weeklyChest.alreadyClaimed || claimSuccess ? <><CheckCircle2 className="w-4 h-4" /> Claimed</> : "Claim Reward"}
-                                        </SkyButton>
+                                        <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-sky-ink-2">
+                                            {pending > 0
+                                                /* `n`, not `count` — `count` would switch i18next
+                                                   into plural resolution and hunt for _one/_other. */
+                                                ? t("mentor.bossRaid.chest.pending", { n: pending })
+                                                : <><CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-sky-teal" aria-hidden="true" /> {t("mentor.bossRaid.chest.allClaimed")}</>}
+                                        </p>
+                                        <p className="mt-1.5 text-[11px] font-medium text-sky-ink-3 leading-relaxed">
+                                            {t("mentor.bossRaid.chest.readonlyNote")}
+                                        </p>
                                     </div>
-                                )}
+                                    );
+                                })}
                             </div>
                         </div>
                     ) : (

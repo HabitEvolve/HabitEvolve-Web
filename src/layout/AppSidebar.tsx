@@ -121,11 +121,11 @@ const navItems: NavItem[] = [
     nameKey: "nav.admin.appeals",
     path: "/admin/appeals",
   },
-  {
-    icon: <Cpu className={navIcon} aria-hidden="true" />,
-    nameKey: "nav.admin.jobs",
-    path: "/admin/jobs",
-  },
+  // {
+  //   icon: <Cpu className={navIcon} aria-hidden="true" />,
+  //   nameKey: "nav.admin.jobs",
+  //   path: "/admin/jobs",
+  // },
   {
     icon: <FileClock className={navIcon} aria-hidden="true" />,
     nameKey: "nav.admin.auditLog",
@@ -228,12 +228,14 @@ const AppSidebar: React.FC = () => {
               HabitEvolve
             </h1>
           ) : (
-            // Collapsed, the mark needs to read as a deliberate badge rather
-            // than a stray capital, so it takes the same deep gradient the
-            // active nav row uses — the rail keeps one identity at both widths.
-            <span className="grid place-items-center w-10 h-10 mx-auto rounded-sky-chip bg-linear-to-b from-sky-deep-lo to-sky-deep font-display text-lg font-semibold text-white shadow-sky-chip">
-              H
-            </span>
+            // Collapsed, the mark needs to read as a deliberate badge — the
+            // real brand mark (same asset the mascot below and MentorHeader
+            // use), not a generated letter standing in for it.
+            <img
+              src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
+              alt="HabitEvolve"
+              className="w-10 h-10 mx-auto rounded-sky-chip object-contain shadow-sky-chip"
+            />
           )}
         </Link>
         {showFull && (

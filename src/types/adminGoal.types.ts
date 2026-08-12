@@ -132,6 +132,9 @@ export type VerificationTag = "FACE" | "ITEM" | "ACTION";
 // service supports. When set, it's used instead of guessing the quest type from the title.
 export type CvQuestType = "running" | "drinking_water" | "sleeping" | "reading" | "cooking" | "exercise";
 
+// Matches BE RecommendationLevel enum — MUST_DO (1-3) / RECOMMENDED (4-6) / OPTIONAL (7-8) / BONUS (9-10).
+export type TaskRecommendationLevel = "MustDo" | "Recommended" | "Optional" | "Bonus";
+
 export interface AdminTaskTemplateDto {
     taskId: number;
     goalId: number;
@@ -145,10 +148,17 @@ export interface AdminTaskTemplateDto {
     // CSV of VerificationTag values, e.g. "FACE,ITEM".
     verificationTags: string | null;
     cvQuestType: string | null;
+    // Comma-separated {variable} placeholder names this task's title/description uses.
+    requiredVariables: string | null;
+    recommendationLevel: TaskRecommendationLevel;
+    // 1-3 = MUST_DO, 4-6 = RECOMMENDED, 7-8 = OPTIONAL, 9-10 = BONUS.
+    rankDefault: number;
+    defaultDamage: number;
+    defaultRewardGold: number;
 }
 
-// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, CvQuestType?)
-// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, CvQuestType?)
+// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?)
+// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?)
 export interface PracticalTaskPayload {
     goalId?: number;     // required only on create
     title: string;
@@ -158,6 +168,11 @@ export interface PracticalTaskPayload {
     howToSubmit?: string;
     verificationTags?: string;
     cvQuestType?: string;
+    requiredVariables?: string;
+    recommendationLevel?: TaskRecommendationLevel;
+    rankDefault?: number;
+    damage?: number;
+    rewardGold?: number;
 }
 
 // ==========================================

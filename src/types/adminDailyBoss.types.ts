@@ -11,6 +11,11 @@ export interface DailyBossTemplateDto {
     totalFrames: number;
     goalId: number | null;
     categoryCode: string | null;
+    /**
+     * Khoá bộ sprite art "có sẵn" (vd "goblin", "golem_01") — client resolve ra pack frame
+     * bundled trong public/monsters (xem `data/monsterRoster.ts`). null = dùng Icon/animation Supabase.
+     */
+    spriteKey: string | null;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -23,6 +28,8 @@ export interface DailyBossPayload {
     hpMax: number;
     /** Goal category this boss is themed for. null = generic boss (matches every goal). */
     categoryCode?: string | null;
+    /** Khoá sprite art có sẵn (public/monsters). null/undefined = không dùng pack có sẵn. */
+    spriteKey?: string | null;
 }
 
 // ── Sprite-sheet animation ──────────────────────────────────────────────────

@@ -241,6 +241,12 @@ function QuestionFormModal({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  // Live cross-field check — recomputed every render so the operator sees the
+  // conflict the moment either bound goes past the other, not just on submit.
+  const rangeInvalid = type === 'Time'
+    ? !!minTime && !!maxTime && (timeToMinutes(minTime) ?? 0) > (timeToMinutes(maxTime) ?? 0)
+    : isRangeType(type) && minValue.trim() !== '' && maxValue.trim() !== '' && Number(minValue) > Number(maxValue);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) { setErr(t('admin.questionnaire.questionForm.textRequired')); return; }
@@ -315,7 +321,9 @@ function QuestionFormModal({
                     <input type="time" value={maxTime} onChange={e => setMaxTime(e.target.value)} className={inputCls} />
                   </div>
                 </div>
-                <p className={hintCls}>{t('admin.questionnaire.questionForm.rangeHint')}</p>
+                {rangeInvalid
+                  ? <p className="mt-1.5 text-[10px] font-semibold text-sky-rose-deep">{t('admin.questionnaire.questionForm.rangeInvalid')}</p>
+                  : <p className={hintCls}>{t('admin.questionnaire.questionForm.rangeHint')}</p>}
               </div>
             ) : isRangeType(type) ? (
               <div className="rounded-sky-md bg-white/50 ring-1 ring-white/76 p-3.5">
@@ -332,7 +340,9 @@ function QuestionFormModal({
                     <input type="number" value={maxValue} onChange={e => setMaxValue(e.target.value)} className={`${inputCls} tabular-nums`} placeholder="—" />
                   </div>
                 </div>
-                <p className={hintCls}>{t('admin.questionnaire.questionForm.rangeHint')}</p>
+                {rangeInvalid
+                  ? <p className="mt-1.5 text-[10px] font-semibold text-sky-rose-deep">{t('admin.questionnaire.questionForm.rangeInvalid')}</p>
+                  : <p className={hintCls}>{t('admin.questionnaire.questionForm.rangeHint')}</p>}
               </div>
             ) : null}
             {/* Whether an answer is mandatory changes what the app does at runtime,
@@ -347,7 +357,7 @@ function QuestionFormModal({
             </label>
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('admin.questionnaire.questionForm.cancel')}</SkyButton>
-              <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
+              <SkyButton type="submit" variant="primary" disabled={saving || rangeInvalid} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {editing ? t('admin.questionnaire.questionForm.save') : t('admin.questionnaire.questionForm.add')}
               </SkyButton>
@@ -746,8 +756,11 @@ export default function QuestionnaireManagement() {
 
       {/* Body: split pane */}
       <div className="flex-1 flex gap-4 min-h-0">
-        {/* Left pane — Template list */}
-        <div className="w-72 shrink-0 overflow-y-auto flex flex-col gap-3 pr-1 sky-stagger">
+        {/* Left pane — Template list. min-h-0 is required here: without it a flex
+            item with overflow-y-auto has no bounded height to scroll within (its
+            min-height defaults to the content size), so a long template list just
+            grows past the pane instead of scrolling in place. */}
+        <div className="w-72 shrink-0 min-h-0 overflow-y-auto flex flex-col gap-3 pr-1 sky-stagger">
           {loading ? (
             <div className="flex items-center justify-center py-10 text-sm font-medium text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('admin.questionnaire.loading')}</div>
           ) : templates.length === 0 ? (

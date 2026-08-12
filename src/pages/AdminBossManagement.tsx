@@ -28,6 +28,7 @@ import type {
   UpdateBossTemplatePayload,
   BossModePayload,
   BossModeType,
+  BossModeDto,
   PackageTier,
   RewardTierType,
   WeeklyBossScheduleDto,
@@ -371,6 +372,10 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
   const [form, setForm] = useState<BossModePayload>({ ...EMPTY_MODE });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Set when editing an already-configured mode from the left list — the BE
+  // /modes endpoint is an upsert, so re-submitting an existing mode updates it
+  // in place rather than failing as a duplicate.
+  const [editingMode, setEditingMode] = useState<BossModeType | null>(null);
 
   const fetchTpl = useCallback(async () => {
     setLoading(true);
@@ -386,14 +391,31 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
   const setN = (k: keyof BossModePayload, v: number) => setForm(f => ({ ...f, [k]: v }));
   const setS = (k: keyof BossModePayload, v: string) => setForm(f => ({ ...f, [k]: v }));
 
+  const startEdit = (m: BossModeDto) => {
+    setFormError(null);
+    setEditingMode(m.mode);
+    setForm({
+      mode: m.mode, minTier: m.minTier, partyMin: m.partyMin, partyMax: m.partyMax, bossHp: m.bossHp,
+      maxQuestPerMemberPerDay: m.maxQuestPerMemberPerDay, maxPartyQuestPerWeek: m.maxPartyQuestPerWeek,
+      maxDamagePerQuest: m.maxDamagePerQuest, mGoldRewardCapPerQuest: m.mGoldRewardCapPerQuest, rewardTier: m.rewardTier,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingMode(null);
+    setFormError(null);
+    setForm({ ...EMPTY_MODE });
+  };
+
   const handleAddMode = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
     try {
       await adminBossApi.addBossMode(templateId, form);
-      onAlert({ type: "success", message: `${form.mode} mode added to "${templateName}"!` });
+      onAlert({ type: "success", message: editingMode ? `${form.mode} mode updated for "${templateName}"!` : `${form.mode} mode added to "${templateName}"!` });
       await fetchTpl();
+      setEditingMode(null);
       setForm({ ...EMPTY_MODE });
     } catch (err) {
       setFormError(errMsg(err) ?? t("admin.bossManagement.modesModal.errorAddMode"));
@@ -447,8 +469,9 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
             ) : (
               tpl.modes.map(m => {
                 const mc = MODE_CFG[m.mode] ?? MODE_CFG.Easy;
+                const isEditingThis = editingMode === m.mode;
                 return (
-                  <div key={m.mode} className={`${mc.cardBg} rounded-sky-card border border-white/70 p-4 sky-lift`}>
+                  <div key={m.mode} className={`${mc.cardBg} rounded-sky-card border p-4 sky-lift transition-colors ${isEditingThis ? "border-sky-deep/45 ring-1 ring-sky-deep/30" : "border-white/70"}`}>
                     {/* Mode header */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2.5">
@@ -460,9 +483,24 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                           <p className="text-[10px] text-sky-ink-3 flex items-center gap-1">Min: <TierBadge tier={m.minTier} /></p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.12em]">Boss HP</p>
-                        <p className="font-display text-xl font-semibold text-sky-ink tabular-nums">{m.bossHp.toLocaleString()}</p>
+                      <div className="flex items-center gap-2.5">
+                        <div className="text-right">
+                          <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.12em]">Boss HP</p>
+                          <p className="font-display text-xl font-semibold text-sky-ink tabular-nums">{m.bossHp.toLocaleString()}</p>
+                        </div>
+                        <button
+                          type="button"
+                          title={`Edit ${m.mode} mode`}
+                          aria-label={`Edit ${m.mode} mode`}
+                          onClick={() => startEdit(m)}
+                          className={`inline-grid place-items-center w-8 h-8 rounded-sky-chip border shrink-0 transition hover:-translate-y-px active:translate-y-0 active:scale-95 ${
+                            isEditingThis
+                              ? "border-sky-deep/40 bg-sky-deep text-white"
+                              : "border-sky-deep/20 bg-sky-deep/8 text-sky-deep hover:bg-sky-deep/14"
+                          }`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
@@ -507,24 +545,36 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
             )}
           </div>
 
-          {/* ── RIGHT: ADD MODE FORM ──────────────────────────────────── */}
+          {/* ── RIGHT: ADD / EDIT MODE FORM ───────────────────────────── */}
           <div className="lg:w-[48%] overflow-y-auto p-5 bg-sky-ink/[0.035]">
-            <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] mb-4">
-              {tpl && tpl.modes.length >= 3 ? (
-              <span className="inline-flex items-center gap-1.5">
-                {t("admin.bossManagement.modesModal.allConfigured")}
-                <Check className="w-3 h-3 text-sky-teal" />
-              </span>
-            ) : t("admin.bossManagement.modesModal.addMode")}
-            </p>
+            <div className="flex items-center justify-between mb-4 gap-2">
+              <p className="text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em]">
+                {editingMode ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Pencil className="w-3 h-3 text-sky-deep" /> Editing {editingMode} Mode
+                  </span>
+                ) : tpl && tpl.modes.length >= 3 ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    {t("admin.bossManagement.modesModal.allConfigured")}
+                    <Check className="w-3 h-3 text-sky-teal" />
+                  </span>
+                ) : t("admin.bossManagement.modesModal.addMode")}
+              </p>
+              {editingMode && (
+                <button type="button" onClick={cancelEdit} className="text-[11px] font-semibold text-sky-ink-3 hover:text-sky-ink underline">
+                  Cancel edit
+                </button>
+              )}
+            </div>
 
-            {tpl && tpl.modes.length >= 3 ? (
+            {!editingMode && tpl && tpl.modes.length >= 3 ? (
               <div className="flex flex-col items-center gap-3 py-12">
                 <span className="grid place-items-center w-16 h-16 rounded-full bg-sky-teal-bg text-sky-teal">
                   <CheckCircle2 className="w-8 h-8" />
                 </span>
                 <p className="font-display font-semibold text-sky-ink">{t("admin.bossManagement.modesModal.allConfiguredHint")}</p>
                 <p className="text-xs text-sky-ink-2 text-center">{t("admin.bossManagement.modesModal.allModesSet")}</p>
+                <p className="text-xs text-sky-ink-2 text-center">Use the pencil icon on a mode card to edit it.</p>
               </div>
             ) : (
               <form onSubmit={handleAddMode} className="space-y-3">
@@ -533,12 +583,13 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                   <div>
                     <Label>{t("admin.bossManagement.modesModal.modeLabel")}</Label>
                     <select value={form.mode}
+                      disabled={!!editingMode}
                       onChange={e => setS("mode", e.target.value)}
                       className={inputCls}>
                       {(["Easy", "Normal", "Hard"] as BossModeType[]).map(m => (
                         <option key={m} value={m}
-                          disabled={tpl?.modes.some(ex => ex.mode === m)}>
-                          {m}{tpl?.modes.some(ex => ex.mode === m) ? " (added)" : ""}
+                          disabled={!editingMode && tpl?.modes.some(ex => ex.mode === m)}>
+                          {m}{!editingMode && tpl?.modes.some(ex => ex.mode === m) ? " (added)" : ""}
                         </option>
                       ))}
                     </select>
@@ -630,7 +681,11 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 <div className="flex gap-3 pt-1">
                   <SkyButton type="button" variant="secondary" onClick={onClose} disabled={submitting} className="flex-1">{t("admin.bossManagement.modesModal.close")}</SkyButton>
                   <SkyButton type="submit" variant="primary" disabled={submitting} className="flex-1">
-                    {submitting ? <><Spinner size={13} /> {t("admin.bossManagement.modesModal.adding")}</> : <><Plus className="w-3.5 h-3.5" /> {t("admin.bossManagement.modesModal.addMode")}</>}
+                    {submitting
+                      ? <><Spinner size={13} /> {editingMode ? "Saving…" : t("admin.bossManagement.modesModal.adding")}</>
+                      : editingMode
+                        ? <><Save className="w-3.5 h-3.5" /> Save Changes</>
+                        : <><Plus className="w-3.5 h-3.5" /> {t("admin.bossManagement.modesModal.addMode")}</>}
                   </SkyButton>
                 </div>
               </form>

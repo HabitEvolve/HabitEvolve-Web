@@ -53,3 +53,39 @@ export interface UserActivityDto {
     refType: string | null;
     refId: number | null;
 }
+
+// GET /admin/users/{userId}/goals — matches BE GoalSummaryDto (1 row/goal, Active or Completed only)
+export interface GoalSummaryDto {
+    selectionId: number;
+    goalId: number;
+    goalName: string;
+    status: string; // Active | Completed
+    currentWeek: number;
+    totalWeeks: number;
+    tasksCompleted: number;
+    tasksTotal: number;
+    adherencePercent: number; // 0-100
+    isFocused: boolean;
+    completedAt: string | null;
+}
+
+// GET /admin/users/{userId}/tasks — matches BE UserTaskSubscriptionDto
+export interface UserTaskSubscriptionDto {
+    subscriptionId: number;
+    userId: number;
+    selectionId: number;
+    practicalTaskTemplateId: number | null;
+    taskName: string | null;
+    taskDescription: string | null;
+    taskType: string;
+    difficulty: string; // EASY | NORMAL | HARD
+    durationDays: number | null;
+    status: string; // Active | Paused | Completed | Cancelled
+    difficultyOffset: number;
+    startedAt: string;
+    completedAt: string | null;
+    createdAt: string;
+    // Joined via SelectionId → UserGoalSelection.GoalId, so FE can group tasks by goal.
+    goalId: number | null;
+    goalName: string | null;
+}

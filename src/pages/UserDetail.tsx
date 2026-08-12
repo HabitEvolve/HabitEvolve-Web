@@ -6,7 +6,7 @@ import type { ApexOptions } from "apexcharts";
 import {
   ArrowLeft, Coins, Flame, ImageOff, Loader2, Swords, ClipboardList,
   BarChart3, History as HistoryIcon, FileClock, UserRoundCog, Camera, Users as UsersIcon, Trophy,
-  Gem, Wallet, ShieldCheck, ShieldOff, AlertTriangle,
+  Gem, Wallet, ShieldCheck, ShieldOff, AlertTriangle, ListChecks, Target, Star,
 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -18,7 +18,7 @@ import { adminAuditApi } from "../api/adminAuditApi";
 import { useAlert } from "../context/AlertContext";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
 import { WalletDto, DailyStreakDto, UserProofDto } from "../types/userDetail.types";
-import { UserQuestDto, UserQuestsDto, UserStatsDto, UserActivityDto } from "../types/userWorkspace.types";
+import { UserQuestDto, UserQuestsDto, UserStatsDto, UserActivityDto, GoalSummaryDto, UserTaskSubscriptionDto } from "../types/userWorkspace.types";
 import type { AuditLogDto } from "../types/adminAudit.types";
 import { UserAvatar, StatusBadge, RoleBadge, RolesEditor, formatDate } from "./UserManagement";
 import SharedStatusBadge, { type StatusTone } from "../components/common/StatusBadge";
@@ -426,6 +426,157 @@ const QuestsTab = ({ data, loading }: { data: UserQuestsDto | null; loading: boo
   );
 };
 
+// ── TAB: TASKS BY GOAL ────────────────────────────────────────────────────────
+// Task status reads narrower than the shared default map: Paused isn't in
+// STATUS_MAP at all (would fall back neutral) and Cancelled reads as a
+// negative outcome here rather than the generic "deleted/neutral" default —
+// both get pinned overrides, same pattern as QuestStatusBadge above.
+const TASK_STATUS_OVERRIDES: Record<string, StatusTone> = {
+  Paused: "pending",
+  Cancelled: "danger",
+};
+const TaskStatusBadge = ({ status }: { status: string }) => (
+  <SharedStatusBadge status={status} toneOverride={TASK_STATUS_OVERRIDES[status]} />
+);
+const GOAL_STATUS_OVERRIDES: Record<string, StatusTone> = {
+  Cancelled: "danger",
+  PendingAnswers: "pending",
+};
+const GoalStatusBadge = ({ status }: { status: string }) => (
+  <SharedStatusBadge status={status} toneOverride={GOAL_STATUS_OVERRIDES[status]} />
+);
+
+const TaskCard = ({ task }: { task: UserTaskSubscriptionDto }) => (
+  <div className="sky-glass-chip rounded-sky-md p-3.5 space-y-2.5">
+    <div className="flex items-start justify-between gap-2">
+      <p className="font-display text-sm font-semibold text-sky-ink leading-snug">
+        {task.taskName ?? `Task #${task.subscriptionId}`}
+      </p>
+      <TaskStatusBadge status={task.status} />
+    </div>
+    {task.taskDescription && (
+      <p className="text-xs font-medium text-sky-ink-3 leading-relaxed line-clamp-2">{task.taskDescription}</p>
+    )}
+    <div className="flex flex-wrap gap-1.5">
+      <span className="sky-badge text-[10px] px-2 py-0.5 bg-sky-deep/10 text-sky-deep">{task.taskType}</span>
+      <DifficultyBadge difficulty={task.difficulty} />
+      {task.durationDays != null && (
+        <span className="sky-badge sky-badge-neutral text-[10px] px-2 py-0.5">{task.durationDays}d duration</span>
+      )}
+    </div>
+    <p className="text-xs font-medium text-sky-ink-3 tabular-nums pt-2 border-t border-sky-ink/8">
+      Started {formatDate(task.startedAt)}
+      {task.completedAt ? ` · Completed ${formatDate(task.completedAt)}` : ""}
+    </p>
+  </div>
+);
+
+// One card per goal SELECTION (not per goal id) — a user can pursue the same
+// goal twice across separate selections, and GoalSummaryDto/task grouping
+// both key off selectionId, so that's the join key here too.
+const GoalGroup = ({
+  goalName, summary, tasks,
+}: {
+  goalName: string;
+  summary: GoalSummaryDto | undefined;
+  tasks: UserTaskSubscriptionDto[];
+}) => (
+  <div className="sky-glass-admin rounded-sky-card p-4 space-y-3.5">
+    <div className="relative flex flex-wrap items-center justify-between gap-2.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="grid place-items-center w-8 h-8 rounded-full bg-sky-violet/14 text-sky-violet-deep shrink-0">
+          <Target className="w-4 h-4" />
+        </span>
+        <p className="font-display text-sm font-semibold text-sky-ink truncate">{goalName}</p>
+        {summary?.isFocused && (
+          <span className="sky-badge text-[10px] px-2 py-0.5 bg-sky-peach/20 text-sky-peach-deep shrink-0">
+            <Star className="w-3 h-3" /> Focused
+          </span>
+        )}
+        <GoalStatusBadge status={summary?.status ?? "PendingAnswers"} />
+      </div>
+      {summary && (
+        <div className="flex items-center gap-4 text-xs font-medium text-sky-ink-3 tabular-nums shrink-0">
+          <span>Week {summary.currentWeek}/{summary.totalWeeks}</span>
+          <span>{summary.tasksCompleted}/{summary.tasksTotal} check-ins</span>
+          <span className="font-display font-semibold text-sky-deep">{summary.adherencePercent}% adherence</span>
+        </div>
+      )}
+    </div>
+    <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+      {tasks.map((t) => <TaskCard key={t.subscriptionId} task={t} />)}
+    </div>
+  </div>
+);
+
+const TasksByGoalTab = ({
+  goals, tasks, loading,
+}: {
+  goals: GoalSummaryDto[];
+  tasks: UserTaskSubscriptionDto[];
+  loading: boolean;
+}) => {
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-40" />)}
+      </div>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <EmptyState
+        icon={<ListChecks className="w-6 h-6" />}
+        title="No tasks yet"
+        subtitle="Tasks the user subscribes to after completing a Goal Wizard will show up here, grouped by goal."
+      />
+    );
+  }
+
+  const summaryBySelection = new Map(goals.map((g) => [g.selectionId, g]));
+
+  const groupsBySelection = new Map<number, UserTaskSubscriptionDto[]>();
+  for (const task of tasks) {
+    const key = task.selectionId;
+    const bucket = groupsBySelection.get(key);
+    if (bucket) bucket.push(task);
+    else groupsBySelection.set(key, [task]);
+  }
+
+  // Selections with an Active/Completed goal summary first (most relevant),
+  // most recently focused/active first; selections the summary endpoint
+  // doesn't cover (PendingAnswers/Cancelled) trail at the end.
+  const selectionIds = [...groupsBySelection.keys()].sort((a, b) => {
+    const sa = summaryBySelection.get(a);
+    const sb = summaryBySelection.get(b);
+    if (!!sa !== !!sb) return sa ? -1 : 1;
+    if (sa && sb && sa.isFocused !== sb.isFocused) return sa.isFocused ? -1 : 1;
+    return b - a;
+  });
+
+  return (
+    <div className="space-y-5">
+      <p className={eyebrow}>
+        {goals.length} goal{goals.length === 1 ? "" : "s"} · {tasks.length} task{tasks.length === 1 ? "" : "s"}
+      </p>
+      {selectionIds.map((selectionId) => {
+        const groupTasks = groupsBySelection.get(selectionId)!;
+        const summary = summaryBySelection.get(selectionId);
+        const goalName = summary?.goalName ?? groupTasks[0].goalName ?? `Goal (selection #${selectionId})`;
+        return (
+          <GoalGroup
+            key={selectionId}
+            goalName={goalName}
+            summary={summary}
+            tasks={groupTasks}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 // ── TAB: ANALYTICS ────────────────────────────────────────────────────────────
 // Tailwind's JIT compiler needs literal class strings — a template-interpolated
 // `bg-${color}-50` is invisible to its scanner, so every variant is spelled out here.
@@ -669,11 +820,12 @@ const AuditTab = ({ userId }: { userId: number }) => {
 };
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
-type TabId = "overview" | "quests" | "analytics" | "history" | "audit";
+type TabId = "overview" | "quests" | "tasks" | "analytics" | "history" | "audit";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <UserRoundCog className="w-4 h-4" /> },
   { id: "quests", label: "Current Quests", icon: <ClipboardList className="w-4 h-4" /> },
+  { id: "tasks", label: "Tasks by Goal", icon: <ListChecks className="w-4 h-4" /> },
   { id: "analytics", label: "Analytics", icon: <BarChart3 className="w-4 h-4" /> },
   { id: "history", label: "Activity History", icon: <HistoryIcon className="w-4 h-4" /> },
   { id: "audit", label: "Edit History", icon: <FileClock className="w-4 h-4" /> },
@@ -692,6 +844,9 @@ export default function UserDetail() {
 
   const [quests, setQuests] = useState<UserQuestsDto | null>(null);
   const [questsLoading, setQuestsLoading] = useState(true);
+  const [goals, setGoals] = useState<GoalSummaryDto[]>([]);
+  const [tasks, setTasks] = useState<UserTaskSubscriptionDto[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [stats, setStats] = useState<UserStatsDto | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [history, setHistory] = useState<UserActivityDto[]>([]);
@@ -716,6 +871,17 @@ export default function UserDetail() {
       if (!cancelled && res.success) setQuests(res.data ?? null);
     }).catch(() => { if (!cancelled) alert.error("Failed to load quests."); })
       .finally(() => { if (!cancelled) setQuestsLoading(false); });
+
+    setTasksLoading(true);
+    Promise.allSettled([
+      adminUserApi.getUserGoals(userId),
+      adminUserApi.getUserTasks(userId),
+    ]).then(([goalsRes, tasksRes]) => {
+      if (cancelled) return;
+      if (goalsRes.status === "fulfilled" && goalsRes.value.success) setGoals(goalsRes.value.data ?? []);
+      if (tasksRes.status === "fulfilled" && tasksRes.value.success) setTasks(tasksRes.value.data ?? []);
+      if (goalsRes.status === "rejected" || tasksRes.status === "rejected") alert.error("Failed to load tasks by goal.");
+    }).finally(() => { if (!cancelled) setTasksLoading(false); });
 
     setStatsLoading(true);
     adminUserApi.getUserStats(userId, 30).then((res) => {
@@ -809,6 +975,7 @@ export default function UserDetail() {
               <div className="relative">
                 {tab === "overview" && <OverviewTab user={user} onUserChange={setUser} />}
                 {tab === "quests" && <QuestsTab data={quests} loading={questsLoading} />}
+                {tab === "tasks" && <TasksByGoalTab goals={goals} tasks={tasks} loading={tasksLoading} />}
                 {tab === "analytics" && <AnalyticsTab data={stats} loading={statsLoading} />}
                 {tab === "history" && <HistoryTab data={history} loading={historyLoading} />}
                 {tab === "audit" && <AuditTab userId={user.userId} />}

@@ -70,12 +70,16 @@ const AppHeader: React.FC = () => {
 
             {/* Mobile-only logo */}
             <Link to="/" className="lg:hidden">
-              <img src="./images/logo/logo.svg" alt="Logo" />
+              <img
+                src="https://saiseocacvyfegzkewop.supabase.co/storage/v1/object/public/image/icon%20(1).png"
+                alt="HabitEvolve"
+                className="h-8 w-8 object-contain"
+              />
             </Link>
 
             {/* Desktop search bar */}
             <div className="hidden lg:block w-85 xl:w-107.5">
-              <AdminGlobalSearch ref={searchRef} shortcutHint="⌘K" />
+              <AdminGlobalSearch ref={searchRef} shortcutHint="Search" />
             </div>
           </div>
 
@@ -88,7 +92,7 @@ const AppHeader: React.FC = () => {
             {/* Dark/light toggle disabled, not hidden: Sky-Pastel has no
                 dark-mode tokens yet (see AppLayout's forced-light effect),
                 so toggling here would visibly do nothing. */}
-            <SkyButton
+            {/* <SkyButton
               type="button"
               variant="secondary"
               size="icon"
@@ -100,7 +104,7 @@ const AppHeader: React.FC = () => {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </SkyButton>
+            </SkyButton> */}
 
             {/* Mobile: three-dots expands header notification area */}
             <SkyButton

@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Menu, MoreHorizontal, Search } from "lucide-react";
-import { ThemeToggleButton } from "../common/ThemeToggleButton";
-import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
 
 // Define the interface for the props
@@ -72,8 +70,6 @@ const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
             } items-center justify-between w-full gap-4 px-5 py-4 lg:flex bg-white/45 border-t border-white/60 lg:justify-end lg:px-0 lg:bg-transparent lg:border-t-0`}
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
-            <ThemeToggleButton />
-            <NotificationDropdown />
           </div>
           {/* <!-- User Area --> */}
           <UserDropdown />

@@ -183,7 +183,7 @@ export default function SignUpForm() {
 
         <p className="mt-7 text-center text-sm text-sky-ink-2">
           {t("auth.signUp.haveAccount")}{" "}
-          <Link to="/" className={authLink}>
+          <Link to="/login" className={authLink}>
             {t("auth.signUp.signInLink")}
           </Link>
         </p>

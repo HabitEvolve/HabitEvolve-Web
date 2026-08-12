@@ -15,6 +15,7 @@ import SkyButton from '../components/ui/button/SkyButton';
 import PageHeader from '../components/common/PageHeader';
 import { FilterDropdown } from '../components/common/FilterDropdown';
 import type { FilterField } from '../hooks/useTableFilters';
+import { MONSTER_ROSTER, spriteAvatarUrl } from '../data/monsterRoster';
 
 /** icon field is either an emoji ("🐉") or a Supabase https:// URL uploaded via /icon. */
 const isIconUrl = (icon: string | null | undefined): icon is string => !!icon && /^https?:\/\//.test(icon);
@@ -114,7 +115,7 @@ function ConfirmDeleteModal({ boss, onConfirm, onCancel, loading }: {
 }
 
 // ─── Boss form modal ──────────────────────────────────────────────────────────
-const EMPTY_FORM: DailyBossPayload = { name: '', description: '', icon: '', hpMin: 100, hpMax: 300, categoryCode: null };
+const EMPTY_FORM: DailyBossPayload = { name: '', description: '', icon: '', hpMin: 100, hpMax: 300, categoryCode: null, spriteKey: null };
 
 function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose }: {
   editing: DailyBossTemplateDto | null;
@@ -125,7 +126,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
 }) {
   const [form, setForm] = useState<DailyBossPayload>(
     editing
-      ? { name: editing.name, description: editing.description ?? '', icon: editing.icon ?? '', hpMin: editing.hpMin, hpMax: editing.hpMax, categoryCode: editing.categoryCode }
+      ? { name: editing.name, description: editing.description ?? '', icon: editing.icon ?? '', hpMin: editing.hpMin, hpMax: editing.hpMax, categoryCode: editing.categoryCode, spriteKey: editing.spriteKey }
       : EMPTY_FORM
   );
   const [saving, setSaving] = useState(false);
@@ -148,6 +149,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
         hpMin: form.hpMin,
         hpMax: form.hpMax,
         categoryCode: form.categoryCode || null,
+        spriteKey: form.spriteKey || null,
       });
     } catch (err) {
       setErr((err as any)?.message ?? 'Failed to save.');
@@ -181,26 +183,15 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
               </p>
             )}
 
-            <div className="grid grid-cols-[1fr_80px] gap-3">
-              <div>
-                <label className={fieldLabel}>Boss Name *</label>
-                <input
-                  value={form.name}
-                  onChange={e => set('name', e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. Meliodas"
-                  required
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>Icon</label>
-                <input
-                  value={form.icon ?? ''}
-                  onChange={e => set('icon', e.target.value)}
-                  className={inputCls}
-                  placeholder="🐉"
-                />
-              </div>
+            <div>
+              <label className={fieldLabel}>Boss Name *</label>
+              <input
+                value={form.name}
+                onChange={e => set('name', e.target.value)}
+                className={inputCls}
+                placeholder="e.g. Meliodas"
+                required
+              />
             </div>
 
             <div>
@@ -225,7 +216,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                 <option value="">— Generic (mọi goal) —</option>
                 {categories.map(c => (
                   <option key={c.categoryId} value={c.categoryCode}>
-                    {c.iconCode ? `${c.iconCode} ` : ''}{c.categoryName}
+                    {c.categoryName}
                   </option>
                 ))}
               </select>
@@ -233,6 +224,33 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                 {categoriesLoading
                   ? 'Đang tải danh mục…'
                   : 'Boss hợp chủ đề sẽ ưu tiên cho player theo goal đó; Generic khớp mọi goal.'}
+              </p>
+            </div>
+
+            {/* Sprite art có sẵn (bundled) — khi chọn, avatar dùng sprite này thay Icon/emoji ở cả web & app. */}
+            <div>
+              <label className={fieldLabel}>Sprite art (có sẵn)</label>
+              <div className="flex items-center gap-3">
+                <select
+                  value={form.spriteKey ?? ''}
+                  onChange={e => set('spriteKey', e.target.value || null)}
+                  className={`${inputCls} flex-1`}
+                >
+                  <option value="">— Không dùng (theo Icon) —</option>
+                  {MONSTER_ROSTER.map(m => (
+                    <option key={m.key} value={m.key}>{m.name}</option>
+                  ))}
+                </select>
+                <span className="grid place-items-center w-12 h-12 shrink-0 overflow-hidden rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22">
+                  {spriteAvatarUrl(form.spriteKey) ? (
+                    <img src={spriteAvatarUrl(form.spriteKey)!} alt="" className="w-full h-full object-contain [image-rendering:pixelated]" />
+                  ) : (
+                    <Skull className="w-5 h-5 text-sky-violet-deep" strokeWidth={2} aria-hidden="true" />
+                  )}
+                </span>
+              </div>
+              <p className="mt-1.5 text-[11px] font-medium text-sky-ink-3">
+                Bộ sprite bundled dùng chung với app (pixel-art). Có chọn → avatar boss ưu tiên sprite này hơn Icon/emoji.
               </p>
             </div>
 
@@ -311,7 +329,10 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
       {/* Boss identity */}
       <div className="flex items-center gap-3 mb-3.5 pr-20">
         <div className="grid place-items-center w-12 h-12 shrink-0 overflow-hidden rounded-sky-md bg-sky-violet/12 ring-1 ring-sky-violet/22 text-2xl text-sky-violet-deep">
-          {isIconUrl(boss.icon) ? (
+          {/* Ưu tiên: sprite pack có sẵn (bundled, pixel-art) → ảnh Icon Supabase → emoji → Skull. */}
+          {spriteAvatarUrl(boss.spriteKey) ? (
+            <img src={spriteAvatarUrl(boss.spriteKey)!} alt={boss.name} className="w-full h-full object-contain [image-rendering:pixelated]" />
+          ) : isIconUrl(boss.icon) ? (
             <img src={boss.icon} alt={boss.name} className="w-full h-full object-cover" />
           ) : (
             boss.icon || <Skull className="w-6 h-6" strokeWidth={2} aria-hidden="true" />

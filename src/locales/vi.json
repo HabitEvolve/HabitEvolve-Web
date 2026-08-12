@@ -460,11 +460,10 @@
         "previewDeadlineNone": "Chưa đặt hạn chót",
         "selectMemberAria": "Nhắm mục tiêu {{username}}",
         "howToSubmitLabel": "Cách Nộp Bài",
-        "howToSubmitPlaceholder": "Hướng dẫn nộp bài dành cho người chơi…",
+        "howToSubmitPlaceholder": "VD: Chụp nguyên đĩa từ trên xuống, đủ sáng, thấy rõ toàn bộ món ăn…",
+        "howToSubmitNote": "Ghi thật rõ bằng chứng phải thể hiện những gì — góc chụp, ánh sáng, những thứ bắt buộc có trong khung hình, và điều gì sẽ bị từ chối. Đây là hướng dẫn DUY NHẤT người chơi thấy trước khi nộp, mà chính bạn là người duyệt: viết mơ hồ ở đây sẽ thành từ chối và nộp lại cho cả hai bên.",
         "verificationTagsLabel": "Thẻ Xác Minh",
-        "verificationTagsHint": "FACE sẽ chặn nộp bài cho đến khi người chơi xác minh ảnh chân dung; ITEM/ACTION chỉ mang tính gợi ý.",
-        "cvQuestTypeLabel": "Loại Nhiệm Vụ CV",
-        "cvQuestTypeNone": "— Không đặt —"
+        "verificationTagsHint": "FACE sẽ chặn nộp bài cho đến khi người chơi xác minh ảnh chân dung; ITEM/ACTION chỉ mang tính gợi ý."
       }
     },
     "subscriptionWallet": {

@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router";
 import { Trans, useTranslation } from "react-i18next";
 import {
     Flame, Swords, Coins, Target, AlertTriangle, User, Users, Zap,
-    SlidersHorizontal, Crosshair, CalendarClock,
+    SlidersHorizontal, CalendarClock, Info,
 } from "lucide-react";
 import mentorApi from "../../../api/mentorApi";
 import partyMentorApi from "../../../api/mentorPartyApi";
@@ -20,7 +20,6 @@ import type {
     CreateMentorQuestRequest,
     CreatePartyQuestRequest,
     VerificationTag,
-    CvQuestType,
 } from "../../../types/mentor.types";
 
 // sky-peach stays this tab's signature accent (Quest Forge), consistent with
@@ -39,7 +38,6 @@ const stepLabel = "flex items-center gap-2 mb-2 text-[10px] font-semibold upperc
 
 const DIFFICULTIES: QuestDifficulty[] = ["EASY", "NORMAL", "HARD"];
 const VERIFICATION_TAGS: VerificationTag[] = ["FACE", "ITEM", "ACTION"];
-const CV_QUEST_TYPES: CvQuestType[] = ["running", "drinking_water", "sleeping", "reading", "cooking", "exercise"];
 const HOW_TO_SUBMIT_MAX = 500;
 
 // Difficulty is a heat ramp (cool → hot), the same one the Boss Raid grimoire
@@ -62,7 +60,6 @@ const emptyForm = {
     deadlineAt: "",
     howToSubmit: "",
     verificationTags: "",
-    cvQuestType: "",
 };
 
 type AssignMode = "individual" | "party";
@@ -318,7 +315,6 @@ export default function QuestForgeTab() {
                     deadlineAt: buildDeadline(),
                     howToSubmit: form.howToSubmit.trim() || undefined,
                     verificationTags: form.verificationTags || undefined,
-                    cvQuestType: form.cvQuestType || undefined,
                 };
                 const res = await mentorApi.createMentorQuest(payload);
                 if (res.success) {
@@ -343,7 +339,6 @@ export default function QuestForgeTab() {
                     deadlineAt: buildDeadline(),
                     howToSubmit: form.howToSubmit.trim() || undefined,
                     verificationTags: form.verificationTags || undefined,
-                    cvQuestType: form.cvQuestType || undefined,
                 };
                 const res = await mentorApi.createPartyQuest(payload);
                 if (res.success && res.data) {
@@ -619,10 +614,18 @@ export default function QuestForgeTab() {
                                 value={form.howToSubmit}
                                 onChange={(e) => handleField("howToSubmit", e.target.value)}
                                 placeholder={t("mentor.questCommand.forge.howToSubmitPlaceholder")}
-                                rows={2}
+                                rows={3}
                                 maxLength={HOW_TO_SUBMIT_MAX}
                                 className={`${inputCls} resize-none`}
                             />
+                            {/* This text is the only guidance the player gets before they submit,
+                                and a proof that misses what the mentor expected costs both sides a
+                                reject/resubmit round trip — so the field earns a real callout
+                                rather than the usual quiet hint line. */}
+                            <p className="mt-2 flex items-start gap-2 rounded-sky-chip bg-sky-deep/8 ring-1 ring-sky-deep/18 px-3 py-2 text-[11px] font-medium leading-relaxed text-sky-ink-2">
+                                <Info className="mt-px w-3.5 h-3.5 shrink-0 text-sky-deep" aria-hidden="true" />
+                                <span>{t("mentor.questCommand.forge.howToSubmitNote")}</span>
+                            </p>
                         </div>
 
                         <div>
@@ -646,24 +649,6 @@ export default function QuestForgeTab() {
                                 })}
                             </div>
                             <p className="text-[11px] text-sky-ink-3 font-medium mt-1.5">{t("mentor.questCommand.forge.verificationTagsHint")}</p>
-                        </div>
-
-                        <div>
-                            <label className={fieldLabel}>
-                                <span className="inline-flex items-center gap-1">
-                                    <Crosshair className="w-3 h-3" aria-hidden="true" /> {t("mentor.questCommand.forge.cvQuestTypeLabel")}
-                                </span>
-                            </label>
-                            <select
-                                value={form.cvQuestType}
-                                onChange={(e) => handleField("cvQuestType", e.target.value)}
-                                className={inputCls}
-                            >
-                                <option value="">{t("mentor.questCommand.forge.cvQuestTypeNone")}</option>
-                                {CV_QUEST_TYPES.map((ct) => (
-                                    <option key={ct} value={ct}>{ct}</option>
-                                ))}
-                            </select>
                         </div>
 
                         <label className="flex flex-wrap items-center gap-3 cursor-pointer select-none rounded-sky-chip bg-white/50 ring-1 ring-white/70 px-3 py-2.5">

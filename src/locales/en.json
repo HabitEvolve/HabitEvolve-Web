@@ -460,11 +460,10 @@
         "previewDeadlineNone": "No deadline set",
         "selectMemberAria": "Target {{username}}",
         "howToSubmitLabel": "How To Submit",
-        "howToSubmitPlaceholder": "Player-facing submission instructions…",
+        "howToSubmitPlaceholder": "e.g. Photograph the full plate from above, in daylight, with the whole dish visible…",
+        "howToSubmitNote": "Spell out exactly what the proof must show — angle, lighting, what has to be in frame, and anything that gets it rejected. This is the only instruction the player sees before submitting, and you are the one who reviews it: vague wording here turns into rejects and resubmits for both of you.",
         "verificationTagsLabel": "Verification Tags",
-        "verificationTagsHint": "FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.",
-        "cvQuestTypeLabel": "CV Quest Type",
-        "cvQuestTypeNone": "— None —"
+        "verificationTagsHint": "FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only."
       }
     },
     "subscriptionWallet": {

@@ -17,7 +17,7 @@ import SkyButton from '../components/ui/button/SkyButton';
 import {
   GoalCategoryDto, GoalCategoryPayload,
   GoalDto, GoalPayload, MeasurementType,
-  AdminTaskTemplateDto, PracticalTaskPayload,
+  AdminTaskTemplateDto, PracticalTaskPayload, TaskRecommendationLevel,
   RecommendationRuleDto, RecommendationRuleConditionDto,
   CreateRulePayload, UpdateRulePayload_Rec,
   AddConditionPayload, RuleMatchMode, ConditionOperator,
@@ -127,6 +127,13 @@ function CheckRow({ checked, onChange, label }: {
 }
 
 const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
+const VERIFICATION_TAGS = ['FACE', 'ITEM', 'ACTION'];
+const RECOMMENDATION_LEVELS: { value: TaskRecommendationLevel; label: string }[] = [
+  { value: 'MustDo', label: 'Must Do' },
+  { value: 'Recommended', label: 'Recommended' },
+  { value: 'Optional', label: 'Optional' },
+  { value: 'Bonus', label: 'Bonus' },
+];
 const MEASUREMENT_TYPES: MeasurementType[] = ['CHECK_IN', 'COUNTABLE', 'FREQUENCY_BASED', 'QUALITY_BASED', 'SCHEDULE_BASED', 'TIME_BASED'];
 const MATCH_MODES: RuleMatchMode[] = ['AllConditions', 'AnyCondition'];
 const OPERATORS: ConditionOperator[] = ['Equals', 'NotEquals', 'GreaterThan', 'LessThan', 'Contains', 'In', 'NotIn'];
@@ -326,14 +333,36 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
   const [desc, setDesc] = useState(editing?.description ?? '');
   const [vtype, setVtype] = useState(editing?.verificationType ?? 'SELF_CHECK');
   const [active, setActive] = useState(editing?.isActive ?? true);
+  const [requiredVariables, setRequiredVariables] = useState(editing?.requiredVariables ?? '');
+  const [tags, setTags] = useState(editing?.verificationTags ?? '');
+  const [level, setLevel] = useState<TaskRecommendationLevel>(editing?.recommendationLevel ?? 'Recommended');
+  const [rank, setRank] = useState(editing?.rankDefault ?? 5);
+  const [damage, setDamage] = useState(editing?.defaultDamage ?? 10);
+  const [rewardGold, setRewardGold] = useState(editing?.defaultRewardGold ?? 10);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+
+  const selectedTags = tags.split(',').map(s => s.trim()).filter(Boolean);
+  const toggleTag = (tag: string) => {
+    const next = selectedTags.includes(tag) ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag];
+    setTags(next.join(','));
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setErr('Title is required.'); return; }
     setSaving(true); setErr('');
-    try { await onSave({ goalId, title: title.trim(), description: desc.trim() || undefined, verificationType: vtype, isActive: active }); }
+    try {
+      await onSave({
+        goalId, title: title.trim(), description: desc.trim() || undefined, verificationType: vtype, isActive: active,
+        requiredVariables: requiredVariables.trim() || undefined,
+        verificationTags: tags || undefined,
+        recommendationLevel: level,
+        rankDefault: rank,
+        damage,
+        rewardGold,
+      });
+    }
     catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
   };
@@ -343,7 +372,7 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
       <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <SkyCard variant="admin" className="modal-content p-0 overflow-hidden w-full max-w-md">
           <ModalHead Icon={Zap} eyebrowText="Practical task" title={editing ? 'Edit Task' : 'New Practical Task'} tone="violet" onClose={onClose} />
-          <form onSubmit={submit} className="p-5 space-y-3">
+          <form onSubmit={submit} className="p-5 space-y-3 max-h-[75vh] overflow-y-auto">
             {err && <FormError>{err}</FormError>}
             <div>
               <label className={fieldLabel}>Title *</label>
@@ -358,6 +387,45 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <select value={vtype} onChange={e => setVtype(e.target.value)} className={inputCls}>
                 {VERIFICATION_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
+            </div>
+            <div>
+              <label className={fieldLabel}>Verification Tags</label>
+              <div className="flex flex-wrap gap-3">
+                {VERIFICATION_TAGS.map(tag => (
+                  <label key={tag} className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 rounded accent-sky-deep" />
+                    <span className="text-xs font-semibold text-sky-ink-2">{tag}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[10px] text-sky-ink-3 mt-1">A task can carry more than one — FACE blocks submission until portrait-verified; ITEM/ACTION are AI hints only.</p>
+            </div>
+            <div>
+              <label className={fieldLabel}>Required Variables</label>
+              <input value={requiredVariables} onChange={e => setRequiredVariables(e.target.value)} className={inputCls} placeholder="e.g. target_time,support_action" />
+              <p className="text-[10px] text-sky-ink-3 mt-1">Comma-separated {'{variable}'} placeholder names used in the title/description.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={fieldLabel}>Importance</label>
+                <select value={level} onChange={e => setLevel(e.target.value as TaskRecommendationLevel)} className={inputCls}>
+                  {RECOMMENDATION_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={fieldLabel}>Rank (1-20)</label>
+                <input type="number" min={1} max={20} value={rank} onChange={e => setRank(Number(e.target.value))} className={inputCls} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={fieldLabel}>Damage</label>
+                <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={inputCls} />
+              </div>
+              <div>
+                <label className={fieldLabel}>Reward Gold</label>
+                <input type="number" min={0} value={rewardGold} onChange={e => setRewardGold(Number(e.target.value))} className={inputCls} />
+              </div>
             </div>
             <CheckRow checked={active} onChange={setActive} label="Active" />
             <div className="flex gap-3 pt-2">
@@ -837,6 +905,8 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
   const [bindModal, setBindModal] = useState(false);
   const [activating, setActivating] = useState<number | null>(null);
   const [actionErr, setActionErr] = useState<string | null>(null);
+  const [delBinding, setDelBinding] = useState<GoalQuestionnaireDto | null>(null);
+  const [delLoading, setDelLoading] = useState(false);
 
   const loadBindings = useCallback(async () => {
     setLoading(true);
@@ -868,6 +938,18 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
     } catch (ex: any) {
       setActionErr(ex?.response?.data?.message ?? 'Deactivate failed.');
     } finally { setActivating(null); }
+  };
+
+  const handleRemove = async () => {
+    if (!delBinding) return;
+    setDelLoading(true);
+    try {
+      await adminGoalApi.deleteGoalQuestionnaire(goal.goalId, delBinding.goalQuestionnaireId);
+      setDelBinding(null);
+      await loadBindings();
+    } catch (ex: any) {
+      setActionErr(ex?.response?.data?.message ?? 'Remove failed.');
+    } finally { setDelLoading(false); }
   };
 
   return (
@@ -919,12 +1001,24 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
                   Activate
                 </SkyButton>
               )}
+              <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelBinding(b)} className="text-sky-rose-deep hover:bg-sky-rose/10" aria-label="Remove binding">
+                <Trash2 className="w-4 h-4" />
+              </SkyButton>
             </SkyCard>
           ))}
         </div>
       )}
 
       {bindModal && <BindQuestionnaireModal goalId={goal.goalId} onBound={() => { setBindModal(false); loadBindings(); }} onClose={() => setBindModal(false)} />}
+      {delBinding && (
+        <ConfirmDeleteModal
+          title="Remove Questionnaire?"
+          body={`Unbind "${delBinding.templateName ?? `Template #${delBinding.templateId}`}" from this goal? This is a soft removal — the binding history is kept, it just stops applying to new players.`}
+          loading={delLoading}
+          onConfirm={handleRemove}
+          onCancel={() => setDelBinding(null)}
+        />
+      )}
     </div>
   );
 }
@@ -937,9 +1031,10 @@ type CommandTab = 'tasks' | 'rules' | 'questionnaires';
 // Each tab keeps the hue its own records use elsewhere on the screen, so the
 // tab bar doubles as a legend. The scroll PNG is retired — at the 16px these
 // pills render, pixel art turns to mush next to lucide's stroke weight.
+// Recommendation Rules tab is hidden from the tab bar (still implemented below,
+// just not reachable) until the feature is ready to surface to operators.
 const TABS: { id: CommandTab; label: string; Icon: LucideIcon; on: string }[] = [
   { id: 'tasks',          label: 'Practical Tasks',      Icon: Zap,        on: 'bg-linear-to-b from-sky-violet to-sky-violet-deep' },
-  { id: 'rules',          label: 'Recommendation Rules', Icon: ShieldCheck, on: 'bg-linear-to-b from-sky-deep-lo to-sky-deep' },
   { id: 'questionnaires', label: 'Questionnaires',       Icon: ScrollText, on: 'bg-linear-to-b from-sky-peach to-sky-peach-deep' },
 ];
 
@@ -1133,7 +1228,6 @@ function CategoryGoalExplorer({ onEnterGoal }: {
                 {selectedCat?.categoryId === cat.categoryId && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" />}
                 <div className="flex items-center justify-between gap-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Layers className="w-3.5 h-3.5 shrink-0 text-sky-ink-3" strokeWidth={2.2} aria-hidden="true" />
                     <p className="font-semibold text-sm text-sky-ink truncate">{cat.categoryName}</p>
                   </div>
                   {/* Compact pill instead of a bare ●/○ glyph: the dot alone was

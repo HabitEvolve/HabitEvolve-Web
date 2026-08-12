@@ -19,7 +19,7 @@ import type {
   QuestLibraryItemDto, QuestLibraryDifficulty, QuestLibraryStatus,
   RepeatRule, CreateQuestLibraryItemPayload, UpdateQuestLibraryItemPayload,
   SetRewardMatrixPayload, SetPersonalizationPayload,
-  VerificationTag, CvQuestType,
+  VerificationTag,
 } from '../types/adminQuestLibrary.types';
 import type { GoalDto } from '../types/adminGoal.types';
 
@@ -30,7 +30,6 @@ const STATUSES: QuestLibraryStatus[] = ['Draft', 'Published', 'Archived'];
 const REPEAT_RULES: RepeatRule[] = ['Daily', 'Weekly', 'Monthly', 'OneTime'];
 const PROOF_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
 const VERIFICATION_TAGS: VerificationTag[] = ['FACE', 'ITEM', 'ACTION'];
-const CV_QUEST_TYPES: CvQuestType[] = ['running', 'drinking_water', 'sleeping', 'reading', 'cooking', 'exercise'];
 const HOW_TO_SUBMIT_MAX = 500;
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
@@ -314,7 +313,9 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
   const [selectedGoalIds, setSelectedGoalIds] = useState<number[]>(editing?.goalIds ?? []);
   const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
   const [verificationTags, setVerificationTags] = useState(editing?.verificationTags ?? '');
-  const [cvQuestType, setCvQuestType] = useState(editing?.cvQuestType ?? '');
+  // No UI to change this anymore (CV Quest Type field removed) — preserved
+  // read-only so editing an existing quest doesn't silently wipe its value.
+  const [cvQuestType] = useState(editing?.cvQuestType ?? '');
   const [saving, setSaving] = useState(false);
   const alert = useAlert();
 
@@ -347,6 +348,11 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
           verificationTags: verificationTags || undefined,
           cvQuestType: cvQuestType || undefined,
         };
+        if (gold !== editing.rewardGold) {
+          await adminQuestLibraryApi.setRewardMatrix(editing.templateId, {
+            gold, bonusGold: editing.rewardBonusGold, xp: editing.rewardXp, gems: editing.rewardGems,
+          });
+        }
         await onSave(payload, false);
       } else {
         const payload: CreateQuestLibraryItemPayload = {
@@ -434,6 +440,9 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
                 className={inputCls}
                 placeholder="Player-facing submission instructions…"
               />
+              <p className="text-[10px] text-sky-ink-3 mt-1.5 leading-relaxed">
+                This text is sent to the AI verifier along with the player's proof — write it as an instruction the AI should check against, not just a note for the player.
+              </p>
             </div>
 
             <div>
@@ -461,33 +470,30 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
               </p>
             </div>
 
+            {/* Rewards — full matrix on create; edit only re-prices Gold here (Bonus/XP/Gems
+                stay in the dedicated Edit Rewards modal since it's the one place that also
+                explains the payout grid). */}
             <div>
-              <label className={fieldLabel}>CV Quest Type</label>
-              <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
-                <option value="">— None —</option>
-                {CV_QUEST_TYPES.map(ct => <option key={ct} value={ct}>{ct}</option>)}
-              </select>
-            </div>
-
-            {/* Rewards — only for create */}
-            {!editing && (
-              <div>
-                <p className={`mb-2 ${eyebrow}`}>Rewards</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { label: 'Gold', val: gold, set: setGold },
-                    { label: '+Bonus', val: bonusGold, set: setBonusGold },
-                    { label: 'XP', val: xp, set: setXp },
-                    { label: 'Gems', val: gems, set: setGems },
-                  ].map(f => (
-                    <div key={f.label}>
-                      <label className={fieldLabel}>{f.label}</label>
-                      <input type="number" min={0} value={f.val} onChange={e => f.set(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
-                    </div>
-                  ))}
-                </div>
+              <p className={`mb-2 ${eyebrow}`}>Rewards</p>
+              <div className="grid grid-cols-4 gap-2">
+                {editing ? (
+                  <div>
+                    <label className={fieldLabel}>Gold</label>
+                    <input type="number" min={0} value={gold} onChange={e => setGold(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
+                  </div>
+                ) : [
+                  { label: 'Gold', val: gold, set: setGold },
+                  { label: '+Bonus', val: bonusGold, set: setBonusGold },
+                  { label: 'XP', val: xp, set: setXp },
+                  { label: 'Gems', val: gems, set: setGems },
+                ].map(f => (
+                  <div key={f.label}>
+                    <label className={fieldLabel}>{f.label}</label>
+                    <input type="number" min={0} value={f.val} onChange={e => f.set(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
 
             {/* Goals — only for create */}
             {!editing && (

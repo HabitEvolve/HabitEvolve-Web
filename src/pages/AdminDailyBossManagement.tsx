@@ -183,26 +183,15 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
               </p>
             )}
 
-            <div className="grid grid-cols-[1fr_80px] gap-3">
-              <div>
-                <label className={fieldLabel}>Boss Name *</label>
-                <input
-                  value={form.name}
-                  onChange={e => set('name', e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. Meliodas"
-                  required
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>Icon</label>
-                <input
-                  value={form.icon ?? ''}
-                  onChange={e => set('icon', e.target.value)}
-                  className={inputCls}
-                  placeholder="🐉"
-                />
-              </div>
+            <div>
+              <label className={fieldLabel}>Boss Name *</label>
+              <input
+                value={form.name}
+                onChange={e => set('name', e.target.value)}
+                className={inputCls}
+                placeholder="e.g. Meliodas"
+                required
+              />
             </div>
 
             <div>
@@ -227,7 +216,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                 <option value="">— Generic (mọi goal) —</option>
                 {categories.map(c => (
                   <option key={c.categoryId} value={c.categoryCode}>
-                    {c.iconCode ? `${c.iconCode} ` : ''}{c.categoryName}
+                    {c.categoryName}
                   </option>
                 ))}
               </select>

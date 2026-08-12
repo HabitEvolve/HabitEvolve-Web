@@ -121,11 +121,11 @@ const navItems: NavItem[] = [
     nameKey: "nav.admin.appeals",
     path: "/admin/appeals",
   },
-  {
-    icon: <Cpu className={navIcon} aria-hidden="true" />,
-    nameKey: "nav.admin.jobs",
-    path: "/admin/jobs",
-  },
+  // {
+  //   icon: <Cpu className={navIcon} aria-hidden="true" />,
+  //   nameKey: "nav.admin.jobs",
+  //   path: "/admin/jobs",
+  // },
   {
     icon: <FileClock className={navIcon} aria-hidden="true" />,
     nameKey: "nav.admin.auditLog",

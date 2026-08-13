@@ -82,6 +82,21 @@ const ErrorNote = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
+// Pill switch — same shape/motion as the toggles used on the Task Library and
+// Daily Boss forms elsewhere in Admin, so "on/off" reads identically everywhere.
+// Peach (not teal) on: this file's TONE reserves teal for "genuinely live", and
+// Required isn't that — it's the same peach that already marks the badge below.
+const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    aria-pressed={checked}
+    className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${checked ? 'bg-sky-peach' : 'bg-sky-ink/15'}`}
+  >
+    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+  </button>
+);
+
 const QUESTION_TYPES: { value: QuestionType; label: string; Icon: LucideIcon }[] = [
   { value: 'SingleChoice',   label: 'Single Choice',   Icon: CheckSquare },
   { value: 'MultipleChoice', label: 'Multiple Choice', Icon: List },
@@ -347,14 +362,14 @@ function QuestionFormModal({
             ) : null}
             {/* Whether an answer is mandatory changes what the app does at runtime,
                 so the toggle gets its own plated row and states its state in
-                words as well as by the box being ticked. */}
-            <label className="flex cursor-pointer select-none items-center gap-3 rounded-sky-chip bg-white/55 ring-1 ring-white/78 px-3.5 py-2.5 transition-colors hover:bg-white/72">
-              <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="w-4 h-4 accent-sky-deep" />
+                words as well as by the switch position. */}
+            <div className="flex items-center gap-3 rounded-sky-chip bg-white/55 ring-1 ring-white/78 px-3.5 py-2.5">
+              <Toggle checked={required} onChange={setRequired} />
               <span className="flex-1 text-sm font-semibold text-sky-ink">{t('admin.questionnaire.questionForm.requiredLabel')}</span>
               <span className={`shrink-0 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${required ? TONE.peach.chip : TONE.neutral.chip}`}>
                 {required ? 'Required' : 'Optional'}
               </span>
-            </label>
+            </div>
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('admin.questionnaire.questionForm.cancel')}</SkyButton>
               <SkyButton type="submit" variant="primary" disabled={saving || rangeInvalid} className="flex-1">
@@ -592,7 +607,7 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
           const QIcon = QUESTION_TYPES.find(qt => qt.value === q.questionType)?.Icon ?? HelpCircle;
           const expanded = expandedQ === q.questionId;
           return (
-          <SkyCard key={q.questionId} variant="admin" className="p-0 overflow-hidden">
+          <SkyCard key={q.questionId} variant="admin" className="p-0 overflow-hidden sky-lift">
             <div className="flex items-start gap-3 p-4">
               {/* Order number and type glyph are one plate: together they say
                   "question 3, a rating scale" in a single glance. */}

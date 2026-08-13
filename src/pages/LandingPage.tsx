@@ -3,7 +3,7 @@ import { Link, Navigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard, Swords, Smartphone, Users, ClipboardList, Skull,
-  Apple, PlayCircle, ArrowRight,
+  Download, ArrowRight,
 } from "lucide-react";
 import PageMeta from "../components/common/PageMeta";
 import LanguageToggle from "../components/common/LanguageToggle";
@@ -160,20 +160,16 @@ const RoleGateway = () => {
                 {t("landing.roles.player.mobileOnly")}
               </p>
               <div className="flex gap-2">
-                <span
-                  aria-disabled="true"
-                  className="inline-flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 rounded-sky-chip bg-white/55 px-3 py-2.5 text-xs font-semibold text-sky-ink-3 ring-1 ring-white/70"
+                <a
+                  href="https://expo.dev/accounts/trile9270s-team/projects/habit-evolve/builds/1c13b4e4-a205-4d5e-9a3b-a826db2d7f91"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("landing.roles.player.googlePlay")}
+                  className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sky-chip bg-white/55 px-3 py-2.5 text-xs font-semibold text-sky-ink-3 ring-1 ring-white/70 transition hover:bg-white/70"
                 >
-                  <Apple className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t("landing.roles.player.appStore")}
-                </span>
-                <span
-                  aria-disabled="true"
-                  className="inline-flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 rounded-sky-chip bg-white/55 px-3 py-2.5 text-xs font-semibold text-sky-ink-3 ring-1 ring-white/70"
-                >
-                  <PlayCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
                   {t("landing.roles.player.googlePlay")}
-                </span>
+                </a>
               </div>
             </div>
           </RoleCard>

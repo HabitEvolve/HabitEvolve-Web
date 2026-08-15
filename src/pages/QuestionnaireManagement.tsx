@@ -618,19 +618,28 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
           // Same card language as the Category list in Goal Engine Hub: a
           // compact chip-radius plate (not a full SkyCard), a name+pill header
           // row, one mono meta line, then a slim icon-action row.
-          <div key={q.questionId} className="relative rounded-sky-chip overflow-hidden bg-white/58 ring-1 ring-white/80 transition-colors duration-150 hover:bg-white/76">
+          <div key={q.questionId} className="relative rounded-sky-chip bg-white/58 ring-1 ring-white/80 transition-colors duration-150 hover:bg-white/76">
             <div className="p-3 pl-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="grid place-items-center w-5 h-5 shrink-0 rounded-[7px] bg-white/72 ring-1 ring-white/85 font-display text-[10px] font-semibold text-sky-ink-2 tabular-nums">{q.displayOrder}</span>
-                  <QIcon className="w-3.5 h-3.5 shrink-0 text-sky-deep" strokeWidth={2.3} aria-hidden="true" />
-                  <p className="font-semibold text-sm text-sky-ink truncate">{q.questionText}</p>
+              {/* items-start (not center) — question text runs long, so it
+                  wraps freely (no truncate/line-clamp, no overflow-hidden on
+                  the card) instead of being cut off; the order badge, type
+                  icon, and Required pill all nudge down to stay aligned with
+                  the first line rather than the vertical center. */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2 min-w-0">
+                  <span className="grid place-items-center w-5 h-5 shrink-0 mt-px rounded-[7px] bg-white/72 ring-1 ring-white/85 font-display text-[10px] font-semibold text-sky-ink-2 tabular-nums">{q.displayOrder}</span>
+                  <QIcon className="w-3.5 h-3.5 shrink-0 mt-0.5 text-sky-deep" strokeWidth={2.3} aria-hidden="true" />
+                  {/* flex-1 min-w-0 here too — min-w-0 on the parent row alone
+                      doesn't stop this p itself (a flex item of that row) from
+                      claiming its full unwrapped width and pushing the
+                      Required badge out past the card edge. */}
+                  <p className="flex-1 min-w-0 font-semibold text-sm text-sky-ink leading-snug wrap-break-word">{q.questionText}</p>
                 </div>
                 {/* "Required" reads as attention, not an error — same peach
                     semantics as elsewhere in this file, just in the pill slot
                     the Category card reserves for its On/Off status. */}
                 {q.isRequired && (
-                  <span className={`inline-flex items-center gap-1 shrink-0 rounded-full ring-1 px-1.5 py-0.5 text-[10px] font-semibold ${TONE.peach.chip}`}>
+                  <span className={`inline-flex items-center gap-1 shrink-0 mt-0.5 rounded-full ring-1 px-1.5 py-0.5 text-[10px] font-semibold ${TONE.peach.chip}`}>
                     <Asterisk className="w-2.5 h-2.5 shrink-0" strokeWidth={3} aria-hidden="true" />
                     {t('admin.questionnaire.requiredBadge')}
                   </span>
@@ -794,23 +803,32 @@ export default function QuestionnaireManagement() {
               key={tpl.templateId}
               onClick={() => setSelectedTpl(tpl)}
               aria-current={selected ? 'true' : undefined}
-              className={`relative cursor-pointer rounded-sky-chip p-3 pl-3.5 overflow-hidden transition-all duration-150 ${
+              className={`relative cursor-pointer rounded-sky-chip p-3 pl-3.5 transition-all duration-150 ${
                 selected
                   ? 'bg-sky-deep/10 ring-1 ring-sky-deep/26'
                   : 'bg-white/58 ring-1 ring-white/80 hover:bg-white/80'
               }`}
             >
-              {selected && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />}
-              <div className="flex items-center justify-between gap-2">
-                <p className={`font-semibold text-sm truncate ${selected ? 'text-sky-deep' : 'text-sky-ink'}`}>{tpl.templateName}</p>
-                <span className={`inline-flex shrink-0 items-center gap-1 rounded-full ring-1 px-1.5 py-0.5 text-[10px] font-semibold ${tpl.isActive ? TONE.teal.chip : TONE.neutral.chip}`}>
+              {selected && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 rounded-l-sky-chip bg-sky-deep" />}
+              {/* items-start (not center) + the badge nudged down half a line,
+                  because template codes run long — the name wraps freely
+                  (no truncate, no line-clamp, no overflow-hidden on the card)
+                  so the full code is always readable and the card grows to
+                  fit it instead of clipping anything. flex-1 min-w-0 on the
+                  name is required for that wrap to actually happen: a flex
+                  child's default min-width is its unwrapped content width,
+                  which was pushing the Active badge out past the card edge
+                  instead of letting the long, space-less code break. */}
+              <div className="flex items-start justify-between gap-2">
+                <p className={`flex-1 min-w-0 font-semibold text-sm leading-snug wrap-break-word ${selected ? 'text-sky-deep' : 'text-sky-ink'}`}>{tpl.templateName}</p>
+                <span className={`inline-flex shrink-0 items-center gap-1 rounded-full ring-1 px-1.5 py-0.5 mt-0.5 text-[10px] font-semibold ${tpl.isActive ? TONE.teal.chip : TONE.neutral.chip}`}>
                   {tpl.isActive
                     ? <Check className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
                     : <Minus className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />}
                   {tpl.isActive ? t('admin.questionnaire.statusActive') : t('admin.questionnaire.statusOff')}
                 </span>
               </div>
-              {tpl.description && <p className="text-[10px] text-sky-ink-3 mt-1 truncate">{tpl.description}</p>}
+              {tpl.description && <p className="text-[10px] text-sky-ink-3 mt-1 leading-snug wrap-break-word">{tpl.description}</p>}
               <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
                 <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggle(tpl)} title={tpl.isActive ? 'Deactivate' : 'Activate'} aria-pressed={tpl.isActive} aria-label={tpl.isActive ? 'Deactivate template' : 'Activate template'} className="w-6 h-6">
                   {tpl.isActive ? <ToggleRight className="w-3.5 h-3.5 text-sky-teal" /> : <ToggleLeft className="w-3.5 h-3.5 text-sky-ink-3" />}

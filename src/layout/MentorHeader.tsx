@@ -135,7 +135,7 @@ const MentorHeader: React.FC = () => {
         </div>
         <div className="hidden lg:flex items-center gap-x-3">
           <LanguageToggle />
-          <ThemeToggleInline />
+          {/* <ThemeToggleInline /> */}
         </div>
         <UserDropdown />
 
@@ -205,7 +205,7 @@ const MentorHeader: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 pt-2">
               <LanguageToggle />
-              <ThemeToggleInline />
+              {/* <ThemeToggleInline /> */}
             </div>
           </div>
         </>

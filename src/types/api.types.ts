@@ -16,6 +16,8 @@ export interface GoogleLoginPayload {
     fullName: string;
     avatarUrl: string | null;
     emailVerified: boolean;
+    /** Platform-fixed role for auto-registration — BE only applies this to brand-new accounts. */
+    role: "MENTOR" | "PLAYER";
 }
 
 // Dành cho form Đăng ký

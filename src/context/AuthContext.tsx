@@ -95,6 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             ?? supabaseUser.user_metadata?.avatar_url
                             ?? null,
                         emailVerified: supabaseUser.user_metadata?.email_verified ?? false,
+                        // Web is the Mentor portal — new Google accounts created from here
+                        // are always MENTOR. Ignored by BE if the account already exists.
+                        role: 'MENTOR',
                     };
 
                     setOauthPending(true);

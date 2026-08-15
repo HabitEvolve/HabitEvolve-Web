@@ -606,62 +606,59 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
         ) : sorted.map(q => {
           const QIcon = QUESTION_TYPES.find(qt => qt.value === q.questionType)?.Icon ?? HelpCircle;
           const expanded = expandedQ === q.questionId;
+          // Meta line mirrors the Category list's mono code line — one compact
+          // row of "type · range/option count" instead of a scatter of chips.
+          const rangeMeta = (q.minValue != null || q.maxValue != null)
+            ? (q.questionType === 'Time'
+                ? `${q.minValue != null ? minutesToTime(q.minValue) : '…'}–${q.maxValue != null ? minutesToTime(q.maxValue) : '…'}`
+                : `${q.minValue ?? '…'}–${q.maxValue ?? '…'}`)
+            : null;
+          const optionMeta = isChoiceType(q.questionType) ? `${q.options.length} option${q.options.length !== 1 ? 's' : ''}` : null;
           return (
-          <SkyCard key={q.questionId} variant="admin" className="p-0 overflow-hidden sky-lift">
-            <div className="flex items-start gap-3 p-4">
-              {/* Order number and type glyph are one plate: together they say
-                  "question 3, a rating scale" in a single glance. */}
-              <span className="grid place-items-center w-7 h-7 shrink-0 rounded-[10px] bg-white/72 ring-1 ring-white/85 font-display text-[11px] font-semibold text-sky-ink-2 tabular-nums">{q.displayOrder}</span>
-              <span className={`grid place-items-center w-7 h-7 shrink-0 rounded-[10px] ring-1 ${TONE.deep.chip}`}>
-                <QIcon className="w-3.5 h-3.5" strokeWidth={2.3} aria-hidden="true" />
-              </span>
-              <div className="flex-1 min-w-0">
-                {/* The question text is what an operator reads this list by, so it
-                    is the only display-face element in the row. */}
-                <p className="font-display text-sm font-semibold leading-snug text-sky-ink">{q.questionText}</p>
-                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className={`inline-flex items-center rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${TONE.violet.chip}`}>{q.questionType}</span>
-                  {/* "Required" is something the answerer must supply — attention,
-                      not an error, so it is peach rather than red. */}
-                  {q.isRequired && (
-                    <span className={`inline-flex items-center gap-0.5 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${TONE.peach.chip}`}>
-                      <Asterisk className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
-                      {t('admin.questionnaire.requiredBadge')}
-                    </span>
-                  )}
-                  {isChoiceType(q.questionType) && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-ink-3">
-                      <ListTree className="w-2.5 h-2.5" strokeWidth={2.6} aria-hidden="true" />
-                      <span className="tabular-nums">{q.options.length}</span> option{q.options.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                  {(q.minValue != null || q.maxValue != null) && (
-                    <span className="inline-flex items-center rounded-[7px] bg-white/68 ring-1 ring-white/85 px-1.5 py-0.5 font-mono text-[10px] font-medium text-sky-ink-2 tabular-nums">
-                      {q.questionType === 'Time'
-                        ? `${q.minValue != null ? minutesToTime(q.minValue) : '…'}–${q.maxValue != null ? minutesToTime(q.maxValue) : '…'}`
-                        : `${q.minValue ?? '…'}–${q.maxValue ?? '…'}`}
-                    </span>
-                  )}
+          // Same card language as the Category list in Goal Engine Hub: a
+          // compact chip-radius plate (not a full SkyCard), a name+pill header
+          // row, one mono meta line, then a slim icon-action row.
+          <div key={q.questionId} className="relative rounded-sky-chip overflow-hidden bg-white/58 ring-1 ring-white/80 transition-colors duration-150 hover:bg-white/76">
+            <div className="p-3 pl-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="grid place-items-center w-5 h-5 shrink-0 rounded-[7px] bg-white/72 ring-1 ring-white/85 font-display text-[10px] font-semibold text-sky-ink-2 tabular-nums">{q.displayOrder}</span>
+                  <QIcon className="w-3.5 h-3.5 shrink-0 text-sky-deep" strokeWidth={2.3} aria-hidden="true" />
+                  <p className="font-semibold text-sm text-sky-ink truncate">{q.questionText}</p>
                 </div>
+                {/* "Required" reads as attention, not an error — same peach
+                    semantics as elsewhere in this file, just in the pill slot
+                    the Category card reserves for its On/Off status. */}
+                {q.isRequired && (
+                  <span className={`inline-flex items-center gap-1 shrink-0 rounded-full ring-1 px-1.5 py-0.5 text-[10px] font-semibold ${TONE.peach.chip}`}>
+                    <Asterisk className="w-2.5 h-2.5 shrink-0" strokeWidth={3} aria-hidden="true" />
+                    {t('admin.questionnaire.requiredBadge')}
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <p className="text-[10px] text-sky-ink-3 font-mono mt-1">
+                {q.questionType}
+                {optionMeta && ` · ${optionMeta}`}
+                {rangeMeta && ` · ${rangeMeta}`}
+              </p>
+              <div className="flex items-center gap-1 mt-2">
                 {isChoiceType(q.questionType) && (
-                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpandedQ(expandedQ === q.questionId ? null : q.questionId)} className="w-8 h-8" aria-expanded={expanded} aria-label={expanded ? 'Hide answer options' : 'Show answer options'}>
-                    {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <SkyButton type="button" variant="ghost" size="icon" onClick={() => setExpandedQ(expandedQ === q.questionId ? null : q.questionId)} className="w-6 h-6" aria-expanded={expanded} aria-label={expanded ? 'Hide answer options' : 'Show answer options'}>
+                    {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </SkyButton>
                 )}
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setQModal({ editing: q })} className="w-8 h-8" aria-label="Edit question"><Pencil className="w-4 h-4" /></SkyButton>
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelQ(q)} className="w-8 h-8 text-sky-rose-deep hover:bg-sky-rose/12" aria-label="Delete question"><Trash2 className="w-4 h-4" /></SkyButton>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setQModal({ editing: q })} className="w-6 h-6" aria-label="Edit question"><Pencil className="w-3.5 h-3.5" /></SkyButton>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelQ(q)} className="w-6 h-6 text-sky-rose-deep hover:bg-sky-rose/10" aria-label="Delete question"><Trash2 className="w-3.5 h-3.5" /></SkyButton>
               </div>
             </div>
             {isChoiceType(q.questionType) && expanded && (
               /* The options tray is a level deeper than the question, so it is
                   recessed rather than plated — nesting has to be legible. */
-              <div className="border-t border-white/65 bg-white/34 px-4 pb-4">
+              <div className="border-t border-white/65 bg-white/34 px-3.5 pb-3.5">
                 <OptionsPanel question={q} onRefresh={fetch} />
               </div>
             )}
-          </SkyCard>
+          </div>
           );
         })}
       </div>
@@ -788,37 +785,38 @@ export default function QuestionnaireManagement() {
           ) : templates.map(tpl => {
             const selected = selectedTpl?.templateId === tpl.templateId;
             return (
-            /* Which template is open drives the whole right-hand pane, so the
-               selection carries a rail, a lift and a tint — three cues, because
-               getting this wrong means editing the wrong questionnaire. */
+            // Same card language as the Category list in Goal Engine Hub: a
+            // compact chip-radius plate, a left rail + tint only on the
+            // selected row, a name+status-pill header, one meta line, then a
+            // slim icon-action row — no separate chevron, the row itself is
+            // the click target that drives the right-hand pane.
             <div
               key={tpl.templateId}
               onClick={() => setSelectedTpl(tpl)}
               aria-current={selected ? 'true' : undefined}
-              className={`relative cursor-pointer overflow-hidden rounded-sky-card p-4 pl-5 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              className={`relative cursor-pointer rounded-sky-chip p-3 pl-3.5 overflow-hidden transition-all duration-150 ${
                 selected
-                  ? 'bg-sky-deep/10 ring-1 ring-sky-deep/26 shadow-sky-tint'
-                  : 'bg-white/58 ring-1 ring-white/78 shadow-sky-tint hover:bg-white/76 hover:-translate-y-px'
+                  ? 'bg-sky-deep/10 ring-1 ring-sky-deep/26'
+                  : 'bg-white/58 ring-1 ring-white/80 hover:bg-white/80'
               }`}
             >
-              <span className={`absolute left-0 top-0 h-full w-[3px] transition-colors ${selected ? 'bg-sky-deep' : 'bg-transparent'}`} aria-hidden="true" />
-              <div className="flex items-start justify-between gap-2">
-                <p className={`font-display text-sm font-semibold leading-tight ${selected ? 'text-sky-deep' : 'text-sky-ink'}`}>{tpl.templateName}</p>
-                <span className={`inline-flex shrink-0 items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${tpl.isActive ? TONE.teal.chip : TONE.neutral.chip}`}>
+              {selected && <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep" />}
+              <div className="flex items-center justify-between gap-2">
+                <p className={`font-semibold text-sm truncate ${selected ? 'text-sky-deep' : 'text-sky-ink'}`}>{tpl.templateName}</p>
+                <span className={`inline-flex shrink-0 items-center gap-1 rounded-full ring-1 px-1.5 py-0.5 text-[10px] font-semibold ${tpl.isActive ? TONE.teal.chip : TONE.neutral.chip}`}>
                   {tpl.isActive
                     ? <Check className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
                     : <Minus className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />}
                   {tpl.isActive ? t('admin.questionnaire.statusActive') : t('admin.questionnaire.statusOff')}
                 </span>
               </div>
-              {tpl.description && <p className="mt-1.5 line-clamp-2 text-xs font-medium text-sky-ink-2">{tpl.description}</p>}
-              <div className="mt-3 flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggle(tpl)} title={tpl.isActive ? 'Deactivate' : 'Activate'} aria-pressed={tpl.isActive} aria-label={tpl.isActive ? 'Deactivate template' : 'Activate template'} className="w-7 h-7">
-                  {tpl.isActive ? <ToggleRight className="w-4 h-4 text-sky-teal" /> : <ToggleLeft className="w-4 h-4 text-sky-ink-3" />}
+              {tpl.description && <p className="text-[10px] text-sky-ink-3 mt-1 truncate">{tpl.description}</p>}
+              <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggle(tpl)} title={tpl.isActive ? 'Deactivate' : 'Activate'} aria-pressed={tpl.isActive} aria-label={tpl.isActive ? 'Deactivate template' : 'Activate template'} className="w-6 h-6">
+                  {tpl.isActive ? <ToggleRight className="w-3.5 h-3.5 text-sky-teal" /> : <ToggleLeft className="w-3.5 h-3.5 text-sky-ink-3" />}
                 </SkyButton>
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setTplModal({ editing: tpl })} className="w-7 h-7" aria-label="Edit template"><Pencil className="w-4 h-4" /></SkyButton>
-                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelTpl(tpl)} className="w-7 h-7 text-sky-rose-deep hover:bg-sky-rose/12" aria-label="Delete template"><Trash2 className="w-4 h-4" /></SkyButton>
-                <ChevronRight className={`ml-auto w-4 h-4 transition-transform ${selected ? 'text-sky-deep translate-x-0.5' : 'text-sky-ink-3'}`} aria-hidden="true" />
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setTplModal({ editing: tpl })} className="w-6 h-6" aria-label="Edit template"><Pencil className="w-3.5 h-3.5" /></SkyButton>
+                <SkyButton type="button" variant="ghost" size="icon" onClick={() => setDelTpl(tpl)} className="w-6 h-6 text-sky-rose-deep hover:bg-sky-rose/10" aria-label="Delete template"><Trash2 className="w-3.5 h-3.5" /></SkyButton>
               </div>
             </div>
             );

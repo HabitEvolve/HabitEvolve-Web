@@ -18,6 +18,16 @@ export interface WalletDto {
     updatedAt: string | null;
 }
 
+// POST /api/me/wallet/grant  — [DEMO/TEST] direct wallet credit, no reward-history trail.
+// Admin console reuses this to manually grant currency from the User Detail page.
+export interface GrantWalletPayload {
+    userId: number;
+    gold?: number;
+    bonusGold?: number;
+    gems?: number;
+    mentorGold?: number;
+}
+
 // GET /api/me/daily-streak?userId=  — matches BE DailyStreakDto (DailyRuntimeDtos.cs)
 export interface DailyStreakDto {
     streakId: number;

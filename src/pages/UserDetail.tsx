@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import Chart from "react-apexcharts";
@@ -6,12 +7,14 @@ import type { ApexOptions } from "apexcharts";
 import {
   ArrowLeft, Coins, Flame, ImageOff, Loader2, Swords, ClipboardList,
   BarChart3, History as HistoryIcon, FileClock, UserRoundCog, Camera, Users as UsersIcon, Trophy,
-  Gem, Wallet, ShieldCheck, ShieldOff, AlertTriangle, ListChecks, Target, Star,
+  Gem, Wallet, ShieldCheck, ShieldOff, AlertTriangle, ListChecks, Target, Star, Plus, X,
 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import PageHeader from "../components/common/PageHeader";
 import Pagination from "../components/common/SkyPagination";
+import SkyCard from "../components/ui/card/SkyCard";
+import SkyButton from "../components/ui/button/SkyButton";
 import adminUserApi from "../api/adminUserApi";
 import playerDataApi from "../api/playerDataApi";
 import { adminAuditApi } from "../api/adminAuditApi";
@@ -130,6 +133,99 @@ const EmptyState = ({ icon, title, subtitle }: { icon: React.ReactNode; title: s
   </div>
 );
 
+// ── GRANT CURRENCY MODAL ─────────────────────────────────────────────────────
+// [DEMO/TEST] Manually credits a target user's wallet via the reused player-facing
+// grant endpoint (POST /me/wallet/grant) — no reward-history trail, not audit-logged.
+const GrantWalletModal = ({ userId, onSave, onClose }: {
+  userId: number;
+  onSave(wallet: WalletDto): void;
+  onClose(): void;
+}) => {
+  const [gold, setGold] = useState(0);
+  const [bonusGold, setBonusGold] = useState(0);
+  const [gems, setGems] = useState(0);
+  const [mentorGold, setMentorGold] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (gold === 0 && bonusGold === 0 && gems === 0 && mentorGold === 0) {
+      setErr("Enter at least one non-zero amount.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    try {
+      const res = await playerDataApi.grantWallet({ userId, gold, bonusGold, gems, mentorGold });
+      if (res.success && res.data) {
+        onSave(res.data);
+      } else {
+        setErr(res.message ?? "Grant failed.");
+      }
+    } catch (ex) {
+      setErr(errMsg(ex) ?? "Grant failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 bg-sky-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <SkyCard variant="admin" className="p-0 overflow-hidden w-full max-w-md">
+        <div className="relative flex items-center gap-3 p-5 bg-sky-peach/14 border-b border-white/70 overflow-hidden">
+          <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1.5 bg-sky-peach" />
+          <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 bg-sky-peach/20 ring-sky-peach/32 text-sky-peach-deep">
+            <Coins className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className={eyebrow}>Demo / test tool</p>
+            <h2 className="font-display text-lg font-semibold text-sky-ink leading-tight truncate">Grant Currency</h2>
+          </div>
+          <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} className="shrink-0"><X className="w-5 h-5" /></SkyButton>
+        </div>
+        <form onSubmit={submit} className="p-5 space-y-3">
+          {err && (
+            <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/10 ring-1 ring-sky-rose/26 pl-4 pr-3 py-2.5 flex items-center gap-2">
+              <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-sky-rose-deep" strokeWidth={2.4} aria-hidden="true" />
+              <span className="text-xs font-semibold text-sky-rose-deep">{err}</span>
+            </div>
+          )}
+          <p className="text-xs text-sky-ink-2">
+            Credits the wallet directly — bypasses the normal reward flow and is not written to reward history. For testing only.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">Gold</label>
+              <input type="number" value={gold} onChange={(e) => setGold(Number(e.target.value))} className={`${inputCls} w-full`} />
+            </div>
+            <div>
+              <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">Bonus Gold</label>
+              <input type="number" value={bonusGold} onChange={(e) => setBonusGold(Number(e.target.value))} className={`${inputCls} w-full`} />
+            </div>
+            <div>
+              <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">Gems</label>
+              <input type="number" value={gems} onChange={(e) => setGems(Number(e.target.value))} className={`${inputCls} w-full`} />
+            </div>
+            <div>
+              <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">M-Gold</label>
+              <input type="number" value={mentorGold} onChange={(e) => setMentorGold(Number(e.target.value))} className={`${inputCls} w-full`} />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+            <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Grant
+            </SkyButton>
+          </div>
+        </form>
+      </SkyCard>
+    </div>,
+    document.body,
+  );
+};
+
 // ── TAB: OVERVIEW ─────────────────────────────────────────────────────────────
 const OverviewTab = ({
   user,
@@ -148,6 +244,7 @@ const OverviewTab = ({
 
   const [statusForm, setStatusForm] = useState<UpdateUserStatusPayload>({ status: user.status, reason: "" });
   const [savingStatus, setSavingStatus] = useState(false);
+  const [showGrantModal, setShowGrantModal] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -246,7 +343,12 @@ const OverviewTab = ({
 
       {/* ── Wallet + Streak ──────────────────────────────────────────────── */}
       <div>
-        <p className={`${eyebrow} mb-2.5`}>Wallet &amp; Streak</p>
+        <div className="flex items-center justify-between mb-2.5">
+          <p className={eyebrow}>Wallet &amp; Streak</p>
+          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setShowGrantModal(true)}>
+            <Plus className="w-3.5 h-3.5" /> Grant Currency
+          </SkyButton>
+        </div>
         {detailLoading ? (
           <CardSkeletonGrid count={3} />
         ) : (
@@ -347,6 +449,17 @@ const OverviewTab = ({
           </div>
         )}
       </div>
+      {showGrantModal && (
+        <GrantWalletModal
+          userId={user.userId}
+          onSave={(updated) => {
+            setWallet(updated);
+            setShowGrantModal(false);
+            alert.success("Currency granted.");
+          }}
+          onClose={() => setShowGrantModal(false)}
+        />
+      )}
     </div>
   );
 };

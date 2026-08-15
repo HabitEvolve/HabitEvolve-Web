@@ -32,9 +32,9 @@ const inputCls =
 const chipInactive = "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px";
 const chipActive = "bg-linear-to-b from-sky-peach to-sky-peach-deep text-white shadow-sky-chip";
 
-const fieldLabel ="block mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const fieldLabel ="block mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2";
 // Step markers break the long form into three readable acts.
-const stepLabel = "flex items-center gap-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
+const stepLabel = "flex items-center gap-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2";
 
 const DIFFICULTIES: QuestDifficulty[] = ["EASY", "NORMAL", "HARD"];
 const VERIFICATION_TAGS: VerificationTag[] = ["FACE", "ITEM", "ACTION"];
@@ -502,7 +502,7 @@ export default function QuestForgeTab() {
                     </p>
                     <div className="relative space-y-4">
                         <div>
-                            <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">Difficulty *</label>
+                            <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">Difficulty *</label>
                             <div className="grid grid-cols-3 gap-2">
                                 {DIFFICULTIES.map((diff) => {
                                     const s = DIFF_STYLE[diff];
@@ -629,7 +629,7 @@ export default function QuestForgeTab() {
                         </div>
 
                         <div>
-                            <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">
+                            <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">
                                 {t("mentor.questCommand.forge.verificationTagsLabel")}
                             </label>
                             <div className="flex flex-wrap gap-2">

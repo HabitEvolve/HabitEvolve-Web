@@ -352,7 +352,9 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
     iconUrl: editing?.iconUrl ?? "",
     price: editing?.price ?? 100,
     currency,
-    damageBonus: editing?.damageBonus ?? 1,
+    // Damage bonus is no longer admin-editable — preserve whatever an existing
+    // item already had (legacy data), default new items to 0 (no combat effect).
+    damageBonus: editing?.damageBonus ?? 0,
     isDefault: editing?.isDefault ?? false,
     description: editing?.description ?? "",
   });
@@ -389,10 +391,7 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><Label>Price ({currency})</Label><input type="number" min={1} value={positiveIntDisplay(form.price)} onChange={e => setForm(f => ({ ...f, price: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
-        <div><Label>Damage Bonus</Label><input type="number" min={1} value={positiveIntDisplay(form.damageBonus)} onChange={e => setForm(f => ({ ...f, damageBonus: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
-      </div>
+      <div><Label>Price ({currency})</Label><input type="number" min={1} value={positiveIntDisplay(form.price)} onChange={e => setForm(f => ({ ...f, price: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
       <label className="flex items-center gap-2 text-sm font-medium text-sky-ink-2 cursor-pointer rounded-sky-chip bg-white/42 ring-1 ring-white/70 px-4 py-3">
         <input type="checkbox" checked={form.isDefault} onChange={e => setForm(f => ({ ...f, isDefault: e.target.checked }))} className="w-4 h-4 accent-sky-deep" />
         Default — every player already owns this for free, no purchase needed
@@ -519,7 +518,7 @@ function CombatShopTab({ onAlert }: { onAlert: (a: { type: "success" | "error"; 
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead><tr className="sky-table-head">
-              {["Icon", "Code", "Name", "Kind", "Price", "Damage", "Status", ""].map(h => <th key={h} className="px-3 py-2.5 text-left">{h}</th>)}
+              {["Icon", "Code", "Name", "Kind", "Price", "Status", ""].map(h => <th key={h} className="px-3 py-2.5 text-left">{h}</th>)}
             </tr></thead>
             <tbody className="sky-stagger">
               {visible.map(item => {
@@ -543,7 +542,6 @@ function CombatShopTab({ onAlert }: { onAlert: (a: { type: "success" | "error"; 
                         <PriceTag amount={item.price} currency={item.currency} />
                       )}
                     </td>
-                    <td className="px-3 py-2 text-xs font-semibold text-sky-dmg-deep tabular-nums">+{item.damageBonus} DMG</td>
                     <td className="px-3 py-2"><StatusPill active={item.isActive} /></td>
                     <td className="px-3 py-2">
                       <div className="flex items-center justify-end gap-1.5 opacity-45 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -555,7 +553,7 @@ function CombatShopTab({ onAlert }: { onAlert: (a: { type: "success" | "error"; 
                 );
               })}
               {visible.length === 0 && (
-                <tr><td colSpan={8} className="py-14 text-center">
+                <tr><td colSpan={7} className="py-14 text-center">
                   <span className="grid place-items-center w-14 h-14 mx-auto mb-3 rounded-full bg-sky-deep/8 text-sky-deep"><Swords className="w-6 h-6" /></span>
                   <p className="font-display text-base font-semibold text-sky-ink">Nothing in the {SHOP_LABEL[subTab]} Shop</p>
                   <p className="text-xs font-medium text-sky-ink-3 mt-1">Author a Character or Spell to put it in front of players.</p>
@@ -737,7 +735,7 @@ export default function AdminEconomyHub() {
 
   const tabs: { id: TabId; label: string; Icon: LucideIcon }[] = [
     { id: "items", label: "Item Catalog", Icon: Coins },
-    { id: "shop", label: "Combat Shop", Icon: Swords },
+    { id: "shop", label: "Shop", Icon: Swords },
     { id: "loot", label: "Loot Tables", Icon: Dices },
   ];
 

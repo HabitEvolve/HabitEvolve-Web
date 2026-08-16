@@ -26,7 +26,13 @@ export default function DatePicker({
   useEffect(() => {
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
-      static: true,
+      // `static: true` keeps the calendar DOM-nested near the input instead of appended to
+      // <body>, which traps its z-index inside whatever local stacking context the input
+      // happens to sit in — e.g. PageHeader's `sky-in` entrance animation leaves a permanent
+      // `transform: translateY(0)` (animation-fill-mode: both) that creates one, so any
+      // sibling section painted later in the DOM (like the dashboard's card grid) covers the
+      // calendar regardless of its own z-index. Default (non-static) mode appends the
+      // calendar straight to <body>, escaping that trap entirely.
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
       defaultDate,

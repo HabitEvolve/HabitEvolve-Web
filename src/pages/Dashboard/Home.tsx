@@ -560,7 +560,9 @@ export default function Home() {
                         <div className="relative mt-5">
                             {loading && !summary ? <ChartSkeleton /> : economyByCurrency.length > 0 ? (
                                 <div className="max-w-full overflow-x-auto">
-                                    <div className="min-w-100">
+                                    {/* pl matches the CardHead icon (w-8) + gap-2.5 above, so the chart's own
+                                        legend/bars line up under the title text instead of sitting flush left. */}
+                                    <div className="min-w-100 pl-10.5">
                                         <Chart options={economyOptions} series={economySeries} type="bar" height={280} />
                                     </div>
                                 </div>
@@ -581,7 +583,7 @@ export default function Home() {
                         <div className="relative mt-5">
                             {loading && !summary ? <ChartSkeleton /> : questByType.length > 0 ? (
                                 <div className="max-w-full overflow-x-auto">
-                                    <div className="min-w-100">
+                                    <div className="min-w-100 pl-10.5">
                                         <Chart options={questOptions} series={questSeries} type="bar" height={280} />
                                     </div>
                                 </div>

@@ -138,6 +138,7 @@ export interface QuestDto {
     damage: number;
     rewardMGold: number;      // M-Gold rewarded on approval (replaces rewardGold)
     proofType?: string;
+    aiCheckEnabled: boolean;
     isMandatory: boolean;
     status: QuestStatus;
     startedAt?: string;
@@ -192,6 +193,10 @@ export interface CreateMentorQuestRequest {
     howToSubmit?: string;
     verificationTags?: string;
     cvQuestType?: string;
+    /** Opt this quest into AI Check — proof submitted for it always goes through AI first, but AI
+     *  only suggests (confidence/reasoning); the Mentor still makes the final approve/reject call.
+     *  BE rejects this when proofType is SELF_CHECK or the mentor's package has no AI Verification. */
+    aiCheckEnabled?: boolean;
 }
 
 export interface CreatePartyQuestRequest {
@@ -208,6 +213,8 @@ export interface CreatePartyQuestRequest {
     howToSubmit?: string;
     verificationTags?: string;
     cvQuestType?: string;
+    /** Opt this quest into AI Check — see CreateMentorQuestRequest.aiCheckEnabled. */
+    aiCheckEnabled?: boolean;
 }
 
 export interface CreatePartyQuestResultDto {

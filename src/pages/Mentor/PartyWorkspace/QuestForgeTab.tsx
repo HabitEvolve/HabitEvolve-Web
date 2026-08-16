@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router";
 import { Trans, useTranslation } from "react-i18next";
 import {
     Flame, Swords, Coins, Target, AlertTriangle, User, Users, Zap,
-    SlidersHorizontal, CalendarClock, Info,
+    SlidersHorizontal, CalendarClock, Info, Sparkles,
 } from "lucide-react";
 import mentorApi from "../../../api/mentorApi";
 import partyMentorApi from "../../../api/mentorPartyApi";
@@ -57,6 +57,7 @@ const emptyForm = {
     rewardMGold: 30,
     proofType: "PHOTO",
     isMandatory: false,
+    aiCheckEnabled: false,
     deadlineAt: "",
     howToSubmit: "",
     verificationTags: "",
@@ -125,9 +126,10 @@ interface PreviewProps {
     currentRange?: MentorQuestRangeDto;
     assignMode: AssignMode;
     targetLabel: string;
+    aiEligible: boolean;
 }
 
-const QuestPreview = ({ form, assignMode, targetLabel }: PreviewProps) => {
+const QuestPreview = ({ form, assignMode, targetLabel, aiEligible }: PreviewProps) => {
     const { t } = useTranslation();
     const diff = DIFF_STYLE[form.difficulty];
     const hasContent = form.title.trim().length > 0;
@@ -168,11 +170,18 @@ const QuestPreview = ({ form, assignMode, targetLabel }: PreviewProps) => {
                         <Target className="w-3.5 h-3.5 shrink-0 text-sky-ink-3" aria-hidden="true" />
                         <span className="truncate">{targetLabel}</span>
                     </span>
-                    {form.isMandatory && (
-                        <span className="inline-flex items-center gap-1 shrink-0 text-sky-peach-deep">
-                            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.questCommand.forge.previewMandatoryBadge")}
-                        </span>
-                    )}
+                    <span className="inline-flex items-center gap-2 shrink-0">
+                        {aiEligible && form.aiCheckEnabled && (
+                            <span className="inline-flex items-center gap-1 text-sky-violet-deep">
+                                <Sparkles className="w-3.5 h-3.5" aria-hidden="true" /> AI
+                            </span>
+                        )}
+                        {form.isMandatory && (
+                            <span className="inline-flex items-center gap-1 text-sky-peach-deep">
+                                <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.questCommand.forge.previewMandatoryBadge")}
+                            </span>
+                        )}
+                    </span>
                 </div>
                 <div className="mt-2 pt-2 border-t border-dashed border-sky-ink/15 text-[11px] font-medium text-sky-ink-2 flex items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1 min-w-0">
@@ -229,6 +238,12 @@ export default function QuestForgeTab() {
     const allowedProofTypes: string[] = activeSub?.package?.proofTypes
         ? activeSub.package.proofTypes.split(",").map((s) => s.trim())
         : ["PHOTO", "VIDEO", "TIMER", "SCREENSHOT", "GPS", "STEP_COUNTER", "TEXT_LOG", "SELF_CHECK"];
+
+    // AI Check eligibility mirrors the BE guard in CreateMentorQuest/CreatePartyQuestCommandHandler:
+    // the mentor's plan must include AI Verification, and SELF_CHECK is always auto-approved so
+    // opting it into AI Check would never take effect.
+    const packageSupportsAi = Boolean(activeSub?.package?.aiVerificationBossModes);
+    const aiEligible = packageSupportsAi && form.proofType !== "SELF_CHECK";
 
     // Sync default proof type when subscription loads
     useEffect(() => {
@@ -312,6 +327,7 @@ export default function QuestForgeTab() {
                     rewardMGold: form.rewardMGold,
                     proofType: form.proofType,
                     isMandatory: form.isMandatory,
+                    aiCheckEnabled: aiEligible && form.aiCheckEnabled,
                     deadlineAt: buildDeadline(),
                     howToSubmit: form.howToSubmit.trim() || undefined,
                     verificationTags: form.verificationTags || undefined,
@@ -336,6 +352,7 @@ export default function QuestForgeTab() {
                     rewardMGold: form.rewardMGold,
                     proofType: form.proofType,
                     isMandatory: form.isMandatory,
+                    aiCheckEnabled: aiEligible && form.aiCheckEnabled,
                     deadlineAt: buildDeadline(),
                     howToSubmit: form.howToSubmit.trim() || undefined,
                     verificationTags: form.verificationTags || undefined,
@@ -601,6 +618,31 @@ export default function QuestForgeTab() {
                                     />
                                 </div>
                             </div>
+
+                            <label
+                                className={`mt-3 flex flex-wrap items-center gap-3 rounded-sky-chip bg-white/50 ring-1 ring-white/70 px-3 py-2.5 ${
+                                    aiEligible ? "cursor-pointer select-none" : "cursor-not-allowed opacity-60"
+                                }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={aiEligible && form.aiCheckEnabled}
+                                    disabled={!aiEligible}
+                                    onChange={(e) => handleField("aiCheckEnabled", e.target.checked)}
+                                    className="w-4 h-4 rounded accent-sky-violet-deep"
+                                />
+                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-ink">
+                                    <Sparkles className="w-3.5 h-3.5 text-sky-violet-deep" aria-hidden="true" />
+                                    {t("mentor.questCommand.forge.aiCheckLabel")}
+                                </span>
+                                <span className="w-full text-[11px] font-medium text-sky-ink-3 wrap-break-word">
+                                    {!packageSupportsAi
+                                        ? t("mentor.questCommand.forge.aiCheckDisabledPackage")
+                                        : form.proofType === "SELF_CHECK"
+                                            ? t("mentor.questCommand.forge.aiCheckDisabledSelfCheck")
+                                            : t("mentor.questCommand.forge.aiCheckHint")}
+                                </span>
+                            </label>
                         </div>
 
                         <div>
@@ -696,7 +738,7 @@ export default function QuestForgeTab() {
 
             {/* ── Player Preview ──────────────────────────────────────── */}
             <div className="lg:col-span-3 min-w-0">
-                <QuestPreview form={form} currentRange={currentRange} assignMode={assignMode} targetLabel={targetLabel} />
+                <QuestPreview form={form} currentRange={currentRange} assignMode={assignMode} targetLabel={targetLabel} aiEligible={aiEligible} />
             </div>
 
         </div>

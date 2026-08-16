@@ -32,10 +32,12 @@ const errMsg = (e: unknown) =>
 
 const toIso = (d: Date) => d.toISOString().slice(0, 10);
 
+// Default filter = the calendar month containing today (1st → last day), not a rolling
+// 30-day window — e.g. on 2026-08-16 that's 2026-08-01 → 2026-08-31.
 const defaultRange = () => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 29);
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     return { startDate: toIso(start), endDate: toIso(end) };
 };
 

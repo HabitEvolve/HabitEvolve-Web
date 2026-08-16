@@ -14,6 +14,7 @@ import { adminPracticalTaskApi } from '../api/adminPracticalTaskApi';
 import { adminRecommendationRuleApi } from '../api/adminRecommendationRuleApi';
 import SkyCard from '../components/ui/card/SkyCard';
 import SkyButton from '../components/ui/button/SkyButton';
+import { positiveIntDisplay, parsePositiveInt } from '../utils/numberInput';
 import {
   GoalCategoryDto, GoalCategoryPayload,
   GoalDto, GoalPayload, MeasurementType,
@@ -213,7 +214,7 @@ function CategoryFormModal({ editing, onSave, onClose }: {
               </div>
               <div>
                 <label className={fieldLabel}>Display Order</label>
-                <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
+                <input type="number" min={1} value={positiveIntDisplay(order)} onChange={e => setOrder(parsePositiveInt(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div>
@@ -291,7 +292,7 @@ function GoalFormModal({ editing, defaultCategoryCode, onSave, onClose }: {
               </div>
               <div>
                 <label className={fieldLabel}>Display Order</label>
-                <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
+                <input type="number" min={1} value={positiveIntDisplay(order)} onChange={e => setOrder(parsePositiveInt(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div>
@@ -414,7 +415,7 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               </div>
               <div>
                 <label className={fieldLabel}>Rank (1-20)</label>
-                <input type="number" min={1} max={20} value={rank} onChange={e => setRank(Number(e.target.value))} className={inputCls} />
+                <input type="number" min={1} max={20} value={positiveIntDisplay(rank)} onChange={e => setRank(parsePositiveInt(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

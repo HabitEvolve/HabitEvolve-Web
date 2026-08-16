@@ -18,6 +18,7 @@ import PageHeader from "../components/common/PageHeader";
 import { adminBossApi } from "../api/adminBossApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
+import { positiveIntDisplay, parsePositiveInt } from "../utils/numberInput";
 import StatusBadge from "../components/common/StatusBadge";
 import { FilterDropdown } from "../components/common/FilterDropdown";
 import type { FilterField } from "../hooks/useTableFilters";
@@ -164,9 +165,11 @@ const ModeFieldset = ({ mode, value, onChange }: {
 }) => {
   const { t } = useTranslation();
   const c = MODE_CFG[mode] ?? MODE_CFG.Easy;
+  // min > 0 fields use the empty-while-typing display trick (0 is never a valid
+  // value there anyway); min = 0 fields keep plain Number() since 0 is legit.
   const num = (k: keyof BossModeInput, min = 0) => (
-    <input type="number" min={min} value={value[k] as number}
-      onChange={e => onChange({ [k]: Number(e.target.value) } as Partial<BossModeInput>)}
+    <input type="number" min={min} value={min > 0 ? positiveIntDisplay(value[k] as number) : (value[k] as number)}
+      onChange={e => onChange({ [k]: min > 0 ? parsePositiveInt(e.target.value, min) : Number(e.target.value) } as Partial<BossModeInput>)}
       className={inputCls} />
   );
   return (
@@ -610,34 +613,34 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>{t("admin.bossManagement.modesModal.partyMinLabel")}</Label>
-                    <input type="number" min={1} value={form.partyMin}
-                      onChange={e => setN("partyMin", Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(form.partyMin)}
+                      onChange={e => setN("partyMin", parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                   <div>
                     <Label>{t("admin.bossManagement.modesModal.partyMaxLabel")}</Label>
-                    <input type="number" min={1} value={form.partyMax}
-                      onChange={e => setN("partyMax", Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(form.partyMax)}
+                      onChange={e => setN("partyMax", parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                 </div>
 
                 {/* bossHp */}
                 <div>
                   <Label>{t("admin.bossManagement.modesModal.bossHpLabel")}</Label>
-                  <input type="number" min={1} value={form.bossHp}
-                    onChange={e => setN("bossHp", Number(e.target.value))} className={inputCls} />
+                  <input type="number" min={1} value={positiveIntDisplay(form.bossHp)}
+                    onChange={e => setN("bossHp", parsePositiveInt(e.target.value))} className={inputCls} />
                 </div>
 
                 {/* quest limits */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>{t("admin.bossManagement.modesModal.maxQuestsLabel")}</Label>
-                    <input type="number" min={1} value={form.maxQuestPerMemberPerDay}
-                      onChange={e => setN("maxQuestPerMemberPerDay", Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(form.maxQuestPerMemberPerDay)}
+                      onChange={e => setN("maxQuestPerMemberPerDay", parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                   <div>
                     <Label>{t("admin.bossManagement.modesModal.maxPartyQuestsLabel")}</Label>
-                    <input type="number" min={1} value={form.maxPartyQuestPerWeek}
-                      onChange={e => setN("maxPartyQuestPerWeek", Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(form.maxPartyQuestPerWeek)}
+                      onChange={e => setN("maxPartyQuestPerWeek", parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                 </div>
 
@@ -645,8 +648,8 @@ const BossModesModal = ({ templateId, templateName, onClose, onAlert }: BossMode
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>{t("admin.bossManagement.modesModal.maxDamageLabel")}</Label>
-                    <input type="number" min={1} value={form.maxDamagePerQuest}
-                      onChange={e => setN("maxDamagePerQuest", Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(form.maxDamagePerQuest)}
+                      onChange={e => setN("maxDamagePerQuest", parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                   <div>
                     <Label>

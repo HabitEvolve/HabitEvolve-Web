@@ -21,6 +21,7 @@ import type {
     CreatePartyQuestRequest,
     VerificationTag,
 } from "../../../types/mentor.types";
+import { positiveIntDisplay, parsePositiveInt } from "../../../utils/numberInput";
 
 // sky-peach stays this tab's signature accent (Quest Forge), consistent with
 // the "each Mentor feature gets its own accent inside the shared system"
@@ -557,8 +558,8 @@ export default function QuestForgeTab() {
                                         type="number"
                                         min={currentRange?.damageMin ?? 1}
                                         max={currentRange?.damageMax}
-                                        value={form.damage}
-                                        onChange={(e) => handleField("damage", parseInt(e.target.value) || 0)}
+                                        value={positiveIntDisplay(form.damage)}
+                                        onChange={(e) => handleField("damage", parsePositiveInt(e.target.value, currentRange?.damageMin ?? 1))}
                                         className={`${inputCls} pl-9 tabular-nums`}
                                     />
                                 </div>
@@ -578,8 +579,8 @@ export default function QuestForgeTab() {
                                         type="number"
                                         min={currentRange?.mGoldMin ?? 1}
                                         max={currentRange?.mGoldMax}
-                                        value={form.rewardMGold}
-                                        onChange={(e) => handleField("rewardMGold", parseInt(e.target.value) || 0)}
+                                        value={positiveIntDisplay(form.rewardMGold)}
+                                        onChange={(e) => handleField("rewardMGold", parsePositiveInt(e.target.value, currentRange?.mGoldMin ?? 1))}
                                         className={`${inputCls} pl-9 tabular-nums`}
                                     />
                                 </div>

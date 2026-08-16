@@ -17,6 +17,7 @@ import PageHeader from '../components/common/PageHeader';
 import { FilterDropdown } from '../components/common/FilterDropdown';
 import type { FilterField } from '../hooks/useTableFilters';
 import { MONSTER_ROSTER, spriteAvatarUrl } from '../data/monsterRoster';
+import { positiveIntDisplay, parsePositiveInt } from '../utils/numberInput';
 
 /** icon field is either an emoji ("🐉") or a Supabase https:// URL uploaded via /icon. */
 const isIconUrl = (icon: string | null | undefined): icon is string => !!icon && /^https?:\/\//.test(icon);
@@ -269,8 +270,8 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                   <label className={fieldLabel}>{t('admin.dailyBossManagement.form.hpMinLabel')}</label>
                   <input
                     type="number" min={1}
-                    value={form.hpMin}
-                    onChange={e => set('hpMin', Number(e.target.value))}
+                    value={positiveIntDisplay(form.hpMin)}
+                    onChange={e => set('hpMin', parsePositiveInt(e.target.value))}
                     className={`${inputCls} tabular-nums`}
                   />
                 </div>
@@ -278,8 +279,8 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                   <label className={fieldLabel}>{t('admin.dailyBossManagement.form.hpMaxLabel')}</label>
                   <input
                     type="number" min={1}
-                    value={form.hpMax}
-                    onChange={e => set('hpMax', Number(e.target.value))}
+                    value={positiveIntDisplay(form.hpMax)}
+                    onChange={e => set('hpMax', parsePositiveInt(e.target.value))}
                     className={`${inputCls} tabular-nums`}
                   />
                 </div>

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Coins, Swords, Dices, Sparkles, Plus, Pencil, X, Save, Trash2, Loader2,
   Check, Minus, AlertTriangle, Gem, Package, Star, Crown, Inbox,
-  ShoppingBag, Zap,
+  ShoppingBag, Zap, Upload, Image as ImageIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
@@ -13,10 +13,12 @@ import PageHeader from "../components/common/PageHeader";
 import { adminItemApi } from "../api/adminItemApi";
 import { adminCombatItemApi } from "../api/adminCombatItemApi";
 import { adminLootTableApi } from "../api/adminLootTableApi";
+import { uploadApi } from "../api/uploadApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import { FilterDropdown } from "../components/common/FilterDropdown";
 import type { FilterField } from "../hooks/useTableFilters";
+import { positiveIntDisplay, parsePositiveInt } from "../utils/numberInput";
 import type {
   ItemDefinitionDto, CreateItemPayload,
   CombatItemDefinitionDto, CombatItemKind, CombatItemCurrency, CreateCombatItemPayload,
@@ -125,6 +127,55 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   );
 }
 
+// Icon field shared by Item Catalog + Combat Shop forms — an admin can either
+// type an emoji straight in (still just text, no upload needed) or pick an
+// image from their device, which uploads client-side to Supabase Storage
+// (mirrors the avatar-upload pattern in EditProfile.tsx) and drops the
+// resulting public URL into the same field. Bucket "game-assets" matches
+// where the BE's own item-icon upload endpoint writes cosmetic icons.
+function IconUploadField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState("");
+  const isImageUrl = /^https?:\/\//.test(value);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setErr("");
+    try {
+      const url = await uploadApi.uploadImage(file, "game-assets");
+      if (url) onChange(url);
+      else setErr("Upload failed.");
+    } catch {
+      setErr("Upload failed.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <Label>Icon (emoji, or upload an image)</Label>
+      <div className="flex items-center gap-2">
+        <span className="grid place-items-center w-11 h-11 shrink-0 rounded-sky-chip bg-white/60 ring-1 ring-white/80 text-lg overflow-hidden">
+          {isImageUrl
+            ? <img src={value} alt="" className="w-full h-full object-cover" />
+            : value || <ImageIcon className="w-4 h-4 text-sky-ink-3" />}
+        </span>
+        <input value={isImageUrl ? "" : value} onChange={e => onChange(e.target.value)} className={`${inputCls} flex-1 min-w-0`} placeholder="🥷" />
+        <SkyButton type="button" variant="secondary" size="icon" onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label="Upload icon image">
+          {uploading ? <Spinner size={14} /> : <Upload className="w-3.5 h-3.5" />}
+        </SkyButton>
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      </div>
+      {err && <p className="mt-1 text-[11px] font-semibold text-sky-rose-deep">{err}</p>}
+    </div>
+  );
+}
+
 // ═══════════════════════ TAB A — ITEM CATALOG ═══════════════════════════════
 function ItemForm({ editing, onSave, onClose }: { editing: ItemDefinitionDto | null; onSave: (p: CreateItemPayload) => Promise<void>; onClose: () => void }) {
   const [form, setForm] = useState<CreateItemPayload>({
@@ -147,10 +198,8 @@ function ItemForm({ editing, onSave, onClose }: { editing: ItemDefinitionDto | n
   return (
     <form onSubmit={submit} className="space-y-3">
       {err && <ErrorNote>{err}</ErrorNote>}
-      <div className="grid grid-cols-2 gap-3">
-        <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="SKIN_NINJA" /></div>
-        <div><Label>Icon (emoji/URL)</Label><input value={form.iconUrl} onChange={e => setForm(f => ({ ...f, iconUrl: e.target.value }))} className={inputCls} placeholder="🥷" /></div>
-      </div>
+      <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="SKIN_NINJA" /></div>
+      <IconUploadField value={form.iconUrl} onChange={url => setForm(f => ({ ...f, iconUrl: url }))} />
       <div><Label>Name *</Label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} /></div>
       <div><Label>Description</Label><textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className={`${inputCls} resize-none`} /></div>
       <div className="grid grid-cols-2 gap-3">
@@ -303,7 +352,7 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
     iconUrl: editing?.iconUrl ?? "",
     price: editing?.price ?? 100,
     currency,
-    damageBonus: editing?.damageBonus ?? 0,
+    damageBonus: editing?.damageBonus ?? 1,
     isDefault: editing?.isDefault ?? false,
     description: editing?.description ?? "",
   });
@@ -322,10 +371,8 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
   return (
     <form onSubmit={submit} className="space-y-3">
       {err && <ErrorNote>{err}</ErrorNote>}
-      <div className="grid grid-cols-2 gap-3">
-        <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="CHAR_NINJA" /></div>
-        <div><Label>Icon (emoji/URL)</Label><input value={form.iconUrl ?? ""} onChange={e => setForm(f => ({ ...f, iconUrl: e.target.value }))} className={inputCls} placeholder="🥷" /></div>
-      </div>
+      <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="CHAR_NINJA" /></div>
+      <IconUploadField value={form.iconUrl ?? ""} onChange={url => setForm(f => ({ ...f, iconUrl: url }))} />
       <div><Label>Name *</Label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Must match the mobile sprite name exactly" /></div>
       <div><Label>Description</Label><textarea value={form.description ?? ""} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className={`${inputCls} resize-none`} /></div>
       <div className="grid grid-cols-2 gap-3">
@@ -343,8 +390,8 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Price ({currency})</Label><input type="number" min={0} value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} className={inputCls} /></div>
-        <div><Label>Damage Bonus</Label><input type="number" min={0} value={form.damageBonus} onChange={e => setForm(f => ({ ...f, damageBonus: Number(e.target.value) }))} className={inputCls} /></div>
+        <div><Label>Price ({currency})</Label><input type="number" min={1} value={positiveIntDisplay(form.price)} onChange={e => setForm(f => ({ ...f, price: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
+        <div><Label>Damage Bonus</Label><input type="number" min={1} value={positiveIntDisplay(form.damageBonus)} onChange={e => setForm(f => ({ ...f, damageBonus: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
       </div>
       <label className="flex items-center gap-2 text-sm font-medium text-sky-ink-2 cursor-pointer rounded-sky-chip bg-white/42 ring-1 ring-white/70 px-4 py-3">
         <input type="checkbox" checked={form.isDefault} onChange={e => setForm(f => ({ ...f, isDefault: e.target.checked }))} className="w-4 h-4 accent-sky-deep" />
@@ -658,9 +705,9 @@ function LootEntryForm({ items, onSave, onClose }: { items: ItemDefinitionDto[];
         </div>
       )}
       <div className="grid grid-cols-3 gap-3">
-        <div><Label>Amount Min</Label><input type="number" min={1} value={form.amountMin} onChange={e => setForm(f => ({ ...f, amountMin: Number(e.target.value) }))} className={inputCls} /></div>
-        <div><Label>Amount Max</Label><input type="number" min={1} value={form.amountMax} onChange={e => setForm(f => ({ ...f, amountMax: Number(e.target.value) }))} className={inputCls} /></div>
-        <div><Label>Weight</Label><input type="number" min={1} value={form.weight} onChange={e => setForm(f => ({ ...f, weight: Number(e.target.value) }))} className={inputCls} /></div>
+        <div><Label>Amount Min</Label><input type="number" min={1} value={positiveIntDisplay(form.amountMin)} onChange={e => setForm(f => ({ ...f, amountMin: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
+        <div><Label>Amount Max</Label><input type="number" min={1} value={positiveIntDisplay(form.amountMax)} onChange={e => setForm(f => ({ ...f, amountMax: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
+        <div><Label>Weight</Label><input type="number" min={1} value={positiveIntDisplay(form.weight)} onChange={e => setForm(f => ({ ...f, weight: parsePositiveInt(e.target.value) }))} className={inputCls} /></div>
       </div>
       <div className="flex gap-3 pt-3 border-t border-white/70">
         <SkyButton type="button" variant="secondary" onClick={onClose} disabled={saving} className="flex-1">Cancel</SkyButton>

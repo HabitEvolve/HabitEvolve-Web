@@ -14,6 +14,7 @@ import SkyButton from '../components/ui/button/SkyButton';
 import SharedStatusBadge from '../components/common/StatusBadge';
 import { FilterDropdown } from '../components/common/FilterDropdown';
 import type { FilterField } from '../hooks/useTableFilters';
+import { positiveIntDisplay, parsePositiveInt } from '../utils/numberInput';
 import type {
   SubscriptionPackageDto,
   RewardTier,
@@ -433,8 +434,8 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   type="number"
                   min={1}
                   className={`${inputCls} tabular-nums`}
-                  value={form.maxParties}
-                  onChange={e => set('maxParties', +e.target.value || 1)}
+                  value={positiveIntDisplay(form.maxParties)}
+                  onChange={e => set('maxParties', parsePositiveInt(e.target.value))}
                 />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxMembersLabel')}>
@@ -443,8 +444,8 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                   type="number"
                   min={1}
                   className={`${inputCls} tabular-nums`}
-                  value={form.maxMembersPerParty}
-                  onChange={e => set('maxMembersPerParty', +e.target.value || 1)}
+                  value={positiveIntDisplay(form.maxMembersPerParty)}
+                  onChange={e => set('maxMembersPerParty', parsePositiveInt(e.target.value))}
                 />
               </Field>
               <Field label={t('admin.subscriptionPage.form.partyQuestsLabel')} span>

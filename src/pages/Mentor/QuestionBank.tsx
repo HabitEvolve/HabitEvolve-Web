@@ -8,6 +8,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageHeader from "../../components/common/PageHeader";
 import partyCallApi from "../../api/partyCallApi";
 import type { ChallengeMode, ImportBankResultDto, LiveChallengeBankItemDto } from "../../types/partyCall.types";
+import { positiveIntDisplay, parsePositiveInt } from "../../utils/numberInput";
 
 const MODES: ChallengeMode[] = ["SELF_SCORE", "ATTACK"];
 
@@ -164,8 +165,8 @@ export default function QuestionBank() {
                                 <input
                                     type="number"
                                     min={1}
-                                    value={points}
-                                    onChange={(e) => setPoints(parseInt(e.target.value, 10) || 0)}
+                                    value={positiveIntDisplay(points)}
+                                    onChange={(e) => setPoints(parsePositiveInt(e.target.value))}
                                     className={`${inputCls} tabular-nums`}
                                 />
                             </div>

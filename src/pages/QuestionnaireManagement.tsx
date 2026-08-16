@@ -13,6 +13,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import PageHeader from '../components/common/PageHeader';
 import { adminGoalApi } from '../api/adminGoalApi';
+import { positiveIntDisplay, parsePositiveInt } from '../utils/numberInput';
 import SkyCard from '../components/ui/card/SkyCard';
 import SkyButton from '../components/ui/button/SkyButton';
 import {
@@ -315,7 +316,7 @@ function QuestionFormModal({
               </div>
               <div>
                 <label className={fieldLabel}>{t('admin.questionnaire.questionForm.orderLabel')}</label>
-                <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={inputCls} />
+                <input type="number" min={1} value={positiveIntDisplay(order)} onChange={e => setOrder(parsePositiveInt(e.target.value))} className={inputCls} />
               </div>
             </div>
             {/* The answer range only exists for some question types, so when it
@@ -439,7 +440,7 @@ function OptionFormModal({
             </div>
             <div>
               <label className={fieldLabel}>{t('admin.questionnaire.optionForm.orderLabel')}</label>
-              <input type="number" min={1} value={order} onChange={e => setOrder(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
+              <input type="number" min={1} value={positiveIntDisplay(order)} onChange={e => setOrder(parsePositiveInt(e.target.value))} className={`${inputCls} tabular-nums`} />
             </div>
             <div className="flex gap-3 pt-2">
               <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('admin.questionnaire.optionForm.cancel')}</SkyButton>

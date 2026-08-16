@@ -12,6 +12,7 @@ import { useLiveCall } from "../../context/LiveCallContext";
 import type { PartyItem } from "../../types/api.types";
 import type { ChallengeMode, LiveChallengeBankItemDto } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
+import { positiveIntDisplay, parsePositiveInt } from "../../utils/numberInput";
 
 // ── SHARED ATOMS ──────────────────────────────────────────────────────────────
 const eyebrow = "block text-[10px] font-semibold text-sky-ink-3 uppercase tracking-[0.14em] mb-1.5";
@@ -349,8 +350,8 @@ export default function LiveChallengeSession() {
                                             <input
                                                 type="number"
                                                 min={1}
-                                                value={points}
-                                                onChange={(e) => setPoints(parseInt(e.target.value, 10) || 0)}
+                                                value={positiveIntDisplay(points)}
+                                                onChange={(e) => setPoints(parsePositiveInt(e.target.value))}
                                                 className={`${inputCls} tabular-nums`}
                                             />
                                         </div>

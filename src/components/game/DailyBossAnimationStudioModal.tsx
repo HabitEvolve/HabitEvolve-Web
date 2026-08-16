@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, Upload, Wand2, Trash2, X, ShieldAlert, Search, Grid3x3, Rows3 } from 'lucide-react';
 import { adminDailyBossApi } from '../../api/adminDailyBossApi';
 import { Portal, inputCls, btnBase } from '../../pages/AdminDailyBossManagement';
+import { positiveIntDisplay, parsePositiveInt } from '../../utils/numberInput';
 import SkyCard from '../ui/card/SkyCard';
 import SkyButton from '../ui/button/SkyButton';
 import type {
@@ -258,7 +259,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   </div>
                   <div>
                     <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.minSizeLabel')}</label>
-                    <input type="number" min={1} value={minSize} onChange={(e) => setMinSize(Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(minSize)} onChange={(e) => setMinSize(parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                   <div>
                     <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.rgbThresholdLabel')}</label>
@@ -273,11 +274,11 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.columnsLabel')}</label>
-                    <input type="number" min={1} value={columns} onChange={(e) => setColumns(Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(columns)} onChange={(e) => setColumns(parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                   <div>
                     <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.rowsLabel')}</label>
-                    <input type="number" min={1} value={rows} onChange={(e) => setRows(Number(e.target.value))} className={inputCls} />
+                    <input type="number" min={1} value={positiveIntDisplay(rows)} onChange={(e) => setRows(parsePositiveInt(e.target.value))} className={inputCls} />
                   </div>
                 </div>
               )}

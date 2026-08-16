@@ -552,7 +552,7 @@
         "aiCheckLabel": "Bật AI Check",
         "aiCheckHint": "Bằng chứng nộp cho nhiệm vụ này sẽ được AI kiểm tra trước. AI chỉ gợi ý độ chính xác — bạn vẫn là người quyết định duyệt/từ chối cuối cùng.",
         "aiCheckDisabledSelfCheck": "Không dùng được với Self-Check — loại này luôn tự động duyệt.",
-        "aiCheckDisabledPackage": "Gói của bạn chưa có AI Verification — nâng cấp gói để bật tính năng này."
+        "aiCheckDisabledNoBoss": "Cần party đang đánh Boss ở độ khó mà gói của bạn hỗ trợ AI Verification (xem panel Limits)."
       }
     },
     "subscriptionWallet": {

@@ -550,9 +550,9 @@
         "verificationTagsLabel": "Verification Tags",
         "verificationTagsHint": "FACE blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.",
         "aiCheckLabel": "Enable AI Check",
-        "aiCheckHint": "Proof submitted for this quest is checked by AI first. AI only suggests a confidence score — you always make the final approve/reject call.",
+        "aiCheckHint": "Proof submitted for this quest will be checked by AI first. AI only suggests a confidence score — you always make the final approve/reject call.",
         "aiCheckDisabledSelfCheck": "Not available for Self-Check proof — it's always auto-approved.",
-        "aiCheckDisabledPackage": "Your plan doesn't include AI Verification — upgrade to enable this."
+        "aiCheckDisabledNoBoss": "Requires an active Boss right now at a difficulty your plan supports for AI Verification (see Limits panel)."
       }
     },
     "subscriptionWallet": {

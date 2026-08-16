@@ -20,6 +20,7 @@ import type {
     CreateMentorQuestRequest,
     CreatePartyQuestRequest,
     VerificationTag,
+    WeeklyBossStatusDto,
 } from "../../../types/mentor.types";
 
 // sky-peach stays this tab's signature accent (Quest Forge), consistent with
@@ -217,20 +218,23 @@ export default function QuestForgeTab() {
 
     const [activeSub, setActiveSub] = useState<ActiveSubscriptionDto | null>(null);
     const [ranges, setRanges] = useState<MentorQuestRangeDto[]>([]);
+    const [bossStatus, setBossStatus] = useState<WeeklyBossStatusDto | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
-    // Load static data (subscription/ranges are mentor-wide) + this party's members
+    // Load static data (subscription/ranges are mentor-wide) + this party's members + current Boss status
     useEffect(() => {
         setLoadingMembers(true);
         Promise.all([
             partyMentorApi.getPartyMembers(partyId),
             mentorApi.getActiveSubscription(),
             mentorApi.getRewardRanges(),
-        ]).then(([membersRes, subRes, rangesRes]) => {
+            mentorApi.getPartyBossStatus(partyId).catch(() => null), // 404 = no active raid — silent
+        ]).then(([membersRes, subRes, rangesRes, bossRes]) => {
             if (membersRes.success) setMembers(membersRes.data ?? []);
             if (subRes.success) setActiveSub(subRes.data ?? null);
             if (rangesRes.success) setRanges(rangesRes.data ?? []);
+            setBossStatus(bossRes?.success ? bossRes.data ?? null : null);
         }).finally(() => setLoadingMembers(false));
     }, [partyId]);
 
@@ -240,10 +244,17 @@ export default function QuestForgeTab() {
         : ["PHOTO", "VIDEO", "TIMER", "SCREENSHOT", "GPS", "STEP_COUNTER", "TEXT_LOG", "SELF_CHECK"];
 
     // AI Check eligibility mirrors the BE guard in CreateMentorQuest/CreatePartyQuestCommandHandler:
-    // the mentor's plan must include AI Verification, and SELF_CHECK is always auto-approved so
-    // opting it into AI Check would never take effect.
-    const packageSupportsAi = Boolean(activeSub?.package?.aiVerificationBossModes);
-    const aiEligible = packageSupportsAi && form.proofType !== "SELF_CHECK";
+    // party must currently have an active Boss at a difficulty the mentor's plan covers for AI
+    // Verification (same live condition ProofVerificationOrchestrator used to use for auto-routing —
+    // now it's only checked here, once, to unlock the checkbox), and SELF_CHECK is always
+    // auto-approved so opting it into AI Check would never take effect.
+    const aiModes = activeSub?.package?.aiVerificationBossModes
+        ? activeSub.package.aiVerificationBossModes.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+        : [];
+    const bossModeSupportsAi = bossStatus?.status === "Active"
+        && !!bossStatus.difficulty
+        && aiModes.includes(bossStatus.difficulty.toUpperCase());
+    const aiEligible = bossModeSupportsAi && form.proofType !== "SELF_CHECK";
 
     // Sync default proof type when subscription loads
     useEffect(() => {
@@ -636,8 +647,8 @@ export default function QuestForgeTab() {
                                     {t("mentor.questCommand.forge.aiCheckLabel")}
                                 </span>
                                 <span className="w-full text-[11px] font-medium text-sky-ink-3 wrap-break-word">
-                                    {!packageSupportsAi
-                                        ? t("mentor.questCommand.forge.aiCheckDisabledPackage")
+                                    {!bossModeSupportsAi
+                                        ? t("mentor.questCommand.forge.aiCheckDisabledNoBoss")
                                         : form.proofType === "SELF_CHECK"
                                             ? t("mentor.questCommand.forge.aiCheckDisabledSelfCheck")
                                             : t("mentor.questCommand.forge.aiCheckHint")}

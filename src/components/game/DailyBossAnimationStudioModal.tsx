@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Upload, Wand2, Trash2, X, ShieldAlert, Search, Grid3x3, Rows3 } from 'lucide-react';
 import { adminDailyBossApi } from '../../api/adminDailyBossApi';
 import { Portal, inputCls, btnBase } from '../../pages/AdminDailyBossManagement';
@@ -27,6 +28,7 @@ const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-
 const fieldLabel = `block mb-1.5 ${eyebrow}`;
 
 export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose }: Props) {
+  const { t } = useTranslation();
   const [frames, setFrames] = useState<DailyBossAnimationFrameDto[]>([]);
   const [loadingFrames, setLoadingFrames] = useState(true);
 
@@ -68,21 +70,21 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
   };
 
   const handleDetect = async () => {
-    if (!file) { setError('Chọn sprite sheet trước.'); return; }
+    if (!file) { setError(t('admin.dailyBossManagement.studio.selectFileFirst')); return; }
     setDetecting(true); setError('');
     try {
       const res = await adminDailyBossApi.detectAnimation(file, { minSize, rgb, alpha });
       if (res.success && res.data) setDetection(res.data);
-      else setError(res.message ?? 'Dò thất bại.');
+      else setError(res.message ?? t('admin.dailyBossManagement.studio.detectFailed'));
     } catch (ex: any) {
-      setError(ex?.response?.data?.message ?? 'Dò thất bại.');
+      setError(ex?.response?.data?.message ?? t('admin.dailyBossManagement.studio.detectFailed'));
     } finally {
       setDetecting(false);
     }
   };
 
   const handleUpload = async () => {
-    if (!file) { setError('Chọn sprite sheet trước.'); return; }
+    if (!file) { setError(t('admin.dailyBossManagement.studio.selectFileFirst')); return; }
     setUploading(true); setError('');
     try {
       const res = await adminDailyBossApi.uploadAnimation(boss.dailyBossTemplateId, file, {
@@ -99,10 +101,10 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
         if (fileInputRef.current) fileInputRef.current.value = '';
         onChanged();
       } else {
-        setError(res.message ?? 'Upload thất bại.');
+        setError(res.message ?? t('admin.dailyBossManagement.studio.uploadFailed'));
       }
     } catch (ex: any) {
-      setError(ex?.response?.data?.message ?? 'Upload thất bại — kiểm tra lại số nhãn state có khớp số dòng ảnh không.');
+      setError(ex?.response?.data?.message ?? t('admin.dailyBossManagement.studio.uploadFailedMismatch'));
     } finally {
       setUploading(false);
     }
@@ -117,10 +119,10 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
         setConfirmingDelete(false);
         onChanged();
       } else {
-        setError(res.message ?? 'Xoá thất bại.');
+        setError(res.message ?? t('admin.dailyBossManagement.studio.deleteFailed'));
       }
     } catch (ex: any) {
-      setError(ex?.response?.data?.message ?? 'Xoá thất bại.');
+      setError(ex?.response?.data?.message ?? t('admin.dailyBossManagement.studio.deleteFailed'));
     } finally {
       setDeleting(false);
     }
@@ -136,7 +138,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                 <Wand2 className="w-4 h-4" strokeWidth={2.3} aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">Animation Studio</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3">{t('admin.dailyBossManagement.studio.title')}</p>
                 <h2 className="font-display text-lg font-semibold text-sky-ink truncate leading-tight">
                   {boss.name}
                 </h2>
@@ -156,11 +158,11 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
 
             {/* ── PREVIEW ── */}
             <div>
-              <p className={`${eyebrow} mb-2`}>Preview hiện tại</p>
+              <p className={`${eyebrow} mb-2`}>{t('admin.dailyBossManagement.studio.previewLabel')}</p>
               {loadingFrames ? (
                 <div className="flex items-center justify-center h-64 border border-dashed border-sky-ink/16 rounded-sky-card text-sky-ink-3">
                   <Loader2 className="w-6 h-6 animate-spin" />
-                  <span className="sr-only">Đang tải frame…</span>
+                  <span className="sr-only">{t('admin.dailyBossManagement.studio.loadingFrames')}</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">
@@ -174,16 +176,16 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                         <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" />
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-rose-deep">
                           <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                          Xoá toàn bộ {frames.length} frame của boss này?
+                          {t('admin.dailyBossManagement.studio.confirmDeleteAll', { count: frames.length })}
                         </span>
                         <SkyButton type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
-                          {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Xác nhận
+                          {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} {t('admin.dailyBossManagement.studio.confirmBtn')}
                         </SkyButton>
-                        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setConfirmingDelete(false)}>Huỷ</SkyButton>
+                        <SkyButton type="button" variant="secondary" size="sm" onClick={() => setConfirmingDelete(false)}>{t('common.cancel')}</SkyButton>
                       </div>
                     ) : (
                       <SkyButton type="button" variant="destructive" size="sm" onClick={() => setConfirmingDelete(true)}>
-                        <Trash2 className="w-3.5 h-3.5" /> Xoá toàn bộ animation
+                        <Trash2 className="w-3.5 h-3.5" /> {t('admin.dailyBossManagement.studio.deleteAllBtn')}
                       </SkyButton>
                     )
                   )}
@@ -194,11 +196,11 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
             {/* ── UPLOAD FORM ── */}
             <div className="border-t border-dashed border-sky-ink/16 pt-5 space-y-4">
               <p className={eyebrow}>
-                Upload sprite sheet mới (sẽ thay thế toàn bộ frame hiện có)
+                {t('admin.dailyBossManagement.studio.uploadSectionHint')}
               </p>
 
               <div>
-                <label className={fieldLabel}>Sprite sheet *</label>
+                <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.spriteSheetLabel')}</label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -210,7 +212,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
 
               <div>
                 <label className={fieldLabel}>
-                  Tên state theo từng dòng (trên → dưới)
+                  {t('admin.dailyBossManagement.studio.stateNamesLabel')}
                 </label>
                 <input
                   value={statesInput}
@@ -219,7 +221,7 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   placeholder="idle,attack,hit,defeat"
                 />
                 <p className="text-[11px] text-sky-ink-3 mt-1.5 leading-relaxed">
-                  Cách nhau bởi dấu phẩy, theo đúng thứ tự dòng trong ảnh. Có thể ghi số frame tối đa mỗi dòng: <code className="px-1 py-0.5 rounded bg-sky-ink/7 font-medium text-sky-ink-2">idle:4,attack:6</code>. Để trống nếu để hệ thống tự đặt tên ROW_1, ROW_2…
+                  {t('admin.dailyBossManagement.studio.stateNamesHintPrefix')}<code className="px-1 py-0.5 rounded bg-sky-ink/7 font-medium text-sky-ink-2">idle:4,attack:6</code>{t('admin.dailyBossManagement.studio.stateNamesHintSuffix')}
                 </p>
               </div>
 
@@ -227,8 +229,8 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   so the choice reads as a switch rather than two loose buttons. */}
               <div className="inline-flex gap-1 p-1 rounded-sky-chip bg-white/58 ring-1 ring-white/80">
                 {([
-                  { key: 'auto', label: 'Tự động dò (khuyên dùng)', Icon: Wand2 },
-                  { key: 'grid', label: 'Lưới cố định (cols × rows)', Icon: Grid3x3 },
+                  { key: 'auto', label: t('admin.dailyBossManagement.studio.modeAutoLabel'), Icon: Wand2 },
+                  { key: 'grid', label: t('admin.dailyBossManagement.studio.modeGridLabel'), Icon: Grid3x3 },
                 ] as const).map(({ key, label, Icon }) => {
                   const on = mode === key;
                   return (
@@ -251,30 +253,30 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               {mode === 'auto' ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className={fieldLabel}>Margin</label>
+                    <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.marginLabel')}</label>
                     <input type="number" min={0} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className={fieldLabel}>Min size</label>
+                    <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.minSizeLabel')}</label>
                     <input type="number" min={1} value={minSize} onChange={(e) => setMinSize(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className={fieldLabel}>RGB ngưỡng</label>
+                    <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.rgbThresholdLabel')}</label>
                     <input type="number" min={0} max={255} value={rgb} onChange={(e) => setRgb(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className={fieldLabel}>Alpha ngưỡng</label>
+                    <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.alphaThresholdLabel')}</label>
                     <input type="number" min={0} max={255} value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={fieldLabel}>Số cột</label>
+                    <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.columnsLabel')}</label>
                     <input type="number" min={1} value={columns} onChange={(e) => setColumns(Number(e.target.value))} className={inputCls} />
                   </div>
                   <div>
-                    <label className={fieldLabel}>Số dòng</label>
+                    <label className={fieldLabel}>{t('admin.dailyBossManagement.studio.rowsLabel')}</label>
                     <input type="number" min={1} value={rows} onChange={(e) => setRows(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
@@ -283,11 +285,11 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
               <div className="flex flex-wrap gap-3">
                 {mode === 'auto' && (
                   <SkyButton type="button" variant="secondary" onClick={handleDetect} disabled={detecting || !file}>
-                    {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Dò thử (không lưu)
+                    {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} {t('admin.dailyBossManagement.studio.detectBtn')}
                   </SkyButton>
                 )}
                 <SkyButton type="button" variant="primary" onClick={handleUpload} disabled={uploading || !file} className="ml-auto">
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Cắt & Lưu
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {t('admin.dailyBossManagement.studio.uploadBtn')}
                 </SkyButton>
               </div>
 
@@ -299,15 +301,15 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                   <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-deep/45" />
                   <div className="flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 shrink-0 text-sky-deep" strokeWidth={2.4} aria-hidden="true" />
-                    <span className={eyebrow}>Kết quả dò thử</span>
+                    <span className={eyebrow}>{t('admin.dailyBossManagement.studio.detectionResultTitle')}</span>
                   </div>
                   {/* Read-outs as discrete stat chips: each number gets its own
                       surface so the eye lands on the value, not the sentence. */}
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { k: 'Ảnh', v: `${detection.imageWidth}×${detection.imageHeight}px` },
-                      { k: 'Nền', v: detection.backgroundMode },
-                      { k: 'Số dòng', v: String(detection.rowCount) },
+                      { k: t('admin.dailyBossManagement.studio.statImage'), v: `${detection.imageWidth}×${detection.imageHeight}px` },
+                      { k: t('admin.dailyBossManagement.studio.statBackground'), v: detection.backgroundMode },
+                      { k: t('admin.dailyBossManagement.studio.statRowCount'), v: String(detection.rowCount) },
                     ].map(({ k, v }) => (
                       <span key={k} className="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-sky-chip bg-white/72 ring-1 ring-white/85">
                         <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-sky-ink-3">{k}</span>
@@ -322,8 +324,8 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                           <tr className="text-[10px] uppercase tracking-[0.1em] text-sky-ink-3">
                             <th className="px-3 py-2 font-semibold">#</th>
                             <th className="px-3 py-2 font-semibold">Y0–Y1</th>
-                            <th className="px-3 py-2 font-semibold">Cao (px)</th>
-                            <th className="px-3 py-2 font-semibold">Số frame</th>
+                            <th className="px-3 py-2 font-semibold">{t('admin.dailyBossManagement.studio.tableColHeight')}</th>
+                            <th className="px-3 py-2 font-semibold">{t('admin.dailyBossManagement.studio.tableColFrameCount')}</th>
                           </tr>
                         </thead>
                         <tbody className="text-sky-ink-2 font-medium">
@@ -347,7 +349,10 @@ export default function DailyBossAnimationStudioModal({ boss, onChanged, onClose
                       <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" />
                       <Rows3 className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2.4} aria-hidden="true" />
                       <span>
-                        Số dòng dò được (<span className="tabular-nums">{detection.rowCount}</span>) không khớp số nhãn state (<span className="tabular-nums">{statesInput.split(',').map((s) => s.trim()).filter(Boolean).length}</span>) — upload thật sẽ bị từ chối, hãy chỉnh lại nhãn hoặc ngưỡng dò.
+                        {t('admin.dailyBossManagement.studio.mismatchWarning', {
+                          detected: detection.rowCount,
+                          labels: statesInput.split(',').map((s) => s.trim()).filter(Boolean).length,
+                        })}
                       </span>
                     </p>
                   )}

@@ -34,17 +34,16 @@ const RISK_STYLES: Record<string, { bar: string; badge: string; icon: React.Reac
 // so clicking a card dispatches that exact type immediately (no textarea).
 // Tints are a taxonomy, not a severity ramp: boss=damage, all-hands=peach,
 // deadline=violet, daily=deep. None borrows teal (success) or rose (destructive).
-const RALLY_TEMPLATES: {
+function getRallyTemplates(t: (key: string) => string): {
   type: string; icon: React.ReactNode; title: string; flavor: string; tint: string; accent: string;
-}[] = [
-  { type: "WEEKLY_BOSS",    icon: <Swords className="w-4 h-4" />, title: "Boss Alert",      flavor: "Sắp hết giờ diệt Boss! Dậy làm quest đi các đồng chí!", tint: "bg-sky-dmg/10 ring-sky-dmg/25",       accent: "text-sky-dmg-deep" },
-  { type: "ALL",            icon: <Shield className="w-4 h-4" />, title: "All-Hands Rally", flavor: "Shared HP đang giảm mạnh, cứu team cứu team!",           tint: "bg-sky-peach/14 ring-sky-peach/28",   accent: "text-sky-peach-deep" },
-  { type: "QUEST_DEADLINE", icon: <Clock className="w-4 h-4" />,  title: "Deadline Ping",   flavor: "Nhiệm vụ sắp hết hạn — đừng để cả team gánh hộ!",        tint: "bg-sky-violet/12 ring-sky-violet/26", accent: "text-sky-violet-deep" },
-  { type: "DAILY",          icon: <Star className="w-4 h-4" />,   title: "Daily Nudge",     flavor: "Điểm danh thói quen hôm nay chưa nào, chiến binh?",      tint: "bg-sky-deep/10 ring-sky-deep/24",     accent: "text-sky-deep" },
-];
-
-
-const DAY_NAMES = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+}[] {
+  return [
+    { type: "WEEKLY_BOSS",    icon: <Swords className="w-4 h-4" />, title: t("mentor.partyReminder.rallyTemplates.bossAlert.title"),  flavor: t("mentor.partyReminder.rallyTemplates.bossAlert.flavor"),  tint: "bg-sky-dmg/10 ring-sky-dmg/25",       accent: "text-sky-dmg-deep" },
+    { type: "ALL",            icon: <Shield className="w-4 h-4" />, title: t("mentor.partyReminder.rallyTemplates.allHands.title"),   flavor: t("mentor.partyReminder.rallyTemplates.allHands.flavor"),   tint: "bg-sky-peach/14 ring-sky-peach/28",   accent: "text-sky-peach-deep" },
+    { type: "QUEST_DEADLINE", icon: <Clock className="w-4 h-4" />,  title: t("mentor.partyReminder.rallyTemplates.deadline.title"),   flavor: t("mentor.partyReminder.rallyTemplates.deadline.flavor"),   tint: "bg-sky-violet/12 ring-sky-violet/26", accent: "text-sky-violet-deep" },
+    { type: "DAILY",          icon: <Star className="w-4 h-4" />,   title: t("mentor.partyReminder.rallyTemplates.daily.title"),      flavor: t("mentor.partyReminder.rallyTemplates.daily.flavor"),      tint: "bg-sky-deep/10 ring-sky-deep/24",     accent: "text-sky-deep" },
+  ];
+}
 
 const DEFAULT_REMINDER_SETTINGS: PartyReminderSettingDto = {
   partyId: 0,
@@ -87,6 +86,12 @@ export default function RallyTab() {
   const { party, partyId } = useOutletContext<PartyWorkspaceContext>();
   const { t } = useTranslation();
   const notify = useAlert();
+  const RALLY_TEMPLATES = getRallyTemplates(t);
+  const DAY_NAMES = [
+    t("mentor.partyReminder.days.sun"), t("mentor.partyReminder.days.mon"), t("mentor.partyReminder.days.tue"),
+    t("mentor.partyReminder.days.wed"), t("mentor.partyReminder.days.thu"), t("mentor.partyReminder.days.fri"),
+    t("mentor.partyReminder.days.sat"),
+  ];
 
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -224,7 +229,7 @@ export default function RallyTab() {
               return (
                 <>
                   <div className="flex items-baseline justify-between gap-3 mb-2">
-                    <span className={eyebrow}>Shared HP</span>
+                    <span className={eyebrow}>{t("mentor.partyReminder.sharedHpLabel")}</span>
                     <span className="font-display text-sm font-semibold text-sky-ink tabular-nums">
                       {rallyRisk.sharedHpCurrent}
                       <span className="text-sky-ink-3"> / {rallyRisk.sharedHpMax}</span>
@@ -393,10 +398,10 @@ export default function RallyTab() {
                 {t("mentor.partyReminder.channels")}
               </p>
               <div className="grid grid-cols-2 gap-2">
-                <RallyCheckbox checked={rallySettings.sendInApp} onChange={(v) => setRallySettings((s) => ({ ...s, sendInApp: v }))} label={<><Smartphone className="w-4 h-4" aria-hidden="true" /> In-App</>} />
-                <RallyCheckbox checked={rallySettings.sendPush} onChange={(v) => setRallySettings((s) => ({ ...s, sendPush: v }))} label={<><Bell className="w-4 h-4" aria-hidden="true" /> Push</>} />
-                <RallyCheckbox checked={rallySettings.sendEmail} onChange={(v) => setRallySettings((s) => ({ ...s, sendEmail: v }))} label={<><Mail className="w-4 h-4" aria-hidden="true" /> Email</>} />
-                <RallyCheckbox checked={rallySettings.sendPartyChat} onChange={(v) => setRallySettings((s) => ({ ...s, sendPartyChat: v }))} label={<><MessageSquare className="w-4 h-4" aria-hidden="true" /> Party Chat</>} />
+                <RallyCheckbox checked={rallySettings.sendInApp} onChange={(v) => setRallySettings((s) => ({ ...s, sendInApp: v }))} label={<><Smartphone className="w-4 h-4" aria-hidden="true" /> {t("mentor.partyReminder.channelInApp")}</>} />
+                <RallyCheckbox checked={rallySettings.sendPush} onChange={(v) => setRallySettings((s) => ({ ...s, sendPush: v }))} label={<><Bell className="w-4 h-4" aria-hidden="true" /> {t("mentor.partyReminder.channelPush")}</>} />
+                <RallyCheckbox checked={rallySettings.sendEmail} onChange={(v) => setRallySettings((s) => ({ ...s, sendEmail: v }))} label={<><Mail className="w-4 h-4" aria-hidden="true" /> {t("mentor.partyReminder.channelEmail")}</>} />
+                <RallyCheckbox checked={rallySettings.sendPartyChat} onChange={(v) => setRallySettings((s) => ({ ...s, sendPartyChat: v }))} label={<><MessageSquare className="w-4 h-4" aria-hidden="true" /> {t("mentor.partyReminder.channelPartyChat")}</>} />
               </div>
             </div>
 

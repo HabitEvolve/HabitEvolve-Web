@@ -69,6 +69,7 @@ const ResourceBadge = ({ icon, value, label, tint }: {
 const UrgentAlertsCard = ({
     playersLosingStreak, partiesLowSharedHp, onClick,
 }: { playersLosingStreak: number; partiesLowSharedHp: number; onClick: () => void }) => {
+    const { t } = useTranslation();
     const hasAlerts = playersLosingStreak > 0 || partiesLowSharedHp > 0;
     return (
         <SkyCard
@@ -87,15 +88,15 @@ const UrgentAlertsCard = ({
                     <ShieldAlert className="w-5 h-5" />
                 </span>
                 <div className="flex-1 min-w-0">
-                    <p className={eyebrow}>Urgent Alerts</p>
+                    <p className={eyebrow}>{t("mentor.dashboard.summary.urgentAlertsTitle")}</p>
                     <div className="flex items-center gap-4 mt-1.5">
                         <span className="text-xs font-medium text-sky-ink-2 flex items-center gap-1.5">
                             <TrendingDown className="w-3.5 h-3.5 text-sky-peach-deep shrink-0" />
-                            <span className="font-display text-base font-semibold tabular-nums text-sky-ink leading-none">{playersLosingStreak}</span> streak risk
+                            <span className="font-display text-base font-semibold tabular-nums text-sky-ink leading-none">{playersLosingStreak}</span> {t("mentor.dashboard.summary.streakRisk")}
                         </span>
                         <span className="text-xs font-medium text-sky-ink-2 flex items-center gap-1.5">
                             <HeartPulse className="w-3.5 h-3.5 text-sky-rose-deep shrink-0" />
-                            <span className="font-display text-base font-semibold tabular-nums text-sky-ink leading-none">{partiesLowSharedHp}</span> low HP
+                            <span className="font-display text-base font-semibold tabular-nums text-sky-ink leading-none">{partiesLowSharedHp}</span> {t("mentor.dashboard.summary.lowHp")}
                         </span>
                     </div>
                 </div>
@@ -146,6 +147,7 @@ const RankMedal = ({ rank }: { rank: number }) => {
 };
 
 const PartyRankingRow = ({ ranking }: { ranking: PartyRankingDto }) => {
+    const { t } = useTranslation();
     const hasHp = ranking.maxSharedHp > 0;
     const pct = hasHp ? Math.max(0, Math.min(100, (ranking.sharedHp / ranking.maxSharedHp) * 100)) : 0;
     const critical = pct < 30;
@@ -172,7 +174,7 @@ const PartyRankingRow = ({ ranking }: { ranking: PartyRankingDto }) => {
                         </span>
                     </div>
                 ) : (
-                    <p className="text-[10px] font-medium text-sky-ink-3 mt-1">No active raid this week</p>
+                    <p className="text-[10px] font-medium text-sky-ink-3 mt-1">{t("mentor.dashboard.summary.noActiveRaid")}</p>
                 )}
             </div>
         </div>
@@ -245,13 +247,13 @@ export default function MentorDashboard() {
         try {
             const res = await mentorDashboardApi.getSummary();
             if (res.success) setSummary(res.data ?? null);
-            else setError(res.message || "Failed to load dashboard data.");
+            else setError(res.message || t("mentor.dashboard.summary.loadFailed"));
         } catch (err) {
-            setError(errMsg(err) ?? "Network error fetching dashboard data.");
+            setError(errMsg(err) ?? t("mentor.dashboard.summary.networkError"));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
@@ -281,7 +283,7 @@ export default function MentorDashboard() {
 
     return (
         <>
-            <PageMeta title="Mentor Dashboard — HabitEvolve" description="Your guild command centre" />
+            <PageMeta title={t("mentor.dashboard.summary.metaTitle")} description={t("mentor.dashboard.summary.metaDescription")} />
 
             {/* Header — Welcome + Resource Stash */}
             <PageHeader
@@ -290,13 +292,11 @@ export default function MentorDashboard() {
                 tone="violet"
                 size="h1"
                 eyebrow={<span className="sky-badge sky-badge-epic">{t("mentor.dashboard.badge")}</span>}
-                title={`Chào mừng Quản trò ${user?.username ?? ""} trở lại Sảnh chỉ huy!`}
-                description={guildStatus && (
-                    <>
-                        Đang dẫn dắt <span className="font-display font-semibold tabular-nums text-sky-violet-deep">{guildStatus.totalManagedParties}</span> Party với{" "}
-                        <span className="font-display font-semibold tabular-nums text-sky-violet-deep">{guildStatus.totalPartyMembers}</span> học viên
-                    </>
-                )}
+                title={t("mentor.dashboard.summary.welcomeTitle", { username: user?.username ?? "" })}
+                description={guildStatus && t("mentor.dashboard.summary.welcomeDescription", {
+                    parties: guildStatus.totalManagedParties,
+                    members: guildStatus.totalPartyMembers,
+                })}
                 actions={
                     <>
                         {resourceStash && (
@@ -304,18 +304,18 @@ export default function MentorDashboard() {
                                 <ResourceBadge
                                     icon={<Gem className="w-4 h-4" />}
                                     value={resourceStash.gemsBalance}
-                                    label="Gems"
+                                    label={t("mentor.dashboard.summary.gemsLabel")}
                                     tint="bg-sky-violet/18 text-sky-violet-deep"
                                 />
                                 <ResourceBadge
                                     icon={<Coins className="w-4 h-4" />}
                                     value={resourceStash.mGoldBalance}
-                                    label="M-Gold"
+                                    label={t("mentor.dashboard.summary.mGoldLabel")}
                                     tint="bg-sky-peach/25 text-sky-peach-deep"
                                 />
                             </>
                         )}
-                        <SkyButton type="button" variant="secondary" size="icon" onClick={fetchSummary} disabled={loading} title="Refresh">
+                        <SkyButton type="button" variant="secondary" size="icon" onClick={fetchSummary} disabled={loading} title={t("mentor.dashboard.summary.refreshTitle")}>
                             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                         </SkyButton>
                     </>
@@ -329,7 +329,7 @@ export default function MentorDashboard() {
                         <AlertTriangle className="w-4 h-4 shrink-0" />
                         {error}
                     </p>
-                    <button type="button" onClick={fetchSummary} className="relative text-sm font-semibold text-sky-rose-deep underline underline-offset-2 shrink-0 hover:no-underline">Retry</button>
+                    <button type="button" onClick={fetchSummary} className="relative text-sm font-semibold text-sky-rose-deep underline underline-offset-2 shrink-0 hover:no-underline">{t("mentor.dashboard.summary.retry")}</button>
                 </div>
             )}
 
@@ -353,8 +353,8 @@ export default function MentorDashboard() {
                                 <CheckCircle2 className="w-6 h-6" />
                             </span>
                             <div className="relative">
-                                <p className="font-display text-base font-semibold text-sky-ink">Tất cả các tổ đội đều đang vận hành ổn định!</p>
-                                <p className="text-sm font-medium text-sky-ink-2 mt-0.5">Không có cảnh báo hay việc cần xử lý gấp lúc này.</p>
+                                <p className="font-display text-base font-semibold text-sky-ink">{t("mentor.dashboard.summary.allClearTitle")}</p>
+                                <p className="text-sm font-medium text-sky-ink-2 mt-0.5">{t("mentor.dashboard.summary.allClearSubtitle")}</p>
                             </div>
                         </SkyCard>
                     ) : (
@@ -369,13 +369,13 @@ export default function MentorDashboard() {
                             <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3">
                                 <PendingActionPill
                                     icon={<CheckCircle2 className="w-4 h-4" />}
-                                    label="Duyệt Bằng Chứng"
+                                    label={t("mentor.dashboard.summary.reviewProofs")}
                                     count={pendingActions?.pendingProofReviews ?? 0}
                                     onClick={goToProofs}
                                 />
                                 <PendingActionPill
                                     icon={<UserPlus className="w-4 h-4" />}
-                                    label="Yêu Cầu Gia Nhập"
+                                    label={t("mentor.dashboard.summary.joinRequests")}
                                     count={pendingActions?.pendingJoinRequests ?? 0}
                                     onClick={goToJoinRequests}
                                 />
@@ -391,10 +391,10 @@ export default function MentorDashboard() {
                                     <span className="grid place-items-center w-8 h-8 rounded-sky-chip bg-sky-peach/20 text-sky-peach-deep shrink-0">
                                         <Trophy className="w-4 h-4" />
                                     </span>
-                                    <h3 className={sectionTitle}>Guild Leaderboard</h3>
+                                    <h3 className={sectionTitle}>{t("mentor.dashboard.summary.guildLeaderboard")}</h3>
                                 </div>
                                 {partyRankings.length === 0 ? (
-                                    <PanelEmpty icon={<Trophy className="w-5 h-5" />} label="Chưa có Party nào để xếp hạng." />
+                                    <PanelEmpty icon={<Trophy className="w-5 h-5" />} label={t("mentor.dashboard.summary.noPartiesToRank")} />
                                 ) : (
                                     <div className="relative divide-y divide-sky-ink/8">
                                         {partyRankings.map(r => <PartyRankingRow key={r.partyId} ranking={r} />)}
@@ -407,10 +407,10 @@ export default function MentorDashboard() {
                                     <span className="grid place-items-center w-8 h-8 rounded-sky-chip bg-sky-violet/14 text-sky-violet-deep shrink-0">
                                         <Swords className="w-4 h-4" />
                                     </span>
-                                    <h3 className={sectionTitle}>Upcoming Boss Fights</h3>
+                                    <h3 className={sectionTitle}>{t("mentor.dashboard.summary.upcomingBossFights")}</h3>
                                 </div>
                                 {upcomingBossFights.length === 0 ? (
-                                    <PanelEmpty icon={<CalendarClock className="w-5 h-5" />} label="Chưa có trận Boss nào sắp diễn ra." />
+                                    <PanelEmpty icon={<CalendarClock className="w-5 h-5" />} label={t("mentor.dashboard.summary.noUpcomingBossFights")} />
                                 ) : (
                                     <div className="relative space-y-2">
                                         {upcomingBossFights.map(f => <BossFightCard key={`${f.partyId}-${f.startAt}`} fight={f} />)}
@@ -421,11 +421,11 @@ export default function MentorDashboard() {
 
                         <SkyCard variant="mentor" className="flex flex-col">
                             <div className="relative mb-2">
-                                <h3 className={sectionTitle}>Adventure Log</h3>
-                                <p className="text-xs font-medium text-sky-ink-3 mt-0.5">Hoạt động gần nhất của học viên</p>
+                                <h3 className={sectionTitle}>{t("mentor.dashboard.summary.adventureLog")}</h3>
+                                <p className="text-xs font-medium text-sky-ink-3 mt-0.5">{t("mentor.dashboard.summary.adventureLogSubtitle")}</p>
                             </div>
                             {recentMemberActivities.length === 0 ? (
-                                <PanelEmpty icon={<Activity className="w-5 h-5" />} label="Chưa có hoạt động nào gần đây." />
+                                <PanelEmpty icon={<Activity className="w-5 h-5" />} label={t("mentor.dashboard.summary.noRecentActivity")} />
                             ) : (
                                 <div className="relative divide-y divide-sky-ink/8">
                                     {recentMemberActivities.map(a => <ActivityRow key={a.id} activity={a} />)}

@@ -1,4 +1,4 @@
-// Types for the Admin Economy Hub: Items, Shop Listings, Loot Tables, Gacha Banners
+// Types for the Admin Economy Hub: Items, Combat Shop (Character/Spell), Loot Tables, Gacha Banners
 
 // ── Item Catalog ──────────────────────────────────────────────────────────────
 export type ItemType = "SKIN" | "SCENE" | "BADGE" | "TITLE" | "FRAME" | "EMOTE" | "CONSUMABLE" | string;
@@ -43,59 +43,51 @@ export interface UpdateItemPayload {
   isStackable: boolean;
 }
 
-// ── Shop Listings ─────────────────────────────────────────────────────────────
-// Matches BE ShopListing.ValidShopTypes exactly — SYSTEM (Gold/Gems, the "Regular"
-// storefront) and MENTOR (M-Gold only). No other value is accepted by the BE.
-export type ShopType = "SYSTEM" | "MENTOR";
+// ── Combat Shop (Character/Spell "chưởng lực") ────────────────────────────────
+// Matches BE CombatItemDefinition.ValidKinds/ValidCurrencies exactly. Separate
+// from the cosmetic Item Catalog — these add real DamageBonus when equipped.
+// Currency IS the storefront split: GOLD → Regular (System) shop, MGOLD →
+// Mentor shop — there is no independent shopType field on this entity.
+export type CombatItemKind = "CHARACTER" | "SPELL";
+export type CombatItemCurrency = "GOLD" | "MGOLD";
 
-export interface ShopListingDto {
-  shopListingId: number;
-  itemDefinitionId: number;
-  itemCode: string;
-  itemName: string;
-  itemDescription: string | null;
-  itemIconUrl: string | null;
-  itemType: string;
-  rarity: string;
-  categoryCode: string | null;
-  shopType: ShopType;
-  currency: string;
+export interface CombatItemDefinitionDto {
+  combatItemDefinitionId: number;
+  kind: CombatItemKind;
+  code: string;
+  name: string;
+  iconUrl: string | null;
+  description: string | null;
   price: number;
-  stockLimit: number | null;
-  stockSold: number;
+  currency: CombatItemCurrency;
+  damageBonus: number;
+  /** Every player already owns this for free (e.g. the starter character) — never purchasable. */
+  isDefault: boolean;
   isActive: boolean;
-  availableFrom: string | null;
-  availableTo: string | null;
 }
 
-export interface CreateShopListingPayload {
-  itemDefinitionId: number;
-  shopType: ShopType;
-  currency: string;
+export interface CreateCombatItemPayload {
+  kind: CombatItemKind;
+  code: string;
+  name: string;
+  iconUrl?: string | null;
   price: number;
-  stockLimit?: number | null;
-  availableFrom?: string | null;
-  availableTo?: string | null;
+  currency: CombatItemCurrency;
+  damageBonus: number;
+  isDefault: boolean;
+  description?: string | null;
 }
 
-// PUT /api/admin/shop/listings/{id} (UpdateShopListingBody) — shopType/currency/item are
-// immutable after creation; the BE update command only accepts price/stock/rotation window.
-export interface UpdateShopListingPayload {
+// PUT /api/admin/combat-items/{id} (UpdateCombatItemBody) — Kind and Code are
+// immutable after creation, so they're intentionally absent (BE doesn't accept them on update).
+export interface UpdateCombatItemPayload {
+  name: string;
+  iconUrl?: string | null;
   price: number;
-  stockLimit?: number | null;
-  availableFrom?: string | null;
-  availableTo?: string | null;
-}
-
-// GET /api/admin/shop/listings/{id}/purchases — one row per successful purchase of this listing.
-export interface ShopPurchaseRowDto {
-  shopPurchaseId: number;
-  userId: number;
-  username: string;
-  email: string;
-  priceSnapshot: number;
-  currency: string;
-  createdAt: string;
+  currency: CombatItemCurrency;
+  damageBonus: number;
+  isDefault: boolean;
+  description?: string | null;
 }
 
 // ── Loot Tables ───────────────────────────────────────────────────────────────

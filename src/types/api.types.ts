@@ -25,6 +25,7 @@ export interface RegisterPayload {
     username: string;
     email: string;
     password: string;
+    role?: string;
 }
 
 // Dành cho form Đăng nhập

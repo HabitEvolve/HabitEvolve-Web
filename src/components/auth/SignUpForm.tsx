@@ -71,6 +71,9 @@ export default function SignUpForm() {
         username: formData.userName,
         email: formData.email,
         password: formData.password,
+        // Web sign-up is the Mentor portal — mobile (Player) registers separately with no role,
+        // which the backend defaults to PLAYER. See HabitEvolve.API UserController.Register.
+        role: "MENTOR",
       });
 
       // register returns no JWT, so the user is still signed out here. Send them

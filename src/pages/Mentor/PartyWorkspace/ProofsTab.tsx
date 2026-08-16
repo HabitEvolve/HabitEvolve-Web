@@ -7,7 +7,7 @@ import type { ProofDto, AiVerdict } from "../../../types/mentor.types";
 import { useAlert } from "../../../context/AlertContext";
 import {
     Bot, UserRoundPen, X, Check, AlertTriangle, Clock, ShieldQuestion,
-    RefreshCw, Inbox, ZoomIn, MinusCircle,
+    RefreshCw, Inbox, ZoomIn, MinusCircle, History,
 } from "lucide-react";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
@@ -427,6 +427,82 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
     );
 };
 
+// ── HISTORY CARD ──────────────────────────────────────────────────────────────
+// Read-only record of a past decision — no Approve/Reject actions, since the
+// verdict is already final. Tapping the thumbnail still opens the comparison
+// view so a mentor can double-check what was submitted.
+interface HistoryCardProps {
+    proof: ProofDto;
+    onCompare: (proof: ProofDto) => void;
+}
+
+const HistoryCard = ({ proof, onCompare }: HistoryCardProps) => {
+    const { t } = useTranslation();
+    const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
+    const isApproved = proof.status === "Approved";
+
+    return (
+        <SkyCard variant="mentor" className="relative p-0 overflow-hidden flex flex-col">
+            {hasMedia ? (
+                <button
+                    type="button"
+                    onClick={() => onCompare(proof)}
+                    className="relative w-full h-40 bg-sky-ink/6 overflow-hidden group cursor-zoom-in"
+                    title={t("mentor.proofQueue.grid.viewComparison")}
+                >
+                    <img
+                        src={proof.mediaUrls[0]}
+                        alt="Proof"
+                        className={`w-full h-full object-cover transition-transform duration-300 ${easeExpo} group-hover:scale-105 ${!isApproved ? "grayscale-[0.35]" : ""}`}
+                        onError={(e) => { (e.target as HTMLImageElement).src = ""; }}
+                    />
+                    <div className="absolute inset-0 bg-sky-ink/0 group-hover:bg-sky-ink/35 transition-colors flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/92 rounded-sky-chip text-xs font-semibold text-sky-ink shadow-sky-chip">
+                            <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.viewComparison")}
+                        </span>
+                    </div>
+                </button>
+            ) : (
+                <div className="w-full h-16 bg-sky-ink/5 flex items-center justify-center gap-2 border-b border-sky-ink/10 text-sky-ink-3">
+                    <Inbox className="w-4 h-4" aria-hidden="true" />
+                    <span className="text-xs font-semibold">{t("mentor.proofQueue.noMedia")}</span>
+                </div>
+            )}
+
+            <div className="relative p-4 flex flex-col gap-2 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="font-display text-sm font-semibold truncate text-sky-ink">{proof.questTitle ?? `Quest #${proof.questId}`}</p>
+                        <p className="text-xs text-sky-ink-2 font-medium truncate">by <strong className="font-semibold text-sky-ink">{proof.username ?? `User #${proof.userId}`}</strong></p>
+                    </div>
+                    <StatusBadge status={proof.status} />
+                </div>
+
+                <div className="flex flex-wrap gap-2 items-center text-xs text-sky-ink-2 font-medium">
+                    <span className="px-2 py-0.5 rounded-sky-chip bg-sky-ink/7">{proof.proofType}</span>
+                    {proof.reviewedAt && (
+                        <span className="tabular-nums">
+                            {t("mentor.proofQueue.history.reviewedAt")}: {new Date(proof.reviewedAt).toLocaleString()}
+                        </span>
+                    )}
+                </div>
+
+                <p className="text-xs text-sky-ink-2">
+                    {proof.reviewedByUserId
+                        ? t("mentor.proofQueue.history.reviewedBy", { id: proof.reviewedByUserId })
+                        : t("mentor.proofQueue.history.autoApproved")}
+                </p>
+
+                {!isApproved && (
+                    <p className="text-xs text-sky-rose-deep pl-3 border-l-2 border-sky-rose/45 italic line-clamp-2">
+                        "{proof.rejectReason || t("mentor.proofQueue.history.noReasonGiven")}"
+                    </p>
+                )}
+            </div>
+        </SkyCard>
+    );
+};
+
 // ── FILTER BAR ────────────────────────────────────────────────────────────────
 type QueueFilter = "all" | "flagged" | "recent";
 
@@ -535,8 +611,58 @@ const QueueSection = ({
     );
 };
 
+// ── HISTORY SECTION ───────────────────────────────────────────────────────────
+interface HistorySectionProps {
+    proofs: ProofDto[];
+    loading: boolean;
+    onCompare: (proof: ProofDto) => void;
+}
+
+const HistorySection = ({ proofs, loading, onCompare }: HistorySectionProps) => {
+    const { t } = useTranslation();
+    return (
+        <div>
+            <div className="flex items-center gap-3 mb-4">
+                <h2 className="font-display text-xl font-semibold text-sky-ink">{t("mentor.proofQueue.history.title")}</h2>
+                <span className="inline-grid place-items-center min-w-7 h-7 px-2 text-sm font-display font-semibold rounded-sky-chip tabular-nums bg-sky-ink/8 text-sky-ink-2">
+                    {proofs.length}
+                </span>
+                {loading && <Spinner size={16} />}
+            </div>
+
+            {loading && proofs.length === 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="rounded-sky-card bg-white/45 ring-1 ring-white/65 overflow-hidden animate-pulse">
+                            <div className="h-28 bg-sky-ink/7" />
+                            <div className="p-4 space-y-2">
+                                <div className="h-3.5 w-2/3 rounded-full bg-sky-ink/10" />
+                                <div className="h-3 w-1/3 rounded-full bg-sky-ink/8" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : proofs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-14 gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/45">
+                    <span className="grid place-items-center w-16 h-16 rounded-full bg-sky-deep/10 text-sky-deep ring-1 ring-sky-deep/20">
+                        <History className="w-6 h-6" aria-hidden="true" />
+                    </span>
+                    <p className="font-display text-base font-semibold text-sky-ink">{t("mentor.proofQueue.history.mascotEmptyTitle")}</p>
+                    <p className="text-sm font-medium text-sky-ink-2 max-w-sm text-center">{t("mentor.proofQueue.history.mascotEmptySubtitle")}</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sky-stagger">
+                    {proofs.map((proof) => (
+                        <HistoryCard key={proof.proofId} proof={proof} onCompare={onCompare} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ── TAB ───────────────────────────────────────────────────────────────────────
-type QueueTab = "manual" | "ai";
+type QueueTab = "manual" | "ai" | "history";
 
 export default function ProofsTab() {
     const { partyId } = useOutletContext<PartyWorkspaceContext>();
@@ -545,8 +671,10 @@ export default function ProofsTab() {
     const [activeTab, setActiveTab] = useState<QueueTab>("manual");
     const [manualProofs, setManualProofs] = useState<ProofDto[]>([]);
     const [aiProofs, setAiProofs] = useState<ProofDto[]>([]);
+    const [historyProofs, setHistoryProofs] = useState<ProofDto[]>([]);
     const [loadingManual, setLoadingManual] = useState(true);
     const [loadingAi, setLoadingAi] = useState(true);
+    const [loadingHistory, setLoadingHistory] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
     const [rejectTarget, setRejectTarget] = useState<ProofDto | null>(null);
@@ -555,13 +683,16 @@ export default function ProofsTab() {
         setError(null);
         setLoadingManual(true);
         setLoadingAi(true);
+        setLoadingHistory(true);
         try {
-            const [manualRes, aiRes] = await Promise.all([
+            const [manualRes, aiRes, historyRes] = await Promise.all([
                 mentorApi.getProofQueue(),
                 mentorApi.getAiProofQueue(),
+                mentorApi.getProofHistory(),
             ]);
             if (manualRes.success) setManualProofs(manualRes.data ?? []);
             if (aiRes.success) setAiProofs(aiRes.data ?? []);
+            if (historyRes.success) setHistoryProofs(historyRes.data ?? []);
             if (!manualRes.success && !aiRes.success) {
                 setError(manualRes.message || t("mentor.proofQueue.failedToLoad"));
             }
@@ -570,6 +701,7 @@ export default function ProofsTab() {
         } finally {
             setLoadingManual(false);
             setLoadingAi(false);
+            setLoadingHistory(false);
         }
     }, []);
 
@@ -676,6 +808,12 @@ export default function ProofsTab() {
         return applyFilter(aiProofs.filter((p) => partyQuestIds.has(p.questId)));
     }, [aiProofs, applyFilter, partyQuestIds]);
 
+    // History is already newest-reviewed-first from the BE — no filter bar applies here.
+    const visibleHistory = useMemo(() => {
+        if (!partyQuestIds) return [];
+        return historyProofs.filter((p) => partyQuestIds.has(p.questId));
+    }, [historyProofs, partyQuestIds]);
+
     const scopingLoading = partyQuestIds === null;
 
     // ── Batch review — reuses handleApprove for every selected id ────────────
@@ -770,9 +908,9 @@ export default function ProofsTab() {
             {/* Queue switcher — the active tab lifts on a deep fill and grows an
                 underline, so it never relies on hue alone. */}
             <div className="flex gap-2 mb-6 border-b border-sky-ink/10">
-                {(["manual", "ai"] as QueueTab[]).map((tab) => {
+                {(["manual", "ai", "history"] as QueueTab[]).map((tab) => {
                     const isActive = activeTab === tab;
-                    const count = tab === "manual" ? visibleManual.length : visibleAi.length;
+                    const count = tab === "manual" ? visibleManual.length : tab === "ai" ? visibleAi.length : visibleHistory.length;
                     return (
                         <button
                             type="button"
@@ -783,14 +921,18 @@ export default function ProofsTab() {
                                 isActive
                                     ? tab === "ai"
                                         ? "bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-chip"
-                                        : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                                        : tab === "history"
+                                            ? "bg-linear-to-b from-sky-ink-2 to-sky-ink text-white shadow-sky-chip"
+                                            : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
                                     : "text-sky-ink-2 hover:text-sky-ink hover:bg-white/50"
                             }`}
                         >
                             {tab === "manual"
                                 ? <UserRoundPen className="w-4 h-4" aria-hidden="true" />
-                                : <Bot className="w-4 h-4" aria-hidden="true" />}
-                            {tab === "manual" ? t("Manual") : t("AI")}
+                                : tab === "ai"
+                                    ? <Bot className="w-4 h-4" aria-hidden="true" />
+                                    : <History className="w-4 h-4" aria-hidden="true" />}
+                            {tab === "manual" ? t("Manual") : tab === "ai" ? t("AI") : t("mentor.proofQueue.history.tab")}
                             <span className={`ml-1 inline-grid place-items-center min-w-5 h-5 px-1.5 text-[11px] font-semibold rounded-full tabular-nums ${
                                 isActive ? "bg-white/22 text-white" : "bg-sky-ink/8 text-sky-ink-2"
                             }`}>
@@ -816,7 +958,7 @@ export default function ProofsTab() {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelect}
                 />
-            ) : (
+            ) : activeTab === "ai" ? (
                 <QueueSection
                     title={t("AI Review Queue")}
                     count={visibleAi.length}
@@ -831,6 +973,12 @@ export default function ProofsTab() {
                     isAiQueue
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelect}
+                />
+            ) : (
+                <HistorySection
+                    proofs={visibleHistory}
+                    loading={loadingHistory || scopingLoading}
+                    onCompare={setCompareTarget}
                 />
             )}
 

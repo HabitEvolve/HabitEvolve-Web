@@ -676,6 +676,18 @@
         "aiConfidenceLabel": "Confidence",
         "aiNoReasoning": "No reasoning provided.",
         "aiAssistNotice": "AI assists — a mentor still decides."
+      },
+      "history": {
+        "tab": "History",
+        "title": "Review History",
+        "failedToLoad": "Failed to load review history.",
+        "mascotEmptyTitle": "No history yet",
+        "mascotEmptySubtitle": "Proofs you approve or reject will show up here.",
+        "reviewedAt": "Reviewed",
+        "reviewedBy": "Reviewed by user #{{id}}",
+        "autoApproved": "Auto-approved by the system",
+        "rejectReason": "Rejection reason",
+        "noReasonGiven": "No reason given."
       }
     },
     "partyReminder": {

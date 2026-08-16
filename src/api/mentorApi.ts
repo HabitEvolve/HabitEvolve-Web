@@ -167,6 +167,13 @@ const mentorApi = {
         return r.data;
     },
 
+    getProofHistory: async (limit = 50): Promise<ApiResponse<ProofDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<ProofDto[]>>(
+            '/mentor/proofs/history', { params: { mentorUserId: mid(), limit } }
+        );
+        return r.data;
+    },
+
     approveProof: async (proofId: number): Promise<ApiResponse<ProofDto>> => {
         const r = await axiosClient.post<ApiResponse<ProofDto>>(
             `/mentor/proofs/${proofId}/approve`,

@@ -676,6 +676,18 @@
         "aiConfidenceLabel": "Độ tin cậy",
         "aiNoReasoning": "Không có giải thích.",
         "aiAssistNotice": "AI chỉ hỗ trợ — mentor vẫn là người quyết định."
+      },
+      "history": {
+        "tab": "Lịch Sử",
+        "title": "Lịch Sử Xét Duyệt",
+        "failedToLoad": "Không thể tải lịch sử xét duyệt.",
+        "mascotEmptyTitle": "Chưa có lịch sử",
+        "mascotEmptySubtitle": "Các bằng chứng bạn đã chấp thuận hoặc từ chối sẽ hiện ở đây.",
+        "reviewedAt": "Đã duyệt",
+        "reviewedBy": "Người duyệt: User #{{id}}",
+        "autoApproved": "Hệ thống tự động chấp thuận",
+        "rejectReason": "Lý do từ chối",
+        "noReasonGiven": "Không có lý do."
       }
     },
     "partyReminder": {

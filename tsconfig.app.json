@@ -22,9 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"],
-  "exclude": [
-    "src/pages/AdminGoalManagement.tsx",
-    "src/pages/AdminPracticalTaskManagement.tsx"
-  ]
+  "include": ["src"]
 }

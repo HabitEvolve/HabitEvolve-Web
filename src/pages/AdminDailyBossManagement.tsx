@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Plus, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, ShieldAlert, Wand2, Film,
@@ -84,6 +85,7 @@ function ConfirmDeleteModal({ boss, onConfirm, onCancel, loading }: {
   onCancel(): void;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Portal>
       <div className="fixed inset-0 bg-sky-abyss/45 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -95,17 +97,17 @@ function ConfirmDeleteModal({ boss, onConfirm, onCancel, loading }: {
               <ShieldAlert className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className={eyebrow}>Irreversible</p>
-              <h3 className="font-display text-base font-semibold leading-tight text-sky-ink">Delete Boss?</h3>
+              <p className={eyebrow}>{t('admin.dailyBossManagement.confirmDelete.irreversible')}</p>
+              <h3 className="font-display text-base font-semibold leading-tight text-sky-ink">{t('admin.dailyBossManagement.confirmDelete.title')}</h3>
             </div>
           </div>
           <p className="mb-6 rounded-sky-chip bg-white/58 ring-1 ring-white/80 px-3.5 py-2.5 text-sm font-medium text-sky-ink-2">
-            Remove <strong className="font-semibold text-sky-ink">{boss.icon} {boss.name}</strong> from the pool? This cannot be undone.
+            {t('admin.dailyBossManagement.confirmDelete.message', { icon: boss.icon, name: boss.name })}
           </p>
           <div className="flex gap-3">
-            <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancel</SkyButton>
+            <SkyButton type="button" variant="secondary" onClick={onCancel} className="flex-1">{t('common.cancel')}</SkyButton>
             <SkyButton type="button" variant="destructive" onClick={onConfirm} disabled={loading} className="flex-1">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} {t('common.delete')}
             </SkyButton>
           </div>
         </SkyCard>
@@ -124,6 +126,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
   onSave(payload: DailyBossPayload): Promise<void>;
   onClose(): void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<DailyBossPayload>(
     editing
       ? { name: editing.name, description: editing.description ?? '', icon: editing.icon ?? '', hpMin: editing.hpMin, hpMax: editing.hpMax, categoryCode: editing.categoryCode, spriteKey: editing.spriteKey }
@@ -137,9 +140,9 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { setErr('Name is required.'); return; }
-    if (form.hpMin < 1) { setErr('HP Min must be ≥ 1.'); return; }
-    if (form.hpMax < form.hpMin) { setErr('HP Max must be ≥ HP Min.'); return; }
+    if (!form.name.trim()) { setErr(t('admin.dailyBossManagement.form.nameRequired')); return; }
+    if (form.hpMin < 1) { setErr(t('admin.dailyBossManagement.form.hpMinInvalid')); return; }
+    if (form.hpMax < form.hpMin) { setErr(t('admin.dailyBossManagement.form.hpMaxInvalid')); return; }
     setSaving(true); setErr('');
     try {
       await onSave({
@@ -152,7 +155,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
         spriteKey: form.spriteKey || null,
       });
     } catch (err) {
-      setErr((err as any)?.message ?? 'Failed to save.');
+      setErr((err as any)?.message ?? t('admin.dailyBossManagement.form.saveFailed'));
     } finally { setSaving(false); }
   };
 
@@ -166,12 +169,12 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
               <Skull className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className={eyebrow}>Daily boss</p>
+              <p className={eyebrow}>{t('admin.dailyBossManagement.form.dailyBossEyebrow')}</p>
               <h2 className="truncate font-display text-base font-semibold leading-tight text-sky-ink">
-                {editing ? 'Edit Daily Boss' : 'New Daily Boss'}
+                {editing ? t('admin.dailyBossManagement.form.editTitle') : t('admin.dailyBossManagement.form.newTitle')}
               </h2>
             </div>
-            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X className="w-5 h-5" /></SkyButton>
+            <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t('common.cancel')}><X className="w-5 h-5" /></SkyButton>
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -184,36 +187,36 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
             )}
 
             <div>
-              <label className={fieldLabel}>Boss Name *</label>
+              <label className={fieldLabel}>{t('admin.dailyBossManagement.form.nameLabel')}</label>
               <input
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 className={inputCls}
-                placeholder="e.g. Meliodas"
+                placeholder={t('admin.dailyBossManagement.form.namePlaceholder')}
                 required
               />
             </div>
 
             <div>
-              <label className={fieldLabel}>Description</label>
+              <label className={fieldLabel}>{t('admin.dailyBossManagement.form.descLabel')}</label>
               <textarea
                 value={form.description ?? ''}
                 onChange={e => set('description', e.target.value)}
                 rows={2}
                 className={inputCls}
-                placeholder="Optional lore or notes"
+                placeholder={t('admin.dailyBossManagement.form.descPlaceholder')}
               />
             </div>
 
             <div>
-              <label className={fieldLabel}>Category</label>
+              <label className={fieldLabel}>{t('admin.dailyBossManagement.form.categoryLabel')}</label>
               <select
                 value={form.categoryCode ?? ''}
                 onChange={e => set('categoryCode', e.target.value || null)}
                 disabled={categoriesLoading}
                 className={inputCls}
               >
-                <option value="">— Generic (mọi goal) —</option>
+                <option value="">{t('admin.dailyBossManagement.form.categoryGenericOption')}</option>
                 {categories.map(c => (
                   <option key={c.categoryId} value={c.categoryCode}>
                     {c.categoryName}
@@ -222,21 +225,21 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
               </select>
               <p className="mt-1.5 text-[11px] font-medium text-sky-ink-3">
                 {categoriesLoading
-                  ? 'Đang tải danh mục…'
-                  : 'Boss hợp chủ đề sẽ ưu tiên cho player theo goal đó; Generic khớp mọi goal.'}
+                  ? t('admin.dailyBossManagement.form.categoryLoadingHint')
+                  : t('admin.dailyBossManagement.form.categoryHint')}
               </p>
             </div>
 
             {/* Sprite art có sẵn (bundled) — khi chọn, avatar dùng sprite này thay Icon/emoji ở cả web & app. */}
             <div>
-              <label className={fieldLabel}>Sprite art (có sẵn)</label>
+              <label className={fieldLabel}>{t('admin.dailyBossManagement.form.spriteLabel')}</label>
               <div className="flex items-center gap-3">
                 <select
                   value={form.spriteKey ?? ''}
                   onChange={e => set('spriteKey', e.target.value || null)}
                   className={`${inputCls} flex-1`}
                 >
-                  <option value="">— Không dùng (theo Icon) —</option>
+                  <option value="">{t('admin.dailyBossManagement.form.spriteNoneOption')}</option>
                   {MONSTER_ROSTER.map(m => (
                     <option key={m.key} value={m.key}>{m.name}</option>
                   ))}
@@ -250,7 +253,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                 </span>
               </div>
               <p className="mt-1.5 text-[11px] font-medium text-sky-ink-3">
-                Bộ sprite bundled dùng chung với app (pixel-art). Có chọn → avatar boss ưu tiên sprite này hơn Icon/emoji.
+                {t('admin.dailyBossManagement.form.spriteHint')}
               </p>
             </div>
 
@@ -259,11 +262,11 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                 fields share a plate rather than floating side by side. */}
             <div className="rounded-sky-md bg-white/50 ring-1 ring-white/76 p-3.5">
               <p className={`inline-flex items-center gap-1.5 mb-2.5 ${eyebrow}`}>
-                <Heart className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" /> HP range
+                <Heart className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" /> {t('admin.dailyBossManagement.form.hpRangeLabel')}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={fieldLabel}>HP Min *</label>
+                  <label className={fieldLabel}>{t('admin.dailyBossManagement.form.hpMinLabel')}</label>
                   <input
                     type="number" min={1}
                     value={form.hpMin}
@@ -272,7 +275,7 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                   />
                 </div>
                 <div>
-                  <label className={fieldLabel}>HP Max *</label>
+                  <label className={fieldLabel}>{t('admin.dailyBossManagement.form.hpMaxLabel')}</label>
                   <input
                     type="number" min={1}
                     value={form.hpMax}
@@ -284,10 +287,10 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
             </div>
 
             <div className="flex gap-3 pt-1">
-              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</SkyButton>
+              <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">{t('common.cancel')}</SkyButton>
               <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {editing ? 'Save Changes' : 'Create Boss'}
+                {editing ? t('admin.dailyBossManagement.form.saveChanges') : t('admin.dailyBossManagement.form.createBoss')}
               </SkyButton>
             </div>
           </form>
@@ -307,6 +310,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
   onOpenAnimation(): void;
   toggling: boolean;
 }) {
+  const { t } = useTranslation();
   const hasAnimation = boss.totalFrames > 0;
   // Resolve friendly category label; a code with no matching category is likely a typo (A7.5).
   const cat = boss.categoryCode ? categories.find(c => c.categoryCode === boss.categoryCode) : null;
@@ -322,7 +326,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
           {boss.isActive
             ? <Check className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
             : <Minus className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />}
-          {boss.isActive ? 'Active' : 'Inactive'}
+          {boss.isActive ? t('admin.dailyBossManagement.card.active') : t('admin.dailyBossManagement.card.inactive')}
         </span>
       </div>
 
@@ -347,7 +351,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
               gets the attention hue and a warning glyph rather than blending in
               with the categories that are fine. */}
           <span
-            title={categoryUnknown ? `Category code "${boss.categoryCode}" khớp không danh mục nào — có thể gõ sai.` : undefined}
+            title={categoryUnknown ? t('admin.dailyBossManagement.card.categoryUnknownTitle', { code: boss.categoryCode }) : undefined}
             className={`mt-1.5 inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${
               categoryUnknown ? TONE.peach.chip : boss.categoryCode ? TONE.deep.chip : TONE.neutral.chip
             }`}
@@ -359,7 +363,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
               ? boss.categoryCode
               : cat
                 ? `${cat.iconCode ? `${cat.iconCode} ` : ''}${cat.categoryName}`
-                : 'Generic'}
+                : t('admin.dailyBossManagement.card.categoryGeneric')}
           </span>
         </div>
       </div>
@@ -368,7 +372,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
       <div className="mb-4 flex items-stretch gap-2">
         <div className="flex-1 rounded-sky-md bg-sky-dmg/10 ring-1 ring-sky-dmg/20 px-3 py-2">
           <p className={`mb-0.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-dmg-deep`}>
-            <Heart className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> HP Range
+            <Heart className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> {t('admin.dailyBossManagement.card.hpRange')}
           </p>
           <p className="font-display text-sm font-semibold text-sky-ink tabular-nums">
             {boss.hpMin.toLocaleString()} – {boss.hpMax.toLocaleString()}
@@ -379,7 +383,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
         <button
           type="button"
           onClick={onOpenAnimation}
-          title="Animation Studio"
+          title={t('admin.dailyBossManagement.studio.title')}
           className={[
             'flex-1 rounded-sky-md px-3 py-2 text-left ring-1 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-px',
             hasAnimation
@@ -388,32 +392,32 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
           ].join(' ')}
         >
           <p className={`mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${hasAnimation ? 'text-sky-violet-deep' : 'text-sky-peach-deep'}`}>
-            <Film className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> Animation
+            <Film className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> {t('admin.dailyBossManagement.card.animation')}
           </p>
           <p className="font-display text-sm font-semibold text-sky-ink tabular-nums">
-            {hasAnimation ? `${boss.totalFrames} frame` : 'Chưa có — upload'}
+            {hasAnimation ? t('admin.dailyBossManagement.card.animationCount', { count: boss.totalFrames }) : t('admin.dailyBossManagement.card.notUploaded')}
           </p>
         </button>
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        <SkyButton type="button" variant="secondary" size="sm" onClick={onToggle} disabled={toggling} title={boss.isActive ? 'Deactivate' : 'Activate'} aria-pressed={boss.isActive}>
+        <SkyButton type="button" variant="secondary" size="sm" onClick={onToggle} disabled={toggling} title={boss.isActive ? t('admin.dailyBossManagement.card.deactivate') : t('admin.dailyBossManagement.card.activate')} aria-pressed={boss.isActive}>
           {toggling
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : boss.isActive
               ? <ToggleRight className="w-4 h-4 text-sky-teal" />
               : <ToggleLeft className="w-4 h-4" />
           }
-          {boss.isActive ? 'Deactivate' : 'Activate'}
+          {boss.isActive ? t('admin.dailyBossManagement.card.deactivate') : t('admin.dailyBossManagement.card.activate')}
         </SkyButton>
         <SkyButton type="button" variant="secondary" size="sm" onClick={onEdit}>
-          <Pencil className="w-3.5 h-3.5" /> Edit
+          <Pencil className="w-3.5 h-3.5" /> {t('admin.dailyBossManagement.card.edit')}
         </SkyButton>
         <SkyButton type="button" variant="secondary" size="sm" onClick={onOpenAnimation}>
-          <Wand2 className="w-3.5 h-3.5" /> Anim
+          <Wand2 className="w-3.5 h-3.5" /> {t('admin.dailyBossManagement.card.anim')}
         </SkyButton>
-        <SkyButton type="button" variant="destructive" size="icon" onClick={onDelete} className="ml-auto" aria-label={`Delete ${boss.name}`}>
+        <SkyButton type="button" variant="destructive" size="icon" onClick={onDelete} className="ml-auto" aria-label={t('admin.dailyBossManagement.card.deleteAria', { name: boss.name })}>
           <Trash2 className="w-3.5 h-3.5" />
         </SkyButton>
       </div>
@@ -423,6 +427,7 @@ function BossCard({ boss, categories, onEdit, onToggle, onDelete, onOpenAnimatio
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function AdminDailyBossManagement() {
+  const { t } = useTranslation();
   const [bosses, setBosses] = useState<DailyBossTemplateDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeOnly, setActiveOnly] = useState(false);
@@ -445,10 +450,10 @@ export default function AdminDailyBossManagement() {
     try {
       const res = await adminDailyBossApi.getAll(activeOnly || undefined);
       if (res.success) setBosses(res.data ?? []);
-      else flash('error', res.message ?? 'Failed to load.');
-    } catch { flash('error', 'Failed to load bosses.'); }
+      else flash('error', res.message ?? t('admin.dailyBossManagement.loadFailed'));
+    } catch { flash('error', t('admin.dailyBossManagement.loadBossesFailed')); }
     finally { setLoading(false); }
-  }, [activeOnly]);
+  }, [activeOnly, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -467,10 +472,10 @@ export default function AdminDailyBossManagement() {
   const handleSave = async (payload: DailyBossPayload) => {
     if (formModal?.editing) {
       await adminDailyBossApi.update(formModal.editing.dailyBossTemplateId, payload);
-      flash('success', 'Boss updated.');
+      flash('success', t('admin.dailyBossManagement.bossUpdated'));
     } else {
       await adminDailyBossApi.create(payload);
-      flash('success', 'Boss created.');
+      flash('success', t('admin.dailyBossManagement.bossCreated'));
     }
     setFormModal(null);
     load();
@@ -482,7 +487,7 @@ export default function AdminDailyBossManagement() {
       await adminDailyBossApi.toggleActive(boss.dailyBossTemplateId, !boss.isActive);
       load();
     } catch (ex: any) {
-      flash('error', ex?.response?.data?.message ?? 'Toggle failed.');
+      flash('error', ex?.response?.data?.message ?? t('admin.dailyBossManagement.toggleFailed'));
     } finally { setToggling(null); }
   };
 
@@ -491,11 +496,11 @@ export default function AdminDailyBossManagement() {
     setDelLoading(true);
     try {
       await adminDailyBossApi.delete(delBoss.dailyBossTemplateId);
-      flash('success', `${delBoss.name} deleted.`);
+      flash('success', t('admin.dailyBossManagement.bossDeleted', { name: delBoss.name }));
       setDelBoss(null);
       load();
     } catch (ex: any) {
-      flash('error', ex?.response?.data?.message ?? 'Delete failed.');
+      flash('error', ex?.response?.data?.message ?? t('admin.dailyBossManagement.deleteFailed'));
     } finally { setDelLoading(false); }
   };
 
@@ -510,19 +515,19 @@ export default function AdminDailyBossManagement() {
       <PageHeader
         icon={<Flame className="w-6 h-6" strokeWidth={2.1} aria-hidden="true" />}
         tone="dmg"
-        eyebrow="Game content"
-        title="Daily Boss Pool"
-        description="Each player gets one boss per day drawn from the active pool (stable hash per user/date)."
+        eyebrow={t('admin.dailyBossManagement.eyebrow')}
+        title={t('admin.dailyBossManagement.pageTitle')}
+        description={t('admin.dailyBossManagement.pageDescription')}
         actions={
           <>
             <FilterDropdown<{ activeState: string }>
               fields={[{
                 key: 'activeState',
-                label: 'Status',
+                label: t('admin.dailyBossManagement.filterStatusLabel'),
                 type: 'select',
                 options: [
-                  { label: 'Active only', value: 'true' },
-                  { label: 'Show all', value: 'false' },
+                  { label: t('admin.dailyBossManagement.filterActiveOnly'), value: 'true' },
+                  { label: t('admin.dailyBossManagement.filterShowAll'), value: 'false' },
                 ],
               } satisfies FilterField]}
               filters={{ activeState: String(activeOnly) }}
@@ -532,7 +537,7 @@ export default function AdminDailyBossManagement() {
               align="left"
             />
             <SkyButton type="button" variant="primary" onClick={() => setFormModal({ editing: null })}>
-              <Plus className="w-4 h-4" /> Add Boss
+              <Plus className="w-4 h-4" /> {t('admin.dailyBossManagement.addBoss')}
             </SkyButton>
           </>
         }
@@ -543,9 +548,9 @@ export default function AdminDailyBossManagement() {
           only one that carries a hue; total and inactive stay quiet. */}
       <div className="flex flex-wrap items-center gap-2 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
         {([
-          { label: 'Total', value: bosses.length, tone: 'neutral' as Tone },
-          { label: 'Active', value: activeBosses.length, tone: 'teal' as Tone },
-          { label: 'Inactive', value: inactiveBosses.length, tone: 'neutral' as Tone },
+          { label: t('admin.dailyBossManagement.statTotal'), value: bosses.length, tone: 'neutral' as Tone },
+          { label: t('admin.dailyBossManagement.statActive'), value: activeBosses.length, tone: 'teal' as Tone },
+          { label: t('admin.dailyBossManagement.statInactive'), value: inactiveBosses.length, tone: 'neutral' as Tone },
         ]).map(s => (
           <div key={s.label} className={`flex items-center gap-2 rounded-sky-chip ring-1 px-3.5 py-1.5 ${TONE[s.tone].chip}`}>
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-75">{s.label}</span>
@@ -558,7 +563,7 @@ export default function AdminDailyBossManagement() {
           <div className="relative ml-auto flex items-center gap-2 overflow-hidden rounded-sky-chip bg-sky-peach/16 pl-3.5 pr-3.5 py-1.5 text-sky-peach-deep">
             <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
             <ShieldAlert className="w-4 h-4 shrink-0" strokeWidth={2.4} aria-hidden="true" />
-            <span className="text-xs font-semibold">Pool empty — system uses fallback HP config</span>
+            <span className="text-xs font-semibold">{t('admin.dailyBossManagement.poolEmptyWarning')}</span>
           </div>
         )}
       </div>
@@ -566,15 +571,15 @@ export default function AdminDailyBossManagement() {
       {/* Boss grid */}
       {loading ? (
         <div className="flex items-center gap-2 justify-center py-20 text-sm font-medium text-sky-ink-3">
-          <Loader2 className="w-6 h-6 animate-spin" /> Loading pool…
+          <Loader2 className="w-6 h-6 animate-spin" /> {t('admin.dailyBossManagement.loadingPool')}
         </div>
       ) : bosses.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/38 py-20">
           <span className="grid place-items-center w-16 h-16 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">
             <Skull className="w-7 h-7" strokeWidth={1.8} aria-hidden="true" />
           </span>
-          <p className="font-display text-sky-h3 font-semibold text-sky-ink">No bosses yet</p>
-          <p className="text-sm font-medium text-sky-ink-2">Add the first boss to the daily pool.</p>
+          <p className="font-display text-sky-h3 font-semibold text-sky-ink">{t('admin.dailyBossManagement.noBosses')}</p>
+          <p className="text-sm font-medium text-sky-ink-2">{t('admin.dailyBossManagement.noBossesHint')}</p>
         </div>
       ) : (
         <div className="sky-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -10,7 +10,6 @@ import {
   BookOpen,
   ClipboardList,
   Coins,
-  Cpu,
   FileClock,
   Flame,
   Gavel,

@@ -395,7 +395,7 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                         [t("mentor.subscriptionWallet.partyQuestsPerWeek"), `${pkg.partyQuestsPerWeek}`, null],
                         [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes, null],
                         ["Proof Types", pkg.proofTypes || "—", null],
-                        ["AI Verification", pkg.aiVerificationBossModes || "—", <Bot key="bot" className="w-3.5 h-3.5 text-sky-violet-deep" />],
+                        ["AI Verification", pkg.aiVerificationBossModes ? "Included" : "Not included", <Bot key="bot" className="w-3.5 h-3.5 text-sky-violet-deep" />],
                         [t("mentor.subscriptionWallet.duration"), `${pkg.durationDays} ${t("mentor.subscriptionWallet.days")}`, null],
                     ].map(([k, v, icon]) => (
                         <div key={k as string} className="flex justify-between gap-3 text-sm font-medium">
@@ -1156,7 +1156,7 @@ export default function SubscriptionWallet() {
                                     {pkg.aiVerificationBossModes ? (
                                         <TraitRow
                                             label="AI"
-                                            value={pkg.aiVerificationBossModes}
+                                            value="Included"
                                             tone="violet"
                                             icon={<Bot className="w-3 h-3 shrink-0" aria-hidden="true" />}
                                         />

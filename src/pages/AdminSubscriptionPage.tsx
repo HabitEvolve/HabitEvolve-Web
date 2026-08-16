@@ -59,7 +59,7 @@ interface PackageFormState {
   maxMGoldRewardPerQuest: number;
   proofTypes: string[];
   rewardTier: RewardTier;
-  aiVerificationBossModes: string[];
+  aiVerificationEnabled: boolean;
 }
 
 const EMPTY_FORM: PackageFormState = {
@@ -77,7 +77,7 @@ const EMPTY_FORM: PackageFormState = {
   maxMGoldRewardPerQuest: 50,
   proofTypes: ['PHOTO'],
   rewardTier: 'Basic',
-  aiVerificationBossModes: [],
+  aiVerificationEnabled: false,
 };
 
 const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
@@ -95,7 +95,7 @@ const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
   maxMGoldRewardPerQuest: pkg.maxMGoldRewardPerQuest,
   proofTypes: csvToArr(pkg.proofTypes),
   rewardTier: pkg.rewardTier,
-  aiVerificationBossModes: csvToArr(pkg.aiVerificationBossModes),
+  aiVerificationEnabled: csvToArr(pkg.aiVerificationBossModes).length > 0,
 });
 
 // ─── Tone taxonomy ───────────────────────────────────────────────────────────
@@ -190,6 +190,35 @@ const ChipGroup = ({
   </div>
 );
 
+// Single on/off toggle, styled as the same chip language as ChipGroup so it reads
+// as "one more option in this family" rather than a visually distinct control.
+const ToggleChip = ({
+  active,
+  onToggle,
+  labelOn,
+  labelOff,
+}: {
+  active: boolean;
+  onToggle: () => void;
+  labelOn: string;
+  labelOff: string;
+}) => (
+  <div className="mt-1 rounded-sky-md bg-white/42 ring-1 ring-white/70 p-2">
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onToggle}
+      className={`select-none rounded-sky-chip px-3 py-1.5 text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        active
+          ? 'bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip'
+          : 'text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink'
+      }`}
+    >
+      {active ? labelOn : labelOff}
+    </button>
+  </div>
+);
+
 // A long form needs wayfinding, so each section keeps its own rail hue and glyph
 // — an operator can then say "the party block" and mean a colour.
 const SectionHeader = ({ label, Icon, tone }: { label: string; Icon: LucideIcon; tone: Tone }) => (
@@ -262,9 +291,10 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         maxMGoldRewardPerQuest: Number(form.maxMGoldRewardPerQuest),
         proofTypes: arrToCsv(form.proofTypes),
         rewardTier: form.rewardTier,
-        aiVerificationBossModes: form.aiVerificationBossModes.length
-          ? arrToCsv(form.aiVerificationBossModes)
-          : undefined,
+        // Storage stays a CSV of Boss modes for backward compatibility, but the specific modes no
+        // longer drive any behavior (AI Check is now a per-quest opt-in the Mentor controls — see
+        // Quest.AiCheckEnabled) — only "empty vs non-empty" matters, so ON writes all three.
+        aiVerificationBossModes: form.aiVerificationEnabled ? 'EASY,NORMAL,HARD' : undefined,
       };
 
       let res;
@@ -474,10 +504,11 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
               </Field>
               <Field label={t('admin.subscriptionPage.form.aiModesLabel')} span>
                 <p className="mb-1 text-[10px] font-medium text-sky-ink-3">{t('admin.subscriptionPage.form.aiModesHint')}</p>
-                <ChipGroup
-                  options={BOSS_MODE_OPTIONS}
-                  selected={form.aiVerificationBossModes}
-                  onChange={v => set('aiVerificationBossModes', v)}
+                <ToggleChip
+                  active={form.aiVerificationEnabled}
+                  onToggle={() => set('aiVerificationEnabled', !form.aiVerificationEnabled)}
+                  labelOn={t('admin.subscriptionPage.form.aiModesOn')}
+                  labelOff={t('admin.subscriptionPage.form.aiModesOff')}
                 />
               </Field>
               <Field label={t('admin.subscriptionPage.form.proofTypesLabel')} span>

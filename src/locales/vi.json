@@ -552,7 +552,7 @@
         "aiCheckLabel": "Bật AI Check",
         "aiCheckHint": "Bằng chứng nộp cho nhiệm vụ này sẽ được AI kiểm tra trước. AI chỉ gợi ý độ chính xác — bạn vẫn là người quyết định duyệt/từ chối cuối cùng.",
         "aiCheckDisabledSelfCheck": "Không dùng được với Self-Check — loại này luôn tự động duyệt.",
-        "aiCheckDisabledNoBoss": "Cần party đang đánh Boss ở độ khó mà gói của bạn hỗ trợ AI Verification (xem panel Limits)."
+        "aiCheckDisabledPackage": "Gói của bạn chưa có AI Verification — nâng cấp gói để bật tính năng này."
       }
     },
     "subscriptionWallet": {
@@ -1292,13 +1292,15 @@
         "maxDamageLabel": "Tối Đa Sát Thương / Nhiệm Vụ *",
         "maxGoldLabel": "Tối Đa MGold / Nhiệm Vụ *",
         "bossModesLabel": "Chế Độ Boss *",
-        "aiModesLabel": "Chế Độ Boss AI Xác Minh",
+        "aiModesLabel": "AI Verification",
         "proofTypesLabel": "Loại Bằng Chứng *",
         "codePlaceholder": "vd. PREMIUM",
         "namePlaceholder": "Tên hiển thị gói",
         "descPlaceholder": "Mô tả tùy chọn hiển thị cho Mentor…",
         "unlimitedHint": "0 = không giới hạn",
-        "aiModesHint": "Chế độ boss có xác minh bằng AI",
+        "aiModesHint": "Khi bật, Mentor dùng gói này có thể bật AI Check riêng cho từng quest — AI chỉ gợi ý độ chính xác, Mentor vẫn là người duyệt cuối cùng.",
+        "aiModesOn": "AI Verification: Có",
+        "aiModesOff": "AI Verification: Không có",
         "cancel": "Hủy",
         "saving": "Đang lưu…",
         "createPackage": "Tạo Gói",

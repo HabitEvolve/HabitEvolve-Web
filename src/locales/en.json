@@ -552,7 +552,7 @@
         "aiCheckLabel": "Enable AI Check",
         "aiCheckHint": "Proof submitted for this quest will be checked by AI first. AI only suggests a confidence score — you always make the final approve/reject call.",
         "aiCheckDisabledSelfCheck": "Not available for Self-Check proof — it's always auto-approved.",
-        "aiCheckDisabledNoBoss": "Requires an active Boss right now at a difficulty your plan supports for AI Verification (see Limits panel)."
+        "aiCheckDisabledPackage": "Your plan doesn't include AI Verification — upgrade to enable this."
       }
     },
     "subscriptionWallet": {
@@ -1292,13 +1292,15 @@
         "maxDamageLabel": "Max Damage / Quest *",
         "maxGoldLabel": "Max MGold Reward / Quest *",
         "bossModesLabel": "Boss Modes *",
-        "aiModesLabel": "AI Verification Boss Modes",
+        "aiModesLabel": "AI Verification",
         "proofTypesLabel": "Proof Types *",
         "codePlaceholder": "e.g. PREMIUM",
         "namePlaceholder": "Package display name",
         "descPlaceholder": "Optional description shown to Mentors…",
         "unlimitedHint": "0 = unlimited",
-        "aiModesHint": "Boss modes where AI proof verification is available",
+        "aiModesHint": "When enabled, Mentors on this plan can turn on AI Check per quest — AI only suggests a confidence score, the Mentor always gives the final approval.",
+        "aiModesOn": "AI Verification: Included",
+        "aiModesOff": "AI Verification: Not included",
         "cancel": "Cancel",
         "saving": "Saving…",
         "createPackage": "Create Package",

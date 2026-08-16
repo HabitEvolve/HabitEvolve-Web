@@ -92,6 +92,7 @@ export interface QuestionDto {
     isRequired: boolean;
     displayOrder: number;
     isActive: boolean;
+    fieldKey: string | null;  // e.g. "baseline_count", "target_meal" — used as {variable} in task titles
     // BE: QuestionDto.AnswerGuidance — optional hint shown to the player next to the
     // question (display-only, not a proof/evidence upload). New field, no FE consumer yet.
     answerGuidance: string | null;
@@ -323,3 +324,28 @@ export interface TargetCalculationRulePayload {
     isActive?: boolean;
     goalId?: number | null;
 }
+
+// ==========================================
+// OPTION → TASK MAPPINGS
+// BE: OptionTaskMappingController [Route("api/admin/option-task-mappings")]
+// ==========================================
+
+// Matches BE OptionTaskMappingDto — enriched with option/question/task text
+export interface OptionTaskMappingDto {
+    mappingId: number;
+    optionId: number;
+    optionText: string;
+    optionValue: string;
+    questionId: number;
+    questionText: string;
+    templateId: number;
+    taskTitle: string;
+    createdAt: string;
+}
+
+// POST body
+export interface CreateOptionTaskMappingPayload {
+    optionId: number;
+    practicalTaskTemplateId: number;
+}
+

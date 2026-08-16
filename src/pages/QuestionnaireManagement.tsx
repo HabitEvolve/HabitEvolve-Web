@@ -246,6 +246,7 @@ function QuestionFormModal({
   const alert = useAlert();
   const [text, setText] = useState(editing?.questionText ?? '');
   const [type, setType] = useState<QuestionType>(editing?.questionType ?? 'SingleChoice');
+  const [fieldKey, setFieldKey] = useState(editing?.fieldKey ?? '');
   const [required, setRequired] = useState(editing?.isRequired ?? true);
   const [order, setOrder] = useState(editing?.displayOrder ?? 1);
   // Range inputs — numeric for NumberInput/RatingScale/Duration, "HH:mm" strings for Time
@@ -283,8 +284,8 @@ function QuestionFormModal({
 
     setSaving(true); setErr('');
     const payload = editing
-      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order, minValue: min, maxValue: max }
-      : { templateId, questionText: text.trim(), questionType: type, isRequired: required, displayOrder: order, minValue: min, maxValue: max };
+      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, fieldKey: fieldKey.trim() || null, isRequired: required, displayOrder: order, minValue: min, maxValue: max }
+      : { templateId, questionText: text.trim(), questionType: type, fieldKey: fieldKey.trim() || null, isRequired: required, displayOrder: order, minValue: min, maxValue: max };
     try { await onSave(payload); }
     catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
@@ -306,6 +307,23 @@ function QuestionFormModal({
             <div>
               <label className={fieldLabel}>{t('admin.questionnaire.questionForm.textLabel')}</label>
               <textarea value={text} onChange={e => setText(e.target.value)} rows={2} className={inputCls} placeholder={t('admin.questionnaire.questionForm.textPlaceholder')} required />
+            </div>
+            {/* FieldKey — used as {variable} placeholder in task titles and for progression binding.
+                Required for questions that drive text substitution or numeric ramp (e.g. baseline_count,
+                target_meal). Leave empty for structural questions (difficulty, proof_preference). */}
+            <div>
+              <label className={fieldLabel}>Field Key <span className="normal-case text-sky-ink-3 font-normal ml-1">(variable name for task titles)</span></label>
+              <input
+                type="text"
+                value={fieldKey}
+                onChange={e => setFieldKey(e.target.value.replace(/\s/g, '_').toLowerCase())}
+                className={inputCls}
+                placeholder="e.g. baseline_count, target_meal, food_group"
+              />
+              <p className="mt-1.5 text-[10px] font-medium text-sky-ink-3">
+                Matches <code className="font-mono bg-sky-ink/8 px-1 py-0.5 rounded">{'{field_key}'}</code> in task title templates.
+                Use <code className="font-mono bg-sky-ink/8 px-1 py-0.5 rounded">baseline_count</code> / <code className="font-mono bg-sky-ink/8 px-1 py-0.5 rounded">baseline_minutes</code> for progression ramp.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

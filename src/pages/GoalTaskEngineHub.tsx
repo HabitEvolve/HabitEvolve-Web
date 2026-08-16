@@ -5,7 +5,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
   Zap, ToggleLeft, ToggleRight,
   ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle, ExternalLink,
-  Target, ScrollText, BookOpen, Layers, Check, Minus, Search, type LucideIcon,
+  Target, ScrollText, BookOpen, Layers, Check, Minus, Search, GitBranch, type LucideIcon,
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import PageHeader from '../components/common/PageHeader';
@@ -23,6 +23,7 @@ import {
   CreateRulePayload, UpdateRulePayload_Rec,
   AddConditionPayload, RuleMatchMode, ConditionOperator,
   QuestionnaireTemplateDto, GoalQuestionnaireDto,
+  OptionTaskMappingDto,
 } from '../types/adminGoal.types';
 
 // ─── Shared style helpers ─────────────────────────────────────────────────────
@@ -1027,7 +1028,7 @@ function QuestionnairesTab({ goal }: { goal: GoalDto }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW 2 — GOAL COMMAND CENTER
 // ═══════════════════════════════════════════════════════════════════════════════
-type CommandTab = 'tasks' | 'rules' | 'questionnaires';
+type CommandTab = 'tasks' | 'rules' | 'questionnaires' | 'mappings';
 
 // Each tab keeps the hue its own records use elsewhere on the screen, so the
 // tab bar doubles as a legend. The scroll PNG is retired — at the 16px these
@@ -1037,6 +1038,7 @@ type CommandTab = 'tasks' | 'rules' | 'questionnaires';
 const TABS: { id: CommandTab; label: string; Icon: LucideIcon; on: string }[] = [
   { id: 'tasks',          label: 'Practical Tasks',      Icon: Zap,        on: 'bg-linear-to-b from-sky-violet to-sky-violet-deep' },
   { id: 'questionnaires', label: 'Questionnaires',       Icon: ScrollText, on: 'bg-linear-to-b from-sky-peach to-sky-peach-deep' },
+  { id: 'mappings',       label: 'Option → Task',        Icon: GitBranch,  on: 'bg-linear-to-b from-sky-teal to-sky-teal' },
 ];
 
 function GoalCommandCenter({ category, goal, onBack }: {
@@ -1103,7 +1105,220 @@ function GoalCommandCenter({ category, goal, onBack }: {
         {tab === 'tasks'          && <PracticalTasksTab      goal={goal} />}
         {tab === 'rules'          && <RecommendationRulesTab goal={goal} />}
         {tab === 'questionnaires' && <QuestionnairesTab      goal={goal} />}
+        {tab === 'mappings'       && <OptionTaskMappingsTab  goal={goal} />}
       </SkyCard>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB D — OPTION → TASK MAPPINGS
+// ═══════════════════════════════════════════════════════════════════════════════
+// Layout: for each choice question in the goal's active questionnaire,
+// show a collapsible section with each option + the tasks it maps to.
+// Admin can add or remove mappings inline without leaving the page.
+//
+// Colour rules:
+//   teal chip  = question header (authoritative/structural)
+//   peach chip = option           (a human answer, like Required badges)
+//   violet chip = task            (reuses the task hue from Tab A)
+//   rose  = destructive controls
+
+function OptionTaskMappingsTab({ goal }: { goal: GoalDto }) {
+  const alert = useAlert();
+
+  // Existing mappings from server, grouped by questionId
+  const [mappings, setMappings] = useState<OptionTaskMappingDto[]>([]);
+  // Task templates for this goal (pick list for "add mapping")
+  const [tasks, setTasks] = useState<AdminTaskTemplateDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  // Which option is currently showing its "add" picker
+  const [addingFor, setAddingFor] = useState<number | null>(null);
+  const [delLoading, setDelLoading] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [mRes, tRes] = await Promise.all([
+        adminGoalApi.getOptionTaskMappings(goal.goalId),
+        adminPracticalTaskApi.getTasks(goal.goalId),
+      ]);
+      if (mRes.success) setMappings(mRes.data ?? []);
+      if (tRes.success) setTasks(tRes.data ?? []);
+    } finally { setLoading(false); }
+  }, [goal.goalId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async (optionId: number, templateId: number) => {
+    try {
+      const res = await adminGoalApi.createOptionTaskMapping({ optionId, practicalTaskTemplateId: templateId });
+      if (res.success) {
+        setAddingFor(null);
+        await load();
+      } else {
+        alert.error(res.message ?? 'Failed to add mapping');
+      }
+    } catch (ex: any) {
+      alert.error(ex?.response?.data?.message ?? 'Failed to add mapping');
+    }
+  };
+
+  const handleRemove = async (mappingId: number) => {
+    setDelLoading(mappingId);
+    try {
+      const res = await adminGoalApi.deleteOptionTaskMapping(mappingId);
+      if (res.success) await load();
+      else alert.error(res.message ?? 'Delete failed');
+    } catch (ex: any) {
+      alert.error(ex?.response?.data?.message ?? 'Delete failed');
+    } finally { setDelLoading(null); }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 gap-2 text-sky-ink-3">
+        <Loader2 className="w-5 h-5 animate-spin" /> Loading mappings…
+      </div>
+    );
+  }
+
+  // Build hierarchical data: questions → options → their current mappings
+  // We derive questions/options from the mapping DTOs (server already enriches them)
+  const questionsMap = new Map<number, { questionText: string; options: Map<number, { optionText: string; optionValue: string; mappings: OptionTaskMappingDto[] }> }>();
+  for (const m of mappings) {
+    if (!questionsMap.has(m.questionId)) questionsMap.set(m.questionId, { questionText: m.questionText, options: new Map() });
+    const q = questionsMap.get(m.questionId)!;
+    if (!q.options.has(m.optionId)) q.options.set(m.optionId, { optionText: m.optionText, optionValue: m.optionValue, mappings: [] });
+    q.options.get(m.optionId)!.mappings.push(m);
+  }
+
+  // Tasks already mapped per option (for exclusion in picker)
+  const mappedTemplateIdsByOption = (optionId: number) =>
+    new Set(mappings.filter(m => m.optionId === optionId).map(m => m.templateId));
+
+  const questions = [...questionsMap.entries()];
+
+  if (questions.length === 0) {
+    return (
+      <div className="space-y-4 p-1">
+        <div className="text-center py-12 border border-dashed border-sky-ink/16 rounded-sky-card bg-white/40">
+          <GitBranch className="w-10 h-10 mx-auto mb-2.5 text-sky-ink-3 opacity-45" strokeWidth={1.6} aria-hidden="true" />
+          <p className="font-display font-semibold text-sky-ink-2">No mappings yet</p>
+          <p className="text-sm text-sky-ink-3 mt-0.5">
+            Make sure this goal has an active questionnaire with SingleChoice / MultipleChoice questions.
+          </p>
+        </div>
+        <p className={`${eyebrow} text-center`}>Tasks for this goal ({tasks.length})</p>
+        <div className="flex flex-wrap gap-2">
+          {tasks.map(t => (
+            <span key={t.taskId} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-sky-violet/12 text-sky-violet-deep ring-1 ring-sky-violet/22 px-2.5 py-1 rounded-full">
+              <Zap className="w-3 h-3 shrink-0" strokeWidth={2.4} /> {t.title}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-1">
+      {/* Summary bar */}
+      <div className="flex items-center gap-3 px-3 py-2.5 bg-sky-teal/8 ring-1 ring-sky-teal/18 rounded-sky-chip">
+        <GitBranch className="w-4 h-4 text-sky-teal shrink-0" strokeWidth={2.2} aria-hidden="true" />
+        <span className="text-sm font-semibold text-sky-ink-2">
+          <span className="text-sky-teal">{mappings.length}</span> mapping{mappings.length !== 1 ? 's' : ''} across{' '}
+          <span className="text-sky-teal">{questions.length}</span> question{questions.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* Question sections */}
+      {questions.map(([questionId, { questionText, options }]) => (
+        <div key={questionId} className="rounded-sky-card overflow-hidden ring-1 ring-sky-teal/18">
+          {/* Question header */}
+          <div className="relative flex items-center gap-2.5 px-4 py-3 bg-sky-teal/8 overflow-hidden">
+            <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1.5 bg-sky-teal" />
+            <span className="grid place-items-center w-7 h-7 shrink-0 rounded-sky-chip bg-sky-teal-bg ring-1 ring-sky-teal/26">
+              <GitBranch className="w-3.5 h-3.5 text-sky-teal" strokeWidth={2.4} aria-hidden="true" />
+            </span>
+            <p className="font-semibold text-sm text-sky-ink flex-1 min-w-0 truncate">{questionText}</p>
+            <span className={`text-[10px] font-semibold tabular-nums ${TONE.teal.chip} px-2 py-0.5 rounded-full ring-1`}>
+              {[...options.values()].reduce((sum, o) => sum + o.mappings.length, 0)} maps
+            </span>
+          </div>
+
+          {/* Options list */}
+          <div className="divide-y divide-white/60 bg-white/48">
+            {[...options.entries()].map(([optionId, { optionText, optionValue, mappings: optMappings }]) => {
+              const alreadyMapped = mappedTemplateIdsByOption(optionId);
+              const available = tasks.filter(t => !alreadyMapped.has(t.taskId));
+              const isAdding = addingFor === optionId;
+
+              return (
+                <div key={optionId} className="px-4 py-3 space-y-2">
+                  {/* Option label */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${TONE.peach.chip} px-2.5 py-0.5 rounded-full ring-1`}>
+                      {optionText}
+                    </span>
+                    <span className="text-[10px] font-mono text-sky-ink-3">{optionValue}</span>
+                  </div>
+
+                  {/* Mapped task chips */}
+                  {optMappings.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {optMappings.map(m => (
+                        <span key={m.mappingId} className="group inline-flex items-center gap-1.5 text-[11px] font-semibold bg-sky-violet/12 text-sky-violet-deep ring-1 ring-sky-violet/22 pl-2.5 pr-1.5 py-0.5 rounded-full">
+                          <Zap className="w-3 h-3 shrink-0" strokeWidth={2.4} />
+                          <span className="max-w-[20ch] truncate">{m.taskTitle}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemove(m.mappingId)}
+                            disabled={delLoading === m.mappingId}
+                            title="Remove mapping"
+                            className="ml-0.5 w-4 h-4 grid place-items-center rounded-full hover:bg-sky-rose/18 text-sky-rose-deep transition-colors"
+                            aria-label={`Remove mapping to ${m.taskTitle}`}
+                          >
+                            {delLoading === m.mappingId
+                              ? <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              : <X className="w-2.5 h-2.5" strokeWidth={2.8} />}
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add mapping picker */}
+                  {isAdding ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        className="flex-1 min-w-0 px-3 py-1.5 rounded-sky-chip bg-white/80 ring-1 ring-sky-deep/30 text-sm font-medium text-sky-ink focus:outline-none focus:ring-2 focus:ring-sky-deep/45"
+                        defaultValue=""
+                        onChange={e => { if (e.target.value) handleAdd(optionId, Number(e.target.value)); }}
+                        autoFocus
+                      >
+                        <option value="" disabled>Select a task…</option>
+                        {available.map(t => (
+                          <option key={t.taskId} value={t.taskId}>{t.title}</option>
+                        ))}
+                      </select>
+                      <SkyButton type="button" variant="ghost" size="sm" onClick={() => setAddingFor(null)}>
+                        <Minus className="w-3.5 h-3.5" /> Cancel
+                      </SkyButton>
+                    </div>
+                  ) : available.length > 0 ? (
+                    <SkyButton type="button" variant="secondary" size="sm" onClick={() => setAddingFor(optionId)}>
+                      <Plus className="w-3.5 h-3.5" /> Add mapping
+                    </SkyButton>
+                  ) : (
+                    <p className="text-[11px] text-sky-ink-3 italic">All tasks already mapped for this option.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

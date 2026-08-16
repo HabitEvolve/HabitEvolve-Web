@@ -4,7 +4,8 @@ import {
     GoalCategoryDto, GoalCategoryPayload,
     GoalDto, GoalPayload,
     QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
-    QuestionDto, GoalQuestionnaireDto
+    QuestionDto, GoalQuestionnaireDto,
+    OptionTaskMappingDto, CreateOptionTaskMappingPayload,
 } from '../types/adminGoal.types';
 
 const ADMIN_URL = '/admin';
@@ -158,6 +159,22 @@ export const adminGoalApi = {
     },
     deleteGoalQuestionnaire: async (goalId: number, id: number): Promise<ApiResponse<any>> => {
         const res = await axiosClient.delete(`${ADMIN_URL}/goals/${goalId}/questionnaires/${id}`);
+        return res.data;
+    },
+
+    // ==========================================
+    // 6. OPTION → TASK MAPPINGS
+    // ==========================================
+    getOptionTaskMappings: async (goalId: number): Promise<ApiResponse<OptionTaskMappingDto[]>> => {
+        const res = await axiosClient.get(`${ADMIN_URL}/option-task-mappings`, { params: { goalId } });
+        return res.data;
+    },
+    createOptionTaskMapping: async (payload: CreateOptionTaskMappingPayload): Promise<ApiResponse<OptionTaskMappingDto>> => {
+        const res = await axiosClient.post(`${ADMIN_URL}/option-task-mappings`, payload);
+        return res.data;
+    },
+    deleteOptionTaskMapping: async (mappingId: number): Promise<ApiResponse<boolean>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/option-task-mappings/${mappingId}`);
         return res.data;
     },
 };

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Settings2, RefreshCw, Loader2, X, Pencil,
   Bot, Gavel, Target, CalendarCheck, Gauge,
-  Check, Minus, AlertTriangle,
+  Check, Minus, AlertTriangle, Search,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -399,6 +399,7 @@ export default function AdminConfigPage() {
   const [reloading, setReloading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [groupFilter, setGroupFilter] = useState<string>(""); // "" = all
+  const [searchQuery, setSearchQuery] = useState("");
   const [editTarget, setEditTarget] = useState<SystemConfigDto | null>(null);
 
   // ── Fetch all configs (large page to get everything) ──
@@ -444,10 +445,19 @@ export default function AdminConfigPage() {
     setConfigs(prev => prev.map(c => c.configId === updated.configId ? updated : c));
   }, []);
 
+  // ── Search: matches configKey or description, case-insensitive ──
+  const filteredConfigs = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return configs;
+    return configs.filter(c =>
+      c.configKey.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
+    );
+  }, [configs, searchQuery]);
+
   // ── Group configs by configGroup ──
   const groupedMap = useMemo(() => {
     const map = new Map<string, SystemConfigDto[]>();
-    for (const cfg of configs) {
+    for (const cfg of filteredConfigs) {
       const g = cfg.configGroup ?? "other";
       if (!map.has(g)) map.set(g, []);
       map.get(g)!.push(cfg);
@@ -455,7 +465,7 @@ export default function AdminConfigPage() {
     // Sort each group's configs by key
     for (const [, list] of map) list.sort((a, b) => a.configKey.localeCompare(b.configKey));
     return map;
-  }, [configs]);
+  }, [filteredConfigs]);
 
   // Order: known groups first, then extras
   const orderedGroups = useMemo(() => {
@@ -470,7 +480,7 @@ export default function AdminConfigPage() {
   // Displayed groups (after filter)
   const displayedGroups = groupFilter ? [groupFilter] : orderedGroups;
 
-  const totalCount = configs.length;
+  const totalCount = filteredConfigs.length;
 
   return (
     <>
@@ -505,12 +515,21 @@ export default function AdminConfigPage() {
         }
       />
 
-      {/* ── FILTER PILLS ───────────────────────────────────────────────────── */}
-      {/* The whole pill row sits in one recessed glass track, so it reads as a
-          single control rather than a scatter of loose buttons — and the
-          selected pill is the only thing that lifts out of it. */}
-      {filterGroups.length > 1 && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-6">
+      {/* ── SEARCH + FILTER PILLS ─────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
+          <label className="sr-only" htmlFor="config-search">{t("admin.configPage.searchPlaceholder")}</label>
+          <input
+            id="config-search"
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={t("admin.configPage.searchPlaceholder")}
+            className="pl-8 pr-3 py-2 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-sm font-medium text-sky-ink w-64 transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45"
+          />
+        </div>
+        {filterGroups.length > 1 && (
           <FilterDropdown<{ group: string }>
             fields={[{
               key: "group",
@@ -527,8 +546,8 @@ export default function AdminConfigPage() {
             hasActiveFilters={groupFilter !== ""}
             align="left"
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── LOADING STATE ──────────────────────────────────────────────────── */}
       {loading && (
@@ -554,18 +573,20 @@ export default function AdminConfigPage() {
       )}
 
       {/* ── EMPTY STATE ────────────────────────────────────────────────────── */}
-      {!loading && !fetchError && configs.length === 0 && (
+      {!loading && !fetchError && filteredConfigs.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/38 py-20">
           <span className="grid place-items-center w-16 h-16 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">
             <Settings2 className="w-7 h-7" strokeWidth={1.9} aria-hidden="true" />
           </span>
           <p className="font-display text-sky-h3 font-semibold text-sky-ink">{t("admin.configPage.noConfigs")}</p>
-          <p className="text-sm font-medium text-sky-ink-2">{t("admin.configPage.noConfigsHint")}</p>
+          <p className="text-sm font-medium text-sky-ink-2">
+            {configs.length === 0 ? t("admin.configPage.noConfigsHint") : t("admin.configPage.noConfigsMatchHint")}
+          </p>
         </div>
       )}
 
       {/* ── GROUP CARDS GRID ───────────────────────────────────────────────── */}
-      {!loading && !fetchError && configs.length > 0 && (
+      {!loading && !fetchError && filteredConfigs.length > 0 && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sky-stagger">
           {displayedGroups.map(group => {
             const groupConfigs = groupedMap.get(group);

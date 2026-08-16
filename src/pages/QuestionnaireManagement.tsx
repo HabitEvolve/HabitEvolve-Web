@@ -7,7 +7,7 @@ import {
   Loader2, ToggleLeft, ToggleRight, HelpCircle, List, CheckSquare,
   Hash, AlignLeft, Star, ChevronDown, ChevronUp, Clock, Timer,
   ShieldAlert, AlertTriangle, Check, Minus, ScrollText, FileQuestion,
-  Asterisk, ListTree, Layers,
+  Asterisk, ListTree, Layers, Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
@@ -686,6 +686,7 @@ export default function QuestionnaireManagement() {
   const autoSelectedRef = useRef(false);
 
   const [templates, setTemplates] = useState<QuestionnaireTemplateDto[]>([]);
+  const [templateSearch, setTemplateSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedTpl, setSelectedTpl] = useState<QuestionnaireTemplateDto | null>(null);
   const [tplModal, setTplModal] = useState<{ editing: QuestionnaireTemplateDto | null } | null>(null);
@@ -702,6 +703,11 @@ export default function QuestionnaireManagement() {
   }, []);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  const filteredTemplates = templates.filter(tpl => {
+    const q = templateSearch.trim().toLowerCase();
+    return !q || tpl.templateName.toLowerCase().includes(q);
+  });
 
   // Auto-select template from URL ?templateId= on first load
   useEffect(() => {
@@ -782,16 +788,28 @@ export default function QuestionnaireManagement() {
             min-height defaults to the content size), so a long template list just
             grows past the pane instead of scrolling in place. */}
         <div className="w-72 shrink-0 min-h-0 overflow-y-auto flex flex-col gap-3 pr-1 sky-stagger">
+          <div className="relative shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
+            <label className="sr-only" htmlFor="qb-search">{t('admin.questionnaire.searchPlaceholder')}</label>
+            <input
+              id="qb-search"
+              type="text"
+              value={templateSearch}
+              onChange={e => setTemplateSearch(e.target.value)}
+              placeholder={t('admin.questionnaire.searchPlaceholder')}
+              className="w-full pl-8 pr-3 py-2 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-xs font-semibold text-sky-ink transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45"
+            />
+          </div>
           {loading ? (
             <div className="flex items-center justify-center py-10 text-sm font-medium text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('admin.questionnaire.loading')}</div>
-          ) : templates.length === 0 ? (
+          ) : filteredTemplates.length === 0 ? (
             <div className="flex flex-col items-center gap-3 rounded-sky-card border border-dashed border-sky-ink/15 bg-white/38 py-12">
               <span className="grid place-items-center w-14 h-14 rounded-sky-md bg-white/72 ring-1 ring-white/85 text-sky-ink-3">
                 <Layers className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />
               </span>
-              <p className="font-display text-sm font-semibold text-sky-ink">{t('admin.questionnaire.noTemplates')}</p>
+              <p className="font-display text-sm font-semibold text-sky-ink">{templateSearch ? t('admin.questionnaire.noTemplatesMatch') : t('admin.questionnaire.noTemplates')}</p>
             </div>
-          ) : templates.map(tpl => {
+          ) : filteredTemplates.map(tpl => {
             const selected = selectedTpl?.templateId === tpl.templateId;
             return (
             // Same card language as the Category list in Goal Engine Hub: a

@@ -5,7 +5,7 @@ import {
   ToggleLeft, ToggleRight, ShieldAlert,
   ChevronDown, ChevronUp, Users, Coins,
   Check, Archive, PencilLine, AlertTriangle, Trophy,
-  Sparkles, Star, Gem, Swords, Library, BookOpen,
+  Sparkles, Star, Gem, Swords, Library, BookOpen, Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
@@ -731,6 +731,8 @@ export default function AdminQuestLibraryManagement() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<QuestLibraryStatus | ''>('');
   const [filterDiff, setFilterDiff] = useState<QuestLibraryDifficulty | ''>('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formModal, setFormModal] = useState<{ editing: QuestLibraryItemDto | null } | null>(null);
   const [delItem, setDelItem] = useState<QuestLibraryItemDto | null>(null);
   const [delLoading, setDelLoading] = useState(false);
@@ -744,6 +746,7 @@ export default function AdminQuestLibraryManagement() {
     setLoading(true);
     try {
       const res = await adminQuestLibraryApi.getItems({
+        search: searchQuery.trim() || undefined,
         status: filterStatus || undefined,
         difficulty: filterDiff || undefined,
         pageNumber: page,
@@ -761,9 +764,18 @@ export default function AdminQuestLibraryManagement() {
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterDiff, page, alertCtx]);
+  }, [searchQuery, filterStatus, filterDiff, page, alertCtx]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Debounce: update searchQuery 400ms after the user stops typing, and jump back to page 1.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     adminGoalApi.getGoals()
@@ -835,6 +847,18 @@ export default function AdminQuestLibraryManagement() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
+            <label className="sr-only" htmlFor="ql-search">Search quests</label>
+            <input
+              id="ql-search"
+              type="text"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              placeholder="Search quests…"
+              className={`${filterSelectCls} pl-8 w-52`}
+            />
+          </div>
           <label className="sr-only" htmlFor="ql-filter-status">Filter by status</label>
           <select
             id="ql-filter-status"
@@ -871,7 +895,9 @@ export default function AdminQuestLibraryManagement() {
             <Library className="w-7 h-7" strokeWidth={1.9} aria-hidden="true" />
           </span>
           <p className="font-display text-sky-h3 font-semibold text-sky-ink">No quests found</p>
-          <p className="text-sm mt-1.5 text-sky-ink-2">Create a quest and map it to at least one goal before publishing.</p>
+          <p className="text-sm mt-1.5 text-sky-ink-2">
+            {searchQuery ? 'Try a different search term.' : 'Create a quest and map it to at least one goal before publishing.'}
+          </p>
         </div>
       ) : (
         <div className={`space-y-3 sky-stagger transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>

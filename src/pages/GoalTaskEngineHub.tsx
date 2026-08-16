@@ -5,7 +5,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
   Zap, ToggleLeft, ToggleRight,
   ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle, ExternalLink,
-  Target, ScrollText, BookOpen, Layers, Check, Minus, type LucideIcon,
+  Target, ScrollText, BookOpen, Layers, Check, Minus, Search, type LucideIcon,
 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import PageHeader from '../components/common/PageHeader';
@@ -1115,6 +1115,8 @@ function CategoryGoalExplorer({ onEnterGoal }: {
 }) {
   const [categories, setCategories] = useState<GoalCategoryDto[]>([]);
   const [goals, setGoals] = useState<GoalDto[]>([]);
+  const [catSearch, setCatSearch] = useState('');
+  const [goalSearch, setGoalSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState<GoalCategoryDto | null>(null);
   const [catLoading, setCatLoading] = useState(true);
   const [goalLoading, setGoalLoading] = useState(false);
@@ -1143,6 +1145,17 @@ function CategoryGoalExplorer({ onEnterGoal }: {
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
   useEffect(() => { if (selectedCat) fetchGoals(selectedCat); else setGoals([]); }, [selectedCat, fetchGoals]);
+
+  const filteredCategories = categories.filter(c => {
+    const q = catSearch.trim().toLowerCase();
+    if (!q) return true;
+    return c.categoryName.toLowerCase().includes(q) || c.categoryCode.toLowerCase().includes(q);
+  });
+  const filteredGoals = goals.filter(g => {
+    const q = goalSearch.trim().toLowerCase();
+    if (!q) return true;
+    return g.goalName.toLowerCase().includes(q) || g.goalCode.toLowerCase().includes(q);
+  });
 
   const handleSaveCat = async (payload: GoalCategoryPayload) => {
     if (catModal?.editing) {
@@ -1210,15 +1223,27 @@ function CategoryGoalExplorer({ onEnterGoal }: {
               <Plus className="w-3 h-3" /> New
             </SkyButton>
           </div>
+          <div className="relative shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
+            <label className="sr-only" htmlFor="gte-cat-search">Search categories</label>
+            <input
+              id="gte-cat-search"
+              type="text"
+              value={catSearch}
+              onChange={e => setCatSearch(e.target.value)}
+              placeholder="Search categories…"
+              className="w-full pl-8 pr-3 py-2 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-xs font-semibold text-sky-ink transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45"
+            />
+          </div>
           <div className="flex-1 overflow-y-auto space-y-2 -mr-1 pr-1">
             {catLoading ? (
               <div className="flex items-center justify-center py-8 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /></div>
-            ) : categories.length === 0 ? (
-              <div className="text-center py-8 text-sky-ink-3 text-sm">No categories yet</div>
-            ) : categories.map(cat => (
+            ) : filteredCategories.length === 0 ? (
+              <div className="text-center py-8 text-sky-ink-3 text-sm">{catSearch ? 'No categories match.' : 'No categories yet'}</div>
+            ) : filteredCategories.map(cat => (
               <div
                 key={cat.categoryId}
-                onClick={() => setSelectedCat(cat)}
+                onClick={() => { setSelectedCat(cat); setGoalSearch(''); }}
                 className={`relative cursor-pointer rounded-sky-chip p-3 pl-3.5 overflow-hidden transition-all duration-150 ${selectedCat?.categoryId === cat.categoryId
                   ? 'bg-sky-peach/16 ring-1 ring-sky-peach/32'
                   : 'bg-white/58 ring-1 ring-white/80 hover:bg-white/80'}`}
@@ -1266,6 +1291,18 @@ function CategoryGoalExplorer({ onEnterGoal }: {
                     <span className="font-semibold text-sky-ink-2 tabular-nums">{goals.length}</span> goal{goals.length !== 1 ? 's' : ''}
                   </p>
                 </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-ink-3 pointer-events-none" aria-hidden="true" />
+                  <label className="sr-only" htmlFor="gte-goal-search">Search goals</label>
+                  <input
+                    id="gte-goal-search"
+                    type="text"
+                    value={goalSearch}
+                    onChange={e => setGoalSearch(e.target.value)}
+                    placeholder="Search goals…"
+                    className="pl-8 pr-3 py-2 rounded-sky-chip bg-white/70 ring-1 ring-white/80 text-xs font-semibold text-sky-ink w-48 transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45"
+                  />
+                </div>
                 <SkyButton type="button" variant="success" size="sm" onClick={() => setGoalModal({ editing: null })}>
                   <Plus className="w-3 h-3" /> New Goal
                 </SkyButton>
@@ -1274,9 +1311,9 @@ function CategoryGoalExplorer({ onEnterGoal }: {
               <div className="flex-1 overflow-y-auto space-y-3 -mr-1 pr-1">
                 {goalLoading ? (
                   <div className="flex items-center justify-center py-10 text-sky-ink-3"><Loader2 className="w-5 h-5 animate-spin" /></div>
-                ) : goals.length === 0 ? (
-                  <EmptyState Icon={Target} title="No goals in this category" hint="Add the first goal using the button above." />
-                ) : goals.map(goal => (
+                ) : filteredGoals.length === 0 ? (
+                  <EmptyState Icon={Target} title={goalSearch ? 'No goals match' : 'No goals in this category'} hint={goalSearch ? 'Try a different search term.' : 'Add the first goal using the button above.'} />
+                ) : filteredGoals.map(goal => (
                   <div key={goal.goalId} className="sky-lift rounded-sky-chip p-4 bg-white/68 ring-1 ring-white/80 shadow-sky-tint transition-all">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">

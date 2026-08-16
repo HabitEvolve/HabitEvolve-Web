@@ -83,6 +83,17 @@ export interface UpdateShopListingPayload {
   availableTo?: string | null;
 }
 
+// GET /api/admin/shop/listings/{id}/purchases — one row per successful purchase of this listing.
+export interface ShopPurchaseRowDto {
+  shopPurchaseId: number;
+  userId: number;
+  username: string;
+  email: string;
+  priceSnapshot: number;
+  currency: string;
+  createdAt: string;
+}
+
 // ── Loot Tables ───────────────────────────────────────────────────────────────
 // Matches BE LootTableEntryDto exactly — no lootTableId on the entry (only on the parent
 // table); itemName is included so item-kind entries can render without a lookup.

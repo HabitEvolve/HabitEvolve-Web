@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   Coins, Store, Dices, Sparkles, Plus, Pencil, X, Save, Trash2, Loader2,
-  Check, Minus, AlertTriangle, Gem, Package, Star, Crown, Inbox, Infinity as InfinityIcon,
+  Check, Minus, AlertTriangle, Gem, Package, Star, Crown, Inbox, Infinity as InfinityIcon, Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
@@ -12,7 +12,6 @@ import PageHeader from "../components/common/PageHeader";
 import { adminItemApi } from "../api/adminItemApi";
 import { adminShopListingApi } from "../api/adminShopListingApi";
 import { adminLootTableApi } from "../api/adminLootTableApi";
-import { adminGachaBannerApi } from "../api/adminGachaBannerApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import { FilterDropdown } from "../components/common/FilterDropdown";
@@ -20,8 +19,8 @@ import type { FilterField } from "../hooks/useTableFilters";
 import type {
   ItemDefinitionDto, CreateItemPayload,
   ShopListingDto, CreateShopListingPayload,
+  ShopPurchaseRowDto,
   LootTableDto, AddLootTableEntryPayload,
-  GachaBannerDto, CreateGachaBannerPayload,
 } from "../types/adminEconomy.types";
 
 const ITEM_TYPES = ["SKIN", "SCENE", "BADGE", "TITLE", "FRAME", "EMOTE", "CONSUMABLE"];
@@ -252,7 +251,7 @@ function ItemCatalogTab({ onAlert }: { onAlert: (a: { type: "success" | "error";
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-1.5 opacity-45 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                       <SkyButton type="button" variant="secondary" size="icon" onClick={() => setModal({ editing: item })} aria-label={`Edit ${item.name}`}><Pencil className="w-3.5 h-3.5" /></SkyButton>
-                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => toggleActive(item)}>{item.isActive ? "Deactivate" : "Activate"}</SkyButton>
+                      <SkyButton type="button" variant="secondary" size="sm" className="min-w-24" onClick={() => toggleActive(item)}>{item.isActive ? "Deactivate" : "Activate"}</SkyButton>
                     </div>
                   </td>
                 </tr>
@@ -325,11 +324,58 @@ function ShopListingForm({ editing, items, onSave, onClose }: {
   );
 }
 
+// Read-only ledger of who has bought this listing — no actions here, so it
+// skips the peach reward rail every other modal on this hub carries.
+function PurchaseHistoryModal({ listing, onClose }: { listing: ShopListingDto; onClose: () => void }) {
+  const [rows, setRows] = useState<ShopPurchaseRowDto[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminShopListingApi.getPurchases(listing.shopListingId).then(res => {
+      if (!cancelled) setRows(res.success ? res.data ?? [] : []);
+    });
+    return () => { cancelled = true; };
+  }, [listing.shopListingId]);
+
+  return (
+    <Modal title={`Buyers — ${listing.itemName}`} onClose={onClose} wide>
+      {rows === null ? (
+        <div className="flex justify-center py-10 text-sky-ink-3"><Spinner size={24} /></div>
+      ) : rows.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <span className="grid place-items-center w-12 h-12 rounded-full bg-sky-deep/8 text-sky-deep"><Users className="w-5 h-5" /></span>
+          <p className="font-display text-sm font-semibold text-sky-ink">No purchases yet</p>
+          <p className="text-xs font-medium text-sky-ink-3">Nobody has bought this listing so far.</p>
+        </div>
+      ) : (
+        <div className="rounded-sky-chip ring-1 ring-white/70 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="sky-table-head">
+              {["Player", "Email", "Price Paid", "Purchased At"].map(h => <th key={h} className="px-3 py-2.5 text-left">{h}</th>)}
+            </tr></thead>
+            <tbody className="sky-stagger">
+              {rows.map(r => (
+                <tr key={r.shopPurchaseId} className="sky-table-row">
+                  <td className="px-3 py-2 font-display text-sm font-semibold text-sky-ink">{r.username}</td>
+                  <td className="px-3 py-2 text-xs font-medium text-sky-ink-2">{r.email}</td>
+                  <td className="px-3 py-2"><PriceTag amount={r.priceSnapshot} currency={r.currency} /></td>
+                  <td className="px-3 py-2 text-xs font-medium text-sky-ink-2 tabular-nums">{new Date(r.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"; message: string }) => void }) {
   const [listings, setListings] = useState<ShopListingDto[]>([]);
   const [items, setItems] = useState<ItemDefinitionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ editing: ShopListingDto | null } | null>(null);
+  const [buyersModal, setBuyersModal] = useState<ShopListingDto | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -396,7 +442,8 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-1.5 opacity-45 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                       <SkyButton type="button" variant="secondary" size="icon" onClick={() => setModal({ editing: l })} aria-label={`Edit listing for ${l.itemName}`}><Pencil className="w-3.5 h-3.5" /></SkyButton>
-                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => toggleActive(l)}>{l.isActive ? "Deactivate" : "Activate"}</SkyButton>
+                      <SkyButton type="button" variant="secondary" size="icon" onClick={() => setBuyersModal(l)} aria-label={`View buyers of ${l.itemName}`}><Users className="w-3.5 h-3.5" /></SkyButton>
+                      <SkyButton type="button" variant="secondary" size="sm" className="min-w-24" onClick={() => toggleActive(l)}>{l.isActive ? "Deactivate" : "Activate"}</SkyButton>
                     </div>
                   </td>
                 </tr>
@@ -413,6 +460,7 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
         </SkyCard>
       )}
       {modal && <Modal title={modal.editing ? "Edit Listing" : "New Listing"} onClose={() => setModal(null)}><ShopListingForm editing={modal.editing} items={items} onSave={handleSave} onClose={() => setModal(null)} /></Modal>}
+      {buyersModal && <PurchaseHistoryModal listing={buyersModal} onClose={() => setBuyersModal(null)} />}
     </div>
   );
 }
@@ -562,130 +610,8 @@ function LootEntryForm({ items, onSave, onClose }: { items: ItemDefinitionDto[];
   );
 }
 
-// ═══════════════════════ TAB D — GACHA BANNERS ═══════════════════════════════
-function GachaBannerForm({ editing, lootTables, onSave, onClose }: {
-  editing: GachaBannerDto | null; lootTables: LootTableDto[];
-  onSave: (p: CreateGachaBannerPayload) => Promise<void>; onClose: () => void;
-}) {
-  const [form, setForm] = useState<CreateGachaBannerPayload>({
-    code: editing?.code ?? "", name: editing?.name ?? "",
-    lootTableId: editing?.lootTableId ?? lootTables[0]?.lootTableId ?? 0,
-    pullCostGems: editing?.pullCostGems ?? 100,
-  });
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.code.trim() || !form.name.trim()) { setErr("Code and name are required."); return; }
-    setSaving(true); setErr("");
-    try { await onSave(form); onClose(); }
-    catch (ex) { setErr(errMsg(ex) ?? "Save failed."); }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <form onSubmit={submit} className="space-y-3">
-      {err && <ErrorNote>{err}</ErrorNote>}
-      <div><Label>Code * {editing && "(immutable)"}</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="GACHA_STANDARD" /></div>
-      <div><Label>Name *</Label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Standard Banner" /></div>
-      <div><Label>Loot Table</Label>
-        <select value={form.lootTableId} onChange={e => setForm(f => ({ ...f, lootTableId: Number(e.target.value) }))} className={inputCls}>
-          {lootTables.map(t => <option key={t.lootTableId} value={t.lootTableId}>{t.code}</option>)}
-        </select>
-      </div>
-      <div><Label>Pull Cost (Gems)</Label><input type="number" min={1} value={form.pullCostGems} onChange={e => setForm(f => ({ ...f, pullCostGems: Number(e.target.value) }))} className={inputCls} /></div>
-      <div className="flex gap-3 pt-3 border-t border-white/70">
-        <SkyButton type="button" variant="secondary" onClick={onClose} disabled={saving} className="flex-1">Cancel</SkyButton>
-        <SkyButton type="submit" variant="primary" disabled={saving} className="flex-1">
-          {saving ? <><Spinner /> Saving…</> : <><Save className="w-3.5 h-3.5" /> {editing ? "Update" : "Create"}</>}
-        </SkyButton>
-      </div>
-    </form>
-  );
-}
-
-function GachaBannersTab({ onAlert }: { onAlert: (a: { type: "success" | "error"; message: string }) => void }) {
-  const [banners, setBanners] = useState<GachaBannerDto[]>([]);
-  const [lootTables, setLootTables] = useState<LootTableDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState<{ editing: GachaBannerDto | null } | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [bRes, tRes] = await Promise.all([adminGachaBannerApi.getBanners(), adminLootTableApi.getLootTables()]);
-      if (bRes.success) setBanners(bRes.data ?? []);
-      if (tRes.success) setLootTables(tRes.data ?? []);
-    } finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { fetch(); }, [fetch]);
-
-  const handleSave = async (payload: CreateGachaBannerPayload) => {
-    if (modal?.editing) {
-      const { code: _c, ...updatePayload } = payload;
-      await adminGachaBannerApi.updateBanner(modal.editing.gachaBannerId, updatePayload);
-      onAlert({ type: "success", message: "Banner updated." });
-    } else {
-      await adminGachaBannerApi.createBanner(payload);
-      onAlert({ type: "success", message: "Banner created." });
-    }
-    fetch();
-  };
-
-  const toggleActive = async (b: GachaBannerDto) => {
-    try { await adminGachaBannerApi.setActive(b.gachaBannerId, !b.isActive); fetch(); }
-    catch (ex) { onAlert({ type: "error", message: errMsg(ex) ?? "Toggle failed." }); }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <SkyButton type="button" variant="primary" size="sm" onClick={() => setModal({ editing: null })} disabled={lootTables.length === 0}><Plus className="w-3.5 h-3.5" /> New Banner</SkyButton>
-      </div>
-      {loading ? <div className="flex justify-center py-10 text-sky-ink-3"><Spinner size={24} /></div> : (
-        <SkyCard variant="admin" className="p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead><tr className="sky-table-head">
-              {["Code", "Name", "Loot Table", "Cost (Gems)", "Status", ""].map(h => <th key={h} className="px-3 py-2.5 text-left">{h}</th>)}
-            </tr></thead>
-            <tbody className="sky-stagger">
-              {banners.map(b => (
-                <tr key={b.gachaBannerId} className="sky-table-row group">
-                  <td className="px-3 py-2 font-mono text-xs font-semibold tracking-[0.06em] text-sky-ink-2">{b.code}</td>
-                  <td className="px-3 py-2 font-display text-sm font-semibold text-sky-ink">{b.name}</td>
-                  <td className="px-3 py-2 font-mono text-xs font-medium text-sky-ink-3">
-                    {lootTables.find(t => t.lootTableId === b.lootTableId)?.code ?? "—"}
-                  </td>
-                  <td className="px-3 py-2"><PriceTag amount={b.pullCostGems} currency="GEMS" /></td>
-                  <td className="px-3 py-2"><StatusPill active={b.isActive} /></td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center justify-end gap-1.5 opacity-45 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                      <SkyButton type="button" variant="secondary" size="icon" onClick={() => setModal({ editing: b })} aria-label={`Edit ${b.name}`}><Pencil className="w-3.5 h-3.5" /></SkyButton>
-                      <SkyButton type="button" variant="secondary" size="sm" onClick={() => toggleActive(b)}>{b.isActive ? "Deactivate" : "Activate"}</SkyButton>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {banners.length === 0 && (
-                <tr><td colSpan={6} className="py-14 text-center">
-                  <span className="grid place-items-center w-14 h-14 mx-auto mb-3 rounded-full bg-sky-violet/10 text-sky-violet-deep"><Sparkles className="w-6 h-6" /></span>
-                  <p className="font-display text-base font-semibold text-sky-ink">No banners yet</p>
-                  <p className="text-xs font-medium text-sky-ink-3 mt-1">A banner needs an active loot table to pull from.</p>
-                </td></tr>
-              )}
-            </tbody>
-          </table>
-        </SkyCard>
-      )}
-      {modal && <Modal title={modal.editing ? "Edit Banner" : "New Banner"} onClose={() => setModal(null)}><GachaBannerForm editing={modal.editing} lootTables={lootTables} onSave={handleSave} onClose={() => setModal(null)} /></Modal>}
-    </div>
-  );
-}
-
 // ═══════════════════════ MAIN PAGE ═══════════════════════════════════════════
-type TabId = "items" | "shop" | "loot" | "gacha";
+type TabId = "items" | "shop" | "loot";
 
 export default function AdminEconomyHub() {
   const globalAlert = useAlert();
@@ -704,12 +630,11 @@ export default function AdminEconomyHub() {
     { id: "items", label: "Item Catalog", Icon: Coins },
     { id: "shop", label: "Shop Listings", Icon: Store },
     { id: "loot", label: "Loot Tables", Icon: Dices },
-    { id: "gacha", label: "Gacha Banners", Icon: Sparkles },
   ];
 
   return (
     <>
-      <PageMeta title="Economy Hub" description="Manage item catalog, shop listings, loot tables, and gacha banners." />
+      <PageMeta title="Economy Hub" description="Manage item catalog, shop listings, and loot tables." />
       <PageBreadcrumb pageTitle="Economy Hub" />
 
       <div className="space-y-6 p-1">
@@ -717,7 +642,7 @@ export default function AdminEconomyHub() {
           icon={<Coins className="w-6 h-6" />}
           tone="peach"
           title="Economy Hub"
-          description="Author items, shop listings, loot tables, and gacha banners."
+          description="Author items, shop listings, and loot tables."
         />
 
         {/* A recessed well with one lifted segment, rather than four tabs sitting on
@@ -748,7 +673,6 @@ export default function AdminEconomyHub() {
           {tab === "items" && <ItemCatalogTab onAlert={setAlert} />}
           {tab === "shop" && <ShopListingsTab onAlert={setAlert} />}
           {tab === "loot" && <LootTablesTab items={items} onAlert={setAlert} />}
-          {tab === "gacha" && <GachaBannersTab onAlert={setAlert} />}
         </SkyCard>
       </div>
     </>

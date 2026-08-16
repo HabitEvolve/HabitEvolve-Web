@@ -23,6 +23,7 @@ export const adminQuestLibraryApi = {
             params: {
                 pageNumber: params?.pageNumber ?? 1,
                 pageSize: params?.pageSize ?? 20,
+                search: params?.search,
                 status: params?.status,
                 difficulty: params?.difficulty,
                 goalId: params?.goalId,

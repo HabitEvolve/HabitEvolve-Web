@@ -106,6 +106,7 @@ export interface ToggleGlobalPayload {
 // pageNumber/pageSize match the convention confirmed working for GET /admin/users
 // (see GetUsersQueryParams) and reused across the other Admin list endpoints.
 export interface GetQuestLibraryParams {
+    search?: string;
     status?: QuestLibraryStatus;
     difficulty?: QuestLibraryDifficulty;
     goalId?: number;

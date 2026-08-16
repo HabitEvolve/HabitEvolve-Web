@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Coins, Store, Dices, Sparkles, Plus, Pencil, X, Save, Trash2, Loader2,
   Check, Minus, AlertTriangle, Gem, Package, Star, Crown, Inbox, Infinity as InfinityIcon, Users,
+  ShoppingBag,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
@@ -18,15 +19,23 @@ import { FilterDropdown } from "../components/common/FilterDropdown";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
   ItemDefinitionDto, CreateItemPayload,
-  ShopListingDto, CreateShopListingPayload,
+  ShopListingDto, ShopType, CreateShopListingPayload,
   ShopPurchaseRowDto,
   LootTableDto, AddLootTableEntryPayload,
 } from "../types/adminEconomy.types";
 
 const ITEM_TYPES = ["SKIN", "SCENE", "BADGE", "TITLE", "FRAME", "EMOTE", "CONSUMABLE"];
 const RARITIES = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
-const CURRENCIES = ["GOLD", "GEMS", "MGOLD"];
 const REWARD_KINDS = ["ITEM", "GOLD", "GEMS", "MGOLD"];
+
+// Mirrors BE ShopListing.ValidShopTypes — SYSTEM only sells Gold/Gems, MENTOR only
+// sells M-Gold (BR-14 anti-P2W currency split). The create/edit form enforces this
+// instead of leaving it as a free-text field an admin could get wrong.
+const CURRENCIES_BY_SHOP: Record<ShopType, string[]> = {
+  SYSTEM: ["GOLD", "GEMS"],
+  MENTOR: ["MGOLD"],
+};
+const SHOP_LABEL: Record<ShopType, string> = { SYSTEM: "Regular", MENTOR: "Mentor" };
 
 const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 
@@ -273,13 +282,24 @@ function ItemCatalogTab({ onAlert }: { onAlert: (a: { type: "success" | "error";
 }
 
 // ═══════════════════════ TAB B — SHOP LISTINGS ═══════════════════════════════
-function ShopListingForm({ editing, items, onSave, onClose }: {
-  editing: ShopListingDto | null; items: ItemDefinitionDto[];
+// Icon + accent per storefront — mirrors the mobile Shop screen's Regular/Mentor
+// split (ShopScreen.tsx: SYSTEM_ACCENT blue, MENTOR_ACCENT gold), reusing this
+// admin surface's existing sky-deep (primary) / sky-violet ("epic / mentor
+// accent" per index.css) tokens instead of introducing a new palette.
+const SHOP_ICON: Record<ShopType, LucideIcon> = { SYSTEM: ShoppingBag, MENTOR: Crown };
+
+// Shop + currency are locked to the active storefront (not free text) — the BE
+// entity rejects any other combination (SYSTEM ⇒ Gold/Gems, MENTOR ⇒ M-Gold
+// only), and both are immutable after creation regardless.
+function ShopListingForm({ shopType, editing, items, onSave, onClose }: {
+  shopType: ShopType; editing: ShopListingDto | null; items: ItemDefinitionDto[];
   onSave: (p: CreateShopListingPayload) => Promise<void>; onClose: () => void;
 }) {
+  const currencyOptions = CURRENCIES_BY_SHOP[shopType];
+  const ShopIcon = SHOP_ICON[shopType];
   const [form, setForm] = useState<CreateShopListingPayload>({
     itemDefinitionId: editing?.itemDefinitionId ?? items[0]?.itemDefinitionId ?? 0,
-    shopType: editing?.shopType ?? "GENERAL", currency: editing?.currency ?? "GOLD",
+    shopType, currency: editing?.currency ?? currencyOptions[0],
     price: editing?.price ?? 100, stockLimit: editing?.stockLimit ?? null,
   });
   const [saving, setSaving] = useState(false);
@@ -303,11 +323,24 @@ function ShopListingForm({ editing, items, onSave, onClose }: {
         </select>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Shop Type</Label><input value={form.shopType} onChange={e => setForm(f => ({ ...f, shopType: e.target.value }))} className={inputCls} placeholder="GENERAL" /></div>
-        <div><Label>Currency</Label>
-          <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className={inputCls}>
-            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+        <div>
+          <Label>Shop</Label>
+          <div className={`${inputCls} flex items-center gap-2 bg-white/40! text-sky-ink cursor-not-allowed`}>
+            <ShopIcon className={`w-4 h-4 shrink-0 ${shopType === "MENTOR" ? "text-sky-violet-deep" : "text-sky-deep"}`} />
+            {SHOP_LABEL[shopType]}
+          </div>
+        </div>
+        <div>
+          <Label>Currency</Label>
+          {currencyOptions.length > 1 ? (
+            <select disabled={!!editing} value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className={inputCls}>
+              {currencyOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          ) : (
+            <div className={`${inputCls} flex items-center gap-2 bg-white/40! text-sky-ink cursor-not-allowed`}>
+              <Coins className="w-4 h-4 shrink-0 text-sky-peach-deep" /> M-GOLD
+            </div>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -370,23 +403,74 @@ function PurchaseHistoryModal({ listing, onClose }: { listing: ShopListingDto; o
   );
 }
 
+// Sub-tab switch — Regular (SYSTEM) vs Mentor (MENTOR) storefront, the same
+// split as the mobile Shop screen's segmented control. A pill-in-a-well control
+// nested one level below the hub's own Items/Shop/Loot tab bar, so it reads as
+// subordinate rather than a second top-level nav.
+function ShopSubTabBar({ active, onChange, counts }: {
+  active: ShopType; onChange: (t: ShopType) => void; counts: Record<ShopType, number>;
+}) {
+  return (
+    <div className="inline-flex gap-1 rounded-sky-chip bg-white/42 ring-1 ring-white/70 p-1">
+      {(["SYSTEM", "MENTOR"] as ShopType[]).map(st => {
+        const on = active === st;
+        const Icon = SHOP_ICON[st];
+        return (
+          <button
+            type="button"
+            key={st}
+            aria-pressed={on}
+            onClick={() => onChange(st)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-sky-sm text-xs font-semibold whitespace-nowrap transition ${
+              on
+                ? st === "MENTOR"
+                  ? "bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-chip"
+                  : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                : "text-sky-ink-2 hover:bg-white/70 hover:text-sky-ink"
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5 shrink-0" /> {SHOP_LABEL[st]}
+            <span className={`inline-grid place-items-center min-w-4.5 h-4.5 px-1 text-[10px] font-semibold rounded-full tabular-nums ${
+              on ? "bg-white/25 text-white" : "bg-sky-ink/8 text-sky-ink-2"
+            }`}>
+              {counts[st]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"; message: string }) => void }) {
-  const [listings, setListings] = useState<ShopListingDto[]>([]);
+  const [subTab, setSubTab] = useState<ShopType>("SYSTEM");
+  const [systemListings, setSystemListings] = useState<ShopListingDto[]>([]);
+  const [mentorListings, setMentorListings] = useState<ShopListingDto[]>([]);
   const [items, setItems] = useState<ItemDefinitionDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState<{ editing: ShopListingDto | null } | null>(null);
+  const [modal, setModal] = useState<{ shopType: ShopType; editing: ShopListingDto | null } | null>(null);
   const [buyersModal, setBuyersModal] = useState<ShopListingDto | null>(null);
 
+  // Both storefronts are fetched together (like the mentor Proof queue's
+  // manual/AI split) so switching sub-tab is instant and both counts are
+  // already known — no per-tab refetch or stale badge.
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const [lRes, iRes] = await Promise.all([adminShopListingApi.getListings(), adminItemApi.getItems()]);
-      if (lRes.success) setListings(lRes.data ?? []);
+      const [sysRes, mentorRes, iRes] = await Promise.all([
+        adminShopListingApi.getListings("SYSTEM"),
+        adminShopListingApi.getListings("MENTOR"),
+        adminItemApi.getItems(),
+      ]);
+      if (sysRes.success) setSystemListings(sysRes.data ?? []);
+      if (mentorRes.success) setMentorListings(mentorRes.data ?? []);
       if (iRes.success) setItems((iRes.data ?? []).filter(i => i.isActive));
     } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  const listings = subTab === "SYSTEM" ? systemListings : mentorListings;
 
   const handleSave = async (payload: CreateShopListingPayload) => {
     if (modal?.editing) {
@@ -409,14 +493,21 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <SkyButton type="button" variant="primary" size="sm" onClick={() => setModal({ editing: null })} disabled={items.length === 0}><Plus className="w-3.5 h-3.5" /> New Listing</SkyButton>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ShopSubTabBar
+          active={subTab}
+          onChange={setSubTab}
+          counts={{ SYSTEM: systemListings.length, MENTOR: mentorListings.length }}
+        />
+        <SkyButton type="button" variant="primary" size="sm" onClick={() => setModal({ shopType: subTab, editing: null })} disabled={items.length === 0}>
+          <Plus className="w-3.5 h-3.5" /> New Listing
+        </SkyButton>
       </div>
       {loading ? <div className="flex justify-center py-10 text-sky-ink-3"><Spinner size={24} /></div> : (
         <SkyCard variant="admin" className="p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead><tr className="sky-table-head">
-              {["Item", "Shop", "Price", "Stock", "Status", ""].map(h => <th key={h} className="px-3 py-2.5 text-left">{h}</th>)}
+              {["Item", "Price", "Stock", "Status", ""].map(h => <th key={h} className="px-3 py-2.5 text-left">{h}</th>)}
             </tr></thead>
             <tbody className="sky-stagger">
               {listings.map(l => (
@@ -429,7 +520,6 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
                       <span className="font-display text-sm font-semibold text-sky-ink">{l.itemName}</span>
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-xs font-medium text-sky-ink-2">{l.shopType}</td>
                   <td className="px-3 py-2"><PriceTag amount={l.price} currency={l.currency} /></td>
                   <td className="px-3 py-2 text-xs text-sky-ink-2">
                     {l.stockLimit != null ? (
@@ -441,7 +531,7 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
                   <td className="px-3 py-2"><StatusPill active={l.isActive} /></td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-1.5 opacity-45 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                      <SkyButton type="button" variant="secondary" size="icon" onClick={() => setModal({ editing: l })} aria-label={`Edit listing for ${l.itemName}`}><Pencil className="w-3.5 h-3.5" /></SkyButton>
+                      <SkyButton type="button" variant="secondary" size="icon" onClick={() => setModal({ shopType: subTab, editing: l })} aria-label={`Edit listing for ${l.itemName}`}><Pencil className="w-3.5 h-3.5" /></SkyButton>
                       <SkyButton type="button" variant="secondary" size="icon" onClick={() => setBuyersModal(l)} aria-label={`View buyers of ${l.itemName}`}><Users className="w-3.5 h-3.5" /></SkyButton>
                       <SkyButton type="button" variant="secondary" size="sm" className="min-w-24" onClick={() => toggleActive(l)}>{l.isActive ? "Deactivate" : "Activate"}</SkyButton>
                     </div>
@@ -449,9 +539,9 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
                 </tr>
               ))}
               {listings.length === 0 && (
-                <tr><td colSpan={6} className="py-14 text-center">
+                <tr><td colSpan={5} className="py-14 text-center">
                   <span className="grid place-items-center w-14 h-14 mx-auto mb-3 rounded-full bg-sky-deep/8 text-sky-deep"><Store className="w-6 h-6" /></span>
-                  <p className="font-display text-base font-semibold text-sky-ink">Nothing on sale</p>
+                  <p className="font-display text-base font-semibold text-sky-ink">Nothing on sale in the {SHOP_LABEL[subTab]} Shop</p>
                   <p className="text-xs font-medium text-sky-ink-3 mt-1">List an active item to put it in front of players.</p>
                 </td></tr>
               )}
@@ -459,7 +549,11 @@ function ShopListingsTab({ onAlert }: { onAlert: (a: { type: "success" | "error"
           </table>
         </SkyCard>
       )}
-      {modal && <Modal title={modal.editing ? "Edit Listing" : "New Listing"} onClose={() => setModal(null)}><ShopListingForm editing={modal.editing} items={items} onSave={handleSave} onClose={() => setModal(null)} /></Modal>}
+      {modal && (
+        <Modal title={modal.editing ? "Edit Listing" : `New ${SHOP_LABEL[modal.shopType]} Listing`} onClose={() => setModal(null)}>
+          <ShopListingForm shopType={modal.shopType} editing={modal.editing} items={items} onSave={handleSave} onClose={() => setModal(null)} />
+        </Modal>
+      )}
       {buyersModal && <PurchaseHistoryModal listing={buyersModal} onClose={() => setBuyersModal(null)} />}
     </div>
   );

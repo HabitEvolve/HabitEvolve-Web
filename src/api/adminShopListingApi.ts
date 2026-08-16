@@ -1,11 +1,11 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/api.types';
-import type { ShopListingDto, CreateShopListingPayload, UpdateShopListingPayload, ShopPurchaseRowDto } from '../types/adminEconomy.types';
+import type { ShopListingDto, ShopType, CreateShopListingPayload, UpdateShopListingPayload, ShopPurchaseRowDto } from '../types/adminEconomy.types';
 
 const BASE = '/admin/shop/listings';
 
 export const adminShopListingApi = {
-  getListings: async (shopType?: string): Promise<ApiResponse<ShopListingDto[]>> => {
+  getListings: async (shopType?: ShopType): Promise<ApiResponse<ShopListingDto[]>> => {
     const res = await axiosClient.get<ApiResponse<ShopListingDto[]>>(BASE, { params: { shopType } });
     return res.data;
   },

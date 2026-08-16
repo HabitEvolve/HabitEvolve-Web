@@ -44,6 +44,10 @@ export interface UpdateItemPayload {
 }
 
 // ── Shop Listings ─────────────────────────────────────────────────────────────
+// Matches BE ShopListing.ValidShopTypes exactly — SYSTEM (Gold/Gems, the "Regular"
+// storefront) and MENTOR (M-Gold only). No other value is accepted by the BE.
+export type ShopType = "SYSTEM" | "MENTOR";
+
 export interface ShopListingDto {
   shopListingId: number;
   itemDefinitionId: number;
@@ -54,7 +58,7 @@ export interface ShopListingDto {
   itemType: string;
   rarity: string;
   categoryCode: string | null;
-  shopType: string;
+  shopType: ShopType;
   currency: string;
   price: number;
   stockLimit: number | null;
@@ -66,7 +70,7 @@ export interface ShopListingDto {
 
 export interface CreateShopListingPayload {
   itemDefinitionId: number;
-  shopType: string;
+  shopType: ShopType;
   currency: string;
   price: number;
   stockLimit?: number | null;

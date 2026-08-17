@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Pencil, Trash2, ChevronRight, ArrowLeft, X, Loader2,
-  Zap, ToggleLeft, ToggleRight,
+  Plus, Pencil, Trash2, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, X, Loader2,
+  Zap, ToggleLeft, ToggleRight, Braces, RefreshCw,
   ShieldCheck, Link as LinkIcon, CheckCircle, AlertTriangle, ExternalLink,
   Target, ScrollText, BookOpen, Layers, Check, Minus, Search, GitBranch, type LucideIcon,
 } from 'lucide-react';
@@ -141,6 +141,106 @@ const RECOMMENDATION_LEVELS: { value: TaskRecommendationLevel; label: string }[]
 const TASK_ROLES: TaskRole[] = ['Core', 'Support', 'Tracking', 'Reflection', 'Challenge', 'Review'];
 const TASK_STRATEGIES: TaskStrategy[] = ['Main', 'Prepare', 'Track', 'Trigger', 'Environment', 'Reflect', 'SmallExtra'];
 const REPEAT_TYPES: PracticalRepeatType[] = ['DailyRepeatable', 'Rotatable', 'Optional', 'Bonus'];
+
+// Every seeded goal in this codebase (SLEEP_RECOVERY, HEALTH_FITNESS, FOOD_NUTRITION, ...) builds
+// its 10 tasks from this exact same rank -> {importance, role, strategy, repeatType} recipe — it's
+// not arbitrary per-goal choice, it's a fixed convention. Encoding it as one dropdown means an admin
+// picks "what kind of task is this" once instead of getting 5 independent decisions that must be
+// kept consistent by hand. "Custom" (advanced mode) exists for the rare task that must deviate.
+interface TaskSlot {
+  slot: number;
+  label: string;
+  hint: string;
+  rank: number;
+  level: TaskRecommendationLevel;
+  role: TaskRole;
+  strategy: TaskStrategy;
+  repeatType: PracticalRepeatType;
+}
+const TASK_SLOTS: TaskSlot[] = [
+  { slot: 1, label: 'Slot 1 — Core Action', hint: 'Hành động chính, đo trực tiếp goal. Luôn bắt buộc, xuất hiện mỗi ngày. Ví dụ: "Uống 1 ly nước".', rank: 1, level: 'MustDo', role: 'Core', strategy: 'Main', repeatType: 'DailyRepeatable' },
+  { slot: 2, label: 'Slot 2 — Prepare', hint: 'Chuẩn bị/dọn đường cho hành động chính. Bắt buộc, mỗi ngày. Ví dụ: "Chuẩn bị sẵn bình nước".', rank: 2, level: 'MustDo', role: 'Support', strategy: 'Prepare', repeatType: 'DailyRepeatable' },
+  { slot: 3, label: 'Slot 3 — Tracking', hint: 'Tự ghi nhận số liệu đã làm được. Bắt buộc, mỗi ngày. Ví dụ: "Ghi lại số ly đã uống".', rank: 3, level: 'MustDo', role: 'Tracking', strategy: 'Track', repeatType: 'DailyRepeatable' },
+  { slot: 4, label: 'Slot 4 — Trigger', hint: 'Gắn hành động vào một mốc cụ thể trong ngày. Khuyến khích, luân phiên xuất hiện. Ví dụ: "Uống ngay sau khi thức dậy".', rank: 4, level: 'Recommended', role: 'Support', strategy: 'Trigger', repeatType: 'Rotatable' },
+  { slot: 5, label: 'Slot 5 — Environment Setup', hint: 'Thay đổi môi trường xung quanh để hỗ trợ thói quen. Khuyến khích, luân phiên. Ví dụ: "Để chai nước ngay trước mặt".', rank: 5, level: 'Recommended', role: 'Support', strategy: 'Environment', repeatType: 'Rotatable' },
+  { slot: 6, label: 'Slot 6 — Reflect', hint: 'Suy ngẫm ngắn, viết 1 câu nhật ký. Khuyến khích, luân phiên.', rank: 6, level: 'Recommended', role: 'Reflection', strategy: 'Reflect', repeatType: 'Rotatable' },
+  { slot: 7, label: 'Slot 7 — Small Extra', hint: 'Hành động phụ nhỏ, có thì tốt không có cũng không sao. Không bắt buộc.', rank: 7, level: 'Optional', role: 'Support', strategy: 'SmallExtra', repeatType: 'Optional' },
+  { slot: 8, label: 'Slot 8 — Self Rating', hint: 'Tự chấm điểm/đánh giá mức độ (thường đi cùng câu hỏi Rating Scale). Không bắt buộc.', rank: 8, level: 'Optional', role: 'Reflection', strategy: 'Rating', repeatType: 'Optional' },
+  { slot: 9, label: 'Slot 9 — Bonus Challenge', hint: 'Thử thách khó hơn, tự nguyện cho ai muốn đẩy xa hơn mức bình thường.', rank: 9, level: 'Bonus', role: 'Challenge', strategy: 'BonusChallenge', repeatType: 'Bonus' },
+  { slot: 10, label: 'Slot 10 — Weekly Review', hint: 'Tổng kết định kỳ theo tuần thay vì mỗi ngày.', rank: 10, level: 'Bonus', role: 'Review', strategy: 'WeeklyReview', repeatType: 'Bonus' },
+];
+
+// ─── Variable picker + live preview for Title/Description ───────────────────
+// Lets an admin see and click-insert the goal's actual FieldKeys instead of retyping
+// {field_key} from memory, and immediately see which ones resolve. See ProgressionPlanService
+// .ResolveAllBindings (BE) for the real naming convention this mirrors client-side as a heuristic
+// hint only — it is NOT authoritative, just a nudge toward the output key over the final key.
+interface GoalVariable {
+  fieldKey: string;
+  questionText: string;
+  questionType: string;
+  minValue: number | null;
+  maxValue: number | null;
+}
+
+function classifyVariable(fieldKey: string): string | null {
+  if (/^target_(count|minutes|frequency)$/.test(fieldKey)) return '⭐ Ramp tuần — dùng cái này trong title';
+  if (/^target_(count|minutes|frequency)_final$/.test(fieldKey)) return '🎯 Đáp án gốc/đích cuối — đừng dùng trong title';
+  if (/_time$|_at$/.test(fieldKey)) return '⏰ Giờ trong ngày (schedule)';
+  return null;
+}
+
+function sampleValueFor(v: GoalVariable): string {
+  switch (v.questionType) {
+    case 'NumberInput':
+    case 'RatingScale':
+    case 'Duration':
+      if (v.minValue != null && v.maxValue != null) return String(Math.round((v.minValue + v.maxValue) / 2));
+      if (v.maxValue != null) return String(v.maxValue);
+      return '5';
+    case 'Time':
+      return '07:30';
+    case 'YesNo':
+      return 'Yes';
+    case 'SingleChoice':
+    case 'MultipleChoice':
+      return 'OPTION_VALUE';
+    default:
+      return 'sample';
+  }
+}
+
+/** Renders template text with {field_key} tokens swapped for a sample value (resolved = blue),
+ * or left literal and flagged (unresolved = rose) — same "leave it visible" contract as the
+ * real BE VariableRenderer, just previewed client-side before saving. */
+function renderPreviewNodes(text: string, vars: GoalVariable[]): React.ReactNode {
+  if (!text.trim()) return null;
+  const regex = /\{(\w+)\}/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text))) {
+    if (m.index > lastIndex) parts.push(text.slice(lastIndex, m.index));
+    const v = vars.find(x => x.fieldKey === m![1]);
+    parts.push(v
+      ? <span key={key++} className="font-semibold text-sky-deep">{sampleValueFor(v)}</span>
+      : <span key={key++} className="font-semibold text-sky-rose-deep bg-sky-rose/14 px-1 rounded">{`{${m[1]}}`}</span>);
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return <p className="text-[11px] text-sky-ink-3 mt-1 leading-snug">Preview: {parts}</p>;
+}
+
+/** Finds the slot whose 5-field recipe exactly matches an existing task, so editing a
+ * standard task re-opens showing its slot instead of forcing Advanced mode on every edit. */
+function matchTaskSlot(t: AdminTaskTemplateDto | null): number | '' {
+  if (!t) return 1; // default for a brand-new task
+  const found = TASK_SLOTS.find(s =>
+    s.rank === t.rankDefault && s.level === t.recommendationLevel &&
+    s.role === t.taskRole && s.strategy === t.strategy && s.repeatType === t.repeatType);
+  return found?.slot ?? '';
+}
 const MEASUREMENT_TYPES: MeasurementType[] = ['CHECK_IN', 'COUNTABLE', 'FREQUENCY_BASED', 'QUALITY_BASED', 'SCHEDULE_BASED', 'TIME_BASED'];
 const MATCH_MODES: RuleMatchMode[] = ['AllConditions', 'AnyCondition'];
 const OPERATORS: ConditionOperator[] = ['Equals', 'NotEquals', 'GreaterThan', 'LessThan', 'Contains', 'In', 'NotIn'];
@@ -356,6 +456,71 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  // Task Slot picker — see TASK_SLOTS. '' means the current 5 values don't match any standard
+  // slot (either a brand-new custom combo, or an existing task authored before this picker
+  // existed), which auto-opens the Advanced section so nothing is hidden from the admin.
+  const [slot, setSlot] = useState<number | ''>(() => matchTaskSlot(editing));
+  const [advancedOpen, setAdvancedOpen] = useState(() => matchTaskSlot(editing) === '');
+
+  const applySlot = (n: number) => {
+    const preset = TASK_SLOTS.find(s => s.slot === n);
+    if (!preset) return;
+    setSlot(n);
+    setLevel(preset.level);
+    setRank(preset.rank);
+    setTaskRole(preset.role);
+    setStrategy(preset.strategy);
+    setRepeatType(preset.repeatType);
+  };
+
+  // Variable picker — the goal's own FieldKeys (from its active questionnaire), fetched once so
+  // the admin can click-insert {field_key} into Title/Description instead of retyping from memory.
+  const [goalVariables, setGoalVariables] = useState<GoalVariable[]>([]);
+  const [varsLoading, setVarsLoading] = useState(true);
+  const [varPickerOpen, setVarPickerOpen] = useState(false);
+  const [activeField, setActiveField] = useState<'title' | 'description'>('title');
+  const titleRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setVarsLoading(true);
+      try {
+        const gqRes = await adminGoalApi.getGoalQuestionnaires(goalId);
+        const activeGq = gqRes.data?.find(g => g.isActive);
+        if (!activeGq) { if (!cancelled) setGoalVariables([]); return; }
+        const qRes = await adminGoalApi.getQuestionsByTemplate(activeGq.templateId, { activeOnly: true });
+        const vars: GoalVariable[] = (qRes.data ?? [])
+          .filter(q => !!q.fieldKey)
+          .map(q => ({ fieldKey: q.fieldKey!, questionText: q.questionText, questionType: q.questionType, minValue: q.minValue, maxValue: q.maxValue }));
+        if (!cancelled) setGoalVariables(vars);
+      } finally {
+        if (!cancelled) setVarsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [goalId]);
+
+  const insertVariable = (fieldKey: string) => {
+    const token = `{${fieldKey}}`;
+    const ref = activeField === 'title' ? titleRef.current : descRef.current;
+    const current = activeField === 'title' ? title : desc;
+    const setValue = activeField === 'title' ? setTitle : setDesc;
+    const start = ref?.selectionStart ?? current.length;
+    const end = ref?.selectionEnd ?? current.length;
+    setValue(current.slice(0, start) + token + current.slice(end));
+    requestAnimationFrame(() => {
+      ref?.focus();
+      const pos = start + token.length;
+      ref?.setSelectionRange(pos, pos);
+    });
+  };
+
+  // Any {field_key} actually referenced in Title/Description right now — one click populates
+  // Required Variables from real usage instead of admin re-typing the same names by hand.
+  const detectedVariables = Array.from(new Set([...`${title} ${desc}`.matchAll(/\{(\w+)\}/g)].map(m => m[1])));
+
   const selectedTags = tags.split(',').map(s => s.trim()).filter(Boolean);
   const toggleTag = (tag: string) => {
     const next = selectedTags.includes(tag) ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag];
@@ -397,11 +562,68 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
             {err && <FormError>{err}</FormError>}
             <div>
               <label className={fieldLabel}>Title *</label>
-              <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Log water intake daily" required />
+              <input
+                ref={titleRef}
+                value={title}
+                onFocus={() => setActiveField('title')}
+                onChange={e => setTitle(e.target.value)}
+                className={inputCls}
+                placeholder="e.g. Log water intake daily"
+                required
+              />
+              {renderPreviewNodes(title, goalVariables)}
             </div>
             <div>
               <label className={fieldLabel}>Description</label>
-              <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} className={inputCls} />
+              <textarea
+                ref={descRef}
+                value={desc}
+                onFocus={() => setActiveField('description')}
+                onChange={e => setDesc(e.target.value)}
+                rows={2}
+                className={inputCls}
+              />
+              {renderPreviewNodes(desc, goalVariables)}
+            </div>
+
+            {/* Variable picker — click a FieldKey to insert {field_key} into whichever of
+                Title/Description was last focused. Fixes "admin has to remember/retype exact
+                FieldKey spelling" and "no way to know if it'll resolve before saving". */}
+            <div className="rounded-sky-md bg-sky-deep/6 ring-1 ring-sky-deep/16 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setVarPickerOpen(v => !v)}
+                className="w-full flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-sky-deep hover:opacity-75 transition-opacity"
+              >
+                <Braces className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} />
+                Insert Variable — chèn FieldKey của goal vào {activeField === 'title' ? 'Title' : 'Description'}
+                <span className="ml-auto">{varPickerOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
+              </button>
+              {varPickerOpen && (
+                <div className="px-3.5 pb-3 space-y-1 max-h-48 overflow-y-auto">
+                  {varsLoading ? (
+                    <p className="text-[11px] text-sky-ink-3 italic">Đang tải danh sách biến…</p>
+                  ) : goalVariables.length === 0 ? (
+                    <p className="text-[11px] text-sky-ink-3 italic">Goal này chưa có FieldKey nào — vào trang Questionnaires để thêm câu hỏi có FieldKey trước.</p>
+                  ) : (
+                    goalVariables.map(v => {
+                      const badge = classifyVariable(v.fieldKey);
+                      return (
+                        <button
+                          key={v.fieldKey}
+                          type="button"
+                          onClick={() => insertVariable(v.fieldKey)}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-sky-chip bg-white/70 hover:bg-white ring-1 ring-white/85 text-left transition-colors"
+                        >
+                          <span className="font-mono text-[11px] font-semibold text-sky-deep shrink-0">{`{${v.fieldKey}}`}</span>
+                          <span className="text-[10px] text-sky-ink-3 truncate flex-1 min-w-0">{v.questionText}</span>
+                          {badge && <span className="shrink-0 text-[9px] font-semibold text-sky-ink-3 whitespace-nowrap">{badge}</span>}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className={fieldLabel}>Verification Type</label>
@@ -422,9 +644,21 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <p className="text-[10px] text-sky-ink-3 mt-1">A task can carry more than one — FACE blocks submission until portrait-verified; ITEM/ACTION are AI hints only.</p>
             </div>
             <div>
-              <label className={fieldLabel}>Required Variables</label>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className={`${fieldLabel} mb-0`}>Required Variables</label>
+                {detectedVariables.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setRequiredVariables(detectedVariables.join(','))}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-sky-deep hover:opacity-75 transition-opacity shrink-0"
+                    title="Điền lại từ các {variable} thực sự có trong Title/Description"
+                  >
+                    <RefreshCw className="w-3 h-3" strokeWidth={2.6} /> Auto-fill từ Title/Description
+                  </button>
+                )}
+              </div>
               <input value={requiredVariables} onChange={e => setRequiredVariables(e.target.value)} className={inputCls} placeholder="e.g. target_time,support_action" />
-              <p className="text-[10px] text-sky-ink-3 mt-1">Comma-separated {'{variable}'} placeholder names used in the title/description.</p>
+              <p className="text-[10px] text-sky-ink-3 mt-1">Comma-separated {'{variable}'} placeholder names used in the title/description. Chỉ là ghi chú cho admin — hệ thống không tự kiểm tra khớp.</p>
             </div>
             <div>
               <label className={fieldLabel}>How To Submit</label>
@@ -436,37 +670,70 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <input value={repeatCountVariable} onChange={e => setRepeatCountVariable(e.target.value)} className={inputCls} placeholder="e.g. target_count" />
               <p className="text-[10px] text-sky-ink-3 mt-1">field_key holding a countable target — splits it into N check-ins/day instead of one big claim (e.g. "8 cups" → 8× "Drink 1 cup"). Leave empty for a single daily check-in.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-sky-md bg-sky-violet/6 ring-1 ring-sky-violet/18 p-3.5 space-y-2.5">
               <div>
-                <label className={fieldLabel}>Importance</label>
-                <select value={level} onChange={e => setLevel(e.target.value as TaskRecommendationLevel)} className={inputCls}>
-                  {RECOMMENDATION_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                <label className={fieldLabel}>Task Slot (1-10)</label>
+                <select
+                  value={slot}
+                  onChange={e => applySlot(Number(e.target.value))}
+                  className={inputCls}
+                >
+                  {slot === '' && <option value="" disabled>— Tuỳ chỉnh (không khớp slot chuẩn nào) —</option>}
+                  {TASK_SLOTS.map(s => <option key={s.slot} value={s.slot}>{s.label}</option>)}
                 </select>
+                <p className="text-[10px] text-sky-ink-3 mt-1.5 leading-relaxed">
+                  {slot !== ''
+                    ? TASK_SLOTS.find(s => s.slot === slot)!.hint
+                    : 'Importance/Rank/Role/Strategy/Repeat Type hiện tại không khớp bộ chuẩn nào — mở "Tuỳ chỉnh chi tiết" bên dưới để xem giá trị thật.'}
+                </p>
               </div>
-              <div>
-                <label className={fieldLabel}>Rank (1-20)</label>
-                <input type="number" min={1} max={20} value={positiveIntDisplay(rank)} onChange={e => setRank(parsePositiveInt(e.target.value))} className={inputCls} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={fieldLabel}>Task Role</label>
-                <select value={taskRole} onChange={e => setTaskRole(e.target.value as TaskRole)} className={inputCls}>
-                  {TASK_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={fieldLabel}>Strategy</label>
-                <select value={strategy} onChange={e => setStrategy(e.target.value as TaskStrategy)} className={inputCls}>
-                  {TASK_STRATEGIES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={fieldLabel}>Repeat Type</label>
-                <select value={repeatType} onChange={e => setRepeatType(e.target.value as PracticalRepeatType)} className={inputCls}>
-                  {REPEAT_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen(v => !v)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-sky-violet-deep hover:opacity-75 transition-opacity"
+              >
+                {advancedOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                Tuỳ chỉnh chi tiết (Importance / Rank / Role / Strategy / Repeat Type)
+              </button>
+              {advancedOpen && (
+                <div className="space-y-2.5 pt-2 border-t border-sky-violet/14">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={fieldLabel}>Importance</label>
+                      <select value={level} onChange={e => { setLevel(e.target.value as TaskRecommendationLevel); setSlot(''); }} className={inputCls}>
+                        {RECOMMENDATION_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                      </select>
+                      <p className="text-[10px] text-sky-ink-3 mt-1">Task có luôn được giao hay không — MustDo luôn có, Recommended/Optional/Bonus giảm dần độ ưu tiên.</p>
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>Rank (1-20)</label>
+                      <input type="number" min={1} max={20} value={positiveIntDisplay(rank)} onChange={e => { setRank(parsePositiveInt(e.target.value)); setSlot(''); }} className={inputCls} />
+                      <p className="text-[10px] text-sky-ink-3 mt-1">Thứ tự ưu tiên trong nhóm Importance — số nhỏ được chọn trước khi nhiều task cạnh tranh 1 suất/ngày.</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className={fieldLabel}>Task Role</label>
+                      <select value={taskRole} onChange={e => { setTaskRole(e.target.value as TaskRole); setSlot(''); }} className={inputCls}>
+                        {TASK_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>Strategy</label>
+                      <select value={strategy} onChange={e => { setStrategy(e.target.value as TaskStrategy); setSlot(''); }} className={inputCls}>
+                        {TASK_STRATEGIES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>Repeat Type</label>
+                      <select value={repeatType} onChange={e => { setRepeatType(e.target.value as PracticalRepeatType); setSlot(''); }} className={inputCls}>
+                        {REPEAT_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-sky-ink-3">Role / Strategy / Repeat Type hiện chỉ là nhãn phân loại cho admin — hệ thống chưa dùng 3 field này để chọn/sắp xếp task hằng ngày.</p>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

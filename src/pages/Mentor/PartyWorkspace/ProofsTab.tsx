@@ -224,11 +224,10 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                                                 type="button"
                                                 onClick={() => setActiveIndex(idx)}
                                                 aria-current={idx === activeIndex}
-                                                className={`shrink-0 w-14 h-14 rounded-sky-chip overflow-hidden transition-all duration-150 ${easeExpo} ${
-                                                    idx === activeIndex
+                                                className={`shrink-0 w-14 h-14 rounded-sky-chip overflow-hidden transition-all duration-150 ${easeExpo} ${idx === activeIndex
                                                         ? "ring-2 ring-sky-peach-deep ring-offset-2 ring-offset-white/70"
                                                         : "ring-1 ring-white/80 opacity-65 hover:opacity-100"
-                                                }`}
+                                                    }`}
                                                 aria-label={`Media ${idx + 1}`}
                                             >
                                                 <img src={url} alt="" className="w-full h-full object-cover" />
@@ -291,9 +290,8 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
     return (
         <SkyCard
             variant="mentor"
-            className={`relative p-0 overflow-hidden flex flex-col transition-shadow duration-300 ${
-                isSuspicious ? flagGlow : ""
-            } ${isSelected ? "ring-2 ring-sky-deep" : ""}`}
+            className={`relative p-0 overflow-hidden flex flex-col transition-shadow duration-300 ${isSuspicious ? flagGlow : ""
+                } ${isSelected ? "ring-2 ring-sky-deep" : ""}`}
         >
             <label className="absolute top-3 left-3 z-10 grid place-items-center w-7 h-7 rounded-sky-chip bg-white/85 ring-1 ring-white shadow-sky-chip cursor-pointer">
                 <input
@@ -559,9 +557,8 @@ const QueueSection = ({
                 <h2 className="font-display text-xl font-semibold text-sky-ink">{title}</h2>
                 {/* Queue depth is a quantity, not a verdict: violet marks the AI
                     lane, cool blue the mentor's own. */}
-                <span className={`inline-grid place-items-center min-w-7 h-7 px-2 text-sm font-display font-semibold rounded-sky-chip tabular-nums ${
-                    isAiQueue ? "bg-sky-violet/14 text-sky-violet-deep" : "bg-sky-deep/12 text-sky-deep"
-                }`}>
+                <span className={`inline-grid place-items-center min-w-7 h-7 px-2 text-sm font-display font-semibold rounded-sky-chip tabular-nums ${isAiQueue ? "bg-sky-violet/14 text-sky-violet-deep" : "bg-sky-deep/12 text-sky-deep"
+                    }`}>
                     {count}
                 </span>
                 {loading && <Spinner size={16} />}
@@ -917,15 +914,14 @@ export default function ProofsTab() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             aria-pressed={isActive}
-                            className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-t-sky-chip transition-all duration-150 ${easeExpo} ${
-                                isActive
+                            className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-t-sky-chip transition-all duration-150 ${easeExpo} ${isActive
                                     ? tab === "ai"
                                         ? "bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-chip"
                                         : tab === "history"
                                             ? "bg-linear-to-b from-sky-ink-2 to-sky-ink text-white shadow-sky-chip"
                                             : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
                                     : "text-sky-ink-2 hover:text-sky-ink hover:bg-white/50"
-                            }`}
+                                }`}
                         >
                             {tab === "manual"
                                 ? <UserRoundPen className="w-4 h-4" aria-hidden="true" />
@@ -933,9 +929,8 @@ export default function ProofsTab() {
                                     ? <Bot className="w-4 h-4" aria-hidden="true" />
                                     : <History className="w-4 h-4" aria-hidden="true" />}
                             {tab === "manual" ? t("Manual") : tab === "ai" ? t("AI") : t("mentor.proofQueue.history.tab")}
-                            <span className={`ml-1 inline-grid place-items-center min-w-5 h-5 px-1.5 text-[11px] font-semibold rounded-full tabular-nums ${
-                                isActive ? "bg-white/22 text-white" : "bg-sky-ink/8 text-sky-ink-2"
-                            }`}>
+                            <span className={`ml-1 inline-grid place-items-center min-w-5 h-5 px-1.5 text-[11px] font-semibold rounded-full tabular-nums ${isActive ? "bg-white/22 text-white" : "bg-sky-ink/8 text-sky-ink-2"
+                                }`}>
                                 {count}
                             </span>
                         </button>

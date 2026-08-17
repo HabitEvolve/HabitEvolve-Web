@@ -570,8 +570,15 @@ function QuestionsPanel({ template, onBack }: { template: QuestionnaireTemplateD
 
   const handleSaveQ = async (payload: any) => {
     try {
-      if (qModal?.editing) await adminGoalApi.updateQuestion(qModal.editing.questionId, payload);
-      else await adminGoalApi.createQuestion(template.templateId, payload);
+      if (qModal?.editing) {
+        // UpdateQuestionCommand has no FieldKey property (kept separate so it can't
+        // accidentally wipe FieldKey on unrelated edits) — rebind it explicitly via
+        // the dedicated endpoint so edits from this form actually persist FieldKey.
+        await adminGoalApi.updateQuestion(qModal.editing.questionId, payload);
+        await adminGoalApi.setQuestionFieldKey(qModal.editing.questionId, payload.fieldKey ?? null);
+      } else {
+        await adminGoalApi.createQuestion(template.templateId, payload);
+      }
       alert.success(t('admin.questionnaire.flashUpdated'));
       setQModal(null);
       fetch();

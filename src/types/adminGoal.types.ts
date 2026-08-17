@@ -136,6 +136,15 @@ export type CvQuestType = "running" | "drinking_water" | "sleeping" | "reading" 
 // Matches BE RecommendationLevel enum — MUST_DO (1-3) / RECOMMENDED (4-6) / OPTIONAL (7-8) / BONUS (9-10).
 export type TaskRecommendationLevel = "MustDo" | "Recommended" | "Optional" | "Bonus";
 
+// Matches BE Domain.Enums.TaskRole — which "slot" on the daily board this task fills.
+export type TaskRole = "Core" | "Support" | "Tracking" | "Reflection" | "Challenge" | "Review";
+
+// Matches BE Domain.Enums.TaskStrategy — the behavioral mechanism the task uses.
+export type TaskStrategy = "Main" | "Prepare" | "Track" | "Trigger" | "Environment" | "Reflect" | "SmallExtra";
+
+// Matches BE Domain.Enums.PracticalRepeatType — how the task repeats on the daily board.
+export type PracticalRepeatType = "DailyRepeatable" | "Rotatable" | "Optional" | "Bonus";
+
 export interface AdminTaskTemplateDto {
     taskId: number;
     goalId: number;
@@ -156,10 +165,18 @@ export interface AdminTaskTemplateDto {
     rankDefault: number;
     defaultDamage: number;
     defaultRewardGold: number;
+    taskRole: TaskRole;
+    strategy: TaskStrategy;
+    repeatType: PracticalRepeatType;
+    // 0-100 score used to sort/filter when multiple templates compete.
+    defaultRecommendScore: number;
+    // field_key whose value = number of check-ins/day this task needs (null = 1 check-in),
+    // e.g. "target_count" turns a target of 8 into 8 separate "Drink 1 cup" check-ins.
+    repeatCountVariable: string | null;
 }
 
-// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?)
-// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?)
+// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?, TaskRole?, Strategy?, RepeatType?, DefaultRecommendScore?, RepeatCountVariable?)
+// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?, TaskRole?, Strategy?, RepeatType?, DefaultRecommendScore?, RepeatCountVariable?)
 export interface PracticalTaskPayload {
     goalId?: number;     // required only on create
     title: string;
@@ -174,6 +191,12 @@ export interface PracticalTaskPayload {
     rankDefault?: number;
     damage?: number;
     rewardGold?: number;
+    taskRole?: TaskRole;
+    strategy?: TaskStrategy;
+    repeatType?: PracticalRepeatType;
+    defaultRecommendScore?: number;
+    // Send null/omit to clear. Only meaningful for a NumberInput-bound countable field_key.
+    repeatCountVariable?: string | null;
 }
 
 // ==========================================

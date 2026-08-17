@@ -19,6 +19,7 @@ import {
   GoalCategoryDto, GoalCategoryPayload,
   GoalDto, GoalPayload, MeasurementType,
   AdminTaskTemplateDto, PracticalTaskPayload, TaskRecommendationLevel,
+  TaskRole, TaskStrategy, PracticalRepeatType,
   RecommendationRuleDto, RecommendationRuleConditionDto,
   CreateRulePayload, UpdateRulePayload_Rec,
   AddConditionPayload, RuleMatchMode, ConditionOperator,
@@ -130,12 +131,16 @@ function CheckRow({ checked, onChange, label }: {
 
 const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
 const VERIFICATION_TAGS = ['FACE', 'ITEM', 'ACTION'];
+const CV_QUEST_TYPES = ['', 'running', 'drinking_water', 'sleeping', 'reading', 'cooking', 'exercise'];
 const RECOMMENDATION_LEVELS: { value: TaskRecommendationLevel; label: string }[] = [
   { value: 'MustDo', label: 'Must Do' },
   { value: 'Recommended', label: 'Recommended' },
   { value: 'Optional', label: 'Optional' },
   { value: 'Bonus', label: 'Bonus' },
 ];
+const TASK_ROLES: TaskRole[] = ['Core', 'Support', 'Tracking', 'Reflection', 'Challenge', 'Review'];
+const TASK_STRATEGIES: TaskStrategy[] = ['Main', 'Prepare', 'Track', 'Trigger', 'Environment', 'Reflect', 'SmallExtra'];
+const REPEAT_TYPES: PracticalRepeatType[] = ['DailyRepeatable', 'Rotatable', 'Optional', 'Bonus'];
 const MEASUREMENT_TYPES: MeasurementType[] = ['CHECK_IN', 'COUNTABLE', 'FREQUENCY_BASED', 'QUALITY_BASED', 'SCHEDULE_BASED', 'TIME_BASED'];
 const MATCH_MODES: RuleMatchMode[] = ['AllConditions', 'AnyCondition'];
 const OPERATORS: ConditionOperator[] = ['Equals', 'NotEquals', 'GreaterThan', 'LessThan', 'Contains', 'In', 'NotIn'];
@@ -341,6 +346,13 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
   const [rank, setRank] = useState(editing?.rankDefault ?? 5);
   const [damage, setDamage] = useState(editing?.defaultDamage ?? 10);
   const [rewardGold, setRewardGold] = useState(editing?.defaultRewardGold ?? 10);
+  const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
+  const [cvQuestType, setCvQuestType] = useState(editing?.cvQuestType ?? '');
+  const [taskRole, setTaskRole] = useState<TaskRole>(editing?.taskRole ?? 'Core');
+  const [strategy, setStrategy] = useState<TaskStrategy>(editing?.strategy ?? 'Main');
+  const [repeatType, setRepeatType] = useState<PracticalRepeatType>(editing?.repeatType ?? 'DailyRepeatable');
+  const [recommendScore, setRecommendScore] = useState(editing?.defaultRecommendScore ?? 50);
+  const [repeatCountVariable, setRepeatCountVariable] = useState(editing?.repeatCountVariable ?? '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
@@ -363,6 +375,13 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
         rankDefault: rank,
         damage,
         rewardGold,
+        howToSubmit: howToSubmit.trim() || undefined,
+        cvQuestType: cvQuestType || undefined,
+        taskRole,
+        strategy,
+        repeatType,
+        defaultRecommendScore: recommendScore,
+        repeatCountVariable: repeatCountVariable.trim() || null,
       });
     }
     catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
@@ -407,6 +426,16 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <input value={requiredVariables} onChange={e => setRequiredVariables(e.target.value)} className={inputCls} placeholder="e.g. target_time,support_action" />
               <p className="text-[10px] text-sky-ink-3 mt-1">Comma-separated {'{variable}'} placeholder names used in the title/description.</p>
             </div>
+            <div>
+              <label className={fieldLabel}>How To Submit</label>
+              <input value={howToSubmit} onChange={e => setHowToSubmit(e.target.value)} className={inputCls} placeholder="e.g. Take a photo of your filled water bottle" maxLength={500} />
+              <p className="text-[10px] text-sky-ink-3 mt-1">Player-facing instructions for what proof to submit.</p>
+            </div>
+            <div>
+              <label className={fieldLabel}>Repeat Count Variable</label>
+              <input value={repeatCountVariable} onChange={e => setRepeatCountVariable(e.target.value)} className={inputCls} placeholder="e.g. target_count" />
+              <p className="text-[10px] text-sky-ink-3 mt-1">field_key holding a countable target — splits it into N check-ins/day instead of one big claim (e.g. "8 cups" → 8× "Drink 1 cup"). Leave empty for a single daily check-in.</p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={fieldLabel}>Importance</label>
@@ -417,6 +446,38 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <div>
                 <label className={fieldLabel}>Rank (1-20)</label>
                 <input type="number" min={1} max={20} value={positiveIntDisplay(rank)} onChange={e => setRank(parsePositiveInt(e.target.value))} className={inputCls} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className={fieldLabel}>Task Role</label>
+                <select value={taskRole} onChange={e => setTaskRole(e.target.value as TaskRole)} className={inputCls}>
+                  {TASK_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={fieldLabel}>Strategy</label>
+                <select value={strategy} onChange={e => setStrategy(e.target.value as TaskStrategy)} className={inputCls}>
+                  {TASK_STRATEGIES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={fieldLabel}>Repeat Type</label>
+                <select value={repeatType} onChange={e => setRepeatType(e.target.value as PracticalRepeatType)} className={inputCls}>
+                  {REPEAT_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={fieldLabel}>CV Quest Type</label>
+                <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
+                  {CV_QUEST_TYPES.map(c => <option key={c} value={c}>{c || '(none)'}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={fieldLabel}>Recommend Score (0-100)</label>
+                <input type="number" min={0} max={100} value={recommendScore} onChange={e => setRecommendScore(Number(e.target.value))} className={inputCls} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

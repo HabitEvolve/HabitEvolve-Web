@@ -6,7 +6,7 @@ import mentorApi from "../../../api/mentorApi";
 import type { ProofDto, AiVerdict } from "../../../types/mentor.types";
 import { useAlert } from "../../../context/AlertContext";
 import {
-    Bot, UserRoundPen, X, Check, AlertTriangle, Clock, ShieldQuestion,
+    UserRoundPen, X, Check, AlertTriangle, Clock, ShieldQuestion,
     RefreshCw, Inbox, ZoomIn, MinusCircle, History,
 } from "lucide-react";
 import SkyCard from "../../../components/ui/card/SkyCard";
@@ -344,19 +344,6 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                             <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.viewComparison")}
                         </span>
                     </div>
-                    {isSuspicious && (
-                        // Corner ribbon, not a centered pill — a centered pill sat exactly on
-                        // top of the hover "Tap to compare" prompt, which shares that same
-                        // centered spot. The button's own overflow-hidden clips the strip's
-                        // overhang, so no extra wrapper is needed.
-                        <div
-                            className="absolute top-3 -right-10 w-36 rotate-45 flex items-center justify-center gap-1 bg-linear-to-r from-sky-rose to-sky-rose-deep text-white text-[10px] font-bold uppercase tracking-wide py-1 shadow-[0_2px_8px_rgba(36,52,77,0.35)]"
-                            aria-hidden="true"
-                        >
-                            <Bot className="w-3 h-3 shrink-0" aria-hidden="true" />
-                            {t("mentor.proofQueue.aiFlaggedRibbon")}
-                        </div>
-                    )}
                     {proof.mediaUrls.length > 1 && (
                         <span className="absolute bottom-2 right-2 bg-sky-ink/78 text-white text-xs font-semibold px-2 py-0.5 rounded-sky-chip tabular-nums">
                             +{proof.mediaUrls.length - 1} more

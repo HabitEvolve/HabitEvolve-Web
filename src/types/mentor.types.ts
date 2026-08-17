@@ -120,10 +120,6 @@ export type QuestDifficulty = 'EASY' | 'NORMAL' | 'HARD';
 // informational hints (for the player and as AI request context) only.
 export type VerificationTag = 'FACE' | 'ITEM' | 'ACTION';
 
-// Matches BE VerificationGuidance.ValidCvQuestTypes — the fixed vocabulary the external CV
-// service supports. When set, it's used instead of guessing the quest type from the title.
-export type CvQuestType = 'running' | 'drinking_water' | 'sleeping' | 'reading' | 'cooking' | 'exercise';
-
 export interface QuestDto {
     questId: number;
     userId: number;
@@ -192,7 +188,6 @@ export interface CreateMentorQuestRequest {
     deadlineAt: string;
     howToSubmit?: string;
     verificationTags?: string;
-    cvQuestType?: string;
     /** Opt this quest into AI Check — proof submitted for it always goes through AI first, but AI
      *  only suggests (confidence/reasoning); the Mentor still makes the final approve/reject call.
      *  BE rejects this when proofType is SELF_CHECK or the mentor's package has no AI Verification. */
@@ -212,7 +207,6 @@ export interface CreatePartyQuestRequest {
     deadlineAt: string;
     howToSubmit?: string;
     verificationTags?: string;
-    cvQuestType?: string;
     /** Opt this quest into AI Check — see CreateMentorQuestRequest.aiCheckEnabled. */
     aiCheckEnabled?: boolean;
 }

@@ -129,10 +129,6 @@ export type VerificationType = "GPS" | "PHOTO" | "NONE";
 // informational hints (for the player and as AI request context) only.
 export type VerificationTag = "FACE" | "ITEM" | "ACTION";
 
-// Matches BE VerificationGuidance.ValidCvQuestTypes — the fixed vocabulary the external CV
-// service supports. When set, it's used instead of guessing the quest type from the title.
-export type CvQuestType = "running" | "drinking_water" | "sleeping" | "reading" | "cooking" | "exercise";
-
 // Matches BE RecommendationLevel enum — MUST_DO (1-3) / RECOMMENDED (4-6) / OPTIONAL (7-8) / BONUS (9-10).
 export type TaskRecommendationLevel = "MustDo" | "Recommended" | "Optional" | "Bonus";
 
@@ -157,7 +153,6 @@ export interface AdminTaskTemplateDto {
     howToSubmit: string | null;
     // CSV of VerificationTag values, e.g. "FACE,ITEM".
     verificationTags: string | null;
-    cvQuestType: string | null;
     // Comma-separated {variable} placeholder names this task's title/description uses.
     requiredVariables: string | null;
     recommendationLevel: TaskRecommendationLevel;
@@ -175,8 +170,8 @@ export interface AdminTaskTemplateDto {
     repeatCountVariable: string | null;
 }
 
-// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?, TaskRole?, Strategy?, RepeatType?, DefaultRecommendScore?, RepeatCountVariable?)
-// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, CvQuestType?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?, TaskRole?, Strategy?, RepeatType?, DefaultRecommendScore?, RepeatCountVariable?)
+// POST body: CreatePracticalTaskTemplateCommand(GoalId, Title, Description?, VerificationType, IsActive?, HowToSubmit?, VerificationTags?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?, TaskRole?, Strategy?, RepeatType?, DefaultRecommendScore?, RepeatCountVariable?)
+// PUT  body: UpdateTaskRequest(Title, Description?, VerificationType, IsActive, HowToSubmit?, VerificationTags?, RequiredVariables?, RecommendationLevel?, RankDefault?, Damage?, RewardGold?, TaskRole?, Strategy?, RepeatType?, DefaultRecommendScore?, RepeatCountVariable?)
 export interface PracticalTaskPayload {
     goalId?: number;     // required only on create
     title: string;
@@ -185,7 +180,6 @@ export interface PracticalTaskPayload {
     isActive: boolean;
     howToSubmit?: string;
     verificationTags?: string;
-    cvQuestType?: string;
     requiredVariables?: string;
     recommendationLevel?: TaskRecommendationLevel;
     rankDefault?: number;

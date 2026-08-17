@@ -313,9 +313,6 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
   const [selectedGoalIds, setSelectedGoalIds] = useState<number[]>(editing?.goalIds ?? []);
   const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
   const [verificationTags, setVerificationTags] = useState(editing?.verificationTags ?? '');
-  // No UI to change this anymore (CV Quest Type field removed) — preserved
-  // read-only so editing an existing quest doesn't silently wipe its value.
-  const [cvQuestType] = useState(editing?.cvQuestType ?? '');
   const [saving, setSaving] = useState(false);
   const alert = useAlert();
 
@@ -346,7 +343,6 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
           repeatRule,
           howToSubmit: howToSubmit.trim() || undefined,
           verificationTags: verificationTags || undefined,
-          cvQuestType: cvQuestType || undefined,
         };
         if (gold !== editing.rewardGold) {
           await adminQuestLibraryApi.setRewardMatrix(editing.templateId, {
@@ -369,7 +365,6 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
           goalIds: selectedGoalIds,
           howToSubmit: howToSubmit.trim() || undefined,
           verificationTags: verificationTags || undefined,
-          cvQuestType: cvQuestType || undefined,
         };
         await onSave(payload, true);
       }

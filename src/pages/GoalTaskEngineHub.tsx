@@ -131,7 +131,6 @@ function CheckRow({ checked, onChange, label }: {
 
 const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
 const VERIFICATION_TAGS = ['FACE', 'ITEM', 'ACTION'];
-const CV_QUEST_TYPES = ['', 'running', 'drinking_water', 'sleeping', 'reading', 'cooking', 'exercise'];
 const RECOMMENDATION_LEVELS: { value: TaskRecommendationLevel; label: string }[] = [
   { value: 'MustDo', label: 'Must Do' },
   { value: 'Recommended', label: 'Recommended' },
@@ -158,16 +157,16 @@ interface TaskSlot {
   repeatType: PracticalRepeatType;
 }
 const TASK_SLOTS: TaskSlot[] = [
-  { slot: 1, label: 'Slot 1 — Core Action', hint: 'Hành động chính, đo trực tiếp goal. Luôn bắt buộc, xuất hiện mỗi ngày. Ví dụ: "Uống 1 ly nước".', rank: 1, level: 'MustDo', role: 'Core', strategy: 'Main', repeatType: 'DailyRepeatable' },
-  { slot: 2, label: 'Slot 2 — Prepare', hint: 'Chuẩn bị/dọn đường cho hành động chính. Bắt buộc, mỗi ngày. Ví dụ: "Chuẩn bị sẵn bình nước".', rank: 2, level: 'MustDo', role: 'Support', strategy: 'Prepare', repeatType: 'DailyRepeatable' },
-  { slot: 3, label: 'Slot 3 — Tracking', hint: 'Tự ghi nhận số liệu đã làm được. Bắt buộc, mỗi ngày. Ví dụ: "Ghi lại số ly đã uống".', rank: 3, level: 'MustDo', role: 'Tracking', strategy: 'Track', repeatType: 'DailyRepeatable' },
-  { slot: 4, label: 'Slot 4 — Trigger', hint: 'Gắn hành động vào một mốc cụ thể trong ngày. Khuyến khích, luân phiên xuất hiện. Ví dụ: "Uống ngay sau khi thức dậy".', rank: 4, level: 'Recommended', role: 'Support', strategy: 'Trigger', repeatType: 'Rotatable' },
-  { slot: 5, label: 'Slot 5 — Environment Setup', hint: 'Thay đổi môi trường xung quanh để hỗ trợ thói quen. Khuyến khích, luân phiên. Ví dụ: "Để chai nước ngay trước mặt".', rank: 5, level: 'Recommended', role: 'Support', strategy: 'Environment', repeatType: 'Rotatable' },
-  { slot: 6, label: 'Slot 6 — Reflect', hint: 'Suy ngẫm ngắn, viết 1 câu nhật ký. Khuyến khích, luân phiên.', rank: 6, level: 'Recommended', role: 'Reflection', strategy: 'Reflect', repeatType: 'Rotatable' },
-  { slot: 7, label: 'Slot 7 — Small Extra', hint: 'Hành động phụ nhỏ, có thì tốt không có cũng không sao. Không bắt buộc.', rank: 7, level: 'Optional', role: 'Support', strategy: 'SmallExtra', repeatType: 'Optional' },
-  { slot: 8, label: 'Slot 8 — Self Rating', hint: 'Tự chấm điểm/đánh giá mức độ (thường đi cùng câu hỏi Rating Scale). Không bắt buộc.', rank: 8, level: 'Optional', role: 'Reflection', strategy: 'Rating', repeatType: 'Optional' },
-  { slot: 9, label: 'Slot 9 — Bonus Challenge', hint: 'Thử thách khó hơn, tự nguyện cho ai muốn đẩy xa hơn mức bình thường.', rank: 9, level: 'Bonus', role: 'Challenge', strategy: 'BonusChallenge', repeatType: 'Bonus' },
-  { slot: 10, label: 'Slot 10 — Weekly Review', hint: 'Tổng kết định kỳ theo tuần thay vì mỗi ngày.', rank: 10, level: 'Bonus', role: 'Review', strategy: 'WeeklyReview', repeatType: 'Bonus' },
+  { slot: 1, label: 'Slot 1 — Core Action', hint: 'The main action, measured directly against the goal. Always assigned, shows up every day. Example: "Drink 1 cup of water".', rank: 1, level: 'MustDo', role: 'Core', strategy: 'Main', repeatType: 'DailyRepeatable' },
+  { slot: 2, label: 'Slot 2 — Prepare', hint: 'Sets up or clears the way for the main action. Always assigned, every day. Example: "Fill up your water bottle".', rank: 2, level: 'MustDo', role: 'Support', strategy: 'Prepare', repeatType: 'DailyRepeatable' },
+  { slot: 3, label: 'Slot 3 — Tracking', hint: 'Logs how much progress was made. Always assigned, every day. Example: "Log how many cups you drank".', rank: 3, level: 'MustDo', role: 'Tracking', strategy: 'Track', repeatType: 'DailyRepeatable' },
+  { slot: 4, label: 'Slot 4 — Trigger', hint: 'Ties the action to a specific moment in the day. Recommended, rotates in and out. Example: "Drink right after waking up".', rank: 4, level: 'Recommended', role: 'Support', strategy: 'Trigger', repeatType: 'Rotatable' },
+  { slot: 5, label: 'Slot 5 — Environment Setup', hint: 'Changes the surroundings to make the habit easier. Recommended, rotates in and out. Example: "Keep the bottle in plain sight".', rank: 5, level: 'Recommended', role: 'Support', strategy: 'Environment', repeatType: 'Rotatable' },
+  { slot: 6, label: 'Slot 6 — Reflect', hint: 'A short reflection, one line in a journal. Recommended, rotates in and out.', rank: 6, level: 'Recommended', role: 'Reflection', strategy: 'Reflect', repeatType: 'Rotatable' },
+  { slot: 7, label: 'Slot 7 — Small Extra', hint: 'A small bonus action — nice to have, not required.', rank: 7, level: 'Optional', role: 'Support', strategy: 'SmallExtra', repeatType: 'Optional' },
+  { slot: 8, label: 'Slot 8 — Self Rating', hint: 'A self-rating of how it went (usually paired with a Rating Scale question). Not required.', rank: 8, level: 'Optional', role: 'Reflection', strategy: 'Rating', repeatType: 'Optional' },
+  { slot: 9, label: 'Slot 9 — Bonus Challenge', hint: 'A harder challenge, opt-in for players who want to push further.', rank: 9, level: 'Bonus', role: 'Challenge', strategy: 'BonusChallenge', repeatType: 'Bonus' },
+  { slot: 10, label: 'Slot 10 — Weekly Review', hint: 'A recap that runs weekly instead of daily.', rank: 10, level: 'Bonus', role: 'Review', strategy: 'WeeklyReview', repeatType: 'Bonus' },
 ];
 
 // ─── Variable picker + live preview for Title/Description ───────────────────
@@ -184,9 +183,9 @@ interface GoalVariable {
 }
 
 function classifyVariable(fieldKey: string): string | null {
-  if (/^target_(count|minutes|frequency)$/.test(fieldKey)) return '⭐ Ramp tuần — dùng cái này trong title';
-  if (/^target_(count|minutes|frequency)_final$/.test(fieldKey)) return '🎯 Đáp án gốc/đích cuối — đừng dùng trong title';
-  if (/_time$|_at$/.test(fieldKey)) return '⏰ Giờ trong ngày (schedule)';
+  if (/^target_(count|minutes|frequency)$/.test(fieldKey)) return '⭐ Weekly ramp value — use this one in the title';
+  if (/^target_(count|minutes|frequency)_final$/.test(fieldKey)) return '🎯 Raw/final answer — don’t use this in the title';
+  if (/_time$|_at$/.test(fieldKey)) return '⏰ Time of day (schedule)';
   return null;
 }
 
@@ -447,7 +446,6 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
   const [damage, setDamage] = useState(editing?.defaultDamage ?? 10);
   const [rewardGold, setRewardGold] = useState(editing?.defaultRewardGold ?? 10);
   const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
-  const [cvQuestType, setCvQuestType] = useState(editing?.cvQuestType ?? '');
   const [taskRole, setTaskRole] = useState<TaskRole>(editing?.taskRole ?? 'Core');
   const [strategy, setStrategy] = useState<TaskStrategy>(editing?.strategy ?? 'Main');
   const [repeatType, setRepeatType] = useState<PracticalRepeatType>(editing?.repeatType ?? 'DailyRepeatable');
@@ -541,7 +539,6 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
         damage,
         rewardGold,
         howToSubmit: howToSubmit.trim() || undefined,
-        cvQuestType: cvQuestType || undefined,
         taskRole,
         strategy,
         repeatType,
@@ -596,15 +593,15 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                 className="w-full flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-sky-deep hover:opacity-75 transition-opacity"
               >
                 <Braces className="w-3.5 h-3.5 shrink-0" strokeWidth={2.4} />
-                Insert Variable — chèn FieldKey của goal vào {activeField === 'title' ? 'Title' : 'Description'}
+                Insert Variable — add a FieldKey to {activeField === 'title' ? 'Title' : 'Description'}
                 <span className="ml-auto">{varPickerOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
               </button>
               {varPickerOpen && (
                 <div className="px-3.5 pb-3 space-y-1 max-h-48 overflow-y-auto">
                   {varsLoading ? (
-                    <p className="text-[11px] text-sky-ink-3 italic">Đang tải danh sách biến…</p>
+                    <p className="text-[11px] text-sky-ink-3 italic">Loading variables…</p>
                   ) : goalVariables.length === 0 ? (
-                    <p className="text-[11px] text-sky-ink-3 italic">Goal này chưa có FieldKey nào — vào trang Questionnaires để thêm câu hỏi có FieldKey trước.</p>
+                    <p className="text-[11px] text-sky-ink-3 italic">This goal has no FieldKeys yet — go to Questionnaires and add a question with a FieldKey first.</p>
                   ) : (
                     goalVariables.map(v => {
                       const badge = classifyVariable(v.fieldKey);
@@ -634,23 +631,11 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                   anything else = AI verify — see CheckInDailyTaskCommandHandler) — no separate toggle
                   needed, just surface the consequence of the choice already made above. */}
               {vtype === 'SELF_CHECK' ? (
-                <p className="text-[10px] font-semibold text-sky-teal mt-1.5">✅ SELF_CHECK — tự động duyệt ngay khi player nhấn hoàn thành, không qua AI.</p>
+                <p className="text-[10px] font-semibold text-sky-teal mt-1.5">✅ SELF_CHECK — approved instantly when the player marks it done, no AI involved.</p>
               ) : (
-                <p className="text-[10px] font-semibold text-sky-violet-deep mt-1.5">🤖 Task này sẽ được AI tự động kiểm tra bằng chứng khi player check-in.</p>
+                <p className="text-[10px] font-semibold text-sky-violet-deep mt-1.5">🤖 This task will be AI-checked when the player submits proof. The AI reads the Title, Description and How To Submit text to decide what to look for — no extra setup needed.</p>
               )}
             </div>
-            {vtype !== 'SELF_CHECK' && (
-              <div className="rounded-sky-md bg-sky-violet/6 ring-1 ring-sky-violet/18 p-3.5">
-                <label className={fieldLabel}>CV Quest Type <span className="normal-case text-sky-ink-3 font-normal ml-1">(chỉ ảnh hưởng AI, không hiện cho player)</span></label>
-                <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
-                  {CV_QUEST_TYPES.map(c => <option key={c} value={c}>{c || '(none) — tự đoán từ Title'}</option>)}
-                </select>
-                <p className="text-[10px] text-sky-ink-3 mt-1.5 leading-relaxed">
-                  Để trống thì AI tự đoán loại hành động dựa trên từ khoá trong Title (vd Title có "uống"/"nước" → tự nhận <code className="font-mono bg-sky-ink/8 px-1 py-0.5 rounded">drinking_water</code>) — đủ dùng cho hầu hết task.
-                  Chỉ cần chọn tay khi Title không chứa từ khoá rõ ràng hoặc muốn ép cụ thể một loại khác với suy đoán.
-                </p>
-              </div>
-            )}
             <div>
               <label className={fieldLabel}>Verification Tags</label>
               <div className="flex flex-wrap gap-3">
@@ -671,14 +656,14 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                     type="button"
                     onClick={() => setRequiredVariables(detectedVariables.join(','))}
                     className="flex items-center gap-1 text-[10px] font-semibold text-sky-deep hover:opacity-75 transition-opacity shrink-0"
-                    title="Điền lại từ các {variable} thực sự có trong Title/Description"
+                    title="Refill from the {variable} tokens actually used in Title/Description"
                   >
-                    <RefreshCw className="w-3 h-3" strokeWidth={2.6} /> Auto-fill từ Title/Description
+                    <RefreshCw className="w-3 h-3" strokeWidth={2.6} /> Auto-fill from Title/Description
                   </button>
                 )}
               </div>
               <input value={requiredVariables} onChange={e => setRequiredVariables(e.target.value)} className={inputCls} placeholder="e.g. target_time,support_action" />
-              <p className="text-[10px] text-sky-ink-3 mt-1">Comma-separated {'{variable}'} placeholder names used in the title/description. Chỉ là ghi chú cho admin — hệ thống không tự kiểm tra khớp.</p>
+              <p className="text-[10px] text-sky-ink-3 mt-1">Comma-separated {'{variable}'} placeholder names used in the title/description. Just a note for admins — the system doesn't check this against the actual text.</p>
             </div>
             <div>
               <label className={fieldLabel}>How To Submit</label>
@@ -686,9 +671,9 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <p className="text-[10px] text-sky-ink-3 mt-1">Player-facing instructions for what proof to submit.</p>
             </div>
             <div className="rounded-sky-md bg-white/50 ring-1 ring-white/76 p-3.5">
-              <label className={fieldLabel}>Task có lặp lại nhiều lần/ngày theo 1 con số không?</label>
+              <label className={fieldLabel}>Does this task repeat multiple times a day, based on a number?</label>
               <p className="text-[10px] text-sky-ink-3 mb-2.5 leading-relaxed">
-                Ví dụ mục tiêu <b>"uống 8 ly nước/ngày"</b>: bật cái này để hệ thống tự tách thành <b>8 lần check-in "Uống 1 ly"</b> riêng biệt trong ngày — thay vì 1 task duy nhất ghi "uống 8 ly" mà không ai làm 1 lần được. Title task nên viết cho <b>1 lần lặp</b> (vd "Drink 1 cup of water"), không viết theo tổng số.
+                Example goal <b>"drink 8 cups of water a day"</b>: turn this on and the system automatically splits it into <b>8 separate "Drink 1 cup" check-ins</b> that day — instead of one task saying "drink 8 cups" that nobody can do in one go. The task title should describe <b>one single repeat</b> (e.g. "Drink 1 cup of water"), not the total.
               </p>
               <div className="flex gap-2">
                 <button
@@ -696,30 +681,30 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                   onClick={() => setRepeatCountVariable('')}
                   className={`flex-1 px-3 py-2 rounded-sky-chip text-xs font-semibold ring-1 transition-colors ${repeatCountVariable === '' ? 'bg-sky-deep text-white ring-sky-deep' : 'bg-white/70 text-sky-ink-2 ring-white/85 hover:bg-white'}`}
                 >
-                  Không — 1 lần/ngày
+                  No — once a day
                 </button>
                 <button
                   type="button"
                   onClick={() => setRepeatCountVariable(goalVariables.find(v => ['NumberInput', 'RatingScale', 'Duration'].includes(v.questionType))?.fieldKey ?? ' ')}
                   className={`flex-1 px-3 py-2 rounded-sky-chip text-xs font-semibold ring-1 transition-colors ${repeatCountVariable !== '' ? 'bg-sky-deep text-white ring-sky-deep' : 'bg-white/70 text-sky-ink-2 ring-white/85 hover:bg-white'}`}
                 >
-                  Có — lặp theo số lần
+                  Yes — repeats by a number
                 </button>
               </div>
               {repeatCountVariable !== '' && (
                 <div className="mt-2.5">
-                  <label className={fieldLabel}>Lặp theo biến nào?</label>
+                  <label className={fieldLabel}>Which question holds that number?</label>
                   {goalVariables.filter(v => ['NumberInput', 'RatingScale', 'Duration'].includes(v.questionType)).length === 0 ? (
-                    <p className="text-[11px] text-sky-rose-deep font-semibold">Goal này chưa có câu hỏi dạng số (NumberInput/RatingScale/Duration) nào để chọn — vào Questionnaires thêm trước.</p>
+                    <p className="text-[11px] text-sky-rose-deep font-semibold">This goal has no number-type questions yet (NumberInput/RatingScale/Duration) — add one in Questionnaires first.</p>
                   ) : (
                     <select value={repeatCountVariable.trim()} onChange={e => setRepeatCountVariable(e.target.value)} className={inputCls}>
-                      <option value="" disabled>— Chọn câu hỏi chứa số lần —</option>
+                      <option value="" disabled>— Choose the question that holds the count —</option>
                       {goalVariables.filter(v => ['NumberInput', 'RatingScale', 'Duration'].includes(v.questionType)).map(v => (
                         <option key={v.fieldKey} value={v.fieldKey}>{`{${v.fieldKey}}`} — {v.questionText}</option>
                       ))}
                     </select>
                   )}
-                  <p className="text-[10px] text-sky-ink-3 mt-1">Hệ thống lấy đáp án player trả lời cho câu hỏi này (vd "8") để tạo đúng số lần check-in trong ngày.</p>
+                  <p className="text-[10px] text-sky-ink-3 mt-1">The system reads the player's answer to this question (e.g. "8") to create that many check-ins for the day.</p>
                 </div>
               )}
             </div>
@@ -731,13 +716,13 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                   onChange={e => applySlot(Number(e.target.value))}
                   className={inputCls}
                 >
-                  {slot === '' && <option value="" disabled>— Tuỳ chỉnh (không khớp slot chuẩn nào) —</option>}
+                  {slot === '' && <option value="" disabled>— Custom (doesn't match a standard slot) —</option>}
                   {TASK_SLOTS.map(s => <option key={s.slot} value={s.slot}>{s.label}</option>)}
                 </select>
                 <p className="text-[10px] text-sky-ink-3 mt-1.5 leading-relaxed">
                   {slot !== ''
                     ? TASK_SLOTS.find(s => s.slot === slot)!.hint
-                    : 'Importance/Rank/Role/Strategy/Repeat Type hiện tại không khớp bộ chuẩn nào — mở "Tuỳ chỉnh chi tiết" bên dưới để xem giá trị thật.'}
+                    : 'The current Importance/Rank/Role/Strategy/Repeat Type combo doesn\'t match a standard slot — open "Edit details" below to see the real values.'}
                 </p>
               </div>
               <button
@@ -746,7 +731,7 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                 className="flex items-center gap-1.5 text-xs font-semibold text-sky-violet-deep hover:opacity-75 transition-opacity"
               >
                 {advancedOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                Tuỳ chỉnh chi tiết (Importance / Rank / Role / Strategy / Repeat Type)
+                Edit details (Importance / Rank / Role / Strategy / Repeat Type)
               </button>
               {advancedOpen && (
                 <div className="space-y-2.5 pt-2 border-t border-sky-violet/14">
@@ -756,12 +741,12 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                       <select value={level} onChange={e => { setLevel(e.target.value as TaskRecommendationLevel); setSlot(''); }} className={inputCls}>
                         {RECOMMENDATION_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                       </select>
-                      <p className="text-[10px] text-sky-ink-3 mt-1">Task có luôn được giao hay không — MustDo luôn có, Recommended/Optional/Bonus giảm dần độ ưu tiên.</p>
+                      <p className="text-[10px] text-sky-ink-3 mt-1">Whether the task is always assigned — MustDo always is; Recommended/Optional/Bonus get lower and lower priority.</p>
                     </div>
                     <div>
                       <label className={fieldLabel}>Rank (1-20)</label>
                       <input type="number" min={1} max={20} value={positiveIntDisplay(rank)} onChange={e => { setRank(parsePositiveInt(e.target.value)); setSlot(''); }} className={inputCls} />
-                      <p className="text-[10px] text-sky-ink-3 mt-1">Thứ tự ưu tiên trong nhóm Importance — số nhỏ được chọn trước khi nhiều task cạnh tranh 1 suất/ngày.</p>
+                      <p className="text-[10px] text-sky-ink-3 mt-1">Priority order within its Importance group — lower numbers get picked first when several tasks compete for one daily slot.</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
@@ -784,14 +769,14 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                       </select>
                     </div>
                   </div>
-                  <p className="text-[10px] text-sky-ink-3">Role / Strategy / Repeat Type hiện chỉ là nhãn phân loại cho admin — hệ thống chưa dùng 3 field này để chọn/sắp xếp task hằng ngày.</p>
+                  <p className="text-[10px] text-sky-ink-3">Role / Strategy / Repeat Type are just classification labels for admins right now — the system doesn't use these 3 fields to pick or order daily tasks yet.</p>
                 </div>
               )}
             </div>
             <div>
               <label className={fieldLabel}>Recommend Score (0-100)</label>
               <input type="number" min={0} max={100} value={recommendScore} onChange={e => setRecommendScore(Number(e.target.value))} className={inputCls} />
-              <p className="text-[10px] text-sky-ink-3 mt-1">Chỉ dùng làm "trọng tài" khi 2+ task cùng mức Importance tranh nhau 1 suất/ngày — điểm cao được ưu tiên chọn trước. Để 50 (mặc định) nếu không cần ưu tiên đặc biệt.</p>
+              <p className="text-[10px] text-sky-ink-3 mt-1">Only used as a tie-breaker when 2+ tasks at the same Importance level compete for one daily slot — the higher score wins. Leave at 50 (default) unless you need to favor this task specifically.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

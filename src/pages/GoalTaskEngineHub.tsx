@@ -630,7 +630,27 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <select value={vtype} onChange={e => setVtype(e.target.value)} className={inputCls}>
                 {VERIFICATION_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
+              {/* Whether a task gets AI-checked is 100% decided by ProofType (SELF_CHECK = auto-approve,
+                  anything else = AI verify — see CheckInDailyTaskCommandHandler) — no separate toggle
+                  needed, just surface the consequence of the choice already made above. */}
+              {vtype === 'SELF_CHECK' ? (
+                <p className="text-[10px] font-semibold text-sky-teal mt-1.5">✅ SELF_CHECK — tự động duyệt ngay khi player nhấn hoàn thành, không qua AI.</p>
+              ) : (
+                <p className="text-[10px] font-semibold text-sky-violet-deep mt-1.5">🤖 Task này sẽ được AI tự động kiểm tra bằng chứng khi player check-in.</p>
+              )}
             </div>
+            {vtype !== 'SELF_CHECK' && (
+              <div className="rounded-sky-md bg-sky-violet/6 ring-1 ring-sky-violet/18 p-3.5">
+                <label className={fieldLabel}>CV Quest Type <span className="normal-case text-sky-ink-3 font-normal ml-1">(chỉ ảnh hưởng AI, không hiện cho player)</span></label>
+                <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
+                  {CV_QUEST_TYPES.map(c => <option key={c} value={c}>{c || '(none) — tự đoán từ Title'}</option>)}
+                </select>
+                <p className="text-[10px] text-sky-ink-3 mt-1.5 leading-relaxed">
+                  Để trống thì AI tự đoán loại hành động dựa trên từ khoá trong Title (vd Title có "uống"/"nước" → tự nhận <code className="font-mono bg-sky-ink/8 px-1 py-0.5 rounded">drinking_water</code>) — đủ dùng cho hầu hết task.
+                  Chỉ cần chọn tay khi Title không chứa từ khoá rõ ràng hoặc muốn ép cụ thể một loại khác với suy đoán.
+                </p>
+              </div>
+            )}
             <div>
               <label className={fieldLabel}>Verification Tags</label>
               <div className="flex flex-wrap gap-3">
@@ -665,10 +685,43 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
               <input value={howToSubmit} onChange={e => setHowToSubmit(e.target.value)} className={inputCls} placeholder="e.g. Take a photo of your filled water bottle" maxLength={500} />
               <p className="text-[10px] text-sky-ink-3 mt-1">Player-facing instructions for what proof to submit.</p>
             </div>
-            <div>
-              <label className={fieldLabel}>Repeat Count Variable</label>
-              <input value={repeatCountVariable} onChange={e => setRepeatCountVariable(e.target.value)} className={inputCls} placeholder="e.g. target_count" />
-              <p className="text-[10px] text-sky-ink-3 mt-1">field_key holding a countable target — splits it into N check-ins/day instead of one big claim (e.g. "8 cups" → 8× "Drink 1 cup"). Leave empty for a single daily check-in.</p>
+            <div className="rounded-sky-md bg-white/50 ring-1 ring-white/76 p-3.5">
+              <label className={fieldLabel}>Task có lặp lại nhiều lần/ngày theo 1 con số không?</label>
+              <p className="text-[10px] text-sky-ink-3 mb-2.5 leading-relaxed">
+                Ví dụ mục tiêu <b>"uống 8 ly nước/ngày"</b>: bật cái này để hệ thống tự tách thành <b>8 lần check-in "Uống 1 ly"</b> riêng biệt trong ngày — thay vì 1 task duy nhất ghi "uống 8 ly" mà không ai làm 1 lần được. Title task nên viết cho <b>1 lần lặp</b> (vd "Drink 1 cup of water"), không viết theo tổng số.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRepeatCountVariable('')}
+                  className={`flex-1 px-3 py-2 rounded-sky-chip text-xs font-semibold ring-1 transition-colors ${repeatCountVariable === '' ? 'bg-sky-deep text-white ring-sky-deep' : 'bg-white/70 text-sky-ink-2 ring-white/85 hover:bg-white'}`}
+                >
+                  Không — 1 lần/ngày
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRepeatCountVariable(goalVariables.find(v => ['NumberInput', 'RatingScale', 'Duration'].includes(v.questionType))?.fieldKey ?? ' ')}
+                  className={`flex-1 px-3 py-2 rounded-sky-chip text-xs font-semibold ring-1 transition-colors ${repeatCountVariable !== '' ? 'bg-sky-deep text-white ring-sky-deep' : 'bg-white/70 text-sky-ink-2 ring-white/85 hover:bg-white'}`}
+                >
+                  Có — lặp theo số lần
+                </button>
+              </div>
+              {repeatCountVariable !== '' && (
+                <div className="mt-2.5">
+                  <label className={fieldLabel}>Lặp theo biến nào?</label>
+                  {goalVariables.filter(v => ['NumberInput', 'RatingScale', 'Duration'].includes(v.questionType)).length === 0 ? (
+                    <p className="text-[11px] text-sky-rose-deep font-semibold">Goal này chưa có câu hỏi dạng số (NumberInput/RatingScale/Duration) nào để chọn — vào Questionnaires thêm trước.</p>
+                  ) : (
+                    <select value={repeatCountVariable.trim()} onChange={e => setRepeatCountVariable(e.target.value)} className={inputCls}>
+                      <option value="" disabled>— Chọn câu hỏi chứa số lần —</option>
+                      {goalVariables.filter(v => ['NumberInput', 'RatingScale', 'Duration'].includes(v.questionType)).map(v => (
+                        <option key={v.fieldKey} value={v.fieldKey}>{`{${v.fieldKey}}`} — {v.questionText}</option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="text-[10px] text-sky-ink-3 mt-1">Hệ thống lấy đáp án player trả lời cho câu hỏi này (vd "8") để tạo đúng số lần check-in trong ngày.</p>
+                </div>
+              )}
             </div>
             <div className="rounded-sky-md bg-sky-violet/6 ring-1 ring-sky-violet/18 p-3.5 space-y-2.5">
               <div>
@@ -735,17 +788,10 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={fieldLabel}>CV Quest Type</label>
-                <select value={cvQuestType} onChange={e => setCvQuestType(e.target.value)} className={inputCls}>
-                  {CV_QUEST_TYPES.map(c => <option key={c} value={c}>{c || '(none)'}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={fieldLabel}>Recommend Score (0-100)</label>
-                <input type="number" min={0} max={100} value={recommendScore} onChange={e => setRecommendScore(Number(e.target.value))} className={inputCls} />
-              </div>
+            <div>
+              <label className={fieldLabel}>Recommend Score (0-100)</label>
+              <input type="number" min={0} max={100} value={recommendScore} onChange={e => setRecommendScore(Number(e.target.value))} className={inputCls} />
+              <p className="text-[10px] text-sky-ink-3 mt-1">Chỉ dùng làm "trọng tài" khi 2+ task cùng mức Importance tranh nhau 1 suất/ngày — điểm cao được ưu tiên chọn trước. Để 50 (mặc định) nếu không cần ưu tiên đặc biệt.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

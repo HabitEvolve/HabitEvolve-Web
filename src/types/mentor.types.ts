@@ -236,6 +236,7 @@ export interface ProofDto {
     questId: number;
     questTitle?: string;
     questType?: string;
+    questDescription?: string;
     userId: number;
     username?: string;
     proofType: string;

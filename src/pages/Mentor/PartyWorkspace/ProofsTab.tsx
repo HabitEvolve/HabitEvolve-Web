@@ -25,6 +25,18 @@ const flagGlow = "shadow-[0_0_0_3px_rgba(196,112,138,0.5),0_0_28px_rgba(196,112,
 const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 const fieldLabel = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 
+// A proof's `status` reads "Suspicious" for two different reasons: the AI itself was unsure
+// (genuine flag), or the quest just has AI Check enabled — in which case every AI verdict,
+// including "approve", gets forced through RouteToMentor() on the BE, which sets status to
+// Suspicious regardless (see Proof.RouteToMentor). Without this, an AI-approved proof still
+// shows the scary "AI SUSPICIOUS" banner/blur it doesn't deserve. `aiStatus` carries the AI's
+// actual verdict, so defer to it whenever one exists.
+const isFlaggedForReview = (proof: ProofDto) => {
+    if (proof.aiStatus === "Suspicious") return true;
+    if (proof.aiStatus === "Approved") return false;
+    return proof.status === "Suspicious" || proof.status === "AiChecking";
+};
+
 // ── REJECT MODAL ──────────────────────────────────────────────────────────────
 interface RejectModalProps {
     proof: ProofDto;
@@ -158,6 +170,11 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                         </span>
                         <div className="space-y-3">
                             <SpecRow label={t("mentor.proofQueue.grid.comparisonQuestType")}>{proof.questType ?? "—"}</SpecRow>
+                            {proof.questDescription && (
+                                <SpecRow label={t("mentor.proofQueue.grid.comparisonInstructions")}>
+                                    <span className="font-normal whitespace-pre-line">{proof.questDescription}</span>
+                                </SpecRow>
+                            )}
                             <SpecRow label={t("mentor.proofQueue.grid.comparisonProofType")}>
                                 <span className="inline-block px-2.5 py-1 rounded-sky-chip bg-sky-violet/14 text-xs font-semibold text-sky-violet-deep">
                                     {proof.proofType}
@@ -283,7 +300,7 @@ interface ProofCardProps {
 
 const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSelected, onToggleSelect }: ProofCardProps) => {
     const { t } = useTranslation();
-    const isSuspicious = proof.status === "Suspicious" || proof.status === "AiChecking" || proof.aiStatus === "Suspicious";
+    const isSuspicious = isFlaggedForReview(proof);
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
     const isOverdue = proof.deadlineAt && new Date(proof.deadlineAt) < new Date();
 
@@ -354,9 +371,13 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                         <p className="text-xs text-sky-ink-2 font-medium truncate">by <strong className="font-semibold text-sky-ink">{proof.username ?? `User #${proof.userId}`}</strong></p>
                     </div>
                     {/* Pending review is peach when flagged, cool blue otherwise —
-                        it is a waiting state, so it never wears the success hue. */}
+                        it is a waiting state, so it never wears the success hue. The raw BE
+                        status reads "Suspicious" even when the AI itself approved (that value
+                        just means "AI Check routed this to you" — see isFlaggedForReview), so
+                        once it's not actually flagged this shows a plain waiting label instead
+                        of the alarming word. */}
                     <span className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-sky-chip ${isSuspicious ? "bg-sky-peach/22 text-sky-peach-deep" : "bg-sky-deep/12 text-sky-deep"}`}>
-                        {proof.status}
+                        {proof.status === "Suspicious" && !isSuspicious ? t("mentor.proofQueue.grid.pendingReviewLabel") : proof.status}
                     </span>
                 </div>
 
@@ -787,7 +808,7 @@ export default function ProofsTab() {
     // ── Filter bar (client-side; no new API calls) ───────────────────────────
     const [filter, setFilter] = useState<QueueFilter>("all");
 
-    const isFlagged = (p: ProofDto) => p.status === "Suspicious" || p.status === "AiChecking" || p.aiStatus === "Suspicious";
+    const isFlagged = isFlaggedForReview;
 
     const applyFilter = useCallback((list: ProofDto[]) => {
         if (filter === "flagged") return list.filter(isFlagged);

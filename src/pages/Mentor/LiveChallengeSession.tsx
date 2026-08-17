@@ -10,7 +10,7 @@ import partyCallApi from "../../api/partyCallApi";
 import partyMentorApi from "../../api/mentorPartyApi";
 import { useLiveCall } from "../../context/LiveCallContext";
 import type { PartyItem } from "../../types/api.types";
-import type { ChallengeMode, LiveChallengeBankItemDto } from "../../types/partyCall.types";
+import type { ChallengeMode } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
 import { positiveIntDisplay, parsePositiveInt } from "../../utils/numberInput";
 
@@ -59,8 +59,6 @@ export default function LiveChallengeSession() {
     const [parties, setParties] = useState<PartyItem[]>([]);
     const [selectedPartyId, setSelectedPartyId] = useState<number | "">(workspace?.partyId ?? "");
 
-    const [bankItems, setBankItems] = useState<LiveChallengeBankItemDto[]>([]);
-    const [selectedBankItemId, setSelectedBankItemId] = useState<number | "">("");
     const [adHocPrompt, setAdHocPrompt] = useState("");
     const [mode, setMode] = useState<ChallengeMode>("SELF_SCORE");
     const [points, setPoints] = useState(10);
@@ -75,9 +73,6 @@ export default function LiveChallengeSession() {
                 if (r.success) setParties(r.data ?? []);
             });
         }
-        partyCallApi.getBankItems().then((r) => {
-            if (r.success) setBankItems(r.data ?? []);
-        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -105,8 +100,7 @@ export default function LiveChallengeSession() {
 
     const handleSendChallenge = async () => {
         if (!session) return;
-        const isFromBank = selectedBankItemId !== "";
-        if (!isFromBank && !adHocPrompt.trim()) return;
+        if (!adHocPrompt.trim()) return;
         if (mode === "ATTACK" && rivalUserId === "") {
             setError("Pick a rival for an Attack challenge");
             return;
@@ -116,16 +110,15 @@ export default function LiveChallengeSession() {
         setError(null);
         try {
             const r = await partyCallApi.createChallenge(session.sessionId, {
-                bankItemId: isFromBank ? (selectedBankItemId as number) : null,
-                mode: isFromBank ? undefined : mode,
-                promptText: isFromBank ? undefined : adHocPrompt.trim(),
-                points: isFromBank ? undefined : points,
+                bankItemId: null,
+                mode,
+                promptText: adHocPrompt.trim(),
+                points,
                 assignedToUserId: assignedToUserId === "" ? null : (assignedToUserId as number),
                 rivalUserId: mode === "ATTACK" ? (rivalUserId as number) : null,
             });
             if (r.success) {
                 setAdHocPrompt("");
-                setSelectedBankItemId("");
                 await refreshSession();
             } else {
                 setError(r.message || "Could not send the challenge");
@@ -150,8 +143,12 @@ export default function LiveChallengeSession() {
         }
     };
 
+    // The mentor referees, they don't compete — exclude them from the scoreboard
+    // (both the live leaderboard and the post-session "Final results" reuse this).
     const leaderboard = useMemo(
-        () => (session ? [...session.participants].sort((a, b) => b.score - a.score) : []),
+        () => (session
+            ? session.participants.filter((p) => p.userId !== session.mentorUserId).sort((a, b) => b.score - a.score)
+            : []),
         [session]
     );
 
@@ -307,57 +304,37 @@ export default function LiveChallengeSession() {
                             </div>
 
                             <div className="relative mb-3.5">
-                                <label className={eyebrow}>From bank (optional)</label>
-                                <select
-                                    value={selectedBankItemId}
-                                    onChange={(e) => setSelectedBankItemId(e.target.value ? parseInt(e.target.value) : "")}
+                                <label className={eyebrow}>Prompt</label>
+                                <input
+                                    value={adHocPrompt}
+                                    onChange={(e) => setAdHocPrompt(e.target.value)}
+                                    placeholder="e.g. Show me you're drinking water right now!"
                                     className={inputCls}
-                                >
-                                    <option value="">— Compose ad-hoc instead —</option>
-                                    {bankItems.map((b) => (
-                                        <option key={b.bankItemId} value={b.bankItemId}>
-                                            [{b.mode === "ATTACK" ? "Attack" : "Self-score"}] {b.promptText} ({b.points} pts)
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </div>
-
-                            {selectedBankItemId === "" && (
-                                <>
-                                    <div className="relative mb-3.5">
-                                        <label className={eyebrow}>Prompt</label>
-                                        <input
-                                            value={adHocPrompt}
-                                            onChange={(e) => setAdHocPrompt(e.target.value)}
-                                            placeholder="e.g. Show me you're drinking water right now!"
-                                            className={inputCls}
-                                        />
-                                    </div>
-                                    <div className="relative flex gap-3 mb-3.5">
-                                        <div className="flex-1">
-                                            <label className={eyebrow}>Mode</label>
-                                            <select
-                                                value={mode}
-                                                onChange={(e) => setMode(e.target.value as ChallengeMode)}
-                                                className={inputCls}
-                                            >
-                                                <option value="SELF_SCORE">Self-score (+points)</option>
-                                                <option value="ATTACK">Attack (−points to rival)</option>
-                                            </select>
-                                        </div>
-                                        <div className="w-24">
-                                            <label className={eyebrow}>Points</label>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                value={positiveIntDisplay(points)}
-                                                onChange={(e) => setPoints(parsePositiveInt(e.target.value))}
-                                                className={`${inputCls} tabular-nums`}
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                            <div className="relative flex gap-3 mb-3.5">
+                                <div className="flex-1">
+                                    <label className={eyebrow}>Mode</label>
+                                    <select
+                                        value={mode}
+                                        onChange={(e) => setMode(e.target.value as ChallengeMode)}
+                                        className={inputCls}
+                                    >
+                                        <option value="SELF_SCORE">Self-score (+points)</option>
+                                        <option value="ATTACK">Attack (−points to rival)</option>
+                                    </select>
+                                </div>
+                                <div className="w-24">
+                                    <label className={eyebrow}>Points</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={positiveIntDisplay(points)}
+                                        onChange={(e) => setPoints(parsePositiveInt(e.target.value))}
+                                        className={`${inputCls} tabular-nums`}
+                                    />
+                                </div>
+                            </div>
 
                             <div className="relative flex gap-3 mb-4">
                                 <div className="flex-1">
@@ -373,7 +350,7 @@ export default function LiveChallengeSession() {
                                         ))}
                                     </select>
                                 </div>
-                                {mode === "ATTACK" && selectedBankItemId === "" && (
+                                {mode === "ATTACK" && (
                                     <div className="flex-1">
                                         <label className={eyebrow}>Rival (loses points)</label>
                                         <select

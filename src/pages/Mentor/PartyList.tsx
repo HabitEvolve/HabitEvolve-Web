@@ -177,7 +177,7 @@ export default function PartyList() {
                     {party.description || t("admin.partyManagement.noDescription")}
                   </p>
                 </div>
-                <div className="hidden sm:block w-32 shrink-0">
+                <div className="hidden sm:block w-44 shrink-0">
                   <CapacityMeter current={party.memberCount ?? 0} max={party.maxMembers || 1} />
                 </div>
                 <ArrowRight className="w-5 h-5 shrink-0 text-sky-ink-3 transition-all duration-150 group-hover:text-sky-deep group-hover:translate-x-1" aria-hidden="true" />

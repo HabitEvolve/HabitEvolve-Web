@@ -429,7 +429,7 @@ export default function Home() {
                 description="Economy, quest completion, and user activity for the selected range"
                 actions={
                     <>
-                        <div className="w-56">
+                        <div className="w-64">
                             <DatePicker
                                 id="dashboard-date-range"
                                 mode="range"

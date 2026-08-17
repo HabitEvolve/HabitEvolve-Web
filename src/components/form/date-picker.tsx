@@ -54,7 +54,11 @@ export default function DatePicker({
         <input
           id={id}
           placeholder={placeholder}
-          className="h-11 w-full rounded-sky-chip border appearance-none px-4 py-2.5 text-sm transition placeholder:text-sky-ink-3 focus:outline-hidden focus:ring-3 bg-white/60 text-sky-ink border-white/80 focus:border-sky-deep focus:ring-sky-deep/18"
+          // pr-11 (not px-4 on both sides) — the icon sits at right-3 and is size-6
+          // (24px), so it occupies roughly the last 2.25rem of the box. With only
+          // 1rem of right padding a full "YYYY-MM-DD to YYYY-MM-DD" range renders
+          // straight under it; reserving pr-11 keeps the text clear of the icon.
+          className="h-11 w-full rounded-sky-chip border appearance-none pl-4 pr-11 py-2.5 text-sm transition placeholder:text-sky-ink-3 focus:outline-hidden focus:ring-3 bg-white/60 text-sky-ink border-white/80 focus:border-sky-deep focus:ring-sky-deep/18"
         />
 
         <span className="absolute text-sky-ink-2 -translate-y-1/2 pointer-events-none right-3 top-1/2">

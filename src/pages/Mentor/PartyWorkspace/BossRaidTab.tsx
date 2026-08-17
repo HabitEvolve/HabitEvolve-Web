@@ -6,11 +6,13 @@ import {
     AlertTriangle, Check, CheckCircle2, ScrollText, Medal, Timer, Users, Skull,
 } from "lucide-react";
 import mentorApi from "../../../api/mentorApi";
+import partyMentorApi from "../../../api/mentorPartyApi";
 import { useAlert } from "../../../context/AlertContext";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import { easeExpo, getMentorId, Spinner } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
+import type { PartyMember } from "../../../types/api.types";
 import type {
     BossTemplateDto,
     BossModeConfigDto,
@@ -245,6 +247,10 @@ export default function BossRaidTab() {
     // holds the current (or most recent) one.
     const [raidHistory, setRaidHistory] = useState<RaidHistoryDto[]>([]);
     const [view, setView] = useState<"current" | "history">("current");
+    // RaidParticipantDto has no username on the BE — joined client-side against
+    // this party's member list so "Participants" can show a name instead of a
+    // raw userId.
+    const [members, setMembers] = useState<PartyMember[]>([]);
 
     const [loading, setLoading] = useState(true);
     const [statusLoading, setStatusLoading] = useState(false);
@@ -311,6 +317,14 @@ export default function BossRaidTab() {
         fetchPartyStatus();
         setRegisterResult(null);
     }, [fetchPartyStatus]);
+
+    useEffect(() => {
+        partyMentorApi.getPartyMembers(partyId).then((res) => {
+            if (res.success) setMembers(res.data ?? []);
+        });
+    }, [partyId]);
+
+    const usernameFor = (userId: number) => members.find((m) => m.userId === userId)?.username ?? `User ${userId}`;
 
     // `diffOverride` is additive: existing callers keep working unchanged via
     // `selectedDifficulty`; the per-card Summon button passes its own difficulty
@@ -690,7 +704,7 @@ export default function BossRaidTab() {
                                                 <div key={p.userId} className="flex items-center justify-between gap-3 rounded-sky-chip bg-white/58 ring-1 ring-white/72 px-3 py-2 text-sm">
                                                     <span className="inline-flex items-center gap-2 min-w-0">
                                                         <span className="grid place-items-center w-6 h-6 shrink-0 rounded-full bg-sky-ink/8 font-display text-[11px] font-semibold text-sky-ink-2 tabular-nums">{i + 1}</span>
-                                                        <span className="font-semibold text-sky-ink truncate">User {p.userId}</span>
+                                                        <span className="font-semibold text-sky-ink truncate">{usernameFor(p.userId)}</span>
                                                     </span>
                                                     <div className="flex items-center gap-3 shrink-0 tabular-nums">
                                                         <span className="font-display font-semibold text-sky-dmg-deep">

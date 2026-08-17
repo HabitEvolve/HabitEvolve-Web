@@ -283,9 +283,13 @@ function QuestionFormModal({
     }
 
     setSaving(true); setErr('');
+    // Normalized here and on blur, never live on every keystroke — replace()/toLowerCase()
+    // on every onChange breaks IME composition (garbles Vietnamese diacritics while typing
+    // into this field).
+    const normalizedFieldKey = fieldKey.trim().replace(/\s/g, '_').toLowerCase() || null;
     const payload = editing
-      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, fieldKey: fieldKey.trim() || null, isRequired: required, displayOrder: order, minValue: min, maxValue: max }
-      : { templateId, questionText: text.trim(), questionType: type, fieldKey: fieldKey.trim() || null, isRequired: required, displayOrder: order, minValue: min, maxValue: max };
+      ? { questionId: editing.questionId, questionText: text.trim(), questionType: type, fieldKey: normalizedFieldKey, isRequired: required, displayOrder: order, minValue: min, maxValue: max }
+      : { templateId, questionText: text.trim(), questionType: type, fieldKey: normalizedFieldKey, isRequired: required, displayOrder: order, minValue: min, maxValue: max };
     try { await onSave(payload); }
     catch (ex: any) { alert.error(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
@@ -316,7 +320,8 @@ function QuestionFormModal({
               <input
                 type="text"
                 value={fieldKey}
-                onChange={e => setFieldKey(e.target.value.replace(/\s/g, '_').toLowerCase())}
+                onChange={e => setFieldKey(e.target.value)}
+                onBlur={e => setFieldKey(e.target.value.replace(/\s/g, '_').toLowerCase())}
                 className={inputCls}
                 placeholder="e.g. baseline_count, target_meal, food_group"
               />

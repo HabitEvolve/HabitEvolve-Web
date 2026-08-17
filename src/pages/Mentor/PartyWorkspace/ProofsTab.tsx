@@ -345,10 +345,16 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                         </span>
                     </div>
                     {isSuspicious && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-sky-ink/28">
-                            <span className="inline-flex items-center gap-1.5 bg-white/92 rounded-sky-chip px-3 py-1.5 text-xs font-semibold text-sky-rose-deep shadow-sky-chip">
-                                <Bot className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.aiFlagged")}
-                            </span>
+                        // Corner ribbon, not a centered pill — a centered pill sat exactly on
+                        // top of the hover "Tap to compare" prompt, which shares that same
+                        // centered spot. The button's own overflow-hidden clips the strip's
+                        // overhang, so no extra wrapper is needed.
+                        <div
+                            className="absolute top-3 -right-10 w-36 rotate-45 flex items-center justify-center gap-1 bg-linear-to-r from-sky-rose to-sky-rose-deep text-white text-[10px] font-bold uppercase tracking-wide py-1 shadow-[0_2px_8px_rgba(36,52,77,0.35)]"
+                            aria-hidden="true"
+                        >
+                            <Bot className="w-3 h-3 shrink-0" aria-hidden="true" />
+                            {t("mentor.proofQueue.aiFlaggedRibbon")}
                         </div>
                     )}
                     {proof.mediaUrls.length > 1 && (
@@ -562,24 +568,20 @@ interface QueueSectionProps {
     actionLoading: number | null;
     emptyIcon: React.ReactNode;
     emptyText: string;
-    isAiQueue?: boolean;
     selectedIds: Set<number>;
     onToggleSelect: (id: number) => void;
 }
 
 const QueueSection = ({
     title, count, proofs, loading, onApprove, onReject, onCompare,
-    actionLoading, emptyIcon, emptyText, isAiQueue = false, selectedIds, onToggleSelect,
+    actionLoading, emptyIcon, emptyText, selectedIds, onToggleSelect,
 }: QueueSectionProps) => {
     const { t } = useTranslation();
     return (
         <div>
             <div className="flex items-center gap-3 mb-4">
                 <h2 className="font-display text-xl font-semibold text-sky-ink">{title}</h2>
-                {/* Queue depth is a quantity, not a verdict: violet marks the AI
-                    lane, cool blue the mentor's own. */}
-                <span className={`inline-grid place-items-center min-w-7 h-7 px-2 text-sm font-display font-semibold rounded-sky-chip tabular-nums ${isAiQueue ? "bg-sky-violet/14 text-sky-violet-deep" : "bg-sky-deep/12 text-sky-deep"
-                    }`}>
+                <span className="inline-grid place-items-center min-w-7 h-7 px-2 text-sm font-display font-semibold rounded-sky-chip tabular-nums bg-sky-deep/12 text-sky-deep">
                     {count}
                 </span>
                 {loading && <Spinner size={16} />}
@@ -680,7 +682,7 @@ const HistorySection = ({ proofs, loading, onCompare }: HistorySectionProps) => 
 };
 
 // ── TAB ───────────────────────────────────────────────────────────────────────
-type QueueTab = "manual" | "ai" | "history";
+type QueueTab = "manual" | "history";
 
 export default function ProofsTab() {
     const { partyId } = useOutletContext<PartyWorkspaceContext>();
@@ -688,10 +690,8 @@ export default function ProofsTab() {
     const alert = useAlert();
     const [activeTab, setActiveTab] = useState<QueueTab>("manual");
     const [manualProofs, setManualProofs] = useState<ProofDto[]>([]);
-    const [aiProofs, setAiProofs] = useState<ProofDto[]>([]);
     const [historyProofs, setHistoryProofs] = useState<ProofDto[]>([]);
     const [loadingManual, setLoadingManual] = useState(true);
-    const [loadingAi, setLoadingAi] = useState(true);
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -700,25 +700,21 @@ export default function ProofsTab() {
     const fetchQueues = useCallback(async () => {
         setError(null);
         setLoadingManual(true);
-        setLoadingAi(true);
         setLoadingHistory(true);
         try {
-            const [manualRes, aiRes, historyRes] = await Promise.all([
+            const [manualRes, historyRes] = await Promise.all([
                 mentorApi.getProofQueue(),
-                mentorApi.getAiProofQueue(),
                 mentorApi.getProofHistory(),
             ]);
             if (manualRes.success) setManualProofs(manualRes.data ?? []);
-            if (aiRes.success) setAiProofs(aiRes.data ?? []);
             if (historyRes.success) setHistoryProofs(historyRes.data ?? []);
-            if (!manualRes.success && !aiRes.success) {
+            if (!manualRes.success) {
                 setError(manualRes.message || t("mentor.proofQueue.failedToLoad"));
             }
         } catch (e: any) {
             setError(e?.response?.data?.message || t("mentor.proofQueue.errorOccurred"));
         } finally {
             setLoadingManual(false);
-            setLoadingAi(false);
             setLoadingHistory(false);
         }
     }, []);
@@ -740,25 +736,12 @@ export default function ProofsTab() {
         });
     }, [partyId]);
 
-    // AI-routed proofs (ReviewRoute = "AI") are rejected by the mentor
-    // approve/reject endpoints on the BE (they only accept ReviewRoute =
-    // "MENTOR"). Approve/reject on an AI-queue card must instead go through
-    // the AI verdict endpoint (`simulateAiVerdict`), which is what actually
-    // moves an AI-routed proof forward.
-    const isAiProof = useCallback(
-        (proofId: number) => aiProofs.some((p) => p.proofId === proofId),
-        [aiProofs],
-    );
-
     const handleApprove = async (proofId: number) => {
         setActionLoading(proofId);
         try {
-            const res = isAiProof(proofId)
-                ? await mentorApi.simulateAiVerdict(proofId, "approve")
-                : await mentorApi.approveProof(proofId);
+            const res = await mentorApi.approveProof(proofId);
             if (res.success) {
                 setManualProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-                setAiProofs((prev) => prev.filter((p) => p.proofId !== proofId));
                 alert.success(t("mentor.proofQueue.approvedSuccess"));
             } else {
                 alert.error(res.message || t("mentor.proofQueue.approvalFailed"));
@@ -770,38 +753,13 @@ export default function ProofsTab() {
         }
     };
 
-    // AI-verdict "reject" has no reason field, so an AI-queue card rejects
-    // immediately (no RejectModal) — only the manual queue's reject goes
-    // through the reason-collecting modal.
-    const handleRejectAiDirect = async (proofId: number) => {
-        setActionLoading(proofId);
-        try {
-            const res = await mentorApi.simulateAiVerdict(proofId, "reject");
-            if (res.success) {
-                setAiProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-                alert.success(t("mentor.proofQueue.rejectedSuccess"));
-            } else {
-                alert.error(res.message || t("mentor.proofQueue.rejectModal.rejectionFailed"));
-            }
-        } catch (e: any) {
-            alert.error(e?.response?.data?.message || t("mentor.proofQueue.errorOccurred"));
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
     const handleRejectClick = (proof: ProofDto) => {
-        if (isAiProof(proof.proofId)) {
-            handleRejectAiDirect(proof.proofId);
-        } else {
-            setRejectTarget(proof);
-        }
+        setRejectTarget(proof);
     };
 
     const handleRejected = (proofId: number) => {
         setRejectTarget(null);
         setManualProofs((prev) => prev.filter((p) => p.proofId !== proofId));
-        setAiProofs((prev) => prev.filter((p) => p.proofId !== proofId));
         alert.success(t("mentor.proofQueue.rejectedSuccess"));
     };
 
@@ -820,11 +778,6 @@ export default function ProofsTab() {
         if (!partyQuestIds) return [];
         return applyFilter(manualProofs.filter((p) => partyQuestIds.has(p.questId)));
     }, [manualProofs, applyFilter, partyQuestIds]);
-
-    const visibleAi = useMemo(() => {
-        if (!partyQuestIds) return [];
-        return applyFilter(aiProofs.filter((p) => partyQuestIds.has(p.questId)));
-    }, [aiProofs, applyFilter, partyQuestIds]);
 
     // History is already newest-reviewed-first from the BE — no filter bar applies here.
     const visibleHistory = useMemo(() => {
@@ -858,7 +811,7 @@ export default function ProofsTab() {
 
     const [compareTarget, setCompareTarget] = useState<ProofDto | null>(null);
 
-    const totalCount = visibleManual.length + visibleAi.length;
+    const totalCount = visibleManual.length;
 
     return (
         <>
@@ -877,9 +830,9 @@ export default function ProofsTab() {
                     variant="secondary"
                     size="sm"
                     onClick={fetchQueues}
-                    disabled={loadingManual && loadingAi}
+                    disabled={loadingManual}
                 >
-                    {loadingManual || loadingAi ? <Spinner size={14} /> : <RefreshCw className="w-4 h-4" />}
+                    {loadingManual ? <Spinner size={14} /> : <RefreshCw className="w-4 h-4" />}
                     {t("mentor.proofQueue.refresh")}
                 </SkyButton>
             </div>
@@ -926,9 +879,9 @@ export default function ProofsTab() {
             {/* Queue switcher — the active tab lifts on a deep fill and grows an
                 underline, so it never relies on hue alone. */}
             <div className="flex gap-2 mb-6 border-b border-sky-ink/10">
-                {(["manual", "ai", "history"] as QueueTab[]).map((tab) => {
+                {(["manual", "history"] as QueueTab[]).map((tab) => {
                     const isActive = activeTab === tab;
-                    const count = tab === "manual" ? visibleManual.length : tab === "ai" ? visibleAi.length : visibleHistory.length;
+                    const count = tab === "manual" ? visibleManual.length : visibleHistory.length;
                     return (
                         <button
                             type="button"
@@ -936,20 +889,16 @@ export default function ProofsTab() {
                             onClick={() => setActiveTab(tab)}
                             aria-pressed={isActive}
                             className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-t-sky-chip transition-all duration-150 ${easeExpo} ${isActive
-                                    ? tab === "ai"
-                                        ? "bg-linear-to-b from-sky-violet to-sky-violet-deep text-white shadow-sky-chip"
-                                        : tab === "history"
-                                            ? "bg-linear-to-b from-sky-ink-2 to-sky-ink text-white shadow-sky-chip"
-                                            : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
+                                    ? tab === "history"
+                                        ? "bg-linear-to-b from-sky-ink-2 to-sky-ink text-white shadow-sky-chip"
+                                        : "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
                                     : "text-sky-ink-2 hover:text-sky-ink hover:bg-white/50"
                                 }`}
                         >
                             {tab === "manual"
                                 ? <UserRoundPen className="w-4 h-4" aria-hidden="true" />
-                                : tab === "ai"
-                                    ? <Bot className="w-4 h-4" aria-hidden="true" />
-                                    : <History className="w-4 h-4" aria-hidden="true" />}
-                            {tab === "manual" ? t("Manual") : tab === "ai" ? t("AI") : t("mentor.proofQueue.history.tab")}
+                                : <History className="w-4 h-4" aria-hidden="true" />}
+                            {tab === "manual" ? t("Proofs") : t("mentor.proofQueue.history.tab")}
                             <span className={`ml-1 inline-grid place-items-center min-w-5 h-5 px-1.5 text-[11px] font-semibold rounded-full tabular-nums ${isActive ? "bg-white/22 text-white" : "bg-sky-ink/8 text-sky-ink-2"
                                 }`}>
                                 {count}
@@ -961,7 +910,7 @@ export default function ProofsTab() {
 
             {activeTab === "manual" ? (
                 <QueueSection
-                    title={t("Manual Review Queue")}
+                    title={t("Proofs")}
                     count={visibleManual.length}
                     proofs={visibleManual}
                     loading={loadingManual || scopingLoading}
@@ -970,23 +919,7 @@ export default function ProofsTab() {
                     onCompare={setCompareTarget}
                     actionLoading={actionLoading}
                     emptyIcon={<UserRoundPen className="w-6 h-6" />}
-                    emptyText={t("Manual review queue is empty. All proofs have been reviewed!")}
-                    selectedIds={selectedIds}
-                    onToggleSelect={toggleSelect}
-                />
-            ) : activeTab === "ai" ? (
-                <QueueSection
-                    title={t("AI Review Queue")}
-                    count={visibleAi.length}
-                    proofs={visibleAi}
-                    loading={loadingAi || scopingLoading}
-                    onApprove={handleApprove}
-                    onReject={handleRejectClick}
-                    onCompare={setCompareTarget}
-                    actionLoading={actionLoading}
-                    emptyIcon={<Bot className="w-6 h-6" />}
-                    emptyText={t("AI review queue is empty. All proofs have been reviewed!")}
-                    isAiQueue
+                    emptyText={t("The proof queue is empty. All proofs have been reviewed!")}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelect}
                 />

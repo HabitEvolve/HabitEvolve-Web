@@ -363,7 +363,11 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
                     placeholder={t('admin.subscriptionPage.form.codePlaceholder')}
                     className={`${inputCls} font-mono tracking-[0.08em]`}
                     value={form.code}
-                    onChange={e => set('code', e.target.value.toUpperCase())}
+                    // Not transformed live — .toUpperCase() on every keystroke breaks IME
+                    // composition (garbles Vietnamese diacritics while typing). handleSubmit
+                    // already normalizes the code at submit time.
+                    onChange={e => set('code', e.target.value)}
+                    onBlur={e => set('code', e.target.value.toUpperCase())}
                   />
                 </Field>
               )}

@@ -100,7 +100,7 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
                 className={`
                   pointer-events-auto relative overflow-hidden
                   flex items-start gap-3 pl-5 pr-4 py-3.5
-                  rounded-sky-md sky-glass
+                  rounded-sky-md sky-glass-menu
                   ${toast.exiting ? "habit-toast-exit" : "habit-toast-enter"}
                 `}
               >

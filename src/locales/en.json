@@ -624,7 +624,7 @@
       "empty": "Queue is empty",
       "emptySubtitle": "All proofs have been reviewed. Check back later.",
       "noMedia": "No media",
-      "aiFlagged": "🤖 AI Flagged — Blurred",
+      "aiFlaggedRibbon": "AI Flagged",
       "onTime": "On Time",
       "approve": "Approve",
       "reject": "Reject",

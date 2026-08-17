@@ -188,9 +188,13 @@ function ItemForm({ editing, onSave, onClose }: { editing: ItemDefinitionDto | n
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.code.trim() || !form.name.trim()) { setErr("Code and name are required."); return; }
+    // Code is normalized here and on blur, never live on every keystroke — forcing
+    // .toUpperCase() synchronously in onChange breaks IME composition (garbles/drops
+    // characters while typing Vietnamese diacritics into this field).
+    const code = form.code.trim().toUpperCase();
+    if (!code || !form.name.trim()) { setErr("Code and name are required."); return; }
     setSaving(true); setErr("");
-    try { await onSave(form); onClose(); }
+    try { await onSave({ ...form, code }); onClose(); }
     catch (ex) { setErr(errMsg(ex) ?? "Save failed."); }
     finally { setSaving(false); }
   };
@@ -198,7 +202,7 @@ function ItemForm({ editing, onSave, onClose }: { editing: ItemDefinitionDto | n
   return (
     <form onSubmit={submit} className="space-y-3">
       {err && <ErrorNote>{err}</ErrorNote>}
-      <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="SKIN_NINJA" /></div>
+      <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} onBlur={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="SKIN_NINJA" /></div>
       <IconUploadField value={form.iconUrl} onChange={url => setForm(f => ({ ...f, iconUrl: url }))} />
       <div><Label>Name *</Label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} /></div>
       <div><Label>Description</Label><textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className={`${inputCls} resize-none`} /></div>
@@ -363,9 +367,12 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.code.trim() || !form.name.trim()) { setErr("Code and name are required."); return; }
+    // Normalized here and on blur, never live on every keystroke — forcing
+    // .toUpperCase() synchronously in onChange breaks IME composition.
+    const code = form.code.trim().toUpperCase();
+    if (!code || !form.name.trim()) { setErr("Code and name are required."); return; }
     setSaving(true); setErr("");
-    try { await onSave(form); onClose(); }
+    try { await onSave({ ...form, code }); onClose(); }
     catch (ex) { setErr(errMsg(ex) ?? "Save failed."); }
     finally { setSaving(false); }
   };
@@ -373,7 +380,7 @@ function CombatItemForm({ currency, editing, onSave, onClose }: {
   return (
     <form onSubmit={submit} className="space-y-3">
       {err && <ErrorNote>{err}</ErrorNote>}
-      <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="CHAR_NINJA" /></div>
+      <div><Label>Code *</Label><input value={form.code} disabled={!!editing} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} onBlur={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className={inputCls} placeholder="CHAR_NINJA" /></div>
       <IconUploadField value={form.iconUrl ?? ""} onChange={url => setForm(f => ({ ...f, iconUrl: url }))} />
       <div><Label>Name *</Label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Must match the mobile sprite name exactly" /></div>
       <div><Label>Description</Label><textarea value={form.description ?? ""} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className={`${inputCls} resize-none`} /></div>

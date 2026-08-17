@@ -75,13 +75,17 @@ export const CapacityMeter = ({ current, max }: { current: number; max: number }
   const isFull = max > 0 && current >= max;
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <div className="flex-1 h-2 min-w-14 max-w-30 rounded-full bg-sky-3/40 overflow-hidden shrink-0">
+      {/* Fixed width, not flex-1 — a growing bar was eating the space callers
+          size for the text next to it, so "X/Y seats filled" had nowhere to
+          go but overflow its container (PartyList's fixed-width column let
+          that spill straight into the row's trailing arrow icon). */}
+      <div className="w-14 h-2 rounded-full bg-sky-3/40 overflow-hidden shrink-0">
         <div
           className={`h-full rounded-full transition-all duration-500 ${easeExpo} ${isFull ? "bg-sky-peach-deep" : "bg-sky-deep"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs font-semibold text-sky-ink-2 whitespace-nowrap">
+      <span className="min-w-0 text-xs font-semibold text-sky-ink-2 whitespace-nowrap truncate">
         {isFull
           ? t("admin.partyManagement.hub.full")
           : t("admin.partyManagement.hub.capacity", { current, max })}

@@ -11,6 +11,7 @@ import { useAlert } from "../../../context/AlertContext";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import { easeExpo, getMentorId, Spinner } from "./sharedSky";
+import { spriteAvatarUrl } from "../../../data/monsterRoster";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
 import type { PartyMember } from "../../../types/api.types";
 import type {
@@ -32,6 +33,10 @@ import type {
 // for every other affordance on the screen.
 const SKULL_ART = "/icon/Player/Skull/64px/Skull 1st 64px.png";
 const CHEST_ART = "/icon/Item/Chest/64px/Chest 1st 64px.png";
+
+// Boss art from BE spriteKey (resolved to a bundled sprite in public/monsters). Falls back to the
+// generic Skull art when the key is null/unknown, so the antagonist card always shows something.
+const bossArtUrl = (spriteKey?: string | null): string => spriteAvatarUrl(spriteKey) ?? SKULL_ART;
 
 const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 const metaChip = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sky-chip bg-white/62 ring-1 ring-white/75 text-xs font-semibold text-sky-ink-2";
@@ -581,8 +586,8 @@ export default function BossRaidTab() {
                         <div className="relative flex flex-wrap items-start justify-between gap-5">
                             <div className="min-w-0">
                                 <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                                    <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-chip bg-linear-to-b from-sky-dmg/22 to-sky-dmg/8 ring-1 ring-sky-dmg/25">
-                                        <img src={SKULL_ART} alt="" className="w-9 h-9 object-contain" />
+                                    <span className="grid place-items-center w-12 h-12 shrink-0 rounded-sky-chip bg-linear-to-b from-sky-dmg/22 to-sky-dmg/8 ring-1 ring-sky-dmg/25 overflow-hidden">
+                                        <img src={bossArtUrl(boss.spriteKey)} alt="" className="w-9 h-9 object-contain" />
                                     </span>
                                     <h1 className="font-display text-2xl sm:text-3xl font-semibold text-sky-ink tracking-tight wrap-break-word">{boss.themeName}</h1>
                                     <span className={boss.status === "Published" ? "sky-badge sky-badge-success" : "sky-badge sky-badge-neutral"}>

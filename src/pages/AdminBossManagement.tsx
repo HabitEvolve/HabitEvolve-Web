@@ -20,6 +20,7 @@ import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import { positiveIntDisplay, parsePositiveInt } from "../utils/numberInput";
 import StatusBadge from "../components/common/StatusBadge";
+import { spriteAvatarUrl } from "../data/monsterRoster";
 import { FilterDropdown } from "../components/common/FilterDropdown";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
@@ -1139,8 +1140,21 @@ export default function AdminBossManagement() {
                         {(page - 1) * PAGE_SIZE + idx + 1}
                       </td>
                       <td className="px-4 py-4 max-w-55">
-                        <p className="font-semibold text-sky-ink truncate">{tpl.themeName}</p>
-                        <p className="text-xs text-sky-ink-3 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Boss art from spriteKey (read-only). Falls back to a Skull glyph when the
+                              key is null or not in the roster, so the row never renders a broken image. */}
+                          <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-violet/10 ring-1 ring-white/70 overflow-hidden">
+                            {spriteAvatarUrl(tpl.spriteKey) ? (
+                              <img src={spriteAvatarUrl(tpl.spriteKey)!} alt="" className="w-full h-full object-contain" />
+                            ) : (
+                              <Skull className="w-5 h-5 text-sky-violet-deep" />
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sky-ink truncate">{tpl.themeName}</p>
+                            <p className="text-xs text-sky-ink-3 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-1">

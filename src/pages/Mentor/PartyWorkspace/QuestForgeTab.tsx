@@ -107,7 +107,6 @@ const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps
                         ["Boss Modes", pkg.bossModes],
                         ["Proof Types", pkg.proofTypes],
                         ["AI Verification", pkg.aiVerificationBossModes ? "Included" : "Not included"],
-                        ["Quest/member/day", `${usage?.questsAssignedToday ?? 0} / ${pkg.questsPerMemberPerDay}`],
                         ["Party quest/week", `${usage?.partyQuestsThisWeek ?? 0} / ${pkg.partyQuestsPerWeek}`],
                     ].map(([k, v]) => (
                         <div key={k} className="flex justify-between gap-2 text-xs font-medium">

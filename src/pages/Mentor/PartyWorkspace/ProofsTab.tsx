@@ -172,7 +172,7 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                             <SpecRow label={t("mentor.proofQueue.grid.comparisonQuestType")}>{proof.questType ?? "—"}</SpecRow>
                             {proof.questHowToSubmit && (
                                 <SpecRow label={t("mentor.proofQueue.grid.comparisonInstructions")}>
-                                    <span className="font-normal whitespace-pre-line">{proof.questHowToSubmit}</span>
+                                    <span className="whitespace-pre-line">{proof.questHowToSubmit}</span>
                                 </SpecRow>
                             )}
                             <SpecRow label={t("mentor.proofQueue.grid.comparisonProofType")}>

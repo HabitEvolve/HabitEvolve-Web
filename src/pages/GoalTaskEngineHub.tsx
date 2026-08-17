@@ -1244,19 +1244,24 @@ function OptionTaskMappingsTab({ goal }: { goal: GoalDto }) {
     );
   }
 
-  // Build hierarchical data: questions → options → their current mappings
-  // We derive questions/options from the mapping DTOs (server already enriches them)
+  // Build hierarchical data: questions → options → their current mappings.
+  // We derive questions/options from the mapping DTOs (server already enriches them) — the server
+  // also sends a placeholder row (mappingId=0, templateId=0) for every option that has no mapping
+  // yet, purely so it still shows up here as a row with an "Add mapping" picker. Filter those out
+  // wherever we're counting/rendering "real" mapped tasks.
   const questionsMap = new Map<number, { questionText: string; options: Map<number, { optionText: string; optionValue: string; mappings: OptionTaskMappingDto[] }> }>();
   for (const m of mappings) {
     if (!questionsMap.has(m.questionId)) questionsMap.set(m.questionId, { questionText: m.questionText, options: new Map() });
     const q = questionsMap.get(m.questionId)!;
     if (!q.options.has(m.optionId)) q.options.set(m.optionId, { optionText: m.optionText, optionValue: m.optionValue, mappings: [] });
-    q.options.get(m.optionId)!.mappings.push(m);
+    if (m.mappingId !== 0) q.options.get(m.optionId)!.mappings.push(m);
   }
+
+  const realMappingsCount = mappings.filter(m => m.mappingId !== 0).length;
 
   // Tasks already mapped per option (for exclusion in picker)
   const mappedTemplateIdsByOption = (optionId: number) =>
-    new Set(mappings.filter(m => m.optionId === optionId).map(m => m.templateId));
+    new Set(mappings.filter(m => m.optionId === optionId && m.mappingId !== 0).map(m => m.templateId));
 
   const questions = [...questionsMap.entries()];
 
@@ -1288,7 +1293,7 @@ function OptionTaskMappingsTab({ goal }: { goal: GoalDto }) {
       <div className="flex items-center gap-3 px-3 py-2.5 bg-sky-teal/8 ring-1 ring-sky-teal/18 rounded-sky-chip">
         <GitBranch className="w-4 h-4 text-sky-teal shrink-0" strokeWidth={2.2} aria-hidden="true" />
         <span className="text-sm font-semibold text-sky-ink-2">
-          <span className="text-sky-teal">{mappings.length}</span> mapping{mappings.length !== 1 ? 's' : ''} across{' '}
+          <span className="text-sky-teal">{realMappingsCount}</span> mapping{realMappingsCount !== 1 ? 's' : ''} across{' '}
           <span className="text-sky-teal">{questions.length}</span> question{questions.length !== 1 ? 's' : ''}
         </span>
       </div>

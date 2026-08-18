@@ -69,6 +69,8 @@ export interface BossModeInput {
 export interface CreateBossTemplatePayload {
     themeName: string;
     description?: string;
+    // Art key (weekly boss) — khớp BE BossTemplate.SpriteKey + WEEKLY_ROSTER. Optional; null = chưa gán.
+    spriteKey?: string | null;
     easy: BossModeInput;
     normal: BossModeInput;
     hard: BossModeInput;
@@ -79,6 +81,8 @@ export interface CreateBossTemplatePayload {
 export interface UpdateBossTemplatePayload {
     themeName?: string;
     description?: string;
+    // Art key — khớp BE BossTemplate.SpriteKey + roster monsterRoster.ts. null/"" = giữ nguyên art hiện có.
+    spriteKey?: string | null;
     activeWeekStart?: string;
     activeWeekEnd?: string;
     startTime?: string;

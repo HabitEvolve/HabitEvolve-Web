@@ -16,7 +16,7 @@ import SkyButton from '../components/ui/button/SkyButton';
 import PageHeader from '../components/common/PageHeader';
 import { FilterDropdown } from '../components/common/FilterDropdown';
 import type { FilterField } from '../hooks/useTableFilters';
-import { MONSTER_ROSTER, spriteAvatarUrl } from '../data/monsterRoster';
+import { DAILY_ROSTER, spriteAvatarUrl, spriteDisplayName } from '../data/monsterRoster';
 import { positiveIntDisplay, parsePositiveInt } from '../utils/numberInput';
 
 /** icon field is either an emoji ("🐉") or a Supabase https:// URL uploaded via /icon. */
@@ -241,7 +241,11 @@ function BossFormModal({ editing, categories, categoriesLoading, onSave, onClose
                   className={`${inputCls} flex-1`}
                 >
                   <option value="">{t('admin.dailyBossManagement.form.spriteNoneOption')}</option>
-                  {MONSTER_ROSTER.map(m => (
+                  {/* Giá trị hiện tại nằm ngoài nhóm daily (dữ liệu cũ) → vẫn hiện để không mất chọn. */}
+                  {form.spriteKey && !DAILY_ROSTER.some(m => m.key === form.spriteKey) && (
+                    <option value={form.spriteKey}>{spriteDisplayName(form.spriteKey)} (⚠ ngoài nhóm daily)</option>
+                  )}
+                  {DAILY_ROSTER.map(m => (
                     <option key={m.key} value={m.key}>{m.name}</option>
                   ))}
                 </select>

@@ -42,6 +42,10 @@ export default function PartyList() {
 
   useEffect(() => { fetchParties(); }, [fetchParties]);
 
+  // Only Active parties belong in this list — Disbanded/Archived ones stay
+  // reachable through party history/admin views, not the mentor's working list.
+  const activeParties = parties.filter((p) => p.status === "Active");
+
   // ── CREATE PARTY ────────────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState<Pick<CreatePartyPayload, "name" | "description" | "joinPolicy">>({
@@ -142,7 +146,7 @@ export default function PartyList() {
         )}
 
         {/* Empty state */}
-        {!loadingParties && !partiesError && parties.length === 0 && (
+        {!loadingParties && !partiesError && activeParties.length === 0 && (
           <div className="text-center py-24 rounded-sky-card bg-white/45 ring-1 ring-white/70">
             <span className="mx-auto mb-4 grid place-items-center w-14 h-14 rounded-full bg-sky-ink/6 ring-1 ring-sky-ink/12 text-sky-ink-3">
               <Tent className="w-6 h-6" aria-hidden="true" />
@@ -155,9 +159,9 @@ export default function PartyList() {
         )}
 
         {/* Quest-board roster — a divided list, not identical nested cards */}
-        {!loadingParties && !partiesError && parties.length > 0 && (
+        {!loadingParties && !partiesError && activeParties.length > 0 && (
           <SkyCard variant="mentor" className="p-0 overflow-hidden divide-y divide-sky-surf-border">
-            {parties.map((party, i) => (
+            {activeParties.map((party, i) => (
               <button
                 type="button"
                 key={party.partyId}

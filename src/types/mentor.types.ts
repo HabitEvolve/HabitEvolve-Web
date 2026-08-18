@@ -275,6 +275,8 @@ export interface BossTemplateDto {
     bossTemplateId: number;
     themeName: string;
     description?: string;
+    // Art key — khớp BE BossTemplate.SpriteKey + roster monsterRoster.ts (resolve → ảnh public/monsters).
+    spriteKey?: string | null;
     activeWeekStart: string;
     activeWeekEnd: string;
     startTime: string;

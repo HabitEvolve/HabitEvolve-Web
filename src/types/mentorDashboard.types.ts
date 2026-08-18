@@ -17,6 +17,15 @@ export interface UrgentAlertsDto {
     partiesLowSharedHp: number;
 }
 
+// Itemized version of UrgentAlertsDto.playersLosingStreak — GET /Party/mentor/urgent-alerts/losing-streak-players.
+export interface LosingStreakPlayerDto {
+    userId: number;
+    username: string;
+    partyId: number;
+    partyName: string;
+    currentStreak: number;
+}
+
 export interface PendingActionsDto {
     pendingProofReviews: number;
     pendingJoinRequests: number;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Filter, Search, X } from 'lucide-react';
 import type { FilterField } from '../../hooks/useTableFilters';
 
@@ -38,26 +39,54 @@ export function FilterDropdown<T extends Record<string, string>>({
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Panel is portaled to <body> and positioned via fixed coords computed from the
+  // trigger button — every glass card on these pages uses backdrop-filter, which
+  // establishes its own stacking context, so an absolutely-positioned panel nested
+  // inside one card can render BEHIND a later sibling card no matter its z-index.
+  // Portaling escapes that trap entirely instead of chasing z-index values.
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left?: number; right?: number } | null>(null);
+
+  const reposition = () => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setPanelStyle(
+      align === 'right'
+        ? { top: rect.bottom + 8, right: window.innerWidth - rect.right }
+        : { top: rect.bottom + 8, left: rect.left }
+    );
+  };
 
   useEffect(() => {
     if (!open) return;
+    reposition();
+
     const onDocClick = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onEsc);
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onEsc);
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
     };
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, align]);
 
   const activeCount = fields.filter(f => ((filters[f.key] as string | undefined) ?? '').length > 0).length;
 
   return (
     <div className="relative" ref={rootRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
@@ -77,11 +106,11 @@ export function FilterDropdown<T extends Record<string, string>>({
         )}
       </button>
 
-      {open && (
+      {open && panelStyle && createPortal(
         <div
-          className={`sky-in absolute z-30 mt-2 w-72 rounded-sky-card bg-white/95 backdrop-blur-md ring-1 ring-white/85 shadow-sky-glass p-4 space-y-3.5 ${
-            align === 'right' ? 'right-0' : 'left-0'
-          }`}
+          ref={panelRef}
+          style={{ position: 'fixed', top: panelStyle.top, left: panelStyle.left, right: panelStyle.right }}
+          className="sky-in z-50 w-72 rounded-sky-card bg-white/95 backdrop-blur-md ring-1 ring-white/85 shadow-sky-glass p-4 space-y-3.5"
         >
           {fields.map(field => (
             <div key={field.key} className="flex flex-col gap-1.5">
@@ -122,7 +151,8 @@ export function FilterDropdown<T extends Record<string, string>>({
               Clear Filters
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

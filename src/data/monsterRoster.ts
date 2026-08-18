@@ -41,6 +41,27 @@ export const MONSTER_ROSTER: readonly MonsterSprite[] = [
 
 const ROSTER_BY_KEY = new Map(MONSTER_ROSTER.map((m) => [m.key, m]));
 
+/**
+ * Tách nhóm asset daily vs weekly boss — KHÔNG giao nhau (mỗi chuỗi goal có boss riêng).
+ * Đồng bộ tay với BE (`DailyBossSeeder.Pool` + `BossTemplateSeeder`) và mobile
+ * (`monsterSprites.ts` DAILY_MONSTER_KEYS / WEEKLY_BOSS_KEYS).
+ *   • Daily (9): dùng cho DailyBoss (`AdminDailyBossManagement`).
+ *   • Weekly (5): dùng cho Weekly/Party Boss (`AdminBossManagement`).
+ */
+const DAILY_KEYS = new Set([
+  'dark_oracle_01', 'reaper_man_01', 'bloody_alchemist_01', 'goblin', 'minotaur_01',
+  'seer_01', 'skeleton_crusader_01', 'zombie_villager_01', 'forest_ranger_01',
+]);
+const WEEKLY_KEYS = new Set([
+  'golem_01', 'skeleton_warrior_01', 'necromancer_of_the_shadow_01', 'valkyrie_01', 'fallen_angels_01',
+]);
+
+/** 9 pack dành cho Daily Boss. */
+export const DAILY_ROSTER: readonly MonsterSprite[] = MONSTER_ROSTER.filter((m) => DAILY_KEYS.has(m.key));
+
+/** 5 pack dành cho Weekly (Party) Boss. */
+export const WEEKLY_ROSTER: readonly MonsterSprite[] = MONSTER_ROSTER.filter((m) => WEEKLY_KEYS.has(m.key));
+
 /** Prefix theo Vite BASE_URL (mặc định "/", hỗ trợ deploy dưới sub-path). */
 const base = import.meta.env.BASE_URL; // luôn kết thúc bằng "/"
 

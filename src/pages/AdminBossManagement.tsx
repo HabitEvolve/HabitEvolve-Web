@@ -20,6 +20,7 @@ import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import { positiveIntDisplay, parsePositiveInt } from "../utils/numberInput";
 import StatusBadge from "../components/common/StatusBadge";
+import { spriteAvatarUrl, spriteDisplayName, WEEKLY_ROSTER } from "../data/monsterRoster";
 import { FilterDropdown } from "../components/common/FilterDropdown";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
@@ -221,6 +222,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
 
   const [themeName, setThemeName] = useState(isEdit ? template.themeName : "");
   const [description, setDescription] = useState(isEdit ? (template.description ?? "") : "");
+  const [spriteKey, setSpriteKey] = useState<string>(isEdit ? (template.spriteKey ?? "") : "");
   const [modes, setModes] = useState<Record<BossModeType, BossModeInput>>(() => ({
     Easy: { ...DEFAULT_MODES.Easy },
     Normal: { ...DEFAULT_MODES.Normal },
@@ -254,6 +256,8 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
         const payload: UpdateBossTemplatePayload = {
           themeName: themeName.trim(),
           description: description.trim(),
+          // "" (Mặc định) → null: BE giữ nguyên art hiện có; chọn key → đổi art.
+          spriteKey: spriteKey.trim() || null,
         };
         await adminBossApi.updateTemplate(template.bossTemplateId, payload);
         onAlert({ type: "success", message: `"${themeName}" updated!` });
@@ -261,6 +265,7 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
         const payload: CreateBossTemplatePayload = {
           themeName: themeName.trim(),
           description: description.trim() || undefined,
+          spriteKey: spriteKey.trim() || null,
           easy: modes.Easy,
           normal: modes.Normal,
           hard: modes.Hard,
@@ -311,6 +316,31 @@ const TemplateFormModal = ({ template, onClose, onAlert, onSuccess }: TemplateFo
               <Label>{t("admin.bossManagement.form.descLabel")}</Label>
               <textarea value={description} onChange={e => setDescription(e.target.value)}
                 rows={2} placeholder={t("admin.bossManagement.form.descPlaceholder")} className={`${inputCls} resize-none`} />
+            </div>
+
+            {/* Boss art (sprite key) — chỉ 5 key weekly. Ở Create: gán art ngay; ở Edit: "Mặc định" giữ nguyên art hiện có. */}
+            <div>
+              <Label>{t("admin.bossManagement.form.spriteKeyLabel")}</Label>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 shrink-0 rounded-sky-chip bg-white/60 border border-white/70 flex items-center justify-center overflow-hidden">
+                  {spriteAvatarUrl(spriteKey) ? (
+                    <img src={spriteAvatarUrl(spriteKey)!} alt={spriteKey} className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-sky-ink-3"><SwordsIcon size={20} /></span>
+                  )}
+                </div>
+                <select value={spriteKey} onChange={e => setSpriteKey(e.target.value)} className={`${inputCls} flex-1`}>
+                  <option value="">{isEdit ? t("admin.bossManagement.form.spriteKeyDefault") : t("admin.bossManagement.form.spriteKeyNone")}</option>
+                  {/* Giá trị hiện tại nằm ngoài nhóm weekly (dữ liệu cũ) → vẫn hiện để không mất chọn. */}
+                  {spriteKey && !WEEKLY_ROSTER.some(m => m.key === spriteKey) && (
+                    <option value={spriteKey}>{spriteDisplayName(spriteKey)} (⚠ ngoài nhóm weekly)</option>
+                  )}
+                  {WEEKLY_ROSTER.map(m => (
+                    <option key={m.key} value={m.key}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+              <Hint>{t("admin.bossManagement.form.spriteKeyHint")}</Hint>
             </div>
 
             {isEdit ? (
@@ -1139,8 +1169,21 @@ export default function AdminBossManagement() {
                         {(page - 1) * PAGE_SIZE + idx + 1}
                       </td>
                       <td className="px-4 py-4 max-w-55">
-                        <p className="font-semibold text-sky-ink truncate">{tpl.themeName}</p>
-                        <p className="text-xs text-sky-ink-3 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Boss art from spriteKey (read-only). Falls back to a Skull glyph when the
+                              key is null or not in the roster, so the row never renders a broken image. */}
+                          <span className="grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip bg-sky-violet/10 ring-1 ring-white/70 overflow-hidden">
+                            {spriteAvatarUrl(tpl.spriteKey) ? (
+                              <img src={spriteAvatarUrl(tpl.spriteKey)!} alt="" className="w-full h-full object-contain" />
+                            ) : (
+                              <Skull className="w-5 h-5 text-sky-violet-deep" />
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sky-ink truncate">{tpl.themeName}</p>
+                            <p className="text-xs text-sky-ink-3 font-medium mt-0.5 truncate">{tpl.description || t("admin.bossManagement.noDescription")}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-1">

@@ -89,3 +89,59 @@ export interface UserTaskSubscriptionDto {
     goalId: number | null;
     goalName: string | null;
 }
+
+// GET /admin/users/{userId}/goal-selections/{selectionId}/progress-chart — matches BE ProgressChartDto.
+// Same shape the Mobile app reads for the player's own "Progress Chart" — Admin reuses it read-only.
+export interface ProgressChartPointDto {
+    week: number;
+    targetValue: number;
+    targetLabel: string;
+    targetPercent: number;
+    isManualOverride: boolean;
+    actualValue: number | null;
+    actualLabel: string | null;
+    actualPercent: number | null;
+    tasksTotal: number;
+    tasksCompleted: number;
+    completionRate: number;
+}
+
+export interface VariableChartDto {
+    measurementType: string;
+    unit: string;
+    baselineValue: number;
+    baselineLabel: string;
+    finalValue: number;
+    finalLabel: string;
+    hasNumericTarget: boolean;
+    isAlreadyAtTarget: boolean;
+    points: ProgressChartPointDto[];
+}
+
+export interface ProgressChartDto {
+    selectionId: number;
+    goalId: number;
+    goalName: string;
+    totalWeeks: number;
+    currentWeek: number;
+    variables: VariableChartDto[];
+}
+
+// GET /admin/users/{userId}/goal-selections/{selectionId}/target-history — matches BE GoalTargetChangeDto.
+// Newest first. ChangeType: SET_WEEK_TARGET | CLEAR_WEEK_TARGET | EXTEND_WEEKS.
+export interface GoalTargetChangeDto {
+    logId: number;
+    selectionId: number;
+    changeType: string;
+    measurementType: string;
+    weekNumber: number | null;
+    oldValue: number | null;
+    newValue: number | null;
+    curveValue: number | null;
+    oldLabel: string | null;
+    newLabel: string | null;
+    curveLabel: string | null;
+    oldWeeks: number | null;
+    newWeeks: number | null;
+    createdAt: string;
+}

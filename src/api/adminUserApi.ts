@@ -7,7 +7,7 @@ import {
     UpdateUserStatusPayload,
     AssignRolePayload
 } from '../types/api.types';
-import { UserQuestsDto, UserStatsDto, UserActivityDto, GoalSummaryDto, UserTaskSubscriptionDto } from '../types/userWorkspace.types';
+import { UserQuestsDto, UserStatsDto, UserActivityDto, GoalSummaryDto, UserTaskSubscriptionDto, ProgressChartDto, GoalTargetChangeDto } from '../types/userWorkspace.types';
 
 const ADMIN_USER_URL = '/admin/users';
 
@@ -122,6 +122,23 @@ const adminUserApi = {
     getUserTasks: async (userId: number): Promise<ApiResponse<UserTaskSubscriptionDto[]>> => {
         const response = await axiosClient.get<ApiResponse<UserTaskSubscriptionDto[]>>(
             `${ADMIN_USER_URL}/${userId}/tasks`
+        );
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/goal-selections/{selectionId}/progress-chart — read-only, reuses
+    // the same query the player's own Progress Chart (Mobile) reads from.
+    getUserGoalProgressChart: async (userId: number, selectionId: number): Promise<ApiResponse<ProgressChartDto>> => {
+        const response = await axiosClient.get<ApiResponse<ProgressChartDto>>(
+            `${ADMIN_USER_URL}/${userId}/goal-selections/${selectionId}/progress-chart`
+        );
+        return response.data;
+    },
+
+    // GET /admin/users/{userId}/goal-selections/{selectionId}/target-history — newest first.
+    getUserGoalTargetHistory: async (userId: number, selectionId: number): Promise<ApiResponse<GoalTargetChangeDto[]>> => {
+        const response = await axiosClient.get<ApiResponse<GoalTargetChangeDto[]>>(
+            `${ADMIN_USER_URL}/${userId}/goal-selections/${selectionId}/target-history`
         );
         return response.data;
     },

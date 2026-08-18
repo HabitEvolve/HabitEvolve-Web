@@ -7,7 +7,7 @@ import type { ApexOptions } from "apexcharts";
 import {
   ArrowLeft, Coins, Flame, ImageOff, Loader2, Swords, ClipboardList,
   BarChart3, History as HistoryIcon, FileClock, UserRoundCog, Camera, Users as UsersIcon, Trophy,
-  Gem, Wallet, ShieldCheck, ShieldOff, AlertTriangle, ListChecks, Target, Star, Plus, X,
+  Gem, Wallet, ShieldCheck, ShieldOff, AlertTriangle, ListChecks, Target, Star, Plus, X, ChevronDown,
 } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -21,7 +21,7 @@ import { adminAuditApi } from "../api/adminAuditApi";
 import { useAlert } from "../context/AlertContext";
 import { UserItem, UpdateUserStatusPayload } from "../types/api.types";
 import { WalletDto, DailyStreakDto, UserProofDto } from "../types/userDetail.types";
-import { UserQuestDto, UserQuestsDto, UserStatsDto, UserActivityDto, GoalSummaryDto, UserTaskSubscriptionDto } from "../types/userWorkspace.types";
+import { UserQuestDto, UserQuestsDto, UserStatsDto, UserActivityDto, GoalSummaryDto, UserTaskSubscriptionDto, ProgressChartDto, GoalTargetChangeDto } from "../types/userWorkspace.types";
 import type { AuditLogDto } from "../types/adminAudit.types";
 import { UserAvatar, StatusBadge, RoleBadge, RolesEditor, formatDate } from "./UserManagement";
 import SharedStatusBadge, { type StatusTone } from "../components/common/StatusBadge";
@@ -584,47 +584,205 @@ const TaskCard = ({ task }: { task: UserTaskSubscriptionDto }) => (
   </div>
 );
 
+// ── Goal Progress — read-only chart + adjustment history for one goal selection ─────
+// Reuses the exact ProgressChartDto/GoalTargetChangeDto the player's own Mobile "Progress
+// Chart" reads — Admin just views it, never edits (the weekly-target/extend-weeks endpoints
+// this data comes from are player-initiated only).
+const CHANGE_TYPE_LABEL: Record<string, string> = {
+  SET_WEEK_TARGET: "Week target set",
+  CLEAR_WEEK_TARGET: "Override cleared",
+  EXTEND_WEEKS: "Plan extended",
+};
+const ChangeTypeBadge = ({ type }: { type: string }) => (
+  <span className={`sky-badge text-[10px] px-2 py-0.5 shrink-0 ${
+    type === "EXTEND_WEEKS" ? "bg-sky-teal-bg text-sky-teal"
+      : type === "CLEAR_WEEK_TARGET" ? "bg-sky-ink/7 text-sky-ink-2"
+      : "bg-sky-deep/10 text-sky-deep"
+  }`}>
+    {CHANGE_TYPE_LABEL[type] ?? type}
+  </span>
+);
+
+const GoalTargetHistoryRow = ({ row }: { row: GoalTargetChangeDto }) => (
+  <div className="flex items-start justify-between gap-3 py-2 border-b border-sky-ink/8 last:border-b-0">
+    <div className="min-w-0 space-y-0.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <ChangeTypeBadge type={row.changeType} />
+        {row.weekNumber != null && (
+          <span className="text-xs font-semibold text-sky-ink">Week {row.weekNumber}</span>
+        )}
+      </div>
+      <p className="text-xs font-medium text-sky-ink-3">
+        {row.changeType === "EXTEND_WEEKS"
+          ? <>{row.oldWeeks} → <span className="font-semibold text-sky-ink-2">{row.newWeeks}</span> weeks</>
+          : row.changeType === "CLEAR_WEEK_TARGET"
+          ? <>Back to curve{row.curveLabel ? <> ({row.curveLabel})</> : ""}</>
+          : <>
+              {row.oldLabel ?? "—"} → <span className="font-semibold text-sky-ink-2">{row.newLabel}</span>
+              {row.curveLabel && <> · curve asked {row.curveLabel}</>}
+            </>}
+      </p>
+    </div>
+    <span className="text-[11px] font-medium text-sky-ink-3 tabular-nums shrink-0">{formatDate(row.createdAt)}</span>
+  </div>
+);
+
+const VariableProgressChart = ({ variable, totalWeeks }: { variable: ProgressChartDto["variables"][number]; totalWeeks: number }) => {
+  const categories = Array.from({ length: totalWeeks }, (_, i) => `W${i + 1}`);
+  const byWeek = new Map(variable.points.map((p) => [p.week, p]));
+  const targetSeries = categories.map((_, i) => byWeek.get(i + 1)?.targetPercent ?? null);
+  const actualSeries = categories.map((_, i) => byWeek.get(i + 1)?.actualPercent ?? null);
+
+  const options: ApexOptions = {
+    ...skyChartBase,
+    chart: { ...skyChartBase.chart, height: 220, type: "line" },
+    stroke: { width: [2, 3], curve: "monotoneCubic", dashArray: [4, 0] },
+    colors: [SKY.peach, SKY.deep],
+    markers: { size: 3, strokeWidth: 0 },
+    xaxis: { ...skyChartBase.xaxis, categories },
+    yaxis: { ...skyChartBase.yaxis, min: 0, max: 100, labels: { ...skyChartBase.yaxis.labels, formatter: (v: number) => `${Math.round(v ?? 0)}%` } },
+  };
+  const series = variable.hasNumericTarget
+    ? [{ name: "Target", data: targetSeries }, { name: "Actual", data: actualSeries }]
+    : [{ name: "Compliance", data: categories.map((_, i) => byWeek.get(i + 1)?.completionRate ?? null) }];
+
+  return (
+    <div className="sky-glass-chip rounded-sky-md p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+        <p className="text-xs font-semibold text-sky-ink">
+          {variable.measurementType}{variable.unit ? ` · ${variable.unit}` : ""}
+        </p>
+        {variable.hasNumericTarget && !variable.isAlreadyAtTarget && (
+          <p className="text-[11px] font-medium text-sky-ink-3 tabular-nums">
+            {variable.baselineLabel} → {variable.finalLabel}
+          </p>
+        )}
+      </div>
+      {variable.isAlreadyAtTarget ? (
+        <p className="text-xs font-medium text-sky-ink-3 py-6 text-center">Already at target — no ramp needed.</p>
+      ) : (
+        <div className="max-w-full overflow-x-auto"><div className="min-w-80"><Chart options={options} series={series} type="line" height={220} /></div></div>
+      )}
+    </div>
+  );
+};
+
+const GoalProgressPanel = ({ userId, selectionId }: { userId: number; selectionId: number }) => {
+  const [chart, setChart] = useState<ProgressChartDto | null>(null);
+  const [history, setHistory] = useState<GoalTargetChangeDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.allSettled([
+      adminUserApi.getUserGoalProgressChart(userId, selectionId),
+      adminUserApi.getUserGoalTargetHistory(userId, selectionId),
+    ]).then(([chartRes, historyRes]) => {
+      if (cancelled) return;
+      if (chartRes.status === "fulfilled" && chartRes.value.success) setChart(chartRes.value.data ?? null);
+      else setError((chartRes.status === "fulfilled" && chartRes.value.message) || "Failed to load progress chart.");
+      if (historyRes.status === "fulfilled" && historyRes.value.success) setHistory(historyRes.value.data ?? []);
+    }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [userId, selectionId]);
+
+  if (loading) {
+    return (
+      <div className="space-y-2.5 pt-1">
+        <ChartSkeleton height={220} />
+      </div>
+    );
+  }
+
+  if (error || !chart) {
+    return <p className="text-xs font-medium text-sky-rose-deep pt-1">{error ?? "No progress data."}</p>;
+  }
+
+  return (
+    <div className="space-y-3 pt-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {chart.variables.map((v) => (
+          <VariableProgressChart key={v.measurementType} variable={v} totalWeeks={chart.totalWeeks} />
+        ))}
+      </div>
+      {history.length > 0 && (
+        <div className="sky-glass-chip rounded-sky-md p-3.5">
+          <p className={`${eyebrow} mb-1`}>Plan adjustments · {history.length}</p>
+          {history.map((row) => <GoalTargetHistoryRow key={row.logId} row={row} />)}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // One card per goal SELECTION (not per goal id) — a user can pursue the same
 // goal twice across separate selections, and GoalSummaryDto/task grouping
 // both key off selectionId, so that's the join key here too.
 const GoalGroup = ({
-  goalName, summary, tasks,
+  userId, goalName, summary, tasks,
 }: {
+  userId: number;
   goalName: string;
   summary: GoalSummaryDto | undefined;
   tasks: UserTaskSubscriptionDto[];
-}) => (
-  <div className="sky-glass-admin rounded-sky-card p-4 space-y-3.5">
-    <div className="relative flex flex-wrap items-center justify-between gap-2.5">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="grid place-items-center w-8 h-8 rounded-full bg-sky-violet/14 text-sky-violet-deep shrink-0">
-          <Target className="w-4 h-4" />
-        </span>
-        <p className="font-display text-sm font-semibold text-sky-ink truncate">{goalName}</p>
-        {summary?.isFocused && (
-          <span className="sky-badge text-[10px] px-2 py-0.5 bg-sky-peach/20 text-sky-peach-deep shrink-0">
-            <Star className="w-3 h-3" /> Focused
+}) => {
+  const [showProgress, setShowProgress] = useState(false);
+  const selectionId = summary?.selectionId ?? tasks[0]?.selectionId;
+
+  return (
+    <div className="sky-glass-admin rounded-sky-card p-4 space-y-3.5">
+      <div className="relative flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="grid place-items-center w-8 h-8 rounded-full bg-sky-violet/14 text-sky-violet-deep shrink-0">
+            <Target className="w-4 h-4" />
           </span>
-        )}
-        <GoalStatusBadge status={summary?.status ?? "PendingAnswers"} />
+          <p className="font-display text-sm font-semibold text-sky-ink truncate">{goalName}</p>
+          {summary?.isFocused && (
+            <span className="sky-badge text-[10px] px-2 py-0.5 bg-sky-peach/20 text-sky-peach-deep shrink-0">
+              <Star className="w-3 h-3" /> Focused
+            </span>
+          )}
+          <GoalStatusBadge status={summary?.status ?? "PendingAnswers"} />
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {summary && (
+            <div className="flex items-center gap-4 text-xs font-medium text-sky-ink-3 tabular-nums">
+              <span>Week {summary.currentWeek}/{summary.totalWeeks}</span>
+              <span>{summary.tasksCompleted}/{summary.tasksTotal} check-ins</span>
+              <span className="font-display font-semibold text-sky-deep">{summary.adherencePercent}% adherence</span>
+            </div>
+          )}
+          {selectionId != null && (
+            <button
+              type="button"
+              onClick={() => setShowProgress((v) => !v)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-sky-deep hover:text-sky-deep-lo transition-colors"
+            >
+              <BarChart3 className="w-3.5 h-3.5" /> Progress
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showProgress ? "rotate-180" : ""}`} />
+            </button>
+          )}
+        </div>
       </div>
-      {summary && (
-        <div className="flex items-center gap-4 text-xs font-medium text-sky-ink-3 tabular-nums shrink-0">
-          <span>Week {summary.currentWeek}/{summary.totalWeeks}</span>
-          <span>{summary.tasksCompleted}/{summary.tasksTotal} check-ins</span>
-          <span className="font-display font-semibold text-sky-deep">{summary.adherencePercent}% adherence</span>
+      {showProgress && selectionId != null && (
+        <div className="relative border-t border-sky-ink/8 -mx-4 px-4">
+          <GoalProgressPanel userId={userId} selectionId={selectionId} />
         </div>
       )}
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        {tasks.map((t) => <TaskCard key={t.subscriptionId} task={t} />)}
+      </div>
     </div>
-    <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-      {tasks.map((t) => <TaskCard key={t.subscriptionId} task={t} />)}
-    </div>
-  </div>
-);
+  );
+};
 
 const TasksByGoalTab = ({
-  goals, tasks, loading,
+  userId, goals, tasks, loading,
 }: {
+  userId: number;
   goals: GoalSummaryDto[];
   tasks: UserTaskSubscriptionDto[];
   loading: boolean;
@@ -680,6 +838,7 @@ const TasksByGoalTab = ({
         return (
           <GoalGroup
             key={selectionId}
+            userId={userId}
             goalName={goalName}
             summary={summary}
             tasks={groupTasks}
@@ -1088,7 +1247,7 @@ export default function UserDetail() {
               <div className="relative">
                 {tab === "overview" && <OverviewTab user={user} onUserChange={setUser} />}
                 {tab === "quests" && <QuestsTab data={quests} loading={questsLoading} />}
-                {tab === "tasks" && <TasksByGoalTab goals={goals} tasks={tasks} loading={tasksLoading} />}
+                {tab === "tasks" && <TasksByGoalTab userId={user.userId} goals={goals} tasks={tasks} loading={tasksLoading} />}
                 {tab === "analytics" && <AnalyticsTab data={stats} loading={statsLoading} />}
                 {tab === "history" && <HistoryTab data={history} loading={historyLoading} />}
                 {tab === "audit" && <AuditTab userId={user.userId} />}

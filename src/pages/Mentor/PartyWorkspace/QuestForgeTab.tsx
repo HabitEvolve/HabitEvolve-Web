@@ -110,8 +110,8 @@ const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps
                         ["Party quest/week", `${usage?.partyQuestsThisWeek ?? 0} / ${pkg.partyQuestsPerWeek}`],
                     ].map(([k, v]) => (
                         <div key={k} className="flex justify-between gap-2 text-xs font-medium">
-                            <span className="text-sky-ink-2">{k}</span>
-                            <span className="font-semibold text-sky-ink text-right max-w-28 wrap-break-word">{v}</span>
+                            <span className="text-sky-ink-2 shrink-0">{k}</span>
+                            <span className="font-semibold text-sky-ink text-right whitespace-nowrap">{v}</span>
                         </div>
                     ))}
                 </div>

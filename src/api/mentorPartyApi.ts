@@ -7,6 +7,7 @@ import {
     JoinRequestItem,
     PartyMember
 } from '../types/api.types';
+import type { LosingStreakPlayerDto } from '../types/mentorDashboard.types';
 
 const PARTY_URL = '/Party';
 
@@ -129,6 +130,18 @@ const partyMentorApi = {
         // Kèm thêm mentorUserId trên URL đề phòng BE yêu cầu phân quyền giống chức năng Invite Code
         const url = `${PARTY_URL}/${partyId}/mentor?mentorUserId=${mentorId}`;
         const response = await axiosClient.delete<ApiResponse<any>>(url);
+        return response.data;
+    },
+
+    // 12. Chi tiết Player sắp mất Streak — itemized version của UrgentAlertsDto.playersLosingStreak,
+    // dùng cho modal "Urgent Alerts" trên Dashboard Mentor.
+    getLosingStreakPlayers: async (): Promise<ApiResponse<LosingStreakPlayerDto[]>> => {
+        const userId = localStorage.getItem('user_id');
+        const mentorId = userId ? parseInt(userId) : 0;
+
+        const url = `${PARTY_URL}/mentor/urgent-alerts/losing-streak-players?mentorUserId=${mentorId}`;
+
+        const response = await axiosClient.get<ApiResponse<LosingStreakPlayerDto[]>>(url);
         return response.data;
     }
 };

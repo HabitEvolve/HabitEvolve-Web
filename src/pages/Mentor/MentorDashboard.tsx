@@ -10,15 +10,20 @@ import PageMeta from "../../components/common/PageMeta";
 import PageHeader from "../../components/common/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { mentorDashboardApi } from "../../api/mentorDashboardApi";
+import mentorApi from "../../api/mentorApi";
+import partyMentorApi from "../../api/mentorPartyApi";
 import SkyCard from "../../components/ui/card/SkyCard";
 import SkyButton from "../../components/ui/button/SkyButton";
+import { SkyModal, Spinner } from "./PartyWorkspace/sharedSky";
 import type {
     MentorDashboardSummaryDto,
     PartyRankingDto,
     UpcomingBossFightDto,
     MemberActivityDto,
     MemberActivityActionType,
+    LosingStreakPlayerDto,
 } from "../../types/mentorDashboard.types";
+import type { JoinRequestItem } from "../../types/api.types";
 
 // ── SHARED ATOMS ──────────────────────────────────────────────────────────────
 // The mentor portal keeps its violet identity, but the chrome is the same glass
@@ -231,6 +236,230 @@ const PanelEmpty = ({ icon, label }: { icon: React.ReactNode; label: string }) =
     </div>
 );
 
+// ── ACTION MODALS ─────────────────────────────────────────────────────────────
+// Shared row for every "pending item" modal below — clicking a row deep-links to
+// the exact page that lets a mentor process that one item (never a guessed party).
+const ModalRow = ({
+    icon, iconCls, primary, secondary, meta, onClick,
+}: {
+    icon: React.ReactNode; iconCls: string; primary: string; secondary?: string; meta?: string; onClick: () => void;
+}) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="group w-full flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-sky-chip text-left hover:bg-sky-3/20 transition-colors duration-150"
+    >
+        <span className={`grid place-items-center w-9 h-9 rounded-full shrink-0 ${iconCls}`}>{icon}</span>
+        <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-sky-ink truncate">{primary}</p>
+            {secondary && <p className="text-xs font-medium text-sky-ink-3 truncate mt-0.5">{secondary}</p>}
+        </div>
+        {meta && <span className="text-[10px] font-semibold text-sky-ink-3 shrink-0 whitespace-nowrap">{meta}</span>}
+        <ChevronRight className="w-4 h-4 text-sky-ink-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
+    </button>
+);
+
+const ModalLoading = () => (
+    <div className="flex items-center justify-center gap-3 py-10 text-sky-ink-3">
+        <Spinner size={20} />
+    </div>
+);
+
+const ModalError = ({ message, onRetry }: { message: string; onRetry: () => void }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-sm font-semibold text-sky-rose-deep">{message}</p>
+            <button type="button" onClick={onRetry} className="text-sm font-semibold text-sky-deep underline underline-offset-2 hover:no-underline">
+                {t("mentor.dashboard.summary.retry")}
+            </button>
+        </div>
+    );
+};
+
+const fmtRelative = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+// ── Review Proofs modal ──
+type ProofModalRow = { proofId: number; username: string; questTitle: string; submittedAt: string; partyId: number | null };
+
+const ProofsModal = ({ onClose, onNavigate }: { onClose: () => void; onNavigate: (path: string) => void }) => {
+    const { t } = useTranslation();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [rows, setRows] = useState<ProofModalRow[]>([]);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [proofsRes, questsRes] = await Promise.all([
+                mentorApi.getProofQueue(),
+                mentorApi.getMentorQuests(),
+            ]);
+            const questPartyMap = new Map<number, number>();
+            (questsRes.data ?? []).forEach((q) => { if (q.partyId) questPartyMap.set(q.questId, q.partyId); });
+            const proofs = proofsRes.data ?? [];
+            setRows(proofs.map((p) => ({
+                proofId: p.proofId,
+                username: p.username || "—",
+                questTitle: p.questTitle || "—",
+                submittedAt: p.submittedAt,
+                partyId: questPartyMap.get(p.questId) ?? null,
+            })));
+        } catch {
+            setError(t("mentor.dashboard.summary.modalLoadFailed"));
+        } finally {
+            setLoading(false);
+        }
+    }, [t]);
+
+    useEffect(() => { load(); }, [load]);
+
+    return (
+        <SkyModal title={t("mentor.dashboard.summary.modalProofsTitle")} onClose={onClose}>
+            {loading ? <ModalLoading /> : error ? <ModalError message={error} onRetry={load} /> : rows.length === 0 ? (
+                <PanelEmpty icon={<Camera className="w-5 h-5" />} label={t("mentor.dashboard.summary.modalEmptyProofs")} />
+            ) : (
+                <div className="divide-y divide-sky-ink/8 max-h-[60vh] overflow-y-auto">
+                    {rows.map((r) => (
+                        <ModalRow
+                            key={r.proofId}
+                            icon={<Camera className="w-4 h-4" />}
+                            iconCls="bg-sky-deep/12 text-sky-deep"
+                            primary={r.username}
+                            secondary={r.questTitle}
+                            meta={fmtRelative(r.submittedAt)}
+                            onClick={() => r.partyId && onNavigate(`/mentor/parties/${r.partyId}/proofs`)}
+                        />
+                    ))}
+                </div>
+            )}
+        </SkyModal>
+    );
+};
+
+// ── Join Requests modal ──
+const JoinRequestsModal = ({ onClose, onNavigate }: { onClose: () => void; onNavigate: (path: string) => void }) => {
+    const { t } = useTranslation();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [rows, setRows] = useState<JoinRequestItem[]>([]);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const partiesRes = await partyMentorApi.getMentorParties();
+            const activeParties = (partiesRes.data ?? []).filter((p) => p.status === "Active");
+            const results = await Promise.all(activeParties.map((p) => partyMentorApi.getJoinRequests(p.partyId)));
+            setRows(results.flatMap((res) => res.data ?? []));
+        } catch {
+            setError(t("mentor.dashboard.summary.modalLoadFailed"));
+        } finally {
+            setLoading(false);
+        }
+    }, [t]);
+
+    useEffect(() => { load(); }, [load]);
+
+    return (
+        <SkyModal title={t("mentor.dashboard.summary.modalJoinRequestsTitle")} onClose={onClose}>
+            {loading ? <ModalLoading /> : error ? <ModalError message={error} onRetry={load} /> : rows.length === 0 ? (
+                <PanelEmpty icon={<UserPlus className="w-5 h-5" />} label={t("mentor.dashboard.summary.modalEmptyJoinRequests")} />
+            ) : (
+                <div className="divide-y divide-sky-ink/8 max-h-[60vh] overflow-y-auto">
+                    {rows.map((r) => (
+                        <ModalRow
+                            key={r.requestId}
+                            icon={<UserPlus className="w-4 h-4" />}
+                            iconCls="bg-sky-violet/14 text-sky-violet-deep"
+                            primary={r.username}
+                            secondary={r.partyName}
+                            meta={fmtRelative(r.requestedAt)}
+                            onClick={() => onNavigate(`/mentor/parties/${r.partyId}/overview`)}
+                        />
+                    ))}
+                </div>
+            )}
+        </SkyModal>
+    );
+};
+
+// ── Urgent Alerts modal ──
+const UrgentAlertsModal = ({
+    partyRankings, onClose, onNavigate,
+}: { partyRankings: PartyRankingDto[]; onClose: () => void; onNavigate: (path: string) => void }) => {
+    const { t } = useTranslation();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [streakPlayers, setStreakPlayers] = useState<LosingStreakPlayerDto[]>([]);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await partyMentorApi.getLosingStreakPlayers();
+            setStreakPlayers(res.data ?? []);
+        } catch {
+            setError(t("mentor.dashboard.summary.modalLoadFailed"));
+        } finally {
+            setLoading(false);
+        }
+    }, [t]);
+
+    useEffect(() => { load(); }, [load]);
+
+    const lowHpParties = partyRankings.filter((r) => r.maxSharedHp > 0 && r.sharedHp / r.maxSharedHp < 0.30);
+    const isEmpty = !loading && !error && lowHpParties.length === 0 && streakPlayers.length === 0;
+
+    return (
+        <SkyModal title={t("mentor.dashboard.summary.modalUrgentAlertsTitle")} onClose={onClose}>
+            {loading ? <ModalLoading /> : error ? <ModalError message={error} onRetry={load} /> : isEmpty ? (
+                <PanelEmpty icon={<ShieldAlert className="w-5 h-5" />} label={t("mentor.dashboard.summary.modalEmptyAlerts")} />
+            ) : (
+                <div className="max-h-[60vh] overflow-y-auto space-y-5">
+                    {lowHpParties.length > 0 && (
+                        <div>
+                            <p className={`${eyebrow} mb-1.5`}>{t("mentor.dashboard.summary.modalLowHpSection")}</p>
+                            <div className="divide-y divide-sky-ink/8">
+                                {lowHpParties.map((r) => (
+                                    <ModalRow
+                                        key={r.partyId}
+                                        icon={<HeartPulse className="w-4 h-4" />}
+                                        iconCls="bg-sky-rose/14 text-sky-rose-deep"
+                                        primary={r.partyName}
+                                        meta={`${Math.round((r.sharedHp / r.maxSharedHp) * 100)}%`}
+                                        onClick={() => onNavigate(`/mentor/parties/${r.partyId}/rally`)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {streakPlayers.length > 0 && (
+                        <div>
+                            <p className={`${eyebrow} mb-1.5`}>{t("mentor.dashboard.summary.modalStreakSection")}</p>
+                            <div className="divide-y divide-sky-ink/8">
+                                {streakPlayers.map((p) => (
+                                    <ModalRow
+                                        key={p.userId}
+                                        icon={<TrendingDown className="w-4 h-4" />}
+                                        iconCls="bg-sky-peach/22 text-sky-peach-deep"
+                                        primary={p.username}
+                                        secondary={p.partyName}
+                                        meta={t("mentor.dashboard.summary.modalStreakDays", { count: p.currentStreak })}
+                                        onClick={() => onNavigate(`/mentor/parties/${p.partyId}/overview`)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </SkyModal>
+    );
+};
+
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function MentorDashboard() {
     const { t } = useTranslation();
@@ -257,13 +486,11 @@ export default function MentorDashboard() {
 
     useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
-    // First-ranked party is used as the deep-link target for "Review Proofs"/"Join Requests" —
-    // both live per-party (no standalone /mentor/proofs route exists), so we jump straight to
-    // that party's tab; with no parties yet, fall back to the party list.
-    const firstPartyId = summary?.partyRankings[0]?.partyId;
-    const goToProofs = () => navigate(firstPartyId ? `/mentor/parties/${firstPartyId}/proofs` : "/mentor/parties");
-    const goToJoinRequests = () => navigate(firstPartyId ? `/mentor/parties/${firstPartyId}/overview` : "/mentor/parties");
-    const goToAtRiskParties = () => navigate("/mentor/parties");
+    // Each tile opens a modal listing the actual pending items — clicking a row navigates
+    // straight to the party that item belongs to, instead of guessing via partyRankings[0].
+    const [openModal, setOpenModal] = useState<"proofs" | "joinRequests" | "alerts" | null>(null);
+    const closeModal = () => setOpenModal(null);
+    const navigateAndClose = (path: string) => { closeModal(); navigate(path); };
 
     const guildStatus = summary?.guildStatus;
     const urgentAlerts = summary?.urgentAlerts;
@@ -363,7 +590,7 @@ export default function MentorDashboard() {
                                 <UrgentAlertsCard
                                     playersLosingStreak={urgentAlerts?.playersLosingStreak ?? 0}
                                     partiesLowSharedHp={urgentAlerts?.partiesLowSharedHp ?? 0}
-                                    onClick={goToAtRiskParties}
+                                    onClick={() => setOpenModal("alerts")}
                                 />
                             </div>
                             <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3">
@@ -371,13 +598,13 @@ export default function MentorDashboard() {
                                     icon={<CheckCircle2 className="w-4 h-4" />}
                                     label={t("mentor.dashboard.summary.reviewProofs")}
                                     count={pendingActions?.pendingProofReviews ?? 0}
-                                    onClick={goToProofs}
+                                    onClick={() => setOpenModal("proofs")}
                                 />
                                 <PendingActionPill
                                     icon={<UserPlus className="w-4 h-4" />}
                                     label={t("mentor.dashboard.summary.joinRequests")}
                                     count={pendingActions?.pendingJoinRequests ?? 0}
-                                    onClick={goToJoinRequests}
+                                    onClick={() => setOpenModal("joinRequests")}
                                 />
                             </div>
                         </section>
@@ -434,6 +661,12 @@ export default function MentorDashboard() {
                         </SkyCard>
                     </section>
                 </>
+            )}
+
+            {openModal === "proofs" && <ProofsModal onClose={closeModal} onNavigate={navigateAndClose} />}
+            {openModal === "joinRequests" && <JoinRequestsModal onClose={closeModal} onNavigate={navigateAndClose} />}
+            {openModal === "alerts" && (
+                <UrgentAlertsModal partyRankings={partyRankings} onClose={closeModal} onNavigate={navigateAndClose} />
             )}
         </>
     );

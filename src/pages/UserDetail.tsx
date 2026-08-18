@@ -633,6 +633,17 @@ const VariableProgressChart = ({ variable, totalWeeks }: { variable: ProgressCha
   const targetSeries = categories.map((_, i) => byWeek.get(i + 1)?.targetPercent ?? null);
   const actualSeries = categories.map((_, i) => byWeek.get(i + 1)?.actualPercent ?? null);
 
+  // The chart plots normalized 0–100% (so goals with different units/scales share one axis), but
+  // a raw "75%" in the tooltip means nothing to an admin — swap in the real label ("6 times",
+  // "07:30"...) for the numeric-target series. The Compliance series stays a genuine percent, so
+  // it keeps ApexCharts' default formatting.
+  const seriesLabels: (string | null)[][] = variable.hasNumericTarget
+    ? [
+        categories.map((_, i) => byWeek.get(i + 1)?.targetLabel ?? null),
+        categories.map((_, i) => byWeek.get(i + 1)?.actualLabel ?? null),
+      ]
+    : [];
+
   const options: ApexOptions = {
     ...skyChartBase,
     chart: { ...skyChartBase.chart, height: 220, type: "line" },
@@ -641,10 +652,25 @@ const VariableProgressChart = ({ variable, totalWeeks }: { variable: ProgressCha
     markers: { size: 3, strokeWidth: 0 },
     xaxis: { ...skyChartBase.xaxis, categories },
     yaxis: { ...skyChartBase.yaxis, min: 0, max: 100, labels: { ...skyChartBase.yaxis.labels, formatter: (v: number) => `${Math.round(v ?? 0)}%` } },
+    tooltip: {
+      ...skyChartBase.tooltip,
+      y: {
+        formatter: (val: number, opts?: { seriesIndex: number; dataPointIndex: number }) => {
+          const label = opts && seriesLabels[opts.seriesIndex]?.[opts.dataPointIndex];
+          return label ?? `${Math.round(val ?? 0)}%`;
+        },
+      },
+    },
   };
   const series = variable.hasNumericTarget
     ? [{ name: "Target", data: targetSeries }, { name: "Actual", data: actualSeries }]
-    : [{ name: "Compliance", data: categories.map((_, i) => byWeek.get(i + 1)?.completionRate ?? null) }];
+    : [{ name: "Compliance", data: categories.map((_, i) => {
+        const p = byWeek.get(i + 1);
+        // completionRate is a non-nullable 0 from BE when the week has no DailyTask yet (future
+        // week, or the player never "accepted" that day under the subscription-driven model) —
+        // treat that as a gap, not a real 0%, so it isn't drawn as "did this and scored zero".
+        return p && p.tasksTotal > 0 ? p.completionRate : null;
+      }) }];
 
   return (
     <div className="sky-glass-chip rounded-sky-md p-3.5">

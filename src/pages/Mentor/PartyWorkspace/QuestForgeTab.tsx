@@ -37,6 +37,13 @@ const fieldLabel ="block mb-1 text-[10px] font-semibold uppercase tracking-[0.14
 // Step markers break the long form into three readable acts.
 const stepLabel = "flex items-center gap-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2";
 
+// Local (not UTC) "YYYY-MM-DDTHH:mm" — matches what <input type="datetime-local">
+// reads/writes, so it can drive that input's `min` and be compared 1:1 against form.deadlineAt.
+const toLocalInputValue = (d: Date) => {
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+};
+
 const DIFFICULTIES: QuestDifficulty[] = ["EASY", "NORMAL", "HARD"];
 const VERIFICATION_TAGS: VerificationTag[] = ["FACE", "ITEM", "ACTION"];
 const HOW_TO_SUBMIT_MAX = 500;
@@ -308,6 +315,9 @@ export default function QuestForgeTab() {
         if (!form.title.trim()) { setFormError(t("mentor.questCommand.errors.titleRequired")); return; }
         if (assignMode === "individual" && !selectedMemberId) {
             setFormError(t("mentor.questCommand.errors.selectMember")); return;
+        }
+        if (form.deadlineAt && new Date(form.deadlineAt).getTime() <= Date.now()) {
+            setFormError(t("mentor.questCommand.errors.deadlineInPast")); return;
         }
         const rangeErr = validateRange();
         if (rangeErr) { setFormError(rangeErr); return; }
@@ -613,6 +623,7 @@ export default function QuestForgeTab() {
                                     <input
                                         type="datetime-local"
                                         value={form.deadlineAt}
+                                        min={toLocalInputValue(new Date())}
                                         onChange={(e) => handleField("deadlineAt", e.target.value)}
                                         className={inputCls}
                                     />

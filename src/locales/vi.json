@@ -524,6 +524,7 @@
         "selectParty": "Vui lòng chọn một nhóm trước.",
         "titleRequired": "Tiêu đề nhiệm vụ là bắt buộc.",
         "selectMember": "Vui lòng chọn thành viên để giao nhiệm vụ.",
+        "deadlineInPast": "Hạn chót không được ở trong quá khứ — hãy chọn ngày giờ trong tương lai.",
         "assignFailed": "Giao nhiệm vụ thất bại.",
         "fanOutFailed": "Giao cho cả nhóm thất bại.",
         "unexpected": "Đã xảy ra lỗi không mong đợi."

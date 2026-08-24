@@ -524,6 +524,7 @@
         "selectParty": "Please select a party first.",
         "titleRequired": "Quest title is required.",
         "selectMember": "Please select a member to assign to.",
+        "deadlineInPast": "Deadline cannot be in the past — pick a future date and time.",
         "assignFailed": "Failed to assign quest.",
         "fanOutFailed": "Fan-out failed.",
         "unexpected": "An unexpected error occurred."

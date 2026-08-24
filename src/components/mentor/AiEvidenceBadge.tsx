@@ -20,10 +20,17 @@ export function AiEvidenceBadge({ evidence }: { evidence: LiveChallengeDto["evid
     };
     const cfg = map[evidence.aiStatus] ?? map.NotUsed;
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold ${cfg.cls}`} title={evidence.aiReasoning ?? undefined}>
-            <cfg.Icon className={`w-3 h-3 shrink-0 ${evidence.aiStatus === "AiChecking" ? "animate-spin" : ""}`} />
-            {cfg.label}
-            {evidence.aiConfidence != null && ` (${Math.round(evidence.aiConfidence * 100)}%)`}
-        </span>
+        <div className="flex flex-col gap-1 min-w-0">
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold w-fit ${cfg.cls}`}>
+                <cfg.Icon className={`w-3 h-3 shrink-0 ${evidence.aiStatus === "AiChecking" ? "animate-spin" : ""}`} />
+                {cfg.label}
+                {evidence.aiConfidence != null && ` (${Math.round(evidence.aiConfidence * 100)}%)`}
+            </span>
+            {/* Lý do AI luôn hiện thành chữ — trước đây chỉ nằm trong title/tooltip hover nên mentor dễ bỏ sót,
+                nhất là khi cần hiểu vì sao verdict là "mismatch"/"uncertain" để quyết định Approve/Reject. */}
+            {evidence.aiReasoning && (
+                <p className="text-[11px] font-medium text-sky-ink-3 leading-snug wrap-break-word">{evidence.aiReasoning}</p>
+            )}
+        </div>
     );
 }

@@ -68,7 +68,11 @@ export function LiveCallProvider({ children }: { children: ReactNode }) {
         {
             onParticipantJoined: refreshSession,
             onParticipantLeft: refreshSession,
-            onChallengePosed: (challenge) => {
+            // Chỉ refresh khi challenge được gửi — KHÔNG bắt đầu record ở đây nữa. Record chỉ bắt
+            // đầu khi player thật sự bấm "Bắt đầu" (challenge.started), tránh ghi hình thừa cả
+            // khoảng chờ từ lúc mentor gửi challenge tới lúc player bắt tay vào làm.
+            onChallengePosed: refreshSession,
+            onChallengeStarted: (challenge) => {
                 evidenceRecorderRef.current?.startFor(challenge as LiveChallengeDto);
                 void refreshSession();
             },

@@ -180,7 +180,7 @@ export default function LiveChallengeSession() {
     );
 
     const pendingOrResponded = useMemo(
-        () => (session ? session.challenges.filter((c) => c.status === "Pending" || c.status === "Responded") : []),
+        () => (session ? session.challenges.filter((c) => c.status === "Pending" || c.status === "Started" || c.status === "Responded") : []),
         [session]
     );
     const judgedChallenges = useMemo(
@@ -191,14 +191,14 @@ export default function LiveChallengeSession() {
     const usernameFor = (userId: number | null) =>
         userId == null ? null : session?.participants.find((p) => p.userId === userId)?.username ?? `User ${userId}`;
 
-    // Which connected peer(s) the mentor client is currently recording — Pending challenges
-    // whose id is in recordingChallengeIds; null assignee means "recording everyone" until
-    // someone responds.
+    // Which connected peer(s) the mentor client is currently recording — record chỉ chạy trong
+    // lúc challenge ở trạng thái Started (player đã bấm "Bắt đầu"), không phải ngay từ Pending
+    // nữa; null assignee means "recording everyone" until someone responds.
     const recordingUserIds = useMemo(() => {
         if (!session) return new Set<number>();
         const ids = new Set<number>();
         for (const c of session.challenges) {
-            if (c.status !== "Pending" || !recordingChallengeIds.has(c.challengeId)) continue;
+            if (c.status !== "Started" || !recordingChallengeIds.has(c.challengeId)) continue;
             if (c.assignedToUserId != null) ids.add(c.assignedToUserId);
             else mesh.connectedUserIds.forEach((uid) => ids.add(uid));
         }
@@ -462,7 +462,9 @@ export default function LiveChallengeSession() {
                                                             · <span className="tabular-nums">{c.points}</span> pts ·{" "}
                                                             {c.status === "Responded"
                                                                 ? `${usernameFor(c.respondedByUserId)} says done${c.responseSeconds != null ? ` in ${c.responseSeconds}s` : ""}`
-                                                                : "Waiting for a response"}
+                                                                : c.status === "Started"
+                                                                    ? `${usernameFor(c.startedByUserId) ?? "Someone"} is doing it now…`
+                                                                    : "Waiting to start"}
                                                         </p>
                                                     </div>
                                                     {c.status === "Responded" && (
@@ -489,16 +491,16 @@ export default function LiveChallengeSession() {
                                                 </div>
 
                                                 {c.status === "Responded" && c.requiresEvidence && (
-                                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                                    <div className="flex items-start gap-3.5 flex-wrap">
                                                         {c.evidence ? (
                                                             <>
                                                                 <video
                                                                     src={c.evidence.mediaUrl}
                                                                     poster={c.evidence.snapshotUrls[0]}
                                                                     controls
-                                                                    className="w-28 h-16 rounded-lg bg-sky-ink object-cover shrink-0"
+                                                                    className="w-56 h-32 rounded-lg bg-sky-ink object-cover shrink-0"
                                                                 />
-                                                                <div className="flex flex-col gap-1 min-w-0">
+                                                                <div className="flex flex-col gap-1.5 min-w-0 max-w-xs">
                                                                     <AiEvidenceBadge evidence={c.evidence} />
                                                                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
                                                                         {c.evidence.subjectCameraOn

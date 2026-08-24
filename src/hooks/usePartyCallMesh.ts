@@ -38,6 +38,7 @@ export interface PartyCallGameHandlers {
   onParticipantJoined?: (userId: number) => void;
   onParticipantLeft?: (userId: number) => void;
   onChallengePosed?: (challenge: unknown) => void;
+  onChallengeStarted?: (challenge: unknown) => void;
   onChallengeResponded?: (challenge: unknown) => void;
   onChallengeJudged?: (challenge: unknown) => void;
   onLeaderboardUpdated?: (leaderboard: { userId: number; score: number }[]) => void;
@@ -169,6 +170,7 @@ export function usePartyCallMesh(
           }
         },
         onChallengePosed: gameHandlers.onChallengePosed,
+        onChallengeStarted: gameHandlers.onChallengeStarted,
         onChallengeResponded: gameHandlers.onChallengeResponded,
         onChallengeJudged: gameHandlers.onChallengeJudged,
         onLeaderboardUpdated: gameHandlers.onLeaderboardUpdated,

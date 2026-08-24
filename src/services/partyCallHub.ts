@@ -29,6 +29,7 @@ export interface PartyCallHandlers {
   onAnswer?: (p: RelayedPayload<RTCSessionDescriptionInit>) => void;
   onIceCandidate?: (p: RelayedPayload<RTCIceCandidateInit>) => void;
   onChallengePosed?: (challenge: unknown) => void;
+  onChallengeStarted?: (challenge: unknown) => void;
   onChallengeResponded?: (challenge: unknown) => void;
   onChallengeJudged?: (challenge: unknown) => void;
   onLeaderboardUpdated?: (leaderboard: { userId: number; score: number }[]) => void;
@@ -61,6 +62,7 @@ export function connectPartyCall(handlers: PartyCallHandlers): PartyCallConnecti
   connection.on('webrtc.answer', (p) => handlers.onAnswer?.(p));
   connection.on('webrtc.ice-candidate', (p) => handlers.onIceCandidate?.(p));
   connection.on('challenge.posed', (p) => handlers.onChallengePosed?.(p));
+  connection.on('challenge.started', (p) => handlers.onChallengeStarted?.(p));
   connection.on('challenge.responded', (p) => handlers.onChallengeResponded?.(p));
   connection.on('challenge.judged', (p) => handlers.onChallengeJudged?.(p));
   connection.on('leaderboard.updated', (p) => handlers.onLeaderboardUpdated?.(p));

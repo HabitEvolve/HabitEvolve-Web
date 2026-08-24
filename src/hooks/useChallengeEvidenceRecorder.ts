@@ -7,9 +7,11 @@ import type { LiveChallengeDto, LiveChallengeEvidenceDto } from '../types/partyC
  * remoteStream của người thực hiện challenge, KHÔNG phải player tự nộp. Trọng tài ghi
  * lại, người bị kiểm tra không can thiệp được vào bằng chứng của chính mình.
  *
- * Vòng đời: challenge.posed → startFor() bắt đầu MediaRecorder trên đúng peer (hoặc mọi
- * peer nếu challenge mở cho cả call) → challenge.responded → stopAndUpload() dừng, giữ
- * lại clip của đúng người đã respond, huỷ phần còn lại, rồi upload lên BE.
+ * Vòng đời: challenge.started (player bấm "Bắt đầu") → startFor() bắt đầu MediaRecorder trên
+ * đúng peer (hoặc mọi peer nếu challenge mở cho cả call) → challenge.responded → stopAndUpload()
+ * dừng, giữ lại clip của đúng người đã respond, huỷ phần còn lại, rồi upload lên BE.
+ * (Trước đây bắt đầu ngay lúc challenge.posed — ghi thừa cả thời gian chờ từ lúc mentor gửi
+ * tới lúc player thực sự bắt tay vào làm; đổi 2026-08-24.)
  *
  * ⚠️ EVIDENCE_MAX_SECONDS/SNAPSHOT_COUNT khớp default của party_call.evidence_max_seconds/
  * evidence_snapshot_count phía BE — BE mới là nguồn sự thật cho việc gating, giá trị ở đây
@@ -108,7 +110,7 @@ export function useChallengeEvidenceRecorder(remoteStreams: Record<number, Media
         entry.videoEl.srcObject = null;
     }
 
-    /** Gọi khi challenge.posed — bắt đầu ghi đúng người được giao, hoặc mọi peer nếu mở cho cả call. */
+    /** Gọi khi challenge.started — bắt đầu ghi đúng người được giao, hoặc mọi peer nếu mở cho cả call. */
     const startFor = useCallback((challenge: LiveChallengeDto) => {
         if (!challenge.requiresEvidence) return;
         recordingsRef.current[challenge.challengeId] = {};

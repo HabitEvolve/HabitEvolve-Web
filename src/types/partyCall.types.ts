@@ -1,7 +1,7 @@
 // "Đấu Trường Trực Tiếp" (Live Challenge Arena) — video call WebRTC PvP, Mentor làm trọng tài.
 
 export type ChallengeMode = 'SELF_SCORE' | 'ATTACK';
-export type ChallengeStatus = 'Pending' | 'Responded' | 'Approved' | 'Rejected';
+export type ChallengeStatus = 'Pending' | 'Started' | 'Responded' | 'Approved' | 'Rejected';
 
 export interface LiveChallengeBankItemDto {
     bankItemId: number;
@@ -69,6 +69,8 @@ export interface LiveChallengeDto {
     responseSeconds: number | null;
     judgeOverrideReason: string | null;
     evidence: LiveChallengeEvidenceDto | null;
+    startedByUserId: number | null;
+    startedAt: string | null;
 }
 
 export interface LiveChallengeSessionDto {

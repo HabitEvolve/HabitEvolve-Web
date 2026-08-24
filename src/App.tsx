@@ -52,6 +52,7 @@ import ProofsTab from "./pages/Mentor/PartyWorkspace/ProofsTab";
 import BossRaidTab from "./pages/Mentor/PartyWorkspace/BossRaidTab";
 import RallyTab from "./pages/Mentor/PartyWorkspace/RallyTab";
 import LiveChallengeSession from "./pages/Mentor/LiveChallengeSession";
+import LiveArenaHistory from "./pages/Mentor/LiveArenaHistory";
 import QuestionBank from "./pages/Mentor/QuestionBank";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
@@ -127,8 +128,10 @@ export default function App() {
                 <Route path="boss-raid" element={<BossRaidTab />} />
                 <Route path="rally" element={<RallyTab />} />
                 <Route path="live-arena" element={<LiveChallengeSession />} />
+                <Route path="live-arena/history" element={<LiveArenaHistory />} />
               </Route>
               <Route path="/mentor/live-arena" element={<LiveChallengeSession />} />
+              <Route path="/mentor/live-arena/history" element={<LiveArenaHistory />} />
               <Route path="/mentor/question-bank" element={<QuestionBank />} />
             </Route>
           </Route>

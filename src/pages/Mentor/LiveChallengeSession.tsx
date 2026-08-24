@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router";
+import { useOutletContext, Link } from "react-router";
 import {
     Mic, MicOff, Video, VideoOff, Swords, Star, AlertTriangle, Radio,
     Trophy, Check, X, PhoneOff, Send, Loader2, VideoIcon,
+    ShieldAlert, ShieldQuestion, History, Camera, CameraOff,
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import partyCallApi from "../../api/partyCallApi";
 import partyMentorApi from "../../api/mentorPartyApi";
 import { useLiveCall } from "../../context/LiveCallContext";
+import { AiEvidenceBadge } from "../../components/mentor/AiEvidenceBadge";
 import type { PartyItem } from "../../types/api.types";
 import type { ChallengeMode } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
@@ -23,7 +25,7 @@ const inputCls = [
     "placeholder:text-sky-ink-3 placeholder:font-normal",
 ].join(" ");
 
-function VideoTile({ stream, label, muted = false }: { stream: MediaStream | null; label: string; muted?: boolean }) {
+function VideoTile({ stream, label, muted = false, recording = false }: { stream: MediaStream | null; label: string; muted?: boolean; recording?: boolean }) {
     const ref = useRef<HTMLVideoElement>(null);
     useEffect(() => {
         if (ref.current) ref.current.srcObject = stream;
@@ -40,6 +42,12 @@ function VideoTile({ stream, label, muted = false }: { stream: MediaStream | nul
                     <span className="text-[11px] font-medium">Connecting…</span>
                 </div>
             )}
+            {recording && (
+                <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-rose/90 backdrop-blur-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    <span className="text-white text-[10px] font-bold tracking-wide">REC</span>
+                </span>
+            )}
             <span className="absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-sky-ink/80 to-transparent pointer-events-none" />
             <span className="absolute bottom-1.5 left-2 text-white text-[11px] font-semibold drop-shadow-[0_1px_2px_rgba(36,52,77,0.9)]">{label}</span>
         </div>
@@ -54,7 +62,11 @@ export default function LiveChallengeSession() {
     // Session + WebRTC mesh live in a context mounted at MentorLayout, so they survive
     // switching workspace tabs or navigating to another mentor page entirely — only an
     // explicit "End session" (or closing the browser tab) actually stops the call.
-    const { session, starting, ending, error, setError, mesh, startSession, endSession, refreshSession, resumeActiveSession } = useLiveCall();
+    const {
+        session, starting, ending, error, setError, mesh,
+        recordingChallengeIds, uploadingEvidenceChallengeIds,
+        startSession, endSession, refreshSession, resumeActiveSession,
+    } = useLiveCall();
 
     const [parties, setParties] = useState<PartyItem[]>([]);
     const [selectedPartyId, setSelectedPartyId] = useState<number | "">(workspace?.partyId ?? "");
@@ -66,6 +78,10 @@ export default function LiveChallengeSession() {
     const [rivalUserId, setRivalUserId] = useState<number | "">("");
     const [sending, setSending] = useState(false);
     const [judgingId, setJudgingId] = useState<number | null>(null);
+
+    // Approve-without-evidence override — challenge id currently being justified, if any.
+    const [overrideChallengeId, setOverrideChallengeId] = useState<number | null>(null);
+    const [overrideReason, setOverrideReason] = useState("");
 
     useEffect(() => {
         if (!workspace) {
@@ -130,17 +146,28 @@ export default function LiveChallengeSession() {
         }
     };
 
-    const handleJudge = async (challengeId: number, approve: boolean) => {
+    const handleJudge = async (challengeId: number, approve: boolean, reason?: string) => {
         if (judgingId !== null) return;
         setJudgingId(challengeId);
         try {
-            await partyCallApi.judgeChallenge(challengeId, approve);
-            await refreshSession();
+            const r = await partyCallApi.judgeChallenge(challengeId, approve, reason);
+            if (r.success) {
+                setOverrideChallengeId(null);
+                setOverrideReason("");
+                await refreshSession();
+            } else {
+                setError(r.message || "Could not judge the challenge");
+            }
         } catch (e: any) {
             setError(e?.response?.data?.message || "Could not judge the challenge");
         } finally {
             setJudgingId(null);
         }
+    };
+
+    const handleOverrideSubmit = () => {
+        if (overrideChallengeId === null || !overrideReason.trim()) return;
+        void handleJudge(overrideChallengeId, true, overrideReason.trim());
     };
 
     // The mentor referees, they don't compete — exclude them from the scoreboard
@@ -164,10 +191,34 @@ export default function LiveChallengeSession() {
     const usernameFor = (userId: number | null) =>
         userId == null ? null : session?.participants.find((p) => p.userId === userId)?.username ?? `User ${userId}`;
 
+    // Which connected peer(s) the mentor client is currently recording — Pending challenges
+    // whose id is in recordingChallengeIds; null assignee means "recording everyone" until
+    // someone responds.
+    const recordingUserIds = useMemo(() => {
+        if (!session) return new Set<number>();
+        const ids = new Set<number>();
+        for (const c of session.challenges) {
+            if (c.status !== "Pending" || !recordingChallengeIds.has(c.challengeId)) continue;
+            if (c.assignedToUserId != null) ids.add(c.assignedToUserId);
+            else mesh.connectedUserIds.forEach((uid) => ids.add(uid));
+        }
+        return ids;
+    }, [session, recordingChallengeIds, mesh.connectedUserIds]);
+
+    const historyLink = workspace ? `/mentor/parties/${workspace.partyId}/live-arena/history` : "/mentor/live-arena/history";
+
     return (
         <>
             <PageMeta title="Live Challenge Arena — HabitEvolve" description="Video call PvP challenge session, mentor as referee" />
-            <PageBreadcrumb pageTitle="Live Challenge Arena" />
+            <div className="flex items-start justify-between gap-3">
+                <PageBreadcrumb pageTitle="Live Challenge Arena" />
+                <Link
+                    to={historyLink}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-sky-chip text-xs font-semibold text-sky-ink-2 bg-white/60 border border-white/80 hover:bg-white hover:text-sky-ink transition shrink-0"
+                >
+                    <History className="w-3.5 h-3.5" /> Past sessions
+                </Link>
+            </div>
 
             {error && (
                 <div className="relative overflow-hidden sky-glass mb-6 rounded-sky-card pl-5 pr-4 py-4">
@@ -285,7 +336,12 @@ export default function LiveChallengeSession() {
                                 </div>
                             </div>
                             {mesh.connectedUserIds.map((uid) => (
-                                <VideoTile key={uid} stream={mesh.remoteStreams[uid] ?? null} label={usernameFor(uid) ?? `User ${uid}`} />
+                                <VideoTile
+                                    key={uid}
+                                    stream={mesh.remoteStreams[uid] ?? null}
+                                    label={usernameFor(uid) ?? `User ${uid}`}
+                                    recording={recordingUserIds.has(uid)}
+                                />
                             ))}
                         </div>
                         {mesh.mediaError && (
@@ -383,48 +439,97 @@ export default function LiveChallengeSession() {
                         {pendingOrResponded.length > 0 && (
                             <div className="sky-glass rounded-sky-card p-5 sm:p-6">
                                 <h3 className="relative font-display text-base font-semibold text-sky-ink mb-3.5">Awaiting judgment</h3>
-                                <div className="relative space-y-2">
-                                    {pendingOrResponded.map((c) => (
-                                        <div key={c.challengeId} className="sky-glass-chip flex items-center justify-between gap-3 p-3.5 rounded-sky-md">
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-sm text-sky-ink truncate">{c.promptText}</p>
-                                                <p className="flex items-center gap-1.5 text-xs font-medium text-sky-ink-3 mt-0.5">
-                                                    {/* Attack is warm (it costs a rival points); self-score is cool. */}
-                                                    {c.mode === "ATTACK" ? (
-                                                        <span className="inline-flex items-center gap-1 text-sky-peach-deep font-semibold">
-                                                            <Swords className="w-3 h-3 shrink-0" />Attacking {usernameFor(c.rivalUserId)}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 text-sky-deep font-semibold">
-                                                            <Star className="w-3 h-3 shrink-0" />Self-score
-                                                        </span>
+                                <div className="relative space-y-2.5">
+                                    {pendingOrResponded.map((c) => {
+                                        const blockedByEvidence = c.status === "Responded" && c.requiresEvidence && c.evidenceStatus !== "Captured";
+                                        const uploading = uploadingEvidenceChallengeIds.has(c.challengeId);
+                                        return (
+                                            <div key={c.challengeId} className="sky-glass-chip p-3.5 rounded-sky-md space-y-2.5">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="font-semibold text-sm text-sky-ink truncate">{c.promptText}</p>
+                                                        <p className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-sky-ink-3 mt-0.5">
+                                                            {/* Attack is warm (it costs a rival points); self-score is cool. */}
+                                                            {c.mode === "ATTACK" ? (
+                                                                <span className="inline-flex items-center gap-1 text-sky-peach-deep font-semibold">
+                                                                    <Swords className="w-3 h-3 shrink-0" />Attacking {usernameFor(c.rivalUserId)}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-sky-deep font-semibold">
+                                                                    <Star className="w-3 h-3 shrink-0" />Self-score
+                                                                </span>
+                                                            )}
+                                                            · <span className="tabular-nums">{c.points}</span> pts ·{" "}
+                                                            {c.status === "Responded"
+                                                                ? `${usernameFor(c.respondedByUserId)} says done${c.responseSeconds != null ? ` in ${c.responseSeconds}s` : ""}`
+                                                                : "Waiting for a response"}
+                                                        </p>
+                                                    </div>
+                                                    {c.status === "Responded" && (
+                                                        <div className="flex gap-2 shrink-0">
+                                                            <button
+                                                                onClick={() => handleJudge(c.challengeId, true)}
+                                                                disabled={judgingId !== null || blockedByEvidence}
+                                                                title={blockedByEvidence ? "Evidence hasn't been captured yet" : undefined}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-sky-teal shadow-[0_3px_10px_rgba(36,52,77,0.18)] transition hover:-translate-y-px active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none"
+                                                            >
+                                                                {judgingId === c.challengeId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleJudge(c.challengeId, false)}
+                                                                disabled={judgingId !== null}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-rose-deep bg-sky-rose/14 border border-sky-rose/30 transition hover:bg-sky-rose/22 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+                                                            >
+                                                                {judgingId === c.challengeId ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                                                                Reject
+                                                            </button>
+                                                        </div>
                                                     )}
-                                                    · <span className="tabular-nums">{c.points}</span> pts ·{" "}
-                                                    {c.status === "Responded" ? `${usernameFor(c.respondedByUserId)} says done` : "Waiting for a response"}
-                                                </p>
-                                            </div>
-                                            {c.status === "Responded" && (
-                                                <div className="flex gap-2 shrink-0">
-                                                    <button
-                                                        onClick={() => handleJudge(c.challengeId, true)}
-                                                        disabled={judgingId !== null}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-sky-teal shadow-[0_3px_10px_rgba(36,52,77,0.18)] transition hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
-                                                    >
-                                                        {judgingId === c.challengeId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleJudge(c.challengeId, false)}
-                                                        disabled={judgingId !== null}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-rose-deep bg-sky-rose/14 border border-sky-rose/30 transition hover:bg-sky-rose/22 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
-                                                    >
-                                                        {judgingId === c.challengeId ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-                                                        Reject
-                                                    </button>
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
+
+                                                {c.status === "Responded" && c.requiresEvidence && (
+                                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                                        {c.evidence ? (
+                                                            <>
+                                                                <video
+                                                                    src={c.evidence.mediaUrl}
+                                                                    poster={c.evidence.snapshotUrls[0]}
+                                                                    controls
+                                                                    className="w-28 h-16 rounded-lg bg-sky-ink object-cover shrink-0"
+                                                                />
+                                                                <div className="flex flex-col gap-1 min-w-0">
+                                                                    <AiEvidenceBadge evidence={c.evidence} />
+                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
+                                                                        {c.evidence.subjectCameraOn
+                                                                            ? <Camera className="w-3 h-3 shrink-0" />
+                                                                            : <CameraOff className="w-3 h-3 shrink-0 text-sky-rose-deep" />}
+                                                                        {c.evidence.durationSeconds}s clip
+                                                                    </span>
+                                                                </div>
+                                                            </>
+                                                        ) : uploading ? (
+                                                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-ink-3">
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> Uploading evidence…
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-peach-deep">
+                                                                <ShieldQuestion className="w-3.5 h-3.5 shrink-0" /> No evidence captured
+                                                            </span>
+                                                        )}
+                                                        {blockedByEvidence && (
+                                                            <button
+                                                                onClick={() => { setOverrideChallengeId(c.challengeId); setOverrideReason(""); }}
+                                                                className="text-[11px] font-semibold text-sky-ink-3 underline decoration-dotted hover:text-sky-ink-2"
+                                                            >
+                                                                Approve without evidence…
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -434,12 +539,20 @@ export default function LiveChallengeSession() {
                                 <h3 className="relative font-display text-base font-semibold text-sky-ink mb-3">History</h3>
                                 <div className="relative divide-y divide-sky-ink/8">
                                     {judgedChallenges.map((c) => (
-                                        <div key={c.challengeId} className="flex justify-between items-center gap-3 py-2">
-                                            <span className="truncate text-sm font-medium text-sky-ink-2">{c.promptText}</span>
-                                            <span className={`sky-badge shrink-0 ${c.status === "Approved" ? "sky-badge-success" : "sky-badge-danger"}`}>
-                                                {c.status === "Approved" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                                                {c.status}
-                                            </span>
+                                        <div key={c.challengeId} className="py-2 space-y-1">
+                                            <div className="flex justify-between items-center gap-3">
+                                                <span className="truncate text-sm font-medium text-sky-ink-2">{c.promptText}</span>
+                                                <span className={`sky-badge shrink-0 ${c.status === "Approved" ? "sky-badge-success" : "sky-badge-danger"}`}>
+                                                    {c.status === "Approved" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                                                    {c.status}
+                                                </span>
+                                            </div>
+                                            {c.judgeOverrideReason && (
+                                                <p className="flex items-start gap-1.5 text-[11px] font-medium text-sky-peach-deep">
+                                                    <ShieldAlert className="w-3 h-3 shrink-0 mt-px" />
+                                                    Approved without evidence: “{c.judgeOverrideReason}”
+                                                </p>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -491,6 +604,47 @@ export default function LiveChallengeSession() {
                             {ending ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneOff className="w-4 h-4" />}
                             {ending ? "Ending…" : "End session"}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Approve-without-evidence override — bằng chứng bắt buộc, mentor phải giải thích tại sao vẫn duyệt. */}
+            {overrideChallengeId !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sky-ink/40 backdrop-blur-sm" onClick={() => setOverrideChallengeId(null)}>
+                    <div className="sky-glass rounded-sky-card p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2.5 mb-4">
+                            <span className="grid place-items-center w-9 h-9 rounded-sky-chip bg-sky-peach/18 text-sky-peach-deep shrink-0">
+                                <ShieldAlert className="w-4 h-4" />
+                            </span>
+                            <h3 className="font-display text-base font-semibold text-sky-ink">Approve without evidence</h3>
+                        </div>
+                        <p className="text-xs font-medium text-sky-ink-2 mb-3.5">
+                            No clip was captured for this challenge. Explain why you're approving it anyway — this is kept on record.
+                        </p>
+                        <textarea
+                            value={overrideReason}
+                            onChange={(e) => setOverrideReason(e.target.value)}
+                            placeholder="e.g. I watched live, the camera froze right at the end"
+                            rows={3}
+                            className={`${inputCls} resize-none`}
+                            autoFocus
+                        />
+                        <div className="flex gap-2.5 mt-4">
+                            <button
+                                onClick={() => setOverrideChallengeId(null)}
+                                className="flex-1 py-2.5 rounded-sky-chip text-sm font-semibold text-sky-ink-2 bg-white/60 border border-white/80 hover:bg-white transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleOverrideSubmit}
+                                disabled={!overrideReason.trim() || judgingId !== null}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-sky-chip text-sm font-semibold text-white bg-sky-peach-deep hover:-translate-y-px transition active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                                {judgingId === overrideChallengeId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                Approve anyway
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

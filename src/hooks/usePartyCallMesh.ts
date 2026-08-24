@@ -8,33 +8,31 @@ import { connectPartyCall, type PartyCallConnection } from '../services/partyCal
  * chờ nhận offer và trả answer, không bao giờ tự khởi tạo trước.
  */
 
-// TURN (Open Relay Project, free public relay) as a fallback when STUN-only P2P fails —
-// e.g. an Android emulator's virtual NAT often can't establish a direct media path.
-// ⚠️ Free/shared — fine for testing, swap for a real TURN account before production.
-// Metered TURN Servers (Dedicated Account for 4G CGNAT Traversal)
+// ── ICE servers ──────────────────────────────────────────────────────────────
+// ĐANG DÙNG (free, tiết kiệm chi phí): STUN Google + TURN công cộng của Open Relay
+// Project. TURN là fallback khi P2P chỉ-STUN không nối được — ví dụ NAT ảo của
+// Android emulator không mở được đường media trực tiếp.
+// ⚠️ Relay dùng chung nên băng thông giới hạn và có thể rớt ở mạng 4G CGNAT — đó
+// đúng là lý do khối Metered trả phí bên dưới từng được mua. Không nối được media
+// nghĩa là KHÔNG ghi được bằng chứng challenge, nên khi demo/nghiệm thu hãy bật lại.
 const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.relay.metered.ca:80' },
-  {
-    urls: 'turn:global.relay.metered.ca:80',
-    username: '79fdc26423d7502a5fb2c30f',
-    credential: 'NQ2PZ1cYaiyjFvRg'
-  },
-  {
-    urls: 'turn:global.relay.metered.ca:80?transport=tcp',
-    username: '79fdc26423d7502a5fb2c30f',
-    credential: 'NQ2PZ1cYaiyjFvRg'
-  },
-  {
-    urls: 'turn:global.relay.metered.ca:443',
-    username: '79fdc26423d7502a5fb2c30f',
-    credential: 'NQ2PZ1cYaiyjFvRg'
-  },
-  {
-    urls: 'turns:global.relay.metered.ca:443?transport=tcp',
-    username: '79fdc26423d7502a5fb2c30f',
-    credential: 'NQ2PZ1cYaiyjFvRg'
-  }
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
+
+// ⬇️⬇️ METERED TRẢ PHÍ (Dedicated Account, xuyên được 4G CGNAT).
+// Muốn quay lại: XOÁ COMMENT khối này và xoá/comment khối free ở trên.
+// Giữ nguyên bản sao y hệt ở HabitEvolve-Mobile/src/hooks/usePartyCallMesh.ts.
+// const ICE_SERVERS: RTCIceServer[] = [
+//   { urls: 'stun:stun.relay.metered.ca:80' },
+//   { urls: 'turn:global.relay.metered.ca:80', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
+//   { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
+//   { urls: 'turn:global.relay.metered.ca:443', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
+//   { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
+// ];
 
 export interface PartyCallGameHandlers {
   onParticipantJoined?: (userId: number) => void;

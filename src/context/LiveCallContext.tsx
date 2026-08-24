@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import partyCallApi from "../api/partyCallApi";
 import { usePartyCallMesh } from "../hooks/usePartyCallMesh";
-import type { LiveChallengeSessionDto } from "../types/partyCall.types";
+import { useChallengeEvidenceRecorder } from "../hooks/useChallengeEvidenceRecorder";
+import type { LiveChallengeDto, LiveChallengeSessionDto } from "../types/partyCall.types";
 
 /**
  * Lives at MentorLayout level (mounted for the whole Mentor Portal, not just the
@@ -23,6 +24,9 @@ interface LiveCallContextValue {
     error: string | null;
     setError: (message: string | null) => void;
     mesh: ReturnType<typeof usePartyCallMesh>;
+    /** Challenge nào đang bị mentor client ghi hình / đang upload bằng chứng — dùng cho chip "● REC". */
+    recordingChallengeIds: Set<number>;
+    uploadingEvidenceChallengeIds: Set<number>;
     startSession: (partyId: number, partyName: string) => Promise<void>;
     endSession: () => Promise<void>;
     refreshSession: () => Promise<void>;
@@ -52,19 +56,44 @@ export function LiveCallProvider({ children }: { children: ReactNode }) {
         if (r.success) setSession(r.data ?? null);
     }, []);
 
+    // Evidence recorder needs mesh.remoteStreams, which only exists after calling
+    // usePartyCallMesh — but usePartyCallMesh's handlers need to call into the recorder.
+    // Break the cycle with a ref kept current every render (assignment below, after both
+    // hooks are called); by the time SignalR actually fires an event the ref is populated.
+    const evidenceRecorderRef = useRef<ReturnType<typeof useChallengeEvidenceRecorder> | null>(null);
+
     const mesh = usePartyCallMesh(
         session && session.status === "Active" ? session.sessionId : null,
         mentorUserId,
         {
             onParticipantJoined: refreshSession,
             onParticipantLeft: refreshSession,
-            onChallengePosed: refreshSession,
-            onChallengeResponded: refreshSession,
+            onChallengePosed: (challenge) => {
+                evidenceRecorderRef.current?.startFor(challenge as LiveChallengeDto);
+                void refreshSession();
+            },
+            onChallengeResponded: (challenge) => {
+                const c = challenge as LiveChallengeDto;
+                if (c.respondedByUserId != null) {
+                    void evidenceRecorderRef.current?.stopAndUpload(c.challengeId, c.respondedByUserId).then(refreshSession);
+                } else {
+                    void refreshSession();
+                }
+            },
             onChallengeJudged: refreshSession,
             onLeaderboardUpdated: refreshSession,
             onSessionEnded: refreshSession,
         }
     );
+
+    const evidenceRecorder = useChallengeEvidenceRecorder(mesh.remoteStreams);
+    evidenceRecorderRef.current = evidenceRecorder;
+
+    // Session no longer active (ended/reconnect) — nothing left worth recording.
+    useEffect(() => {
+        if (!session || session.status !== "Active") evidenceRecorder.stopAll();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [session?.status]);
 
     // Warn before an actual browser tab close/reload — that's the one case a live
     // call really can't survive.
@@ -123,7 +152,12 @@ export function LiveCallProvider({ children }: { children: ReactNode }) {
 
     return (
         <LiveCallContext.Provider
-            value={{ session, partyName, starting, ending, error, setError, mesh, startSession, endSession, refreshSession, resumeActiveSession }}
+            value={{
+                session, partyName, starting, ending, error, setError, mesh,
+                recordingChallengeIds: evidenceRecorder.recordingChallengeIds,
+                uploadingEvidenceChallengeIds: evidenceRecorder.uploadingChallengeIds,
+                startSession, endSession, refreshSession, resumeActiveSession,
+            }}
         >
             {children}
         </LiveCallContext.Provider>

@@ -26,6 +26,30 @@ export interface LiveSessionParticipantDto {
     mGoldAwarded: number;
 }
 
+/** NotRequired | Pending | Captured | Missing | Failed */
+export type EvidenceStatus = 'NotRequired' | 'Pending' | 'Captured' | 'Missing' | 'Failed';
+
+/** NotUsed | AiChecking | Approved | Suspicious | Rejected — AI gợi ý, KHÔNG BAO GIỜ tự duyệt/từ chối. */
+export type AiEvidenceStatus = 'NotUsed' | 'AiChecking' | 'Approved' | 'Suspicious' | 'Rejected';
+
+/** Bằng chứng ghi hình cho 1 challenge — mentor client tự record, gắn qua POST /challenges/{id}/evidence. */
+export interface LiveChallengeEvidenceDto {
+    evidenceId: number;
+    challengeId: number;
+    subjectUserId: number;
+    subjectUsername: string;
+    kind: 'CLIP' | 'SNAPSHOT';
+    mediaUrl: string;
+    snapshotUrls: string[];
+    durationSeconds: number;
+    subjectCameraOn: boolean;
+    aiStatus: AiEvidenceStatus;
+    aiConfidence: number | null;
+    aiReasoning: string | null;
+    capturedFromUtc: string;
+    capturedToUtc: string;
+}
+
 export interface LiveChallengeDto {
     challengeId: number;
     sessionId: number;
@@ -40,6 +64,11 @@ export interface LiveChallengeDto {
     createdAt: string;
     respondedAt: string | null;
     judgedAt: string | null;
+    requiresEvidence: boolean;
+    evidenceStatus: EvidenceStatus;
+    responseSeconds: number | null;
+    judgeOverrideReason: string | null;
+    evidence: LiveChallengeEvidenceDto | null;
 }
 
 export interface LiveChallengeSessionDto {
@@ -53,6 +82,21 @@ export interface LiveChallengeSessionDto {
     challenges: LiveChallengeDto[];
 }
 
+/** 1 dòng trong lịch sử "mọi buổi Đấu Trường đã diễn ra của 1 party" — GET /parties/{partyId}/sessions. */
+export interface LiveChallengeSessionSummaryDto {
+    sessionId: number;
+    partyId: number;
+    status: 'Active' | 'Ended';
+    startedAt: string;
+    endedAt: string | null;
+    participantCount: number;
+    challengeCount: number;
+    approvedChallengeCount: number;
+    evidenceCapturedCount: number;
+    overrideCount: number;
+    topParticipants: LiveSessionParticipantDto[];
+}
+
 export interface CreateChallengeRequest {
     bankItemId?: number | null;
     mode?: ChallengeMode | null;
@@ -60,4 +104,5 @@ export interface CreateChallengeRequest {
     points?: number | null;
     assignedToUserId?: number | null;
     rivalUserId?: number | null;
+    requiresEvidence?: boolean | null;
 }

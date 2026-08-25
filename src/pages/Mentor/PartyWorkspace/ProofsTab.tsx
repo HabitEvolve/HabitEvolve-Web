@@ -7,12 +7,13 @@ import type { ProofDto, AiVerdict } from "../../../types/mentor.types";
 import { useAlert } from "../../../context/AlertContext";
 import {
     UserRoundPen, X, Check, AlertTriangle, Clock, ShieldQuestion,
-    RefreshCw, Inbox, ZoomIn, MinusCircle, History,
+    RefreshCw, Inbox, ZoomIn, MinusCircle, History, Video,
 } from "lucide-react";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { FilterDropdown } from "../../../components/common/FilterDropdown";
+import ProofMedia, { isVideoUrl } from "../../../components/common/ProofMedia";
 import type { FilterField } from "../../../hooks/useTableFilters";
 import { easeExpo, Spinner } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
@@ -231,7 +232,7 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                         {hasMedia ? (
                             <div className="mb-3">
                                 <div className="w-full rounded-sky-chip overflow-hidden ring-1 ring-white/80 bg-sky-ink/6">
-                                    <img src={activeUrl} alt={`Submitted proof ${activeIndex + 1}/${proof.mediaUrls.length}`} className="w-full max-h-72 object-contain" />
+                                    <ProofMedia url={activeUrl} alt={`Submitted proof ${activeIndex + 1}/${proof.mediaUrls.length}`} className="w-full max-h-72 object-contain" />
                                 </div>
                                 {proof.mediaUrls.length > 1 && (
                                     <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
@@ -247,7 +248,13 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                                                     }`}
                                                 aria-label={`Media ${idx + 1}`}
                                             >
-                                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                                {isVideoUrl(url) ? (
+                                                    <span className="w-full h-full grid place-items-center bg-sky-ink/10 text-sky-ink-2">
+                                                        <Video className="w-4 h-4" aria-hidden="true" />
+                                                    </span>
+                                                ) : (
+                                                    <img src={url} alt="" className="w-full h-full object-cover" />
+                                                )}
                                             </button>
                                         ))}
                                     </div>

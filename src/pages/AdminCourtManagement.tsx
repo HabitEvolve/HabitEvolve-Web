@@ -12,6 +12,7 @@ import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import StatusBadge from "../components/common/StatusBadge";
 import { FilterDropdown } from "../components/common/FilterDropdown";
+import ProofMedia, { isVideoUrl } from "../components/common/ProofMedia";
 import type { FilterField } from "../hooks/useTableFilters";
 import type {
   CourtCaseDto,
@@ -197,7 +198,6 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
   const [verdict, setVerdict] = useState<"Approved" | "Rejected" | "">("");
   const [adminNote, setAdminNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     setDetailLoading(true);
@@ -294,19 +294,19 @@ const ReviewCaseModal = ({ caseItem, onClose, onSuccess }: ReviewCaseModalProps)
                     <div className={`grid gap-2 ${data.mediaUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
                       {data.mediaUrls.map((url, i) => (
                         <div key={i} className="aspect-video rounded-sky-chip overflow-hidden border border-white/80 bg-sky-ink/5">
-                          {imgErrors[i] ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                              <ImgOffIcon />
-                              <p className="text-[10px] font-medium text-sky-ink-3">{t("admin.courtManagement.mediaUnavailable")}</p>
-                            </div>
-                          ) : (
-                            <img
-                              src={url}
-                              alt={`Evidence ${i + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={() => setImgErrors(p => ({ ...p, [i]: true }))}
-                            />
-                          )}
+                          <ProofMedia
+                            url={url}
+                            alt={`Evidence ${i + 1}`}
+                            /* Video keeps its aspect ratio (object-contain) so a portrait clip isn't
+                               cropped to unreadable; stills still fill the tile. */
+                            className={`w-full h-full ${isVideoUrl(url) ? "object-contain bg-black/80" : "object-cover"}`}
+                            fallback={
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                                <ImgOffIcon />
+                                <p className="text-[10px] font-medium text-sky-ink-3">{t("admin.courtManagement.mediaUnavailable")}</p>
+                              </div>
+                            }
+                          />
                         </div>
                       ))}
                     </div>

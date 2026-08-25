@@ -9,6 +9,7 @@ import { adminAppealApi } from "../api/adminAppealApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import StatusBadge from "../components/common/StatusBadge";
+import ProofMedia, { isVideoUrl } from "../components/common/ProofMedia";
 import type { AppealQueueItemDto, AppealDecision } from "../types/adminAppeal.types";
 
 const errMsg = (e: unknown) =>
@@ -101,10 +102,18 @@ function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealQueueItem
               <p className={fieldLabel}>Evidence</p>
               <div className="flex flex-wrap gap-2">
                 {appeal.mediaUrls.map((url) => (
-                  <a key={url} href={url} target="_blank" rel="noopener noreferrer"
-                     className="block w-28 h-28 rounded-sky-md overflow-hidden ring-1 ring-white/75 hover:ring-sky-deep/45 transition">
-                    <img src={url} alt="Submitted proof" className="w-full h-full object-cover" loading="lazy" />
-                  </a>
+                  isVideoUrl(url) ? (
+                    // Playable inline — a clip has to be watched to be judged, and wrapping a
+                    // <video> in a link would swallow its controls.
+                    <div key={url} className="w-44 rounded-sky-md overflow-hidden ring-1 ring-white/75">
+                      <ProofMedia url={url} alt="Submitted proof" className="w-full h-28 object-contain bg-black/80" />
+                    </div>
+                  ) : (
+                    <a key={url} href={url} target="_blank" rel="noopener noreferrer"
+                       className="block w-28 h-28 rounded-sky-md overflow-hidden ring-1 ring-white/75 hover:ring-sky-deep/45 transition">
+                      <ProofMedia url={url} alt="Submitted proof" className="w-full h-full object-cover" />
+                    </a>
+                  )
                 ))}
               </div>
               {appeal.textNote && <p className="text-xs font-medium text-sky-ink-2 mt-2">Note: {appeal.textNote}</p>}

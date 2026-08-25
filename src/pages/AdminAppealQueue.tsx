@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Scale, CheckCircle, XCircle, Loader2, X, AlertTriangle, Inbox, MessageSquareQuote, RefreshCw } from "lucide-react";
+import { Scale, CheckCircle, XCircle, Loader2, X, AlertTriangle, Inbox, MessageSquareQuote, RefreshCw, User } from "lucide-react";
 import { useAlert } from "../context/AlertContext";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
@@ -9,7 +9,7 @@ import { adminAppealApi } from "../api/adminAppealApi";
 import SkyCard from "../components/ui/card/SkyCard";
 import SkyButton from "../components/ui/button/SkyButton";
 import StatusBadge from "../components/common/StatusBadge";
-import type { AppealDto, AppealDecision } from "../types/adminAppeal.types";
+import type { AppealQueueItemDto, AppealDecision } from "../types/adminAppeal.types";
 
 const errMsg = (e: unknown) =>
   (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
@@ -20,7 +20,7 @@ const fmtDateTime = (d: string) =>
 const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-3";
 const fieldLabel = `block mb-1.5 ${eyebrow}`;
 
-function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealDto; onClose: () => void; onResolved: () => void }) {
+function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealQueueItemDto; onClose: () => void; onResolved: () => void }) {
   const [decision, setDecision] = useState<AppealDecision | "">("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +60,57 @@ function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealDto; onCl
             <X className="w-4 h-4" />
           </SkyButton>
         </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
+        <form onSubmit={submit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* The case being judged. Without this the reviewer only saw a reason string and two IDs,
+              which is not enough to rule on anything. */}
+          <div>
+            <p className={fieldLabel}>Case</p>
+            <div className="rounded-sky-md bg-white/55 ring-1 ring-white/75 px-4 py-3 space-y-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-sm font-semibold text-sky-ink truncate" title={appeal.questTitle ?? undefined}>
+                  {appeal.questTitle ?? `Quest #${appeal.questId ?? "—"}`}
+                </p>
+                {appeal.questType && (
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-sky-ink-3">{appeal.questType}</span>
+                )}
+              </div>
+              <p className="text-xs font-medium text-sky-ink-2">
+                <User className="inline w-3 h-3 mr-1 -mt-0.5" />
+                {appeal.username ?? `User #${appeal.userId}`}
+                {appeal.proofType && <> · {appeal.proofType}</>}
+                {appeal.submittedAt && <> · submitted {fmtDateTime(appeal.submittedAt)}</>}
+              </p>
+              {appeal.rejectReason && (
+                <p className="text-xs font-medium text-sky-rose-deep">
+                  <XCircle className="inline w-3 h-3 mr-1 -mt-0.5" />
+                  Rejected{appeal.reviewRoute ? ` by ${appeal.reviewRoute}` : ""}: {appeal.rejectReason}
+                </p>
+              )}
+              {typeof appeal.aiConfidence === "number" && (
+                <p className="text-[11px] font-medium text-sky-ink-3">
+                  AI hint · confidence {Math.round(appeal.aiConfidence * 100)}%
+                  {appeal.aiReasoning ? ` — ${appeal.aiReasoning}` : ""}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* The evidence itself — the admin sees the unblurred original, unlike a Court reviewer. */}
+          {!!appeal.mediaUrls?.length && (
+            <div>
+              <p className={fieldLabel}>Evidence</p>
+              <div className="flex flex-wrap gap-2">
+                {appeal.mediaUrls.map((url) => (
+                  <a key={url} href={url} target="_blank" rel="noopener noreferrer"
+                     className="block w-28 h-28 rounded-sky-md overflow-hidden ring-1 ring-white/75 hover:ring-sky-deep/45 transition">
+                    <img src={url} alt="Submitted proof" className="w-full h-full object-cover" loading="lazy" />
+                  </a>
+                ))}
+              </div>
+              {appeal.textNote && <p className="text-xs font-medium text-sky-ink-2 mt-2">Note: {appeal.textNote}</p>}
+            </div>
+          )}
+
           <div>
             <p className={fieldLabel}>Player reason</p>
             {/* The player's own words are the evidence, so they get a quoted
@@ -124,10 +174,10 @@ function ResolveModal({ appeal, onClose, onResolved }: { appeal: AppealDto; onCl
 
 export default function AdminAppealQueue() {
   const globalAlert = useAlert();
-  const [appeals, setAppeals] = useState<AppealDto[]>([]);
+  const [appeals, setAppeals] = useState<AppealQueueItemDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resolving, setResolving] = useState<AppealDto | null>(null);
+  const [resolving, setResolving] = useState<AppealQueueItemDto | null>(null);
 
   const fetchQueue = useCallback(async () => {
     setLoading(true); setError(null);
@@ -199,7 +249,7 @@ export default function AdminAppealQueue() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="sky-table-head">
-                    {["Reason", "Status", "Submitted", "Action"].map(h => (
+                    {["Player", "Quest", "Rejected because", "Reason", "Status", "Submitted", "Action"].map(h => (
                       <th key={h} className={`px-4 py-3 ${h === "Action" ? "text-right" : "text-left"}`}>{h}</th>
                     ))}
                   </tr>
@@ -207,6 +257,17 @@ export default function AdminAppealQueue() {
                 <tbody className="sky-stagger">
                   {appeals.map(a => (
                     <tr key={a.appealId} className="sky-table-row group">
+                      <td className="px-4 py-3 text-xs font-medium text-sky-ink whitespace-nowrap">
+                        {a.username ?? `User #${a.userId}`}
+                      </td>
+                      <td className="px-4 py-3 max-w-56 text-xs font-medium text-sky-ink" title={a.questTitle ?? undefined}>
+                        <span className="block truncate">{a.questTitle ?? `Quest #${a.questId ?? "—"}`}</span>
+                        {a.questType && <span className="block text-[10px] font-semibold uppercase tracking-wide text-sky-ink-3">{a.questType}</span>}
+                      </td>
+                      <td className="px-4 py-3 max-w-64 text-xs font-medium text-sky-ink-2" title={a.rejectReason ?? undefined}>
+                        <span className="block truncate">{a.rejectReason ?? "—"}</span>
+                        {a.reviewRoute && <span className="block text-[10px] font-semibold uppercase tracking-wide text-sky-ink-3">by {a.reviewRoute}</span>}
+                      </td>
                       <td className="px-4 py-3 max-w-xs truncate text-xs font-medium text-sky-ink" title={a.reason}>{a.reason}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={a.status} />

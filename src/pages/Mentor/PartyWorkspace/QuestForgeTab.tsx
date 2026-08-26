@@ -82,6 +82,24 @@ interface LimitsPanelProps {
     selectedDifficulty: QuestDifficulty;
 }
 
+// Chips, not inline text — a long comma list otherwise wraps mid-token
+// (e.g. "STEP_" / "COUNTER" split across lines).
+const ChipListRow = ({ label, csv }: { label: string; csv: string | undefined | null }) => (
+    <div className="flex justify-between gap-2 text-xs font-medium">
+        <span className="text-sky-ink-2 shrink-0">{label}</span>
+        <div className="flex flex-wrap justify-end gap-1 min-w-0">
+            {(csv ?? "").split(",").map((s) => s.trim()).filter(Boolean).map((item) => (
+                <span
+                    key={item}
+                    className="px-1.5 py-0.5 rounded-sky-chip bg-white/65 ring-1 ring-white/80 font-semibold text-sky-ink text-[10px] leading-tight whitespace-nowrap"
+                >
+                    {item.replace(/_/g, " ")}
+                </span>
+            ))}
+        </div>
+    </div>
+);
+
 const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps) => {
     const range = ranges.find((r) => r.difficulty === selectedDifficulty);
     const pkg = activeSub?.package;
@@ -111,14 +129,23 @@ const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps
                 <div className="space-y-2">
                     {[
                         ["Plan", pkg.name],
-                        ["Boss Modes", pkg.bossModes],
-                        ["Proof Types", pkg.proofTypes],
+                    ].map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-2 text-xs font-medium">
+                            <span className="text-sky-ink-2 shrink-0">{k}</span>
+                            <span className="font-semibold text-sky-ink text-right wrap-break-word min-w-0">{v}</span>
+                        </div>
+                    ))}
+
+                    <ChipListRow label="Boss Modes" csv={pkg.bossModes} />
+                    <ChipListRow label="Proof Types" csv={pkg.proofTypes} />
+
+                    {[
                         ["AI Verification", pkg.aiVerificationBossModes ? "Included" : "Not included"],
                         ["Party quest/week", `${usage?.partyQuestsThisWeek ?? 0} / ${pkg.partyQuestsPerWeek}`],
                     ].map(([k, v]) => (
                         <div key={k} className="flex justify-between gap-2 text-xs font-medium">
                             <span className="text-sky-ink-2 shrink-0">{k}</span>
-                            <span className="font-semibold text-sky-ink text-right whitespace-nowrap">{v}</span>
+                            <span className="font-semibold text-sky-ink text-right wrap-break-word min-w-0">{v}</span>
                         </div>
                     ))}
                 </div>
@@ -287,6 +314,11 @@ export default function QuestForgeTab() {
 
     const selectedTags = (form.verificationTags || "")
         .split(",").map((s) => s.trim()).filter(Boolean) as VerificationTag[];
+
+    // `min` on the datetime-local input only constrains the date picker UI —
+    // browsers still let the hour/minute segments be typed/scrolled past it,
+    // so the past-deadline case needs an explicit live check here too.
+    const isDeadlinePast = Boolean(form.deadlineAt) && new Date(form.deadlineAt).getTime() <= Date.now();
     const toggleTag = (tag: VerificationTag) => {
         const next = selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag];
         handleField("verificationTags", next.join(","));
@@ -625,8 +657,14 @@ export default function QuestForgeTab() {
                                         value={form.deadlineAt}
                                         min={toLocalInputValue(new Date())}
                                         onChange={(e) => handleField("deadlineAt", e.target.value)}
-                                        className={inputCls}
+                                        aria-invalid={isDeadlinePast}
+                                        className={`${inputCls} ${isDeadlinePast ? "ring-2 ring-red-400 focus:ring-red-400" : ""}`}
                                     />
+                                    {isDeadlinePast && (
+                                        <p className="mt-1 text-[11px] font-medium text-red-500">
+                                            {t("mentor.questCommand.errors.deadlineInPast")}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -733,7 +771,7 @@ export default function QuestForgeTab() {
                         type="button"
                         variant="primary"
                         onClick={handleSubmit}
-                        disabled={submitting}
+                        disabled={submitting || isDeadlinePast}
                         className="relative mt-5 w-full text-lg py-3.5"
                     >
                         {submitting ? (

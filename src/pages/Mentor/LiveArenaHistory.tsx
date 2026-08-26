@@ -188,32 +188,37 @@ export default function LiveArenaHistory() {
                                     ) : (
                                         <div className="space-y-2.5">
                                             {(detailByChallenge[s.sessionId] ?? []).map((c) => (
-                                                <div key={c.challengeId} className="sky-glass-chip p-3.5 rounded-sky-md space-y-2">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <p className="font-semibold text-sm text-sky-ink truncate min-w-0">{c.promptText}</p>
-                                                        {(c.status === "Approved" || c.status === "Rejected") && (
-                                                            <span className={`sky-badge shrink-0 ${c.status === "Approved" ? "sky-badge-success" : "sky-badge-danger"}`}>
-                                                                {c.status === "Approved" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                                                                {c.status}
-                                                            </span>
+                                                <div key={c.challengeId} className="sky-glass-chip p-3.5 rounded-sky-md">
+                                                    <div className={`flex flex-col ${c.requiresEvidence && c.evidence ? "sm:flex-row" : ""} gap-3.5`}>
+                                                        {/* Video sized to watch in place — the old w-28 h-16 thumbnail
+                                                            forced mentors to open the file just to see what happened. */}
+                                                        {c.requiresEvidence && c.evidence && (
+                                                            <video
+                                                                src={c.evidence.mediaUrl}
+                                                                poster={c.evidence.snapshotUrls[0]}
+                                                                controls
+                                                                className="w-full sm:w-64 aspect-video rounded-lg bg-sky-ink object-cover shrink-0"
+                                                            />
                                                         )}
-                                                    </div>
-                                                    <p className="text-xs font-medium text-sky-ink-3">
-                                                        {c.mode} · {c.points} pts
-                                                        {c.responseSeconds != null && ` · responded in ${c.responseSeconds}s`}
-                                                    </p>
 
-                                                    {c.requiresEvidence && (
-                                                        <div className="flex items-center gap-2.5 flex-wrap">
-                                                            {c.evidence ? (
-                                                                <>
-                                                                    <video
-                                                                        src={c.evidence.mediaUrl}
-                                                                        poster={c.evidence.snapshotUrls[0]}
-                                                                        controls
-                                                                        className="w-28 h-16 rounded-lg bg-sky-ink object-cover shrink-0"
-                                                                    />
-                                                                    <div className="flex flex-col gap-1 min-w-0">
+                                                        <div className="flex-1 min-w-0 space-y-2">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <p className="font-semibold text-sm text-sky-ink truncate min-w-0">{c.promptText}</p>
+                                                                {(c.status === "Approved" || c.status === "Rejected") && (
+                                                                    <span className={`sky-badge shrink-0 ${c.status === "Approved" ? "sky-badge-success" : "sky-badge-danger"}`}>
+                                                                        {c.status === "Approved" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                                                                        {c.status}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs font-medium text-sky-ink-3">
+                                                                {c.mode} · {c.points} pts
+                                                                {c.responseSeconds != null && ` · responded in ${c.responseSeconds}s`}
+                                                            </p>
+
+                                                            {c.requiresEvidence && (
+                                                                c.evidence ? (
+                                                                    <div className="space-y-1.5">
                                                                         <AiEvidenceBadge evidence={c.evidence} />
                                                                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
                                                                             {c.evidence.subjectCameraOn
@@ -222,22 +227,22 @@ export default function LiveArenaHistory() {
                                                                             {c.evidence.subjectUsername} · {c.evidence.durationSeconds}s
                                                                         </span>
                                                                     </div>
-                                                                </>
-                                                            ) : (
-                                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-ink-3">
-                                                                    <VideoIcon className="w-3.5 h-3.5 shrink-0" />
-                                                                    {c.evidenceStatus === "NotRequired" ? "No evidence required" : `Evidence: ${c.evidenceStatus}`}
-                                                                </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-ink-3">
+                                                                        <VideoIcon className="w-3.5 h-3.5 shrink-0" />
+                                                                        {c.evidenceStatus === "NotRequired" ? "No evidence required" : `Evidence: ${c.evidenceStatus}`}
+                                                                    </span>
+                                                                )
+                                                            )}
+
+                                                            {c.judgeOverrideReason && (
+                                                                <p className="flex items-start gap-1.5 text-[11px] font-medium text-sky-peach-deep">
+                                                                    <ShieldAlert className="w-3 h-3 shrink-0 mt-px" />
+                                                                    Approved without evidence: “{c.judgeOverrideReason}”
+                                                                </p>
                                                             )}
                                                         </div>
-                                                    )}
-
-                                                    {c.judgeOverrideReason && (
-                                                        <p className="flex items-start gap-1.5 text-[11px] font-medium text-sky-peach-deep">
-                                                            <ShieldAlert className="w-3 h-3 shrink-0 mt-px" />
-                                                            Approved without evidence: “{c.judgeOverrideReason}”
-                                                        </p>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             ))}
                                             {(detailByChallenge[s.sessionId] ?? []).length === 0 && (

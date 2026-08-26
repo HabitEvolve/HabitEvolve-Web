@@ -393,8 +393,40 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                         [t("mentor.subscriptionWallet.maxMembers"), `${pkg.maxMembersPerParty}`, null],
                         [t("mentor.subscriptionWallet.questsPerMember"), `${pkg.questsPerMemberPerDay}`, null],
                         [t("mentor.subscriptionWallet.partyQuestsPerWeek"), `${pkg.partyQuestsPerWeek}`, null],
-                        [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes, null],
-                        ["Proof Types", pkg.proofTypes || "—", null],
+                    ].map(([k, v, icon]) => (
+                        <div key={k as string} className="flex justify-between gap-3 text-sm font-medium">
+                            <span className="inline-flex items-center gap-1.5 text-sky-ink-2">
+                                {icon as ReactNode}
+                                {k as string}
+                            </span>
+                            <span className="font-semibold text-sky-ink text-right tabular-nums">{v as string}</span>
+                        </div>
+                    ))}
+
+                    {/* Chips, not inline text — a long comma list otherwise overflows the
+                        card edge or wraps mid-token (e.g. "STEP_" / "COUNTER" split apart). */}
+                    {[
+                        [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes],
+                        ["Proof Types", pkg.proofTypes],
+                    ].map(([label, csv]) => (
+                        <div key={label} className="flex justify-between gap-3 text-sm font-medium">
+                            <span className="text-sky-ink-2 shrink-0">{label}</span>
+                            <div className="flex flex-wrap justify-end gap-1 min-w-0">
+                                {csv
+                                    ? csv.split(",").map((s) => s.trim()).filter(Boolean).map((item) => (
+                                        <span
+                                            key={item}
+                                            className="px-1.5 py-0.5 rounded-sky-chip bg-white/65 ring-1 ring-white/80 font-semibold text-sky-ink text-[11px] leading-tight whitespace-nowrap"
+                                        >
+                                            {item.replace(/_/g, " ")}
+                                        </span>
+                                    ))
+                                    : <span className="font-semibold text-sky-ink">—</span>}
+                            </div>
+                        </div>
+                    ))}
+
+                    {[
                         ["AI Verification", pkg.aiVerificationBossModes ? "Included" : "Not included", <Bot key="bot" className="w-3.5 h-3.5 text-sky-violet-deep" />],
                         [t("mentor.subscriptionWallet.duration"), `${pkg.durationDays} ${t("mentor.subscriptionWallet.days")}`, null],
                     ].map(([k, v, icon]) => (

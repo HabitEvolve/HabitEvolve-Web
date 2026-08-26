@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import {
   Plus, X, ChevronLeft, ChevronRight, AlertTriangle,
   Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff,
+  History as HistoryIcon, Loader2, Terminal,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
+import { adminAuditApi } from '../api/adminAuditApi';
 import { useAlert } from '../context/AlertContext';
 import PageHeader from '../components/common/PageHeader';
 import SkyCard from '../components/ui/card/SkyCard';
@@ -19,6 +21,7 @@ import type {
   SubscriptionPackageDto,
   RewardTier,
 } from '../types/adminSubscription.types';
+import type { AuditLogDto } from '../types/adminAudit.types';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -627,6 +630,191 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) => 
   );
 };
 
+// ─── Edit History Modal ──────────────────────────────────────────────────────
+// Backend snapshots the full package (Name/Price/limits/…) before and after every
+// PACKAGE_UPDATE via IAuditLogger (System.Text.Json, PascalCase keys — matches the
+// C# property names verbatim, no naming policy applied). This maps those keys back
+// onto the same form labels already used above, so "Max Parties" reads identically
+// whether you're editing the field or reading its history.
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  Name: 'nameLabel',
+  Description: 'descLabel',
+  Price: 'priceLabel',
+  DurationDays: 'durationLabel',
+  MaxParties: 'maxPartiesLabel',
+  MaxMembersPerParty: 'maxMembersLabel',
+  QuestsPerMemberPerDay: 'memberQuestsLabel',
+  PartyQuestsPerWeek: 'partyQuestsLabel',
+  BossModes: 'bossModesLabel',
+  MaxDamagePerQuest: 'maxDamageLabel',
+  MaxMGoldRewardPerQuest: 'maxGoldLabel',
+  ProofTypes: 'proofTypesLabel',
+  RewardTier: 'rewardTierLabel',
+  AiVerificationBossModes: 'aiModesLabel',
+};
+const CSV_FIELDS = new Set(['BossModes', 'ProofTypes', 'AiVerificationBossModes']);
+
+interface FieldChange {
+  key: string;
+  before: unknown;
+  after: unknown;
+}
+
+// Before/after are two flat JSON snapshots of the same shape — only the keys whose
+// serialized value actually differs are worth showing, otherwise every entry would
+// repeat all 14 fields even when the admin only touched one.
+const diffSnapshots = (beforeJson: string | null, afterJson: string | null): FieldChange[] => {
+  if (!beforeJson || !afterJson) return [];
+  try {
+    const before = JSON.parse(beforeJson) as Record<string, unknown>;
+    const after = JSON.parse(afterJson) as Record<string, unknown>;
+    return Object.keys(FIELD_LABEL_KEYS)
+      .filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+      .map(key => ({ key, before: before[key], after: after[key] }));
+  } catch {
+    return [];
+  }
+};
+
+const formatFieldValue = (key: string, value: unknown): string => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (CSV_FIELDS.has(key)) return String(value).split(',').map(s => s.trim()).filter(Boolean).join(', ') || '—';
+  if (key === 'DurationDays') return value === 0 ? '∞' : `${value}d`;
+  if (key === 'Price') return `${value} 💎`;
+  return String(value);
+};
+
+interface PackageHistoryModalProps {
+  pkg: SubscriptionPackageDto;
+  onClose: () => void;
+}
+
+const HISTORY_PAGE_SIZE = 10;
+
+const PackageHistoryModal = ({ pkg, onClose }: PackageHistoryModalProps) => {
+  const { t } = useTranslation();
+  const alert = useAlert();
+  const [logs, setLogs] = useState<AuditLogDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+
+  const fieldLabel = (key: string): string => {
+    const labelKey = FIELD_LABEL_KEYS[key];
+    if (!labelKey) return key;
+    return t(`admin.subscriptionPage.form.${labelKey}`).replace(/\s*\*$/, '');
+  };
+
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminAuditApi.getAuditLogs({
+        pageNumber: page,
+        pageSize: HISTORY_PAGE_SIZE,
+        targetType: 'SubscriptionPackage',
+        targetId: pkg.packageId,
+      });
+      setLogs(res.data ?? []);
+      setHasNext(res.hasNextPage ?? false);
+    } catch (e) {
+      alert.error(errMsg(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pkg.packageId, alert]);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  return createPortal(
+    <div
+      className="modal-content fixed inset-0 z-[99999] bg-sky-abyss/45 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <SkyCard variant="admin" className="sky-in p-0 overflow-hidden w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div className={`relative flex shrink-0 items-center gap-3 overflow-hidden border-b border-white/65 px-6 py-4 ${TONE.cool.wash}`}>
+          <span className={`absolute left-0 top-0 h-full w-[3px] ${TONE.cool.rail}`} aria-hidden="true" />
+          <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${TONE.cool.chip}`}>
+            <HistoryIcon className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className={eyebrow}>{pkg.code}</p>
+            <h2 className="truncate font-display text-base font-semibold leading-tight text-sky-ink">
+              {t('admin.subscriptionPage.history.title', { code: pkg.code })}
+            </h2>
+          </div>
+          <SkyButton type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close modal">
+            <X className="w-4 h-4" />
+          </SkyButton>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-6 py-5 bg-white/34 space-y-3">
+          {loading && logs.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-14 text-sky-ink-3">
+              <Loader2 className="w-7 h-7 animate-spin" />
+              <p className="text-sm font-semibold">{t('admin.subscriptionPage.history.loading')}</p>
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-14 text-center">
+              <span className="grid place-items-center w-14 h-14 mb-1 rounded-full bg-sky-deep-lo/10 text-sky-deep-lo">
+                <Inbox className="w-6 h-6" />
+              </span>
+              <p className="font-display text-sm font-semibold text-sky-ink">{t('admin.subscriptionPage.history.empty')}</p>
+              <p className="text-xs font-medium text-sky-ink-3">{t('admin.subscriptionPage.history.emptyHint')}</p>
+            </div>
+          ) : (
+            logs.map(log => {
+              const changes = diffSnapshots(log.beforeValue, log.afterValue);
+              return (
+                <div key={log.auditLogId} className="rounded-sky-md bg-white/55 ring-1 ring-white/75 p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-ink">
+                      {log.actorUserId != null
+                        ? t('admin.subscriptionPage.history.actor', { id: log.actorUserId })
+                        : <><Terminal className="w-3 h-3 shrink-0" /> {t('admin.subscriptionPage.history.system')}</>}
+                    </span>
+                    <span className="text-[11px] font-medium text-sky-ink-3 tabular-nums whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  {changes.length === 0 ? (
+                    <p className="text-xs font-medium text-sky-ink-3">{t('admin.subscriptionPage.history.noChanges')}</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {changes.map(c => (
+                        <div key={c.key} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+                          <span className="min-w-32 shrink-0 font-semibold text-sky-ink-2">{fieldLabel(c.key)}</span>
+                          <span className="font-medium text-sky-rose-deep line-through decoration-sky-rose/60">{formatFieldValue(c.key, c.before)}</span>
+                          <span className="text-sky-ink-3" aria-hidden="true">→</span>
+                          <span className="font-semibold text-sky-teal">{formatFieldValue(c.key, c.after)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/65 bg-white/44 px-6 py-4">
+          <div className="flex gap-2">
+            <SkyButton type="button" variant="secondary" size="sm" disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)}>
+              <ChevronLeft className="w-3.5 h-3.5" /> {t('admin.subscriptionPage.history.prevPage')}
+            </SkyButton>
+            <SkyButton type="button" variant="secondary" size="sm" disabled={!hasNext || loading} onClick={() => setPage(p => p + 1)}>
+              {t('admin.subscriptionPage.history.nextPage')} <ChevronRight className="w-3.5 h-3.5" />
+            </SkyButton>
+          </div>
+          <SkyButton type="button" variant="secondary" onClick={onClose}>
+            {t('admin.subscriptionPage.form.cancel')}
+          </SkyButton>
+        </div>
+      </SkyCard>
+    </div>,
+    document.body
+  );
+};
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function AdminSubscriptionPage() {
@@ -645,6 +833,7 @@ export default function AdminSubscriptionPage() {
   } | null>(null);
   const [toggleTarget, setToggleTarget] = useState<SubscriptionPackageDto | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState<SubscriptionPackageDto | null>(null);
 
   const fetchPackages = useCallback(async () => {
     setLoading(true);
@@ -854,6 +1043,10 @@ export default function AdminSubscriptionPage() {
                           <SkyButton type="button" variant="secondary" size="sm" onClick={() => setFormModal({ mode: 'edit', pkg })}>
                             {t('admin.subscriptionPage.editBtn')}
                           </SkyButton>
+                          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setHistoryTarget(pkg)}>
+                            <HistoryIcon className="w-3.5 h-3.5" />
+                            {t('admin.subscriptionPage.historyBtn')}
+                          </SkyButton>
                           <SkyButton
                             type="button"
                             variant={pkg.isActive ? 'destructive' : 'success'}
@@ -934,6 +1127,13 @@ export default function AdminSubscriptionPage() {
           loading={toggling}
           onConfirm={handleToggleConfirm}
           onClose={() => setToggleTarget(null)}
+        />
+      )}
+
+      {historyTarget && (
+        <PackageHistoryModal
+          pkg={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
 

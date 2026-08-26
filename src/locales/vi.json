@@ -1282,6 +1282,7 @@
       "prevPage": "← Trước",
       "nextPage": "Tiếp →",
       "editBtn": "✏️ Sửa",
+      "historyBtn": "Lịch Sử",
       "deactivateBtn": "⛔ Vô Hiệu",
       "activateBtn": "✅ Kích Hoạt",
       "statusActive": "ĐANG HOẠT ĐỘNG",
@@ -1346,6 +1347,17 @@
         "cancel": "Hủy",
         "confirm": "Xác Nhận",
         "processing": "Đang xử lý…"
+      },
+      "history": {
+        "title": "Lịch Sử Chỉnh Sửa: {{code}}",
+        "loading": "Đang tải lịch sử…",
+        "empty": "Chưa có lần chỉnh sửa nào được ghi lại.",
+        "emptyHint": "Các thay đổi qua nút Sửa sẽ hiện ở đây.",
+        "actor": "Admin #{{id}}",
+        "system": "Hệ Thống",
+        "noChanges": "Không có thay đổi nào được ghi nhận",
+        "prevPage": "← Trước",
+        "nextPage": "Tiếp →"
       }
     },
     "courtManagement": {

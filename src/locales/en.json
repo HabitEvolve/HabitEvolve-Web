@@ -1282,6 +1282,7 @@
       "prevPage": "← Prev",
       "nextPage": "Next →",
       "editBtn": "✏️ Edit",
+      "historyBtn": "History",
       "deactivateBtn": "⛔ Deactivate",
       "activateBtn": "✅ Activate",
       "statusActive": "ACTIVE",
@@ -1346,6 +1347,17 @@
         "cancel": "Cancel",
         "confirm": "Confirm",
         "processing": "Processing…"
+      },
+      "history": {
+        "title": "Edit History: {{code}}",
+        "loading": "Loading history…",
+        "empty": "No edits recorded yet.",
+        "emptyHint": "Changes made through Edit will appear here.",
+        "actor": "Admin #{{id}}",
+        "system": "System",
+        "noChanges": "No field changes recorded",
+        "prevPage": "← Prev",
+        "nextPage": "Next →"
       }
     },
     "courtManagement": {

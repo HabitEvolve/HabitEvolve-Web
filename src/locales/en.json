@@ -687,7 +687,15 @@
         "aiAssessment": "AI assessment",
         "aiConfidenceLabel": "Confidence",
         "aiNoReasoning": "No reasoning provided.",
-        "aiAssistNotice": "AI assists — a mentor still decides."
+        "aiAssistNotice": "AI assists — a mentor still decides.",
+        "gpsSectionTitle": "GPS Distance",
+        "stepsSectionTitle": "Step Count",
+        "distanceLabel": "Distance",
+        "durationLabel": "Duration",
+        "avgSpeedLabel": "Avg. speed",
+        "pointsLabel": "GPS points",
+        "stepsLabel": "Steps",
+        "avgStepsPerMinLabel": "Steps/min"
       },
       "history": {
         "tab": "History",

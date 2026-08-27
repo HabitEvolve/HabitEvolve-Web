@@ -7,13 +7,14 @@ import type { ProofDto, AiVerdict } from "../../../types/mentor.types";
 import { useAlert } from "../../../context/AlertContext";
 import {
     UserRoundPen, X, Check, AlertTriangle, Clock, ShieldQuestion,
-    RefreshCw, Inbox, ZoomIn, MinusCircle, History, Video,
+    RefreshCw, Inbox, ZoomIn, MinusCircle, History, Video, MapPin, Footprints,
 } from "lucide-react";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { FilterDropdown } from "../../../components/common/FilterDropdown";
 import ProofMedia, { isVideoUrl } from "../../../components/common/ProofMedia";
+import { parseProofMetadata, formatDuration, type ParsedProofMetadata } from "../../../utils/proofMetadata";
 import type { FilterField } from "../../../hooks/useTableFilters";
 import { easeExpo, Spinner } from "./sharedSky";
 import type { PartyWorkspaceContext } from "./PartyWorkspace";
@@ -126,6 +127,51 @@ interface ComparisonModalProps {
     onClose: () => void;
 }
 
+// ── GPS / STEP_COUNTER metadata panel ─────────────────────────────────────────
+// GPS and STEP_COUNTER proofs carry no mediaUrls — the reported distance/step
+// count IS the evidence, parsed from `Proof.Metadata` (a JSON string built by
+// the Mobile app's CheckInScreen). Used wherever a media thumbnail would
+// otherwise fall back to an empty "no media" placeholder.
+const GpsStepsPanel = ({ meta, compact }: { meta: ParsedProofMetadata; compact?: boolean }) => {
+    const { t } = useTranslation();
+    if (meta.gps) {
+        const g = meta.gps;
+        return (
+            <div className={`w-full rounded-sky-chip bg-sky-deep/6 ring-1 ring-sky-deep/15 ${compact ? "p-3" : "p-4"}`}>
+                <div className="flex items-center gap-1.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-deep">
+                    <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.gpsSectionTitle")}
+                </div>
+                <p className={`font-display font-bold text-sky-ink tabular-nums ${compact ? "text-xl" : "text-2xl"}`}>
+                    {g.distanceKm.toFixed(2)} <span className="text-sm font-semibold text-sky-ink-2">km</span>
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs font-medium text-sky-ink-2">
+                    <span>{t("mentor.proofQueue.grid.durationLabel")}: <strong className="text-sky-ink">{formatDuration(g.durationSec)}</strong></span>
+                    <span>{t("mentor.proofQueue.grid.avgSpeedLabel")}: <strong className="text-sky-ink">{g.avgSpeedKmh.toFixed(1)} km/h</strong></span>
+                    {!compact && <span>{t("mentor.proofQueue.grid.pointsLabel")}: <strong className="text-sky-ink">{g.pointCount}</strong></span>}
+                </div>
+            </div>
+        );
+    }
+    if (meta.steps) {
+        const s = meta.steps;
+        return (
+            <div className={`w-full rounded-sky-chip bg-sky-teal-bg ring-1 ring-sky-teal/25 ${compact ? "p-3" : "p-4"}`}>
+                <div className="flex items-center gap-1.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-teal">
+                    <Footprints className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.stepsSectionTitle")}
+                </div>
+                <p className={`font-display font-bold text-sky-ink tabular-nums ${compact ? "text-xl" : "text-2xl"}`}>
+                    {s.steps.toLocaleString()} <span className="text-sm font-semibold text-sky-ink-2">{t("mentor.proofQueue.grid.stepsLabel").toLowerCase()}</span>
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs font-medium text-sky-ink-2">
+                    <span>{t("mentor.proofQueue.grid.durationLabel")}: <strong className="text-sky-ink">{formatDuration(s.durationSec)}</strong></span>
+                    <span>{t("mentor.proofQueue.grid.avgStepsPerMinLabel")}: <strong className="text-sky-ink">{s.avgStepsPerMin}</strong></span>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const SpecRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div>
         <p className={fieldLabel}>{label}</p>
@@ -138,6 +184,7 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
     const [activeIndex, setActiveIndex] = useState(0);
     const activeUrl = proof.mediaUrls?.[activeIndex] ?? proof.mediaUrls?.[0];
+    const meta = parseProofMetadata(proof.metadata);
 
     return createPortal(
         <div
@@ -260,6 +307,10 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                                     </div>
                                 )}
                             </div>
+                        ) : meta?.gps || meta?.steps ? (
+                            <div className="mb-3">
+                                <GpsStepsPanel meta={meta} />
+                            </div>
                         ) : (
                             <div className="w-full h-40 rounded-sky-chip border border-dashed border-sky-ink/20 bg-sky-ink/4 flex flex-col items-center justify-center gap-2 mb-3 text-sky-ink-3">
                                 <Inbox className="w-5 h-5" aria-hidden="true" />
@@ -310,6 +361,7 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
     const isSuspicious = isFlaggedForReview(proof);
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
     const isOverdue = proof.deadlineAt && new Date(proof.deadlineAt) < new Date();
+    const meta = !hasMedia ? parseProofMetadata(proof.metadata) : null;
 
     return (
         <SkyCard
@@ -357,6 +409,10 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                         </span>
                     )}
                 </button>
+            ) : meta?.gps || meta?.steps ? (
+                <div className="p-3 border-b border-sky-ink/10">
+                    <GpsStepsPanel meta={meta} compact />
+                </div>
             ) : (
                 <div className="w-full h-24 bg-sky-ink/5 flex items-center justify-center gap-2 border-b border-sky-ink/10 text-sky-ink-3">
                     <Inbox className="w-4 h-4" aria-hidden="true" />
@@ -459,6 +515,7 @@ const HistoryCard = ({ proof, onCompare }: HistoryCardProps) => {
     const { t } = useTranslation();
     const hasMedia = proof.mediaUrls && proof.mediaUrls.length > 0;
     const isApproved = proof.status === "Approved";
+    const meta = !hasMedia ? parseProofMetadata(proof.metadata) : null;
 
     return (
         <SkyCard variant="mentor" className="relative p-0 overflow-hidden flex flex-col">
@@ -481,6 +538,10 @@ const HistoryCard = ({ proof, onCompare }: HistoryCardProps) => {
                         </span>
                     </div>
                 </button>
+            ) : meta?.gps || meta?.steps ? (
+                <div className="p-3 border-b border-sky-ink/10">
+                    <GpsStepsPanel meta={meta} compact />
+                </div>
             ) : (
                 <div className="w-full h-16 bg-sky-ink/5 flex items-center justify-center gap-2 border-b border-sky-ink/10 text-sky-ink-3">
                     <Inbox className="w-4 h-4" aria-hidden="true" />

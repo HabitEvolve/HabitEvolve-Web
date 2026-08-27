@@ -687,7 +687,15 @@
         "aiAssessment": "Đánh giá của AI",
         "aiConfidenceLabel": "Độ tin cậy",
         "aiNoReasoning": "Không có giải thích.",
-        "aiAssistNotice": "AI chỉ hỗ trợ — mentor vẫn là người quyết định."
+        "aiAssistNotice": "AI chỉ hỗ trợ — mentor vẫn là người quyết định.",
+        "gpsSectionTitle": "Khoảng Cách GPS",
+        "stepsSectionTitle": "Số Bước Chân",
+        "distanceLabel": "Khoảng cách",
+        "durationLabel": "Thời gian",
+        "avgSpeedLabel": "Tốc độ TB",
+        "pointsLabel": "Điểm GPS",
+        "stepsLabel": "Số bước",
+        "avgStepsPerMinLabel": "Bước/phút"
       },
       "history": {
         "tab": "Lịch Sử",

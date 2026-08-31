@@ -329,6 +329,12 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
     try {
       await adminQuestLibraryApi.toggleGlobal(editing.templateId, { isGlobal: next });
       setIsGlobal(next);
+      // Matches the "[Global] ..." naming already used by every seeded global quest — auto-prefix
+      // on enable so an admin doesn't have to remember/type it by hand. Only affects the title
+      // input here; still needs "Save Changes" to persist, same as any other field in this form.
+      if (next && !title.trimStart().startsWith('[Global]')) {
+        setTitle(prev => `[Global] ${prev}`.trim());
+      }
       onGlobalToggled();
     } catch (ex: any) {
       alert.error(ex?.response?.data?.message ?? 'Failed to update Global status.');

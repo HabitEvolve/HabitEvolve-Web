@@ -733,15 +733,16 @@ export default function AdminEconomyHub() {
     (a: { type: "success" | "error"; message: string }) => a.type === "success" ? globalAlert.success(a.message) : globalAlert.error(a.message),
     [globalAlert]
   );
-  const [tab, setTab] = useState<TabId>("items");
+  const [tab, setTab] = useState<TabId>("shop");
   const [items, setItems] = useState<ItemDefinitionDto[]>([]);
 
   useEffect(() => {
     adminItemApi.getItems().then(res => { if (res.success) setItems(res.data ?? []); });
   }, [tab]);
 
+  // Item Catalog (cosmetic Shop/Gacha items) is retired — hidden from the tab bar below.
+  // The tab's component/route/API still exist; flip this back on to bring it back.
   const tabs: { id: TabId; label: string; Icon: LucideIcon }[] = [
-    { id: "items", label: "Item Catalog", Icon: Coins },
     { id: "shop", label: "Shop", Icon: Swords },
     { id: "loot", label: "Loot Tables", Icon: Dices },
   ];

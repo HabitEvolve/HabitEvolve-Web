@@ -36,6 +36,14 @@ export interface SubscriptionPackageDto {
   proofTypes: string;        // CSV: "PHOTO,VIDEO"
   rewardTier: RewardTier;
   aiVerificationBossModes: string; // CSV — boss modes that support AI proof verification
+  // Per-difficulty quest caps — ADDITIVE on top of questsPerMemberPerDay/partyQuestsPerWeek above,
+  // not a replacement. null = no separate cap for that difficulty (only the total cap applies).
+  maxEasyQuestsPerMemberPerDay: number | null;
+  maxNormalQuestsPerMemberPerDay: number | null;
+  maxHardQuestsPerMemberPerDay: number | null;
+  maxEasyPartyQuestsPerWeek: number | null;
+  maxNormalPartyQuestsPerWeek: number | null;
+  maxHardPartyQuestsPerWeek: number | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string | null; // BE: DateTime? — null until first edit
@@ -58,6 +66,12 @@ export interface CreatePackagePayload {
   proofTypes: string;             // CSV
   rewardTier: RewardTier;
   aiVerificationBossModes?: string; // CSV — optional
+  maxEasyQuestsPerMemberPerDay?: number | null;
+  maxNormalQuestsPerMemberPerDay?: number | null;
+  maxHardQuestsPerMemberPerDay?: number | null;
+  maxEasyPartyQuestsPerWeek?: number | null;
+  maxNormalPartyQuestsPerWeek?: number | null;
+  maxHardPartyQuestsPerWeek?: number | null;
 }
 
 // Payload for PUT /api/admin/packages/{id}  (BE: UpdatePackageCommand)
@@ -77,6 +91,12 @@ export interface UpdatePackagePayload {
   proofTypes: string;
   rewardTier: RewardTier;
   aiVerificationBossModes?: string;
+  maxEasyQuestsPerMemberPerDay?: number | null;
+  maxNormalQuestsPerMemberPerDay?: number | null;
+  maxHardQuestsPerMemberPerDay?: number | null;
+  maxEasyPartyQuestsPerWeek?: number | null;
+  maxNormalPartyQuestsPerWeek?: number | null;
+  maxHardPartyQuestsPerWeek?: number | null;
 }
 
 // Payload for PATCH /api/admin/packages/{id}/status  (BE: TogglePackageStatusCommand)

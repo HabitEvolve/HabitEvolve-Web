@@ -1316,6 +1316,7 @@
         "sectionBasic": "A — Thông Tin Cơ Bản",
         "sectionParty": "B — Giới Hạn Nhóm & Thành Viên",
         "sectionQuest": "C — Giới Hạn Nhiệm Vụ & Boss",
+        "sectionDifficulty": "D — Giới Hạn Theo Độ Khó",
         "codeLabel": "Mã *",
         "nameLabel": "Tên *",
         "descLabel": "Mô Tả",
@@ -1343,7 +1344,14 @@
         "createPackage": "Tạo Gói",
         "saveChanges": "Lưu Thay Đổi",
         "bossModesRequired": "Chọn ít nhất một Chế Độ Boss.",
-        "proofTypesRequired": "Chọn ít nhất một Loại Bằng Chứng."
+        "proofTypesRequired": "Chọn ít nhất một Loại Bằng Chứng.",
+        "difficultyCapsHint": "Tùy chọn — để trống nếu không giới hạn riêng theo độ khó đó. Các giới hạn này CỘNG THÊM vào tổng ở mục B/C phía trên, không thay thế.",
+        "maxEasyPerDayLabel": "Tối Đa Nhiệm Vụ EASY / Thành Viên / Ngày",
+        "maxNormalPerDayLabel": "Tối Đa Nhiệm Vụ NORMAL / Thành Viên / Ngày",
+        "maxHardPerDayLabel": "Tối Đa Nhiệm Vụ HARD / Thành Viên / Ngày",
+        "maxEasyPerWeekLabel": "Tối Đa Party Quest EASY / Tuần",
+        "maxNormalPerWeekLabel": "Tối Đa Party Quest NORMAL / Tuần",
+        "maxHardPerWeekLabel": "Tối Đa Party Quest HARD / Tuần"
       },
       "toggleModal": {
         "deactivateTitle": "⛔ Vô Hiệu Gói",

@@ -29,6 +29,7 @@ export interface QuestLibraryItemDto {
     verificationPolicyId: number | null;
     status: QuestLibraryStatus;
     isActive: boolean;
+    isGlobal: boolean;
     goalIds: number[];
     createdAt: string;
     updatedAt: string | null;
@@ -103,6 +104,7 @@ export interface GetQuestLibraryParams {
     status?: QuestLibraryStatus;
     difficulty?: QuestLibraryDifficulty;
     goalId?: number;
+    isGlobal?: boolean;
     pageNumber?: number;
     pageSize?: number;
 }

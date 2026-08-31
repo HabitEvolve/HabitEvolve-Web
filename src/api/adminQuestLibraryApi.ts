@@ -27,6 +27,7 @@ export const adminQuestLibraryApi = {
                 status: params?.status,
                 difficulty: params?.difficulty,
                 goalId: params?.goalId,
+                isGlobal: params?.isGlobal,
             },
         });
         return res.data;

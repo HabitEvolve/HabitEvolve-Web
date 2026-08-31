@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronUp, Users, Coins,
   Check, Archive, PencilLine, AlertTriangle, Trophy,
   Sparkles, Star, Gem, Swords, Library, BookOpen, Search,
+  Globe, Minus,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
@@ -293,11 +294,12 @@ function GoalsModal({ item, allGoals, onClose, onSaved }: {
 }
 
 // ─── Quest Form Modal ─────────────────────────────────────────────────────────
-function QuestFormModal({ editing, allGoals, onSave, onClose }: {
+function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }: {
   editing: QuestLibraryItemDto | null;
   allGoals: GoalDto[];
   onSave(payload: CreateQuestLibraryItemPayload | UpdateQuestLibraryItemPayload, isNew: boolean): Promise<void>;
   onClose(): void;
+  onGlobalToggled(): void;
 }) {
   const [title, setTitle] = useState(editing?.title ?? '');
   const [desc, setDesc] = useState(editing?.description ?? '');
@@ -313,8 +315,25 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
   const [selectedGoalIds, setSelectedGoalIds] = useState<number[]>(editing?.goalIds ?? []);
   const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
   const [verificationTags, setVerificationTags] = useState(editing?.verificationTags ?? '');
+  const [isGlobal, setIsGlobal] = useState(editing?.isGlobal ?? false);
+  const [togglingGlobal, setTogglingGlobal] = useState(false);
   const [saving, setSaving] = useState(false);
   const alert = useAlert();
+
+  // Global is a standalone flag (its own endpoint, PATCH .../global) — flips immediately
+  // rather than waiting for "Save Changes", same as the list row's Publish/Archive toggles.
+  const handleToggleGlobal = async () => {
+    if (!editing) return;
+    const next = !isGlobal;
+    setTogglingGlobal(true);
+    try {
+      await adminQuestLibraryApi.toggleGlobal(editing.templateId, { isGlobal: next });
+      setIsGlobal(next);
+      onGlobalToggled();
+    } catch (ex: any) {
+      alert.error(ex?.response?.data?.message ?? 'Failed to update Global status.');
+    } finally { setTogglingGlobal(false); }
+  };
 
   const toggleGoal = (id: number) =>
     setSelectedGoalIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
@@ -421,6 +440,52 @@ function QuestFormModal({ editing, allGoals, onSave, onClose }: {
               <label className={fieldLabel}>Damage</label>
               <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
             </div>
+
+            {/* Global is its own concept (bypasses the daily 5-quest limit, shown to every
+                player regardless of goal selection) — its own plated row, same shape as the
+                isActive toggle on Target Rules, so an operator recognises the control on sight. */}
+            {editing && (
+              <div className={`relative flex items-center justify-between gap-4 overflow-hidden rounded-sky-md pl-4 pr-4 py-3.5 ring-1 ring-white/78 ${
+                isGlobal ? TONE.violet.wash : 'bg-white/48'
+              }`}>
+                <span className={`absolute left-0 top-0 h-full w-[3px] ${isGlobal ? TONE.violet.rail : 'bg-sky-ink/18'}`} aria-hidden="true" />
+                <div className="min-w-0 flex items-center gap-2.5">
+                  <span className={`grid place-items-center w-8 h-8 shrink-0 rounded-sky-chip ring-1 ${TONE.violet.chip}`}>
+                    <Globe className="w-4 h-4" strokeWidth={2.2} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-display text-sm font-semibold text-sky-ink">Global Quest</p>
+                    <p className="text-xs text-sky-ink-2 font-medium mt-0.5">Shown to every player, doesn't count toward the daily 5-quest limit.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleGlobal}
+                  disabled={togglingGlobal}
+                  aria-pressed={isGlobal}
+                  className={`group relative shrink-0 inline-flex items-center w-[74px] h-7 rounded-full ring-1 transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-deep/50 disabled:opacity-60 ${
+                    isGlobal ? 'bg-sky-violet ring-sky-violet/40' : 'bg-sky-ink/14 ring-white/70'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 grid place-items-center w-6 h-6 rounded-full bg-white shadow-sky-chip transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      isGlobal ? 'translate-x-[46px]' : 'translate-x-0'
+                    }`}
+                  >
+                    {togglingGlobal
+                      ? <Loader2 className="w-3 h-3 animate-spin text-sky-ink-3" aria-hidden="true" />
+                      : isGlobal
+                        ? <Check className="w-3 h-3 text-sky-violet" strokeWidth={3} aria-hidden="true" />
+                        : <Minus className="w-3 h-3 text-sky-ink-3" strokeWidth={3} aria-hidden="true" />}
+                  </span>
+                  <span className={`absolute text-[10px] font-semibold uppercase tracking-[0.1em] transition-opacity ${
+                    isGlobal ? 'left-3 text-white opacity-100' : 'right-3 text-sky-ink-2 opacity-100'
+                  }`}>
+                    {isGlobal ? 'On' : 'Off'}
+                  </span>
+                </button>
+              </div>
+            )}
 
             <div>
               <label className={fieldLabel}>
@@ -669,6 +734,11 @@ function QuestRow({ item, allGoals, onEdit, onDelete, onStatusChange, onRefresh,
     <SkyCard variant="admin" className="p-0 overflow-hidden sky-lift">
       <div className="flex items-start gap-3 p-4">
         <span className={`shrink-0 mt-0.5 rounded-sky-chip ring-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${diffCls}`}>{diffLabel}</span>
+        {item.isGlobal && (
+          <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${TONE.violet.chip}`}>
+            <Globe className="w-3 h-3" strokeWidth={2.6} aria-hidden="true" /> Global
+          </span>
+        )}
 
         <div className="flex-1 min-w-0">
           {/* The title is what an operator scans this list by, so it is the only
@@ -726,6 +796,7 @@ export default function AdminQuestLibraryManagement() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<QuestLibraryStatus | ''>('');
   const [filterDiff, setFilterDiff] = useState<QuestLibraryDifficulty | ''>('');
+  const [filterGlobal, setFilterGlobal] = useState<'' | 'global' | 'normal'>('');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [formModal, setFormModal] = useState<{ editing: QuestLibraryItemDto | null } | null>(null);
@@ -744,6 +815,7 @@ export default function AdminQuestLibraryManagement() {
         search: searchQuery.trim() || undefined,
         status: filterStatus || undefined,
         difficulty: filterDiff || undefined,
+        isGlobal: filterGlobal === '' ? undefined : filterGlobal === 'global',
         pageNumber: page,
         pageSize: PAGE_SIZE,
       });
@@ -759,7 +831,7 @@ export default function AdminQuestLibraryManagement() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, filterStatus, filterDiff, page, alertCtx]);
+  }, [searchQuery, filterStatus, filterDiff, filterGlobal, page, alertCtx]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -874,6 +946,17 @@ export default function AdminQuestLibraryManagement() {
             <option value="">All difficulties</option>
             {DIFFICULTIES.map(d => <option key={d} value={d}>{DIFF_CFG[d].label}</option>)}
           </select>
+          <label className="sr-only" htmlFor="ql-filter-global">Filter by Global</label>
+          <select
+            id="ql-filter-global"
+            value={filterGlobal}
+            onChange={e => { setFilterGlobal(e.target.value as '' | 'global' | 'normal'); setPage(1); }}
+            className={filterSelectCls}
+          >
+            <option value="">All quests</option>
+            <option value="global">Global only</option>
+            <option value="normal">Normal only</option>
+          </select>
         </div>
       </div>
 
@@ -919,6 +1002,7 @@ export default function AdminQuestLibraryManagement() {
           allGoals={allGoals}
           onSave={handleSave}
           onClose={() => setFormModal(null)}
+          onGlobalToggled={load}
         />
       )}
       {delItem && (

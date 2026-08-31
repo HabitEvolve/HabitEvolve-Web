@@ -271,7 +271,7 @@ export default function QuestForgeTab() {
     // Derive allowed proof types from subscription
     const allowedProofTypes: string[] = activeSub?.package?.proofTypes
         ? activeSub.package.proofTypes.split(",").map((s) => s.trim())
-        : ["PHOTO", "VIDEO", "TIMER", "SCREENSHOT", "GPS", "STEP_COUNTER", "TEXT_LOG", "SELF_CHECK"];
+        : ["PHOTO", "GPS", "STEP_COUNTER", "TEXT_LOG", "SELF_CHECK"];
 
     // AI Check eligibility mirrors the BE guard in CreateMentorQuest/CreatePartyQuestCommandHandler:
     // the mentor's plan must include AI Verification (any Boss mode), and SELF_CHECK is always
@@ -309,6 +309,13 @@ export default function QuestForgeTab() {
 
     const handleField = (field: string, value: string | number | boolean) => {
         setForm((prev) => ({ ...prev, [field]: value }));
+        setFormError(null);
+    };
+
+    // Verification tags only apply to PHOTO (FACE face-matches the photo, ITEM/ACTION are visual
+    // hints) — backend rejects them on any other proof type, so clear them the moment it changes away.
+    const handleProofTypeChange = (proofType: string) => {
+        setForm((prev) => ({ ...prev, proofType, verificationTags: proofType === "PHOTO" ? prev.verificationTags : "" }));
         setFormError(null);
     };
 
@@ -638,7 +645,7 @@ export default function QuestForgeTab() {
                                     <label className={fieldLabel}>{t("mentor.questCommand.proofType")}</label>
                                     <select
                                         value={form.proofType}
-                                        onChange={(e) => handleField("proofType", e.target.value)}
+                                        onChange={(e) => handleProofTypeChange(e.target.value)}
                                         className={inputCls}
                                     >
                                         {allowedProofTypes.map((pt) => (
@@ -719,28 +726,30 @@ export default function QuestForgeTab() {
                             </p>
                         </div>
 
-                        <div>
-                            <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">
-                                {t("mentor.questCommand.forge.verificationTagsLabel")}
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {VERIFICATION_TAGS.map((tag) => {
-                                    const isSelected = selectedTags.includes(tag);
-                                    return (
-                                        <button
-                                            key={tag}
-                                            type="button"
-                                            onClick={() => toggleTag(tag)}
-                                            aria-pressed={isSelected}
-                                            className={`px-3 py-1.5 rounded-sky-chip text-xs font-semibold transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
-                                        >
-                                            {tag}
-                                        </button>
-                                    );
-                                })}
+                        {form.proofType === "PHOTO" && (
+                            <div>
+                                <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-ink-2">
+                                    {t("mentor.questCommand.forge.verificationTagsLabel")}
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {VERIFICATION_TAGS.map((tag) => {
+                                        const isSelected = selectedTags.includes(tag);
+                                        return (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => toggleTag(tag)}
+                                                aria-pressed={isSelected}
+                                                className={`px-3 py-1.5 rounded-sky-chip text-xs font-semibold transition-all duration-150 ${easeExpo} ${isSelected ? chipActive : chipInactive}`}
+                                            >
+                                                {tag}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[11px] text-sky-ink-3 font-medium mt-1.5">{t("mentor.questCommand.forge.verificationTagsHint")}</p>
                             </div>
-                            <p className="text-[11px] text-sky-ink-3 font-medium mt-1.5">{t("mentor.questCommand.forge.verificationTagsHint")}</p>
-                        </div>
+                        )}
 
                         <label className="flex flex-wrap items-center gap-3 cursor-pointer select-none rounded-sky-chip bg-white/50 ring-1 ring-white/70 px-3 py-2.5">
                             <input

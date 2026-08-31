@@ -28,10 +28,7 @@ import type { AuditLogDto } from '../types/adminAudit.types';
 const PAGE_SIZE = 8;
 
 const BOSS_MODE_OPTIONS = ['EASY', 'NORMAL', 'HARD'] as const;
-const PROOF_TYPE_OPTIONS = [
-  'PHOTO', 'VIDEO', 'TIMER', 'SCREENSHOT',
-  'GPS', 'STEP_COUNTER', 'TEXT_LOG', 'SELF_CHECK',
-] as const;
+const PROOF_TYPE_OPTIONS = ['PHOTO', 'GPS', 'STEP_COUNTER', 'TEXT_LOG', 'SELF_CHECK'] as const;
 const REWARD_TIER_OPTIONS: RewardTier[] = ['Basic', 'Standard', 'Premium'];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

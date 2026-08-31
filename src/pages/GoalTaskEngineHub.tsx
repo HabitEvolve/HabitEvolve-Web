@@ -129,7 +129,8 @@ function CheckRow({ checked, onChange, label }: {
   );
 }
 
-const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
+// Daily Task keeps its own narrower whitelist (no TEXT_LOG) — see PracticalTaskTemplate.AllowedProofTypes.
+const VERIFICATION_TYPES = ['SELF_CHECK', 'PHOTO', 'GPS', 'STEP_COUNTER'];
 const VERIFICATION_TAGS = ['FACE', 'ITEM', 'ACTION'];
 const RECOMMENDATION_LEVELS: { value: TaskRecommendationLevel; label: string }[] = [
   { value: 'MustDo', label: 'Must Do' },
@@ -624,7 +625,15 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
             </div>
             <div>
               <label className={fieldLabel}>Verification Type</label>
-              <select value={vtype} onChange={e => setVtype(e.target.value)} className={inputCls}>
+              <select
+                value={vtype}
+                onChange={e => {
+                  const next = e.target.value;
+                  setVtype(next);
+                  if (next !== 'PHOTO') setTags(''); // tags only apply to PHOTO
+                }}
+                className={inputCls}
+              >
                 {VERIFICATION_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
               {/* Whether a task gets AI-checked is 100% decided by ProofType (SELF_CHECK = auto-approve,
@@ -636,18 +645,20 @@ function TaskFormModal({ goalId, editing, onSave, onClose }: {
                 <p className="text-[10px] font-semibold text-sky-violet-deep mt-1.5">🤖 This task will be AI-checked when the player submits proof. The AI reads the Title, Description and How To Submit text to decide what to look for — no extra setup needed.</p>
               )}
             </div>
-            <div>
-              <label className={fieldLabel}>Verification Tags</label>
-              <div className="flex flex-wrap gap-3">
-                {VERIFICATION_TAGS.map(tag => (
-                  <label key={tag} className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 rounded accent-sky-deep" />
-                    <span className="text-xs font-semibold text-sky-ink-2">{tag}</span>
-                  </label>
-                ))}
+            {vtype === 'PHOTO' && (
+              <div>
+                <label className={fieldLabel}>Verification Tags</label>
+                <div className="flex flex-wrap gap-3">
+                  {VERIFICATION_TAGS.map(tag => (
+                    <label key={tag} className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="w-3.5 h-3.5 rounded accent-sky-deep" />
+                      <span className="text-xs font-semibold text-sky-ink-2">{tag}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-sky-ink-3 mt-1">A task can carry more than one — FACE blocks submission until portrait-verified; ITEM/ACTION are AI hints only.</p>
               </div>
-              <p className="text-[10px] text-sky-ink-3 mt-1">A task can carry more than one — FACE blocks submission until portrait-verified; ITEM/ACTION are AI hints only.</p>
-            </div>
+            )}
             <div>
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <label className={`${fieldLabel} mb-0`}>Required Variables</label>

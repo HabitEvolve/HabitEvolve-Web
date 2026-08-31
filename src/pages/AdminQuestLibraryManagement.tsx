@@ -29,7 +29,7 @@ const PAGE_SIZE = 20;
 const DIFFICULTIES: QuestLibraryDifficulty[] = ['EASY', 'NORMAL', 'HARD', 'EPIC'];
 const STATUSES: QuestLibraryStatus[] = ['Draft', 'Published', 'Archived'];
 const REPEAT_RULES: RepeatRule[] = ['Daily', 'Weekly', 'Monthly', 'OneTime'];
-const PROOF_TYPES = ['SELF_CHECK', 'PHOTO', 'VIDEO', 'TEXT_LOG', 'SCREENSHOT', 'TIMER', 'GPS', 'STEP_COUNTER'];
+const PROOF_TYPES = ['SELF_CHECK', 'PHOTO', 'TEXT_LOG', 'GPS', 'STEP_COUNTER'];
 const VERIFICATION_TAGS: VerificationTag[] = ['FACE', 'ITEM', 'ACTION'];
 const HOW_TO_SUBMIT_MAX = 500;
 
@@ -436,7 +436,15 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
               </div>
               <div>
                 <label className={fieldLabel}>Proof Type *</label>
-                <select value={proofType} onChange={e => setProofType(e.target.value)} className={inputCls}>
+                <select
+                  value={proofType}
+                  onChange={e => {
+                    const next = e.target.value;
+                    setProofType(next);
+                    if (next !== 'PHOTO') setVerificationTags(''); // tags only apply to PHOTO
+                  }}
+                  className={inputCls}
+                >
                   {PROOF_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
@@ -535,30 +543,34 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
               </p>
             </div>
 
-            <div>
-              <label className={fieldLabel}>Verification Tags</label>
-              {/* Verification method is a category, not a verdict — it gets the
-                  violet game hue, and a tick rather than a colour swap alone so
-                  which tags are on survives a glance. */}
-              <div className="flex flex-wrap gap-2">
-                {VERIFICATION_TAGS.map(tag => {
-                  const on = selectedTags.includes(tag);
-                  return (
-                    <label
-                      key={tag}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sky-chip ring-1 text-xs font-semibold cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-within:ring-2 focus-within:ring-sky-deep/45 ${on ? TONE.violet.chip : 'bg-white/62 ring-white/80 text-sky-ink-2 hover:bg-white/80 hover:text-sky-ink'}`}
-                    >
-                      <input type="checkbox" checked={on} onChange={() => toggleTag(tag)} className="sr-only" />
-                      <Check className={`w-3.5 h-3.5 transition-opacity ${on ? 'opacity-100' : 'opacity-25'}`} strokeWidth={2.6} aria-hidden="true" />
-                      {tag}
-                    </label>
-                  );
-                })}
+            {/* Tags only make sense against an uploaded image (FACE face-matches the photo,
+                ITEM/ACTION are visual hints) — backend rejects them for any other proof type. */}
+            {proofType === 'PHOTO' && (
+              <div>
+                <label className={fieldLabel}>Verification Tags</label>
+                {/* Verification method is a category, not a verdict — it gets the
+                    violet game hue, and a tick rather than a colour swap alone so
+                    which tags are on survives a glance. */}
+                <div className="flex flex-wrap gap-2">
+                  {VERIFICATION_TAGS.map(tag => {
+                    const on = selectedTags.includes(tag);
+                    return (
+                      <label
+                        key={tag}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sky-chip ring-1 text-xs font-semibold cursor-pointer transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-within:ring-2 focus-within:ring-sky-deep/45 ${on ? TONE.violet.chip : 'bg-white/62 ring-white/80 text-sky-ink-2 hover:bg-white/80 hover:text-sky-ink'}`}
+                      >
+                        <input type="checkbox" checked={on} onChange={() => toggleTag(tag)} className="sr-only" />
+                        <Check className={`w-3.5 h-3.5 transition-opacity ${on ? 'opacity-100' : 'opacity-25'}`} strokeWidth={2.6} aria-hidden="true" />
+                        {tag}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-sky-ink-3 mt-2 leading-relaxed">
+                  <strong className="font-semibold text-sky-ink-2">FACE</strong> blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.
+                </p>
               </div>
-              <p className="text-[10px] text-sky-ink-3 mt-2 leading-relaxed">
-                <strong className="font-semibold text-sky-ink-2">FACE</strong> blocks submission until the player verifies their portrait; ITEM/ACTION are hints only.
-              </p>
-            </div>
+            )}
 
             {/* Rewards — full matrix on create; edit only re-prices Gold here (Bonus/XP/Gems
                 stay in the dedicated Edit Rewards modal since it's the one place that also

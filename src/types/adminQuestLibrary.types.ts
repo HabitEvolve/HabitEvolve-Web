@@ -30,6 +30,8 @@ export interface QuestLibraryItemDto {
     status: QuestLibraryStatus;
     isActive: boolean;
     isGlobal: boolean;
+    // GPS (meters) / STEP_COUNTER (steps) self-reported minimum. Null = shape-only check, no value enforced.
+    requiredThreshold: number | null;
     goalIds: number[];
     createdAt: string;
     updatedAt: string | null;
@@ -56,6 +58,7 @@ export interface CreateQuestLibraryItemPayload {
     isActive?: boolean;
     howToSubmit?: string;
     verificationTags?: string;
+    requiredThreshold?: number | null;
 }
 
 // PUT /api/admin/quest-library/{id} — UpdateQuestTemplateCommand
@@ -95,6 +98,11 @@ export interface SetPersonalizationPayload {
 // PATCH /api/admin/quest-library/{id}/global — SetGlobalRequest
 export interface ToggleGlobalPayload {
     isGlobal: boolean;
+}
+
+// POST /api/admin/quest-library/{id}/required-threshold — SetRequiredThresholdRequest
+export interface SetRequiredThresholdPayload {
+    requiredThreshold: number | null;
 }
 
 // pageNumber/pageSize match the convention confirmed working for GET /admin/users

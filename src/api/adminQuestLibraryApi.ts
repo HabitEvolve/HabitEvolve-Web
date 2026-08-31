@@ -8,6 +8,7 @@ import type {
     SetRewardMatrixPayload,
     SetPersonalizationPayload,
     ToggleGlobalPayload,
+    SetRequiredThresholdPayload,
     GetQuestLibraryParams,
 } from '../types/adminQuestLibrary.types';
 
@@ -82,6 +83,12 @@ export const adminQuestLibraryApi = {
     // PATCH /api/admin/quest-library/{id}/global
     toggleGlobal: async (id: number, payload: ToggleGlobalPayload): Promise<ApiResponse<QuestLibraryItemDto>> => {
         const res = await axiosClient.patch<ApiResponse<QuestLibraryItemDto>>(`${BASE}/${id}/global`, payload);
+        return res.data;
+    },
+
+    // POST /api/admin/quest-library/{id}/required-threshold
+    setRequiredThreshold: async (id: number, payload: SetRequiredThresholdPayload): Promise<ApiResponse<QuestLibraryItemDto>> => {
+        const res = await axiosClient.post<ApiResponse<QuestLibraryItemDto>>(`${BASE}/${id}/required-threshold`, payload);
         return res.data;
     },
 };

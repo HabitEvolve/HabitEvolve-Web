@@ -315,6 +315,7 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
   const [selectedGoalIds, setSelectedGoalIds] = useState<number[]>(editing?.goalIds ?? []);
   const [howToSubmit, setHowToSubmit] = useState(editing?.howToSubmit ?? '');
   const [verificationTags, setVerificationTags] = useState(editing?.verificationTags ?? '');
+  const [requiredThreshold, setRequiredThreshold] = useState<number | ''>(editing?.requiredThreshold ?? '');
   const [isGlobal, setIsGlobal] = useState(editing?.isGlobal ?? false);
   const [togglingGlobal, setTogglingGlobal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -374,6 +375,10 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
             gold, bonusGold: editing.rewardBonusGold, xp: editing.rewardXp, gems: editing.rewardGems,
           });
         }
+        const nextThreshold = requiredThreshold === '' ? null : requiredThreshold;
+        if (nextThreshold !== (editing.requiredThreshold ?? null)) {
+          await adminQuestLibraryApi.setRequiredThreshold(editing.templateId, { requiredThreshold: nextThreshold });
+        }
         await onSave(payload, false);
       } else {
         const payload: CreateQuestLibraryItemPayload = {
@@ -387,6 +392,7 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
           rewardBonusGold: bonusGold,
           rewardXp: xp,
           rewardGems: gems,
+          requiredThreshold: requiredThreshold === '' ? undefined : requiredThreshold,
           goalIds: selectedGoalIds,
           howToSubmit: howToSubmit.trim() || undefined,
           verificationTags: verificationTags || undefined,
@@ -446,6 +452,24 @@ function QuestFormModal({ editing, allGoals, onSave, onClose, onGlobalToggled }:
               <label className={fieldLabel}>Damage</label>
               <input type="number" min={0} value={damage} onChange={e => setDamage(Number(e.target.value))} className={`${inputCls} tabular-nums`} />
             </div>
+
+            {/* GPS/STEP_COUNTER are self-reported (device sensor, never AI-verified) — this is the
+                only real enforcement available: reject a submission under the minimum. Hidden for
+                every other Proof Type since the value has no meaning there. */}
+            {(proofType === 'GPS' || proofType === 'STEP_COUNTER') && (
+              <div>
+                <label className={fieldLabel}>
+                  {proofType === 'GPS' ? 'Minimum Distance (meters)' : 'Minimum Steps'}
+                </label>
+                <input
+                  type="number" min={0}
+                  value={requiredThreshold}
+                  onChange={e => setRequiredThreshold(e.target.value === '' ? '' : Number(e.target.value))}
+                  className={`${inputCls} tabular-nums`}
+                  placeholder="Leave blank to skip — only checks the proof shape, not the value"
+                />
+              </div>
+            )}
 
             {/* Global is its own concept (bypasses the daily 5-quest limit, shown to every
                 player regardless of goal selection) — its own plated row, same shape as the

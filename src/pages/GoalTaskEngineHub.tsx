@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,6 +16,7 @@ import SkyCard from '../components/ui/card/SkyCard';
 import SkyButton from '../components/ui/button/SkyButton';
 import { positiveIntDisplay, parsePositiveInt } from '../utils/numberInput';
 import {
+  PillarDto,
   GoalCategoryDto, GoalCategoryPayload,
   GoalDto, GoalPayload, MeasurementType,
   AdminTaskTemplateDto, PracticalTaskPayload, TaskRecommendationLevel,
@@ -283,8 +284,9 @@ function ConfirmDeleteModal({ title, body, onConfirm, onCancel, loading }: {
 }
 
 // ─── CategoryFormModal ────────────────────────────────────────────────────────
-function CategoryFormModal({ editing, onSave, onClose }: {
+function CategoryFormModal({ editing, pillars, onSave, onClose }: {
   editing: GoalCategoryDto | null;
+  pillars: PillarDto[];
   onSave(payload: GoalCategoryPayload): Promise<void>;
   onClose(): void;
 }) {
@@ -294,14 +296,17 @@ function CategoryFormModal({ editing, onSave, onClose }: {
   const [icon, setIcon] = useState(editing?.iconCode ?? '');
   const [order, setOrder] = useState(editing?.displayOrder ?? 1);
   const [active, setActive] = useState(editing?.isActive ?? true);
+  // Pillar is required by BE. 0 = not chosen yet (legacy categories may load as 0 → admin must pick one).
+  const [pillarId, setPillarId] = useState<number>(editing?.pillarId ?? 0);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim() || !name.trim()) { setErr('Code and name are required.'); return; }
+    if (!pillarId) { setErr('Please pick a lifestyle pillar.'); return; }
     setSaving(true); setErr('');
-    try { await onSave({ categoryCode: code.trim().toUpperCase(), categoryName: name.trim(), description: desc.trim() || undefined, iconCode: icon.trim() || undefined, displayOrder: order, isActive: active }); }
+    try { await onSave({ categoryCode: code.trim().toUpperCase(), categoryName: name.trim(), description: desc.trim() || undefined, iconCode: icon.trim() || undefined, displayOrder: order, isActive: active, pillarId }); }
     catch (ex: any) { setErr(ex?.response?.data?.message ?? 'Save failed.'); }
     finally { setSaving(false); }
   };
@@ -326,6 +331,14 @@ function CategoryFormModal({ editing, onSave, onClose }: {
             <div>
               <label className={fieldLabel}>Name *</label>
               <input value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="Health & Wellness" required />
+            </div>
+            <div>
+              <label className={fieldLabel}>Lifestyle Pillar *</label>
+              <select value={pillarId} onChange={e => setPillarId(Number(e.target.value))} className={inputCls}>
+                <option value={0} disabled>Select a pillar…</option>
+                {pillars.map(p => <option key={p.pillarId} value={p.pillarId}>{p.pillarName}</option>)}
+              </select>
+              <p className="mt-1 text-[10px] text-sky-ink-3">Groups this category under one of the 4 pillars in the mobile Goal Wizard.</p>
             </div>
             <div>
               <label className={fieldLabel}>Description</label>
@@ -1705,6 +1718,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
   onEnterGoal(category: GoalCategoryDto, goal: GoalDto): void;
 }) {
   const [categories, setCategories] = useState<GoalCategoryDto[]>([]);
+  const [pillars, setPillars] = useState<PillarDto[]>([]);
   const [goals, setGoals] = useState<GoalDto[]>([]);
   const [catSearch, setCatSearch] = useState('');
   const [goalSearch, setGoalSearch] = useState('');
@@ -1736,6 +1750,13 @@ function CategoryGoalExplorer({ onEnterGoal }: {
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
   useEffect(() => { if (selectedCat) fetchGoals(selectedCat); else setGoals([]); }, [selectedCat, fetchGoals]);
+  useEffect(() => {
+    adminGoalApi.getPillars({ activeOnly: true })
+      .then(res => { if (res.success) setPillars((res.data ?? []).sort((a, b) => a.displayOrder - b.displayOrder)); })
+      .catch(() => { /* pillars are seeded & rarely change — a load miss just leaves the picker empty */ });
+  }, []);
+
+  const pillarById = useMemo(() => new Map(pillars.map(p => [p.pillarId, p])), [pillars]);
 
   const filteredCategories = categories.filter(c => {
     const q = catSearch.trim().toLowerCase();
@@ -1850,7 +1871,18 @@ function CategoryGoalExplorer({ onEnterGoal }: {
                       colour-only, and the word survives at any contrast. */}
                   <StatusPill active={cat.isActive} onLabel="On" compact />
                 </div>
-                <p className="text-[10px] text-sky-ink-3 font-mono mt-1">{cat.categoryCode}</p>
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <span className="text-[10px] text-sky-ink-3 font-mono">{cat.categoryCode}</span>
+                  {cat.pillarId ? (
+                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-sky-deep bg-sky-deep/10 rounded-full px-1.5 py-0.5">
+                      {pillarById.get(cat.pillarId)?.pillarName ?? `Pillar #${cat.pillarId}`}
+                    </span>
+                  ) : (
+                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-sky-rose-deep bg-sky-rose/12 rounded-full px-1.5 py-0.5">
+                      No pillar
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
                   <SkyButton type="button" variant="ghost" size="icon" onClick={() => handleToggleCat(cat)} className="w-6 h-6">
                     {cat.isActive ? <ToggleRight className="w-3.5 h-3.5 text-sky-teal" /> : <ToggleLeft className="w-3.5 h-3.5 text-sky-ink-3" />}
@@ -1932,7 +1964,7 @@ function CategoryGoalExplorer({ onEnterGoal }: {
       </div>
 
       {/* Modals */}
-      {catModal  !== null && <CategoryFormModal editing={catModal.editing} onSave={handleSaveCat} onClose={() => setCatModal(null)} />}
+      {catModal  !== null && <CategoryFormModal editing={catModal.editing} pillars={pillars} onSave={handleSaveCat} onClose={() => setCatModal(null)} />}
       {goalModal !== null && selectedCat && <GoalFormModal editing={goalModal.editing} defaultCategoryCode={selectedCat.categoryCode} onSave={handleSaveGoal} onClose={() => setGoalModal(null)} />}
       {delCat  && <ConfirmDeleteModal title="Delete Category?" body={`Delete "${delCat.categoryName}"? All goals inside must be deleted first.`} loading={delLoading} onConfirm={handleDeleteCat} onCancel={() => setDelCat(null)} />}
       {delGoal && <ConfirmDeleteModal title="Delete Goal?" body={`Delete "${delGoal.goalName}"? This cannot be undone.`} loading={delLoading} onConfirm={handleDeleteGoal} onCancel={() => setDelGoal(null)} />}

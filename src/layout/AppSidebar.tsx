@@ -8,6 +8,7 @@ import { useSidebar } from "../context/SidebarContext";
 import {
   Activity,
   BookOpen,
+  Boxes,
   ClipboardList,
   Coins,
   FileClock,
@@ -78,10 +79,15 @@ const navItems: NavItem[] = [
     path: "/quest-library",
   },
   {
+    icon: <Boxes className={navIcon} aria-hidden="true" />,
+    nameKey: "nav.admin.pillars",
+    path: "/pillars",
+    sectionKey: "nav.sections.PERSONALIZATION",
+  },
+  {
     icon: <Goal className={navIcon} aria-hidden="true" />,
     nameKey: "nav.admin.goalEngine",
     path: "/goal-engine",
-    sectionKey: "nav.sections.PERSONALIZATION",
   },
   {
     icon: <Link2 className={navIcon} aria-hidden="true" />,

@@ -57,6 +57,7 @@ import QuestionBank from "./pages/Mentor/QuestionBank";
 import PaymentResultPage from "./pages/Mentor/PaymentResultPage";
 import GoalTaskEngineHub from "./pages/GoalTaskEngineHub";
 import AdminGoalRelationshipManagement from "./pages/AdminGoalRelationshipManagement";
+import AdminPillarManagement from "./pages/AdminPillarManagement";
 
 export default function App() {
   return (
@@ -90,6 +91,7 @@ export default function App() {
               <Route path="/admin/parties" element={<AdminPartyManagement />} />
               <Route path="/admin/parties/:partyId" element={<AdminPartyDetail />} />
               <Route path="/target-rules" element={<TargetRuleManagement />} />
+              <Route path="/pillars" element={<AdminPillarManagement />} />
               <Route path="/goal-engine" element={<GoalTaskEngineHub />} />
               <Route path="/goal-relationships" element={<AdminGoalRelationshipManagement />} />
               <Route path="/questionnaires" element={<QuestionnaireManagement />} />

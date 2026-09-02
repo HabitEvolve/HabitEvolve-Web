@@ -1,6 +1,7 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/api.types';
 import {
+    PillarDto, PillarPayload,
     GoalCategoryDto, GoalCategoryPayload,
     GoalDto, GoalPayload,
     QuestionnaireTemplateDto, QuestionnaireTemplatePayload,
@@ -11,6 +12,35 @@ import {
 const ADMIN_URL = '/admin';
 
 export const adminGoalApi = {
+    // ==========================================
+    // 0. LIFESTYLE PILLARS (read-only)
+    // Controller: PillarController [Route("api/pillars")] — seeded, no admin CRUD.
+    // Needed so the Category form can offer the 4 pillars to map a category into.
+    // ==========================================
+    getPillars: async (params?: { activeOnly?: boolean }): Promise<ApiResponse<PillarDto[]>> => {
+        const res = await axiosClient.get(`/pillars`, { params });
+        return res.data;
+    },
+    createPillar: async (payload: PillarPayload): Promise<ApiResponse<PillarDto>> => {
+        const res = await axiosClient.post(`${ADMIN_URL}/pillars`, payload);
+        return res.data;
+    },
+    // BE UpdatePillarCommand requires PillarId in body to match route — injected here.
+    // pillarCode is excluded as it's immutable (not in UpdatePillarCommand).
+    updatePillar: async (id: number, payload: PillarPayload): Promise<ApiResponse<PillarDto>> => {
+        const { pillarCode: _pc, ...updateFields } = payload;
+        const res = await axiosClient.put(`${ADMIN_URL}/pillars/${id}`, { ...updateFields, pillarId: id });
+        return res.data;
+    },
+    togglePillarStatus: async (id: number, isActive: boolean): Promise<ApiResponse<PillarDto>> => {
+        const res = await axiosClient.patch(`${ADMIN_URL}/pillars/${id}/status`, isActive);
+        return res.data;
+    },
+    deletePillar: async (id: number): Promise<ApiResponse<any>> => {
+        const res = await axiosClient.delete(`${ADMIN_URL}/pillars/${id}`);
+        return res.data;
+    },
+
     // ==========================================
     // 1. GOAL CATEGORIES
     // Controller: GoalCategoryController [Route("api/goal-categories")]

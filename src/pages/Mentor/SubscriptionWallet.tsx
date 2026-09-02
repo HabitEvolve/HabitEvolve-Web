@@ -792,11 +792,15 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 interface CancelSubModalProps {
     subscriptionId: number;
     planName: string;
+    expiresAt?: string;
     onClose: () => void;
-    onSuccess: () => void;
+    // Passes back the date benefits actually run until, IF the cancellation was deferred (still
+    // "Active"); undefined means it took effect immediately (PendingPayment / permanent package —
+    // see MentorSubscription.Cancel on the BE) so the caller can show the right success message.
+    onSuccess: (deferredUntilIso?: string) => void;
 }
 
-const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: CancelSubModalProps) => {
+const CancelSubModal = ({ subscriptionId, planName, expiresAt, onClose, onSuccess }: CancelSubModalProps) => {
     const { t } = useTranslation();
     const alert = useAlert();
     const [loading, setLoading] = useState(false);
@@ -806,7 +810,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
         try {
             const res = await mentorApi.cancelSubscription(subscriptionId);
             if (res.success) {
-                onSuccess();
+                onSuccess(res.data?.status === "Active" ? res.data.expiresAt : undefined);
             } else {
                 alert.error(res.message || t("mentor.subscriptionWallet.cancellationFailed"));
             }
@@ -840,12 +844,20 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                     </div>
                 </div>
 
-                {/* Downgrade warning */}
-                <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/8 ring-1 ring-white/70 p-4 pl-5 mb-5 space-y-3">
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+                {/* Cancelling stops renewal, it doesn't confiscate what's already paid for — so this
+                    reads as a heads-up about what happens LATER, not an immediate-loss warning
+                    (peach/attention, not the rose "you're about to lose this now" tone). */}
+                <div className="relative overflow-hidden rounded-sky-chip bg-sky-peach/10 ring-1 ring-white/70 p-4 pl-5 mb-5 space-y-3">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" aria-hidden="true" />
                     <p className="text-sm font-semibold text-sky-ink">
-                        {t("mentor.subscriptionWallet.cancelWarning", { freeTier: t("mentor.subscriptionWallet.freeTier") })}
+                        {expiresAt
+                            ? t("mentor.subscriptionWallet.cancelWarningWithDate", {
+                                date: new Date(expiresAt).toLocaleDateString(),
+                                freeTier: t("mentor.subscriptionWallet.freeTier"),
+                            })
+                            : t("mentor.subscriptionWallet.cancelWarning", { freeTier: t("mentor.subscriptionWallet.freeTier") })}
                     </p>
+                    <p className="text-xs font-semibold text-sky-ink-3">{t("mentor.subscriptionWallet.cancelWhenItEnds")}</p>
                     <ul className="space-y-1.5">
                         {[
                             t("mentor.subscriptionWallet.cancelLimit1"),
@@ -853,7 +865,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                             t("mentor.subscriptionWallet.cancelLimit3"),
                         ].map((item) => (
                             <li key={item} className="flex items-center gap-2 text-xs font-medium text-sky-ink-2">
-                                <span className="inline-grid place-items-center w-4 h-4 shrink-0 rounded-full bg-sky-rose/18 text-sky-rose-deep">
+                                <span className="inline-grid place-items-center w-4 h-4 shrink-0 rounded-full bg-sky-peach/20 text-sky-peach-deep">
                                     <TrendingDown className="w-2.5 h-2.5" />
                                 </span>
                                 {item}
@@ -891,6 +903,9 @@ export default function SubscriptionWallet() {
     const [showCancel, setShowCancel] = useState(false);
     const [purchaseResult, setPurchaseResult] = useState<PurchaseSubscriptionResultDto | null>(null);
     const [cancelSuccess, setCancelSuccess] = useState(false);
+    // Set only when the cancellation was deferred (benefits kept until this date) — undefined means
+    // it took effect immediately, so the success banner knows which message to show.
+    const [cancelDeferredUntil, setCancelDeferredUntil] = useState<string | undefined>(undefined);
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
@@ -987,10 +1002,11 @@ export default function SubscriptionWallet() {
         refetchWallet(); // purchase spends gems — keep the header chip in sync
     };
 
-    const handleCancelSuccess = () => {
+    const handleCancelSuccess = (deferredUntilIso?: string) => {
         setShowCancel(false);
         setCancelSuccess(true);
-        fetchAll(); // re-fetch everything so usage bars + plan card reset to FREE tier
+        setCancelDeferredUntil(deferredUntilIso);
+        fetchAll(); // re-fetch everything so usage bars + plan card reset to FREE tier (once it actually ends)
     };
 
     if (loading) {
@@ -1003,8 +1019,11 @@ export default function SubscriptionWallet() {
 
     const usage = activeSub?.usage;
     const plan = activeSub?.package;
-    // Only show Cancel when the mentor has a real paid subscription that is currently active
-    const canCancel = !activeSub?.isDefaultFree && (activeSub?.subscription?.isCurrentlyActive ?? false);
+    // Cancelling no longer revokes access immediately (BE keeps IsCurrentlyActive true until the
+    // already-paid ExpiresAt) — cancelledAt is what actually records "won't renew", so once it's
+    // set the button must disappear even though the subscription still reads as currently active.
+    const isPendingCancellation = !!activeSub?.subscription?.cancelledAt;
+    const canCancel = !activeSub?.isDefaultFree && (activeSub?.subscription?.isCurrentlyActive ?? false) && !isPendingCancellation;
 
     return (
         <>
@@ -1041,7 +1060,9 @@ export default function SubscriptionWallet() {
                     icon={<TrendingDown className="w-5 h-5" />}
                     onDismiss={() => setCancelSuccess(false)}
                 >
-                    {t("mentor.subscriptionWallet.cancelledDowngrade")}
+                    {cancelDeferredUntil
+                        ? t("mentor.subscriptionWallet.cancelledDeferred", { date: new Date(cancelDeferredUntil).toLocaleDateString() })
+                        : t("mentor.subscriptionWallet.cancelledDowngrade")}
                 </Notice>
             )}
 
@@ -1114,17 +1135,28 @@ export default function SubscriptionWallet() {
                                                 FREE
                                             </span>
                                         )}
-                                        {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && (
+                                        {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && !isPendingCancellation && (
                                             <span className="sky-badge sky-badge-success">
                                                 <Check className="w-3 h-3" />
                                                 ACTIVE
+                                            </span>
+                                        )}
+                                        {/* Cancelled but the paid period hasn't run out yet — teal ACTIVE would lie
+                                            about what happens next, so this gets its own (peach, never green/red —
+                                            it's neither a win nor a failure) badge instead. */}
+                                        {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && isPendingCancellation && (
+                                            <span className="sky-badge sky-badge-pending">
+                                                <Clock className="w-3 h-3" />
+                                                {t("mentor.subscriptionWallet.cancelledPendingBadge")}
                                             </span>
                                         )}
                                     </div>
                                     {activeSub?.subscription?.expiresAt && (
                                         <p className="inline-flex items-center gap-1.5 text-xs text-sky-ink-2 font-medium tabular-nums">
                                             <Clock className="w-3.5 h-3.5 text-sky-ink-3" />
-                                            {t("mentor.subscriptionWallet.expires")}: {new Date(activeSub.subscription.expiresAt).toLocaleDateString()}
+                                            {isPendingCancellation
+                                                ? t("mentor.subscriptionWallet.accessUntil", { date: new Date(activeSub.subscription.expiresAt).toLocaleDateString() })
+                                                : <>{t("mentor.subscriptionWallet.expires")}: {new Date(activeSub.subscription.expiresAt).toLocaleDateString()}</>}
                                         </p>
                                     )}
                                     {plan.description && (
@@ -1390,6 +1422,7 @@ export default function SubscriptionWallet() {
                 <CancelSubModal
                     subscriptionId={activeSub.subscription.mentorSubscriptionId}
                     planName={activeSub.package.name}
+                    expiresAt={activeSub.subscription.expiresAt}
                     onClose={() => setShowCancel(false)}
                     onSuccess={handleCancelSuccess}
                 />

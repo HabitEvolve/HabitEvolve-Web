@@ -139,6 +139,21 @@ const TraitRow = ({
 /** Hairline rule between card sections — lighter than a border, enough to group. */
 const CardRule = () => <div className="relative my-4 h-px bg-sky-ink/8" aria-hidden="true" />;
 
+// Per-difficulty quest caps are additive on top of questsPerMemberPerDay/partyQuestsPerWeek and
+// almost always null (most plans don't bother capping a specific difficulty) — so this renders
+// nothing at all unless at least one is actually set, rather than a permanent row of "∞ ∞ ∞".
+// Reuses TraitRow's chip-per-comma-value rendering instead of a bespoke layout.
+const buildDifficultyCapValue = (pkg: SubscriptionPackageDto): string | null => {
+    const entries: string[] = [];
+    if (pkg.maxEasyQuestsPerMemberPerDay != null) entries.push(`EASY ${pkg.maxEasyQuestsPerMemberPerDay}/day`);
+    if (pkg.maxNormalQuestsPerMemberPerDay != null) entries.push(`NORMAL ${pkg.maxNormalQuestsPerMemberPerDay}/day`);
+    if (pkg.maxHardQuestsPerMemberPerDay != null) entries.push(`HARD ${pkg.maxHardQuestsPerMemberPerDay}/day`);
+    if (pkg.maxEasyPartyQuestsPerWeek != null) entries.push(`EASY ${pkg.maxEasyPartyQuestsPerWeek}/wk`);
+    if (pkg.maxNormalPartyQuestsPerWeek != null) entries.push(`NORMAL ${pkg.maxNormalPartyQuestsPerWeek}/wk`);
+    if (pkg.maxHardPartyQuestsPerWeek != null) entries.push(`HARD ${pkg.maxHardPartyQuestsPerWeek}/wk`);
+    return entries.length > 0 ? entries.join(",") : null;
+};
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getMentorId = () => {
     const id = localStorage.getItem("user_id");
@@ -221,6 +236,105 @@ const UsageBar = ({ label, used, max }: { label: string; used: number; max: numb
             <p className="mt-1.5 text-[10px] font-medium text-sky-ink-3 tabular-nums">
                 {Math.round(pct)}%
             </p>
+        </div>
+    );
+};
+
+// ── BALANCE TREND SPARKLINE ───────────────────────────────────────────────────
+// The stat-tile "trend" slot: a compact line reading balance-after over the most
+// recent transactions, in the same hue as the headline balance it sits under (one
+// series needs no legend — the figure above it already says what's plotted).
+// Index-spaced on X (a sparkline, not an axis-labeled time series) — the shape is
+// "went up / went down / flat", not exact spacing between transactions.
+const SPARK_W = 220;
+const SPARK_H = 48;
+const SPARK_PAD_Y = 6;
+
+const BalanceSparkline = ({ transactions }: { transactions: GemTransactionDto[] }) => {
+    const { t } = useTranslation();
+    const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+    const points = useMemo(() => {
+        // API returns newest-first (matches the Logbook); a trend line reads left→right
+        // as oldest→newest, so reverse and keep the most recent 12 (the stat-tile spec).
+        const chronological = [...transactions].reverse();
+        return chronological.slice(-12).map((tx) => ({ value: tx.balanceAfter, date: tx.createdAt }));
+    }, [transactions]);
+
+    if (points.length < 2) return null;
+
+    const values = points.map((p) => p.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1; // flat series still draws a centered line, not a div/0
+
+    const xAt = (i: number) => (i / (points.length - 1)) * SPARK_W;
+    const yAt = (v: number) =>
+        SPARK_H - SPARK_PAD_Y - ((v - min) / span) * (SPARK_H - SPARK_PAD_Y * 2);
+
+    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${xAt(i)},${yAt(p.value)}`).join(" ");
+    const areaPath = `${linePath} L${xAt(points.length - 1)},${SPARK_H} L${xAt(0)},${SPARK_H} Z`;
+
+    const hovered = hoverIndex != null ? points[hoverIndex] : null;
+    const hoverPct = hoverIndex != null ? (hoverIndex / (points.length - 1)) * 100 : 0;
+
+    const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        const idx = Math.round(ratio * (points.length - 1));
+        setHoverIndex(Math.max(0, Math.min(points.length - 1, idx)));
+    };
+
+    return (
+        <div className="relative">
+            <svg
+                viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+                width="100%"
+                height={SPARK_H}
+                className="block overflow-visible text-sky-peach-deep"
+                role="img"
+                aria-label={t(
+                    "mentor.subscriptionWallet.balanceTrendLabel",
+                    "Gem balance trend over the last {{count}} transactions, from {{from}} to {{to}}",
+                    { count: points.length, from: points[0].value.toLocaleString(), to: points[points.length - 1].value.toLocaleString() }
+                )}
+                tabIndex={0}
+                onFocus={() => setHoverIndex(points.length - 1)}
+                onBlur={() => setHoverIndex(null)}
+            >
+                <defs>
+                    <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
+                    </linearGradient>
+                </defs>
+                <path d={areaPath} fill="url(#sparkFill)" stroke="none" />
+                <path d={linePath} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                {hovered && (
+                    <>
+                        <line
+                            x1={xAt(hoverIndex!)} x2={xAt(hoverIndex!)}
+                            y1={0} y2={SPARK_H}
+                            stroke="currentColor" strokeOpacity={0.25} strokeWidth={1}
+                        />
+                        <circle cx={xAt(hoverIndex!)} cy={yAt(hovered.value)} r={4} fill="currentColor" stroke="white" strokeWidth={2} />
+                    </>
+                )}
+                {/* Hover hit layer — wider than the 2px line so the pointer only has to be close, not exact. */}
+                <rect
+                    x={0} y={0} width={SPARK_W} height={SPARK_H} fill="transparent"
+                    onMouseMove={handleMove}
+                    onMouseLeave={() => setHoverIndex(null)}
+                />
+            </svg>
+            {hovered && (
+                <div
+                    className="pointer-events-none absolute -top-8 z-10 -translate-x-1/2 whitespace-nowrap rounded-sky-chip bg-sky-ink px-2 py-1 text-[10px] font-semibold text-white shadow-sky-chip"
+                    style={{ left: `${hoverPct}%` }}
+                >
+                    {hovered.value.toLocaleString()} 💎 · {new Date(hovered.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </div>
+            )}
         </div>
     );
 };
@@ -408,6 +522,7 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                     {[
                         [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes],
                         ["Proof Types", pkg.proofTypes],
+                        ...(buildDifficultyCapValue(pkg) ? [[t("mentor.subscriptionWallet.questCaps", "Quest Caps"), buildDifficultyCapValue(pkg)!]] : []),
                     ].map(([label, csv]) => (
                         <div key={label} className="flex justify-between gap-3 text-sm font-medium">
                             <span className="text-sky-ink-2 shrink-0">{label}</span>
@@ -863,6 +978,19 @@ export default function SubscriptionWallet() {
 
     useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
+    // Lifetime totals for the Gems card — derived from the logbook already fetched above rather
+    // than a new endpoint. Fills what used to be a large empty gap between the Top Up button and
+    // the balance with something a mentor actually cares about (where the balance came from).
+    const walletStats = useMemo(() => {
+        const totalToppedUp = transactions
+            .filter((tx) => tx.type === "TOPUP" && tx.status === "Completed")
+            .reduce((sum, tx) => sum + tx.gemAmount, 0);
+        const totalSpent = transactions
+            .filter((tx) => tx.type === "PURCHASE")
+            .reduce((sum, tx) => sum + tx.gemAmount, 0);
+        return { totalToppedUp, totalSpent };
+    }, [transactions]);
+
     // Client-side pagination — GET /mentor/wallet/transactions doesn't accept
     // pageNumber/pageSize on the BE (unlike the Admin list endpoints), so there's no
     // server-side page to request. Paginating the already-fetched list locally still
@@ -958,6 +1086,27 @@ export default function SubscriptionWallet() {
                             <Plus className="w-3.5 h-3.5" /> {t("mentor.subscriptionWallet.topUp")}
                         </SkyButton>
                     </div>
+
+                    {/* Lifetime totals — quiet, secondary numbers so the balance below stays the
+                        loudest thing on the card. Only shown once the logbook has something to
+                        summarize, so an empty history doesn't render two "0" tiles. */}
+                    {!loadingTx && (walletStats.totalToppedUp > 0 || walletStats.totalSpent > 0) && (
+                        <div className="relative grid grid-cols-2 gap-2.5">
+                            <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3 py-2.5">
+                                <p className={eyebrow}>{t("mentor.subscriptionWallet.totalToppedUp", "Total Topped Up")}</p>
+                                <p className="mt-1 flex items-center gap-1 font-display text-base font-semibold tabular-nums text-sky-teal">
+                                    +{walletStats.totalToppedUp.toLocaleString()} <GemIcon className="w-3.5 h-3.5" />
+                                </p>
+                            </div>
+                            <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3 py-2.5">
+                                <p className={eyebrow}>{t("mentor.subscriptionWallet.totalSpent", "Total Spent")}</p>
+                                <p className="mt-1 flex items-center gap-1 font-display text-base font-semibold tabular-nums text-sky-rose-deep">
+                                    -{walletStats.totalSpent.toLocaleString()} <GemIcon className="w-3.5 h-3.5" />
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* The balance is the loudest number on the page — everything
                         around it stays quiet so it can be. */}
                     <div className="relative mt-auto">
@@ -965,6 +1114,7 @@ export default function SubscriptionWallet() {
                         <div className="font-display text-5xl font-semibold text-sky-peach-deep leading-none tabular-nums mt-1.5">
                             {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
                         </div>
+                        {!loadingTx && <div className="mt-2"><BalanceSparkline transactions={transactions} /></div>}
                         {wallet && (
                             <p className="text-sky-small text-sky-ink-2 font-medium mt-2 tabular-nums">
                                 Rate: 1 <GemIcon className="w-3.5 h-3.5" /> = {wallet.vndPerGem.toLocaleString()} VND
@@ -1185,6 +1335,12 @@ export default function SubscriptionWallet() {
                                     <TraitRow label={t("mentor.subscriptionWallet.bossModes")} value={pkg.bossModes} />
                                     <TraitRow label={t("mentor.subscriptionWallet.rewardTier")} value={pkg.rewardTier} />
                                     {pkg.proofTypes && <TraitRow label="Proof" value={pkg.proofTypes} />}
+                                    {buildDifficultyCapValue(pkg) && (
+                                        <TraitRow
+                                            label={t("mentor.subscriptionWallet.questCaps", "Quest Caps")}
+                                            value={buildDifficultyCapValue(pkg)!}
+                                        />
+                                    )}
                                     {pkg.aiVerificationBossModes ? (
                                         <TraitRow
                                             label="AI"

@@ -625,7 +625,11 @@
       "upToParties": "Tối đa {{count}} nhóm",
       "membersPerParty": "thành viên/nhóm",
       "questsPerMemberDay": "nhiệm vụ/thành viên/ngày",
-      "rewardTier": "Cấp Thưởng"
+      "rewardTier": "Cấp Thưởng",
+      "questCaps": "Giới Hạn Nhiệm Vụ",
+      "totalToppedUp": "Tổng Đã Nạp",
+      "totalSpent": "Tổng Đã Chi",
+      "balanceTrendLabel": "Xu hướng số dư Gem qua {{count}} giao dịch gần nhất, từ {{from}} đến {{to}}"
     },
     "proofQueue": {
       "pageTitle": "Phòng Phán Xét",

@@ -625,7 +625,11 @@
       "upToParties": "Up to {{count}} parties",
       "membersPerParty": "members per party",
       "questsPerMemberDay": "quests/member/day",
-      "rewardTier": "Reward Tier"
+      "rewardTier": "Reward Tier",
+      "questCaps": "Quest Caps",
+      "totalToppedUp": "Total Topped Up",
+      "totalSpent": "Total Spent",
+      "balanceTrendLabel": "Gem balance trend over the last {{count}} transactions, from {{from}} to {{to}}"
     },
     "proofQueue": {
       "pageTitle": "The Judgement Hall",

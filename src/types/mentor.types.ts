@@ -16,6 +16,14 @@ export interface SubscriptionPackageDto {
     proofTypes: string;              // CSV: "Photo,Video"
     rewardTier: string;
     aiVerificationBossModes: string; // CSV: "" | "Normal" | "Normal,Hard"
+    // Per-difficulty quest caps — ADDITIVE on top of questsPerMemberPerDay/partyQuestsPerWeek
+    // above, not a replacement. null = no separate cap for that difficulty.
+    maxEasyQuestsPerMemberPerDay: number | null;
+    maxNormalQuestsPerMemberPerDay: number | null;
+    maxHardQuestsPerMemberPerDay: number | null;
+    maxEasyPartyQuestsPerWeek: number | null;
+    maxNormalPartyQuestsPerWeek: number | null;
+    maxHardPartyQuestsPerWeek: number | null;
     isActive: boolean;
     createdAt: string;
     updatedAt?: string;

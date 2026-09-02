@@ -70,6 +70,9 @@ interface PackageFormState {
   maxEasyPerWeek: string;
   maxNormalPerWeek: string;
   maxHardPerWeek: string;
+  // Edit-mode only, one-off action for THIS save (not a package property) — always starts unchecked
+  // regardless of the package being edited, matching the snapshot model's opt-in default.
+  applyToExistingSubscribers: boolean;
 }
 
 const EMPTY_FORM: PackageFormState = {
@@ -94,6 +97,7 @@ const EMPTY_FORM: PackageFormState = {
   maxEasyPerWeek: '',
   maxNormalPerWeek: '',
   maxHardPerWeek: '',
+  applyToExistingSubscribers: false,
 };
 
 const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
@@ -118,6 +122,7 @@ const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
   maxEasyPerWeek: pkg.maxEasyPartyQuestsPerWeek?.toString() ?? '',
   maxNormalPerWeek: pkg.maxNormalPartyQuestsPerWeek?.toString() ?? '',
   maxHardPerWeek: pkg.maxHardPartyQuestsPerWeek?.toString() ?? '',
+  applyToExistingSubscribers: false,
 });
 
 // '' → undefined (no cap sent, BE treats missing as null/unbounded); otherwise parse to int.
@@ -280,7 +285,9 @@ interface PackageFormModalProps {
   mode: 'create' | 'edit';
   initial?: SubscriptionPackageDto;
   onClose: () => void;
-  onSuccess: () => void;
+  // subscribersUpdated is only meaningful for an edit that had "Apply immediately" checked — undefined
+  // otherwise, so the caller can tell "nothing to report" apart from "applied to 0 mentors".
+  onSuccess: (subscribersUpdated?: number) => void;
 }
 
 const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModalProps) => {
@@ -331,18 +338,21 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         maxHardPartyQuestsPerWeek: parseOptionalCap(form.maxHardPerWeek),
       };
 
-      let res;
       if (mode === 'create') {
-        res = await adminSubscriptionApi.createPackage({
+        const res = await adminSubscriptionApi.createPackage({
           ...base,
           code: form.code.trim().toUpperCase(),
         });
+        if (!res.success) throw new Error(res.message);
+        onSuccess();
       } else {
-        res = await adminSubscriptionApi.updatePackage(initial!.packageId, base);
+        const res = await adminSubscriptionApi.updatePackage(initial!.packageId, {
+          ...base,
+          applyToExistingSubscribers: form.applyToExistingSubscribers,
+        });
+        if (!res.success) throw new Error(res.message);
+        onSuccess(form.applyToExistingSubscribers ? res.data?.subscribersUpdated : undefined);
       }
-
-      if (!res.success) throw new Error(res.message);
-      onSuccess();
     } catch (e) {
       alert.error(errMsg(e));
     } finally {
@@ -590,6 +600,32 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
               </Field>
             </div>
           </div>
+
+          {/* Edit-only: opt-in override of the snapshot model (a new/renewed subscription always picks
+              up the latest values; this is the one path that reaches back into an ALREADY-active
+              mentor's entitlements). Peach, not violet like the sections above — this one has a real
+              consequence the admin should notice, not just another field to fill in. */}
+          {mode === 'edit' && (
+            <div className="relative overflow-hidden rounded-sky-chip bg-sky-peach/10 ring-1 ring-sky-peach/25 p-4 pl-5">
+              <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={form.applyToExistingSubscribers}
+                  onChange={e => set('applyToExistingSubscribers', e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded accent-sky-peach-deep"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-sky-ink">
+                    {t('admin.subscriptionPage.form.applyImmediatelyLabel')}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-medium text-sky-ink-2">
+                    {t('admin.subscriptionPage.form.applyImmediatelyHint')}
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
 
           {error && (
             <div className="relative flex items-start gap-2.5 overflow-hidden rounded-sky-chip bg-sky-rose/10 pl-4 pr-4 py-2.5 text-sm font-semibold text-sky-rose-deep">
@@ -1108,26 +1144,39 @@ export default function AdminSubscriptionPage() {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
-                          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setFormModal({ mode: 'edit', pkg })}>
-                            <Pencil className="w-3.5 h-3.5" />
-                            {t('admin.subscriptionPage.editBtn')}
+                          {/* Icon-only — labels moved to aria-label/title (hover tooltip + screen readers)
+                              now that there's no visible text to carry the meaning. */}
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            onClick={() => setFormModal({ mode: 'edit', pkg })}
+                            aria-label={t('admin.subscriptionPage.editBtn')}
+                            title={t('admin.subscriptionPage.editBtn')}
+                          >
+                            <Pencil className="w-4 h-4" />
                           </SkyButton>
-                          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setHistoryTarget(pkg)}>
-                            <HistoryIcon className="w-3.5 h-3.5" />
-                            {t('admin.subscriptionPage.historyBtn')}
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            onClick={() => setHistoryTarget(pkg)}
+                            aria-label={t('admin.subscriptionPage.historyBtn')}
+                            title={t('admin.subscriptionPage.historyBtn')}
+                          >
+                            <HistoryIcon className="w-4 h-4" />
                           </SkyButton>
                           <SkyButton
                             type="button"
                             variant={pkg.isActive ? 'destructive' : 'success'}
-                            size="sm"
+                            size="icon"
                             onClick={() => setToggleTarget(pkg)}
+                            aria-label={pkg.isActive ? t('admin.subscriptionPage.deactivateBtn') : t('admin.subscriptionPage.activateBtn')}
+                            title={pkg.isActive ? t('admin.subscriptionPage.deactivateBtn') : t('admin.subscriptionPage.activateBtn')}
                           >
                             {pkg.isActive
-                              ? <PowerOff className="w-3.5 h-3.5" />
-                              : <Power className="w-3.5 h-3.5" />}
-                            {pkg.isActive
-                              ? t('admin.subscriptionPage.deactivateBtn')
-                              : t('admin.subscriptionPage.activateBtn')}
+                              ? <PowerOff className="w-4 h-4" />
+                              : <Power className="w-4 h-4" />}
                           </SkyButton>
                         </div>
                       </td>
@@ -1182,10 +1231,12 @@ export default function AdminSubscriptionPage() {
           mode={formModal.mode}
           initial={formModal.pkg}
           onClose={() => setFormModal(null)}
-          onSuccess={() => {
+          onSuccess={(subscribersUpdated) => {
             const msg = formModal.mode === 'create'
               ? t('admin.subscriptionPage.toastCreated')
-              : t('admin.subscriptionPage.toastUpdated');
+              : subscribersUpdated
+                ? t('admin.subscriptionPage.toastUpdatedWithCount', { count: subscribersUpdated })
+                : t('admin.subscriptionPage.toastUpdated');
             setFormModal(null);
             alert.success(msg);
             fetchPackages();

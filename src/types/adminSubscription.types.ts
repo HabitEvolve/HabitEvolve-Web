@@ -97,6 +97,15 @@ export interface UpdatePackagePayload {
   maxEasyPartyQuestsPerWeek?: number | null;
   maxNormalPartyQuestsPerWeek?: number | null;
   maxHardPartyQuestsPerWeek?: number | null;
+  // Default false — matches the snapshot model (only new purchases/renewals pick up the change).
+  // true forces an immediate re-snapshot for every mentor currently on this package.
+  applyToExistingSubscribers?: boolean;
+}
+
+// Response data for PUT /api/admin/packages/{id}  (BE: UpdatePackageResultDto)
+export interface UpdatePackageResultDto {
+  package: SubscriptionPackageDto;
+  subscribersUpdated: number;
 }
 
 // Payload for PATCH /api/admin/packages/{id}/status  (BE: TogglePackageStatusCommand)

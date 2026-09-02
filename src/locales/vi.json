@@ -1316,6 +1316,7 @@
       "paginationInfo": "Trang {{page}} / {{totalPages}} · {{total}} tổng",
       "toastCreated": "Tạo gói thành công!",
       "toastUpdated": "Cập nhật gói thành công!",
+      "toastUpdatedWithCount": "Đã cập nhật gói — áp dụng ngay cho {{count}} mentor đang giữ gói này.",
       "toastStatusChanged": "Gói \"{{code}}\" hiện đang {{status}}.",
       "table": {
         "code": "Mã",
@@ -1368,7 +1369,9 @@
         "maxHardPerDayLabel": "Tối Đa Nhiệm Vụ HARD / Thành Viên / Ngày",
         "maxEasyPerWeekLabel": "Tối Đa Party Quest EASY / Tuần",
         "maxNormalPerWeekLabel": "Tối Đa Party Quest NORMAL / Tuần",
-        "maxHardPerWeekLabel": "Tối Đa Party Quest HARD / Tuần"
+        "maxHardPerWeekLabel": "Tối Đa Party Quest HARD / Tuần",
+        "applyImmediatelyLabel": "Áp dụng ngay cho mentor đang giữ gói",
+        "applyImmediatelyHint": "Mặc định, thay đổi chỉ áp dụng cho lần mua/gia hạn mới — mentor đang giữ gói này vẫn giữ nguyên như lúc họ đăng ký. Tick vào đây để cập nhật NGAY cho tất cả mentor đang giữ gói, kể cả những gì họ đã trả tiền trước đó."
       },
       "toggleModal": {
         "deactivateTitle": "⛔ Vô Hiệu Gói",

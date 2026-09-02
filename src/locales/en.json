@@ -1306,9 +1306,9 @@
       "retry": "Retry",
       "prevPage": "← Prev",
       "nextPage": "Next →",
-      "editBtn": "✏️ Edit",
+      "editBtn": "Edit",
       "historyBtn": "History",
-      "deactivateBtn": "⛔ Deactivate",
+      "deactivateBtn": "Deactivate",
       "activateBtn": "✅ Activate",
       "statusActive": "ACTIVE",
       "statusInactive": "INACTIVE",
@@ -1316,6 +1316,7 @@
       "paginationInfo": "Page {{page}} of {{totalPages}} · {{total}} total",
       "toastCreated": "Package created successfully!",
       "toastUpdated": "Package updated successfully!",
+      "toastUpdatedWithCount": "Package updated — applied immediately to {{count}} existing subscriber(s).",
       "toastStatusChanged": "Package \"{{code}}\" is now {{status}}.",
       "table": {
         "code": "Code",
@@ -1368,7 +1369,9 @@
         "maxHardPerDayLabel": "Max HARD Quests / Member / Day",
         "maxEasyPerWeekLabel": "Max EASY Party Quests / Week",
         "maxNormalPerWeekLabel": "Max NORMAL Party Quests / Week",
-        "maxHardPerWeekLabel": "Max HARD Party Quests / Week"
+        "maxHardPerWeekLabel": "Max HARD Party Quests / Week",
+        "applyImmediatelyLabel": "Apply immediately to existing subscribers",
+        "applyImmediatelyHint": "By default, changes only apply to new purchases and renewals — mentors already on this plan keep what they signed up for. Check this to update everyone currently subscribed right now, including what they've already paid for."
       },
       "toggleModal": {
         "deactivateTitle": "⛔ Deactivate Package",

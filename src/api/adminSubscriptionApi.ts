@@ -4,6 +4,7 @@ import {
   SubscriptionPackageDto,
   CreatePackagePayload,
   UpdatePackagePayload,
+  UpdatePackageResultDto,
   TogglePackageStatusPayload,
   GetPackagesQueryParams,
 } from '../types/adminSubscription.types';
@@ -30,8 +31,8 @@ const adminSubscriptionApi = {
   },
 
   // PUT /api/admin/packages/{id} — Code is immutable, not sent
-  updatePackage: async (id: number, payload: UpdatePackagePayload): Promise<ApiResponse<SubscriptionPackageDto>> => {
-    const res = await axiosClient.put<ApiResponse<SubscriptionPackageDto>>(`${PACKAGES_URL}/${id}`, payload);
+  updatePackage: async (id: number, payload: UpdatePackagePayload): Promise<ApiResponse<UpdatePackageResultDto>> => {
+    const res = await axiosClient.put<ApiResponse<UpdatePackageResultDto>>(`${PACKAGES_URL}/${id}`, payload);
     return res.data;
   },
 

@@ -742,13 +742,16 @@
       "dispatchBtn": "Bắn Reminder",
       "dispatching": "Đang gửi…",
       "dispatchSuccess": "Đã gửi reminder thành công!",
+      "dispatchNoOp": "Đã gửi, nhưng hiện không có gì để thông báo.",
       "dispatchFailed": "Gửi reminder thất bại.",
       "type": "Loại",
       "notifications": "Thông Báo Đã Tạo",
       "chatMessages": "Tin Party Chat",
       "guildRally": "Hiệu Triệu Guild",
       "guildRallySubtitle": "Thổi kèn tập hợp — chọn một lời hiệu triệu và gửi tới cả nhóm.",
-      "autoRallySchedule": "Lịch Hiệu Triệu Tự Động",
+      "autoRallySchedule": "Cài Đặt",
+      "autoRallyMasterLabel": "Hiệu Triệu Tự Động",
+      "autoRallyMasterHint": "Bật để dùng nhắc nhở tự động — chỉnh chi tiết từng loại bên dưới.",
       "sharedHpLabel": "Shared HP",
       "rallyTemplates": {
         "bossAlert": { "title": "Cảnh Báo Boss", "flavor": "Sắp hết giờ diệt Boss! Dậy làm quest đi các đồng chí!" },
@@ -763,7 +766,11 @@
       "channelInApp": "Trong Ứng Dụng",
       "channelPush": "Push",
       "channelEmail": "Email",
-      "channelPartyChat": "Party Chat"
+      "channelPartyChat": "Party Chat",
+      "customRallyLabel": "Hoặc tự soạn nội dung riêng",
+      "customRallyTitlePlaceholder": "Tiêu đề (VD: Nước rút cuối tuần!)",
+      "customRallyContentPlaceholder": "Bạn muốn nhắn gì cho cả team?",
+      "sendCustomRally": "Gửi"
     },
     "workspace": {
       "tabsAria": "Các mục trong không gian nhóm",

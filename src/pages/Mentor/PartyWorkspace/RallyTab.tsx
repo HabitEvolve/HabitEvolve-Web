@@ -104,6 +104,8 @@ export default function RallyTab() {
   const [rallyDispatching, setRallyDispatching] = useState<string | null>(null);
   const [rallyResult, setRallyResult] = useState<ReminderDispatchResultDto | null>(null);
   const [showRallySchedule, setShowRallySchedule] = useState(false);
+  const [customTitle, setCustomTitle] = useState("");
+  const [customContent, setCustomContent] = useState("");
 
   const loadRallyData = useCallback(async () => {
     setRallyRiskLoading(true);
@@ -166,7 +168,52 @@ export default function RallyTab() {
       const res = await partyReminderApi.dispatchReminders(partyId, reminderType);
       if (res.success && res.data) {
         setRallyResult(res.data);
-        notify.success(t("mentor.partyReminder.dispatchSuccess"));
+        const sentNothing = res.data.notificationsCreated === 0 && res.data.chatMessagesCreated === 0;
+        if (sentNothing) notify.info(t("mentor.partyReminder.dispatchNoOp"));
+        else notify.success(t("mentor.partyReminder.dispatchSuccess"));
+      } else {
+        notify.error(res.message || t("mentor.partyReminder.dispatchFailed"));
+      }
+    } catch (err: any) {
+      notify.error(err?.response?.data?.message || t("mentor.partyReminder.dispatchFailed"));
+    } finally {
+      setRallyDispatching(null);
+    }
+  };
+
+  // Master on/off for the whole auto-dispatch feature — a fast "all on / all off" shortcut on
+  // top of the 4 per-type toggles below (Quest Deadline 2h/30m, Daily, Weekly Boss), which stay
+  // independently adjustable once this is on. Purely derived/client-side: there's no separate
+  // "auto rally enabled" field on the backend, this just reads/writes all 4 flags together.
+  const autoRallyEnabled =
+    rallySettings.questDeadline2hEnabled || rallySettings.questDeadline30mEnabled ||
+    rallySettings.dailyReminderEnabled || rallySettings.weeklyBossReminderEnabled;
+  const handleToggleAutoRally = (v: boolean) =>
+    setRallySettings((s) => ({
+      ...s,
+      questDeadline2hEnabled: v,
+      questDeadline30mEnabled: v,
+      dailyReminderEnabled: v,
+      weeklyBossReminderEnabled: v,
+    }));
+
+  const CUSTOM_RALLY_KEY = "CUSTOM";
+  const handleSendCustomRally = async () => {
+    const title = customTitle.trim();
+    const content = customContent.trim();
+    if (!title || !content) return;
+
+    setRallyDispatching(CUSTOM_RALLY_KEY);
+    setRallyResult(null);
+    try {
+      const res = await partyReminderApi.sendCustomRally(partyId, title, content);
+      if (res.success && res.data) {
+        setRallyResult(res.data);
+        setCustomTitle("");
+        setCustomContent("");
+        const sentNothing = res.data.notificationsCreated === 0 && res.data.chatMessagesCreated === 0;
+        if (sentNothing) notify.info(t("mentor.partyReminder.dispatchNoOp"));
+        else notify.success(t("mentor.partyReminder.dispatchSuccess"));
       } else {
         notify.error(res.message || t("mentor.partyReminder.dispatchFailed"));
       }
@@ -253,46 +300,115 @@ export default function RallyTab() {
         ) : null}
 
         <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-          {RALLY_TEMPLATES.map((tpl) => (
-            <button
-              key={tpl.type}
-              type="button"
-              onClick={() => handleDispatchRally(tpl.type)}
-              disabled={rallyDispatching !== null}
-              className={`text-left p-4 rounded-sky-chip ring-1 ${tpl.tint} transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-safe:hover:-translate-y-px hover:shadow-sky-chip active:translate-y-0 active:scale-[0.99] disabled:opacity-55 disabled:cursor-not-allowed disabled:translate-y-0`}
-            >
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="inline-flex items-center gap-2 font-semibold text-sm text-sky-ink">
-                  <span className={`shrink-0 ${tpl.accent}`}>{tpl.icon}</span> {tpl.title}
-                </span>
-                {rallyDispatching === tpl.type && <Spinner size={14} />}
-              </div>
-              <p className="text-xs text-sky-ink-2 font-medium leading-relaxed">{tpl.flavor}</p>
-            </button>
-          ))}
+          {RALLY_TEMPLATES.map((tpl) => {
+            // Boss Alert has nothing to alert about without an active raid — disable it up front
+            // (with the reason already fetched into rallyRiskError above) rather than let the mentor
+            // click it and get back a confusing "success, 0 sent".
+            const bossUnavailable = tpl.type === "WEEKLY_BOSS" && !rallyRisk;
+            const disabled = rallyDispatching !== null || bossUnavailable;
+            return (
+              <button
+                key={tpl.type}
+                type="button"
+                onClick={() => handleDispatchRally(tpl.type)}
+                disabled={disabled}
+                title={bossUnavailable ? t("mentor.partyReminder.noActiveRaid") : undefined}
+                className={`text-left p-4 rounded-sky-chip ring-1 ${tpl.tint} transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-safe:hover:-translate-y-px hover:shadow-sky-chip active:translate-y-0 active:scale-[0.99] disabled:opacity-55 disabled:cursor-not-allowed disabled:translate-y-0`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="inline-flex items-center gap-2 font-semibold text-sm text-sky-ink">
+                    <span className={`shrink-0 ${tpl.accent}`}>{tpl.icon}</span> {tpl.title}
+                  </span>
+                  {rallyDispatching === tpl.type && <Spinner size={14} />}
+                </div>
+                <p className="text-xs text-sky-ink-2 font-medium leading-relaxed">{tpl.flavor}</p>
+                {bossUnavailable && (
+                  <p className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-sky-ink-3">
+                    <Info className="w-3 h-3 shrink-0" aria-hidden="true" /> {t("mentor.partyReminder.noActiveRaid")}
+                  </p>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {rallyResult && (
-          /* Teal, never green (§4) — and the tick carries the state alongside it. */
-          <div className="relative mt-4 overflow-hidden rounded-sky-chip bg-sky-teal/10 ring-1 ring-sky-teal/28 p-4 pl-5 space-y-2.5">
-            <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-teal" aria-hidden="true" />
-            <p className="inline-flex items-center gap-1.5 font-display text-sm font-semibold text-sky-teal">
-              <Check className="w-4 h-4" aria-hidden="true" /> {t("mentor.partyReminder.dispatchSuccess")}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-              {[
-                [t("mentor.partyReminder.type"), rallyResult.reminderType],
-                [t("mentor.partyReminder.notifications"), rallyResult.notificationsCreated],
-                [t("mentor.partyReminder.chatMessages"), rallyResult.chatMessagesCreated],
-              ].map(([k, v]) => (
-                <div key={String(k)} className="rounded-sky-chip bg-white/65 ring-1 ring-white/75 p-2.5">
-                  <p className={eyebrow}>{k}</p>
-                  <p className="font-display text-sm font-semibold text-sky-ink tabular-nums mt-0.5">{v}</p>
-                </div>
-              ))}
+        {/* Custom Rally — a form, not another tinted card, so it visually reads as "compose your
+            own" rather than a 5th fixed category alongside the 4 templates above. Reuses the same
+            rallyDispatching/rallyResult state, so the success panel below covers this path too. */}
+        <div className="relative mt-3">
+          <p className={`${eyebrow} mb-2`}>{t("mentor.partyReminder.customRallyLabel")}</p>
+          <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 p-3.5 space-y-2.5">
+            <input
+              type="text"
+              maxLength={150}
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder={t("mentor.partyReminder.customRallyTitlePlaceholder")}
+              className="w-full rounded-sky-chip bg-white/70 ring-1 ring-white/80 px-3 py-2 text-sm font-medium text-sky-ink transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3"
+            />
+            <textarea
+              maxLength={1000}
+              rows={2}
+              value={customContent}
+              onChange={(e) => setCustomContent(e.target.value)}
+              placeholder={t("mentor.partyReminder.customRallyContentPlaceholder")}
+              className="w-full resize-none rounded-sky-chip bg-white/70 ring-1 ring-white/80 px-3 py-2 text-sm font-medium text-sky-ink transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-deep/45 placeholder:text-sky-ink-3"
+            />
+            <div className="flex justify-end">
+              <SkyButton
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleSendCustomRally}
+                disabled={!customTitle.trim() || !customContent.trim() || rallyDispatching !== null}
+              >
+                {rallyDispatching === CUSTOM_RALLY_KEY ? <Spinner size={14} /> : <Megaphone className="w-3.5 h-3.5" aria-hidden="true" />}
+                {t("mentor.partyReminder.sendCustomRally")}
+              </SkyButton>
             </div>
           </div>
-        )}
+        </div>
+
+        {rallyResult && (() => {
+          // The request can succeed with nothing actually sent (no active raid, channel disabled,
+          // nobody due yet) — that's a legitimate outcome, not an error, but it isn't the same
+          // "it worked" moment as an actual dispatch either. Peach + Info here, teal + Check only
+          // when something really went out, so the tone never claims more than what happened
+          // (state is never colour-only either way — icon and copy both change with it).
+          const sentNothing = rallyResult.notificationsCreated === 0 && rallyResult.chatMessagesCreated === 0;
+          const ResultIcon = sentNothing ? Info : Check;
+          return (
+            <div
+              className={`relative mt-4 overflow-hidden rounded-sky-chip p-4 pl-5 space-y-2.5 ${sentNothing ? "bg-sky-peach/10 ring-1 ring-sky-peach/28" : "bg-sky-teal/10 ring-1 ring-sky-teal/28"
+                }`}
+            >
+              <span className={`absolute left-0 top-0 bottom-0 w-1 ${sentNothing ? "bg-sky-peach" : "bg-sky-teal"}`} aria-hidden="true" />
+              <p className={`inline-flex items-center gap-1.5 font-display text-sm font-semibold ${sentNothing ? "text-sky-peach-deep" : "text-sky-teal"}`}>
+                <ResultIcon className="w-4 h-4" aria-hidden="true" />
+                {sentNothing ? t("mentor.partyReminder.dispatchNoOp") : t("mentor.partyReminder.dispatchSuccess")}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                {[
+                  [t("mentor.partyReminder.type"), rallyResult.reminderType],
+                  [t("mentor.partyReminder.notifications"), rallyResult.notificationsCreated],
+                  [t("mentor.partyReminder.chatMessages"), rallyResult.chatMessagesCreated],
+                ].map(([k, v]) => (
+                  <div key={String(k)} className="rounded-sky-chip bg-white/65 ring-1 ring-white/75 p-2.5">
+                    <p className={eyebrow}>{k}</p>
+                    <p className="font-display text-sm font-semibold text-sky-ink tabular-nums mt-0.5">{v}</p>
+                  </div>
+                ))}
+              </div>
+              {rallyResult.details.length > 0 && (
+                <ul className="space-y-1 pt-1">
+                  {rallyResult.details.map((d) => (
+                    <li key={d} className="text-xs font-medium text-sky-ink-2">• {d}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })()}
 
         <button
           type="button"
@@ -309,6 +425,18 @@ export default function RallyTab() {
 
         {showRallySchedule && (
           <div className="relative mt-3 rounded-sky-card bg-white/45 ring-1 ring-white/70 p-4 space-y-5 sky-in">
+            {/* Master switch — flip every per-type toggle below on/off in one tap. The 4
+                individual controls stay visible and adjustable either way, for fine-tuning
+                once auto-dispatch is on. */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-sky-ink">{t("mentor.partyReminder.autoRallyMasterLabel")}</p>
+                <p className="text-[11px] font-medium text-sky-ink-3 mt-0.5">{t("mentor.partyReminder.autoRallyMasterHint")}</p>
+              </div>
+              <RallyToggle checked={autoRallyEnabled} onChange={handleToggleAutoRally} />
+            </div>
+            <div className="h-px bg-sky-ink/8" aria-hidden="true" />
+
             <div>
               <p className={`${eyebrow} mb-2`}>
                 {t("mentor.partyReminder.questDeadline")}

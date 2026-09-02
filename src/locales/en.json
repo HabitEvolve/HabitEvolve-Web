@@ -742,13 +742,16 @@
       "dispatchBtn": "Dispatch",
       "dispatching": "Dispatching…",
       "dispatchSuccess": "Reminder dispatched successfully!",
+      "dispatchNoOp": "Sent, but there was nothing to notify about right now.",
       "dispatchFailed": "Failed to dispatch reminder.",
       "type": "Type",
       "notifications": "Notifications Created",
       "chatMessages": "Party Chat Messages",
       "guildRally": "Guild Rally",
       "guildRallySubtitle": "Sound the horn — pick a battle cry and send it to the whole party.",
-      "autoRallySchedule": "Auto-Rally Schedule",
+      "autoRallySchedule": "Settings",
+      "autoRallyMasterLabel": "Auto-Rally",
+      "autoRallyMasterHint": "Turn on to enable automatic reminders — fine-tune each type below.",
       "sharedHpLabel": "Shared HP",
       "rallyTemplates": {
         "bossAlert": { "title": "Boss Alert", "flavor": "Boss kill timer is almost up! Get up and knock out those quests, team!" },
@@ -763,7 +766,11 @@
       "channelInApp": "In-App",
       "channelPush": "Push",
       "channelEmail": "Email",
-      "channelPartyChat": "Party Chat"
+      "channelPartyChat": "Party Chat",
+      "customRallyLabel": "Or write your own",
+      "customRallyTitlePlaceholder": "Title (e.g. Weekend push!)",
+      "customRallyContentPlaceholder": "What do you want to tell the team?",
+      "sendCustomRally": "Send"
     },
     "workspace": {
       "tabsAria": "Party workspace sections",

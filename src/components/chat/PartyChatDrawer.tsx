@@ -154,7 +154,11 @@ export default function PartyChatDrawer({
     fetchMessages().finally(() => setLoading(false));
 
     const conn = new HubConnectionBuilder()
-      .withUrl(HUB_URL)
+      // withCredentials: false — the BE's CORS policy allows any origin without
+      // AllowCredentials(), and this hub doesn't rely on cookies (userId is passed
+      // explicitly), so the browser's "wildcard origin + credentials" rejection is avoided.
+      // Same fix already applied to partyCallHub.ts's connection.
+      .withUrl(HUB_URL, { withCredentials: false })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();

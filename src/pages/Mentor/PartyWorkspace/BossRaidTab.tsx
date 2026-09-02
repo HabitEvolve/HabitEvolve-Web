@@ -8,6 +8,7 @@ import {
 import mentorApi from "../../../api/mentorApi";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import { useAlert } from "../../../context/AlertContext";
+import { useWindowFocusRefetch } from "../../../hooks/useWindowFocusRefetch";
 import SkyCard from "../../../components/ui/card/SkyCard";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import { easeExpo, getMentorId, Spinner } from "./sharedSky";
@@ -138,6 +139,7 @@ const DIFF_META: Record<BossMode, { dot: string; badge: string; band: string; gl
 // ── MONSTER GRIMOIRE CARD (TCG-style, one per difficulty mode) ───────────────
 interface ModeCardProps {
     mode: BossModeConfigDto;
+    spriteKey?: string | null;
     enabled: boolean;
     hasAi: boolean;
     isSelected: boolean;
@@ -145,7 +147,7 @@ interface ModeCardProps {
     onSummon: () => void;
 }
 
-const ModeCard = ({ mode, enabled, hasAi, isSelected, summoning, onSummon }: ModeCardProps) => {
+const ModeCard = ({ mode, spriteKey, enabled, hasAi, isSelected, summoning, onSummon }: ModeCardProps) => {
     const { t } = useTranslation();
     const meta = DIFF_META[mode.mode];
 
@@ -167,7 +169,7 @@ const ModeCard = ({ mode, enabled, hasAi, isSelected, summoning, onSummon }: Mod
                 <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-2xl ${meta.glow}`} aria-hidden="true" />
                 <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-sky-ink/22 to-transparent" aria-hidden="true" />
                 <img
-                    src={SKULL_ART}
+                    src={bossArtUrl(spriteKey)}
                     alt=""
                     className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 object-contain drop-shadow-[0_8px_12px_rgba(36,52,77,0.42)] transition-transform duration-500 motion-safe:group-hover:scale-105"
                 />
@@ -322,6 +324,11 @@ export default function BossRaidTab() {
         fetchPartyStatus();
         setRegisterResult(null);
     }, [fetchPartyStatus]);
+
+    // Boss HP, Shared HP and activity change from actions this mentor doesn't
+    // see happen (players checking in tasks elsewhere) — refetch on tab focus
+    // so numbers aren't stale after switching away and back.
+    useWindowFocusRefetch(fetchPartyStatus);
 
     useEffect(() => {
         partyMentorApi.getPartyMembers(partyId).then((res) => {
@@ -817,6 +824,7 @@ export default function BossRaidTab() {
                                         <ModeCard
                                             key={mode.mode}
                                             mode={mode}
+                                            spriteKey={boss.spriteKey}
                                             enabled={isModeAllowed(mode)}
                                             hasAi={aiVerificationModes.includes(mode.mode.toUpperCase())}
                                             isSelected={selectedDifficulty === mode.mode}

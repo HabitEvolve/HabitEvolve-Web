@@ -9,7 +9,6 @@ import {
     Check,
     Clock,
     CreditCard,
-    FlaskConical,
     Minus,
     Plus,
     RotateCcw,
@@ -597,7 +596,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
     const alert = useAlert();
     const [selected, setSelected] = useState<GemPackage | null>(GEM_PACKAGES[0]);
     const [customAmount, setCustomAmount] = useState('');
-    const [method, setMethod] = useState<WalletPaymentMethod>('SEPAY');
+    const method: WalletPaymentMethod = 'SEPAY';
     const [loading, setLoading] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
 
@@ -706,8 +705,8 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                                 aria-pressed={isSelected}
                                 onClick={() => selectPackage(pkg)}
                                 className={`relative text-left p-4 rounded-sky-chip ${pkg.face} transition-all duration-150 ${easeExpo} motion-safe:hover:-translate-y-px ${isSelected
-                                        ? "ring-2 ring-sky-deep shadow-sky-chip"
-                                        : "ring-1 ring-white/70 hover:ring-sky-deep/35"
+                                    ? "ring-2 ring-sky-deep shadow-sky-chip"
+                                    : "ring-1 ring-white/70 hover:ring-sky-deep/35"
                                     }`}
                             >
                                 {/* Selection is not colour-only: the ring is joined by a tick. */}
@@ -741,8 +740,8 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     </label>
                     <div
                         className={`relative rounded-sky-chip bg-white/60 transition-all duration-150 ${!selected && customAmount
-                                ? "ring-2 ring-sky-deep shadow-sky-chip"
-                                : "ring-1 ring-white/80"
+                            ? "ring-2 ring-sky-deep shadow-sky-chip"
+                            : "ring-1 ring-white/80"
                             }`}
                     >
                         <input
@@ -763,29 +762,6 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     )}
                 </div>
 
-                {/* Payment method toggle — segmented control, same reasoning as the
-                    package grid above: custom, not SkyButton. */}
-                <div className="relative flex gap-2 mb-5">
-                    {(['SEPAY', 'DEMO'] as WalletPaymentMethod[]).map((m) => {
-                        const isOn = method === m;
-                        return (
-                            <button
-                                type="button"
-                                key={m}
-                                aria-pressed={isOn}
-                                onClick={() => setMethod(m)}
-                                className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-full font-semibold text-xs transition-all duration-150 ${easeExpo} ${isOn
-                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
-                                        : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
-                                    }`}
-                            >
-                                {m === 'SEPAY' ? <CreditCard className="w-3.5 h-3.5" /> : <FlaskConical className="w-3.5 h-3.5" />}
-                                {m === 'SEPAY' ? 'SePay (Real)' : 'DEMO (Dev)'}
-                            </button>
-                        );
-                    })}
-                </div>
-
                 {/* Buy button */}
                 <div className="relative flex gap-3">
                     <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
@@ -801,7 +777,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                         {loading
                             ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</>
                             : effectiveGems > 0
-                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <GemIcon className="w-4 h-4" /> — {vndPrice} VND</>
+                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <GemIcon className="w-4 h-4" /></>
                                 : t("mentor.subscriptionWallet.enterValidAmount", "Enter a valid gem amount.")
                         }
                     </SkyButton>
@@ -1237,15 +1213,15 @@ export default function SubscriptionWallet() {
                                 key={pkg.packageId}
                                 variant="mentor"
                                 className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${isFeatured
-                                        ? // The featured tier physically outweighs its neighbours:
-                                        // taller box, violet ring, deeper shadow — a lift that
-                                        // survives at rest rather than only on hover.
-                                        "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
-                                        : isCurrent
-                                            ? "ring-1 ring-sky-teal/35"
-                                            : // Unfeatured tiers recede so the featured one has
-                                            // something to be louder than.
-                                            "ring-1 ring-white/60 opacity-[0.94]"
+                                    ? // The featured tier physically outweighs its neighbours:
+                                    // taller box, violet ring, deeper shadow — a lift that
+                                    // survives at rest rather than only on hover.
+                                    "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
+                                    : isCurrent
+                                        ? "ring-1 ring-sky-teal/35"
+                                        : // Unfeatured tiers recede so the featured one has
+                                        // something to be louder than.
+                                        "ring-1 ring-white/60 opacity-[0.94]"
                                     }`}
                             >
                                 {/* Current plan gets three cues: a teal rail, a teal wash

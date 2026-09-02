@@ -600,7 +600,7 @@
       "cost": "Cost",
       "cancel": "Cancel",
       "processing": "Processing…",
-      "purchaseDemo": "Purchase (DEMO)",
+      "purchaseDemo": "Purchase",
       "topUpFailed": "Top-up request failed.",
       "connectingSepay": "Connecting to SePay...",
       "redirectingPayment": "Redirecting to the secure payment page. Please do not close this window.",

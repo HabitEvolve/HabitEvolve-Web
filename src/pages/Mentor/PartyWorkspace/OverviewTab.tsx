@@ -6,6 +6,7 @@ import {
   Trash2, AlertTriangle, ShieldAlert,
 } from "lucide-react";
 import { useAlert } from "../../../context/AlertContext";
+import { useWindowFocusRefetch } from "../../../hooks/useWindowFocusRefetch";
 import partyMentorApi from "../../../api/mentorPartyApi";
 import SkyButton from "../../../components/ui/button/SkyButton";
 import {
@@ -171,6 +172,14 @@ export default function OverviewTab() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyId]);
+
+  // Party Chat's SignalR socket doesn't cover this tab's plain REST-loaded state
+  // (members, join requests) — refetch on tab focus so a mentor coming back from
+  // another tab sees who actually joined/left instead of a stale roster.
+  useWindowFocusRefetch(() => {
+    fetchMembers();
+    if (party.joinPolicy === "APPROVAL_REQUIRED") fetchJoinRequests();
+  });
 
   // ── DISBAND PARTY ───────────────────────────────────────────────────────────
   const [showDisband, setShowDisband] = useState(false);

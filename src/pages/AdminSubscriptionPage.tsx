@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus, X, ChevronLeft, ChevronRight, AlertTriangle,
-  Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff,
+  Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff, Pencil,
   History as HistoryIcon, Loader2, Terminal, SlidersHorizontal,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -1109,6 +1109,7 @@ export default function AdminSubscriptionPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <SkyButton type="button" variant="secondary" size="sm" onClick={() => setFormModal({ mode: 'edit', pkg })}>
+                            <Pencil className="w-3.5 h-3.5" />
                             {t('admin.subscriptionPage.editBtn')}
                           </SkyButton>
                           <SkyButton type="button" variant="secondary" size="sm" onClick={() => setHistoryTarget(pkg)}>
@@ -1121,6 +1122,9 @@ export default function AdminSubscriptionPage() {
                             size="sm"
                             onClick={() => setToggleTarget(pkg)}
                           >
+                            {pkg.isActive
+                              ? <PowerOff className="w-3.5 h-3.5" />
+                              : <Power className="w-3.5 h-3.5" />}
                             {pkg.isActive
                               ? t('admin.subscriptionPage.deactivateBtn')
                               : t('admin.subscriptionPage.activateBtn')}

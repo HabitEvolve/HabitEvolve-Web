@@ -21,7 +21,6 @@ import {
   ServerCog,
   Settings,
   Skull,
-  Target,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -95,15 +94,10 @@ const navItems: NavItem[] = [
     path: "/questionnaires",
   },
   {
-    icon: <Target className={navIcon} aria-hidden="true" />,
-    nameKey: "nav.admin.calcRules",
-    path: "/target-rules",
-    sectionKey: "nav.sections.CONFIGURATION",
-  },
-  {
     icon: <Settings className={navIcon} aria-hidden="true" />,
     nameKey: "nav.admin.systemConfig",
     path: "/system-config",
+    sectionKey: "nav.sections.CONFIGURATION",
   },
   {
     icon: <Activity className={navIcon} aria-hidden="true" />,

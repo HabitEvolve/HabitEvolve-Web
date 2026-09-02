@@ -1316,6 +1316,7 @@
         "sectionBasic": "A — Basic Info",
         "sectionParty": "B — Party & Member Limits",
         "sectionQuest": "C — Quest & Boss Limits",
+        "sectionDifficulty": "D — Per-Difficulty Quest Caps",
         "codeLabel": "Code *",
         "nameLabel": "Name *",
         "descLabel": "Description",
@@ -1343,7 +1344,14 @@
         "createPackage": "Create Package",
         "saveChanges": "Save Changes",
         "bossModesRequired": "Select at least one Boss Mode.",
-        "proofTypesRequired": "Select at least one Proof Type."
+        "proofTypesRequired": "Select at least one Proof Type.",
+        "difficultyCapsHint": "Optional — leave a field blank for no separate cap on that difficulty. These caps are ADDITIVE on top of the totals in Section B/C above, not a replacement.",
+        "maxEasyPerDayLabel": "Max EASY Quests / Member / Day",
+        "maxNormalPerDayLabel": "Max NORMAL Quests / Member / Day",
+        "maxHardPerDayLabel": "Max HARD Quests / Member / Day",
+        "maxEasyPerWeekLabel": "Max EASY Party Quests / Week",
+        "maxNormalPerWeekLabel": "Max NORMAL Party Quests / Week",
+        "maxHardPerWeekLabel": "Max HARD Party Quests / Week"
       },
       "toggleModal": {
         "deactivateTitle": "⛔ Deactivate Package",

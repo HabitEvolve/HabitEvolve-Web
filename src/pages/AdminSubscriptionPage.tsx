@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Plus, X, ChevronLeft, ChevronRight, AlertTriangle,
   Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff,
-  History as HistoryIcon, Loader2, Terminal,
+  History as HistoryIcon, Loader2, Terminal, SlidersHorizontal,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
@@ -28,10 +28,7 @@ import type { AuditLogDto } from '../types/adminAudit.types';
 const PAGE_SIZE = 8;
 
 const BOSS_MODE_OPTIONS = ['EASY', 'NORMAL', 'HARD'] as const;
-const PROOF_TYPE_OPTIONS = [
-  'PHOTO', 'VIDEO', 'TIMER', 'SCREENSHOT',
-  'GPS', 'STEP_COUNTER', 'TEXT_LOG', 'SELF_CHECK',
-] as const;
+const PROOF_TYPE_OPTIONS = ['PHOTO', 'GPS', 'STEP_COUNTER', 'TEXT_LOG', 'SELF_CHECK'] as const;
 const REWARD_TIER_OPTIONS: RewardTier[] = ['Basic', 'Standard', 'Premium'];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -64,6 +61,15 @@ interface PackageFormState {
   proofTypes: string[];
   rewardTier: RewardTier;
   aiVerificationEnabled: boolean;
+  // Per-difficulty caps — kept as raw text ('' = no separate cap/unbounded) rather than number,
+  // since 0 is itself a meaningful value here ("zero of this difficulty allowed") and can't double
+  // as the empty/unset sentinel the way it does for durationDays elsewhere in this form.
+  maxEasyPerDay: string;
+  maxNormalPerDay: string;
+  maxHardPerDay: string;
+  maxEasyPerWeek: string;
+  maxNormalPerWeek: string;
+  maxHardPerWeek: string;
 }
 
 const EMPTY_FORM: PackageFormState = {
@@ -82,6 +88,12 @@ const EMPTY_FORM: PackageFormState = {
   proofTypes: ['PHOTO'],
   rewardTier: 'Basic',
   aiVerificationEnabled: false,
+  maxEasyPerDay: '',
+  maxNormalPerDay: '',
+  maxHardPerDay: '',
+  maxEasyPerWeek: '',
+  maxNormalPerWeek: '',
+  maxHardPerWeek: '',
 };
 
 const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
@@ -100,7 +112,17 @@ const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
   proofTypes: csvToArr(pkg.proofTypes),
   rewardTier: pkg.rewardTier,
   aiVerificationEnabled: csvToArr(pkg.aiVerificationBossModes).length > 0,
+  maxEasyPerDay: pkg.maxEasyQuestsPerMemberPerDay?.toString() ?? '',
+  maxNormalPerDay: pkg.maxNormalQuestsPerMemberPerDay?.toString() ?? '',
+  maxHardPerDay: pkg.maxHardQuestsPerMemberPerDay?.toString() ?? '',
+  maxEasyPerWeek: pkg.maxEasyPartyQuestsPerWeek?.toString() ?? '',
+  maxNormalPerWeek: pkg.maxNormalPartyQuestsPerWeek?.toString() ?? '',
+  maxHardPerWeek: pkg.maxHardPartyQuestsPerWeek?.toString() ?? '',
 });
+
+// '' → undefined (no cap sent, BE treats missing as null/unbounded); otherwise parse to int.
+const parseOptionalCap = (raw: string): number | undefined =>
+  raw.trim() === '' ? undefined : Number(raw);
 
 // ─── Tone taxonomy ───────────────────────────────────────────────────────────
 // One hue per meaning. teal is spent only on a package that is genuinely live,
@@ -299,6 +321,14 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         // longer drive any behavior (AI Check is now a per-quest opt-in the Mentor controls — see
         // Quest.AiCheckEnabled) — only "empty vs non-empty" matters, so ON writes all three.
         aiVerificationBossModes: form.aiVerificationEnabled ? 'EASY,NORMAL,HARD' : undefined,
+        // Additive on top of questsPerMemberPerDay/partyQuestsPerWeek above — blank means no
+        // separate cap for that difficulty (only the totals apply).
+        maxEasyQuestsPerMemberPerDay: parseOptionalCap(form.maxEasyPerDay),
+        maxNormalQuestsPerMemberPerDay: parseOptionalCap(form.maxNormalPerDay),
+        maxHardQuestsPerMemberPerDay: parseOptionalCap(form.maxHardPerDay),
+        maxEasyPartyQuestsPerWeek: parseOptionalCap(form.maxEasyPerWeek),
+        maxNormalPartyQuestsPerWeek: parseOptionalCap(form.maxNormalPerWeek),
+        maxHardPartyQuestsPerWeek: parseOptionalCap(form.maxHardPerWeek),
       };
 
       let res;
@@ -529,6 +559,38 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
             </div>
           </div>
 
+          {/* Section D: Per-Difficulty Quest Caps — additive on top of Section C's totals above */}
+          <div>
+            <SectionHeader label={t('admin.subscriptionPage.form.sectionDifficulty')} Icon={SlidersHorizontal} tone="peach" />
+            <p className="mb-3 text-[10px] font-medium text-sky-ink-3">{t('admin.subscriptionPage.form.difficultyCapsHint')}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <Field label={t('admin.subscriptionPage.form.maxEasyPerDayLabel')}>
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                  value={form.maxEasyPerDay} onChange={e => set('maxEasyPerDay', e.target.value)} />
+              </Field>
+              <Field label={t('admin.subscriptionPage.form.maxNormalPerDayLabel')}>
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                  value={form.maxNormalPerDay} onChange={e => set('maxNormalPerDay', e.target.value)} />
+              </Field>
+              <Field label={t('admin.subscriptionPage.form.maxHardPerDayLabel')}>
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                  value={form.maxHardPerDay} onChange={e => set('maxHardPerDay', e.target.value)} />
+              </Field>
+              <Field label={t('admin.subscriptionPage.form.maxEasyPerWeekLabel')}>
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                  value={form.maxEasyPerWeek} onChange={e => set('maxEasyPerWeek', e.target.value)} />
+              </Field>
+              <Field label={t('admin.subscriptionPage.form.maxNormalPerWeekLabel')}>
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                  value={form.maxNormalPerWeek} onChange={e => set('maxNormalPerWeek', e.target.value)} />
+              </Field>
+              <Field label={t('admin.subscriptionPage.form.maxHardPerWeekLabel')}>
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                  value={form.maxHardPerWeek} onChange={e => set('maxHardPerWeek', e.target.value)} />
+              </Field>
+            </div>
+          </div>
+
           {error && (
             <div className="relative flex items-start gap-2.5 overflow-hidden rounded-sky-chip bg-sky-rose/10 pl-4 pr-4 py-2.5 text-sm font-semibold text-sky-rose-deep">
               <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
@@ -651,6 +713,12 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   ProofTypes: 'proofTypesLabel',
   RewardTier: 'rewardTierLabel',
   AiVerificationBossModes: 'aiModesLabel',
+  MaxEasyQuestsPerMemberPerDay: 'maxEasyPerDayLabel',
+  MaxNormalQuestsPerMemberPerDay: 'maxNormalPerDayLabel',
+  MaxHardQuestsPerMemberPerDay: 'maxHardPerDayLabel',
+  MaxEasyPartyQuestsPerWeek: 'maxEasyPerWeekLabel',
+  MaxNormalPartyQuestsPerWeek: 'maxNormalPerWeekLabel',
+  MaxHardPartyQuestsPerWeek: 'maxHardPerWeekLabel',
 };
 const CSV_FIELDS = new Set(['BossModes', 'ProofTypes', 'AiVerificationBossModes']);
 

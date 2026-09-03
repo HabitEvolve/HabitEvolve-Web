@@ -646,7 +646,10 @@
       "questCaps": "Giới Hạn Nhiệm Vụ",
       "totalToppedUp": "Tổng Đã Nạp",
       "totalSpent": "Tổng Đã Chi",
-      "balanceTrendLabel": "Xu hướng số dư Gem qua {{count}} giao dịch gần nhất, từ {{from}} đến {{to}}"
+      "balanceTrendLabel": "Xu hướng số dư Gem qua {{count}} giao dịch gần nhất, từ {{from}} đến {{to}}",
+      "txTypeTopup": "Nạp Gem",
+      "txTypePurchase": "Mua Gói",
+      "txTypeRefund": "Hoàn Gem"
     },
     "proofQueue": {
       "pageTitle": "Phòng Phán Xét",

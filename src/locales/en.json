@@ -570,7 +570,7 @@
     "subscriptionWallet": {
       "pageTitle": "Subscription & Wallet",
       "gemWallet": "Gem Wallet",
-      "topUp": "Top Up",
+      "topUp": "Add Gem",
       "rate": "Rate: 1 💎 = {{rate}} VND",
       "currentPlan": "Current Plan",
       "noPlan": "No plan active",
@@ -602,7 +602,7 @@
       "cancel": "Cancel",
       "processing": "Processing…",
       "purchaseDemo": "Purchase",
-      "topUpFailed": "Top-up request failed.",
+      "topUpFailed": "Could not add gems. Please try again.",
       "connectingSepay": "Connecting to SePay...",
       "redirectingPayment": "Redirecting to the secure payment page. Please do not close this window.",
       "gemStore": "Gem Store",
@@ -644,9 +644,12 @@
       "questsPerMemberDay": "quests/member/day",
       "rewardTier": "Reward Tier",
       "questCaps": "Quest Caps",
-      "totalToppedUp": "Total Topped Up",
+      "totalToppedUp": "Total Added",
       "totalSpent": "Total Spent",
-      "balanceTrendLabel": "Gem balance trend over the last {{count}} transactions, from {{from}} to {{to}}"
+      "balanceTrendLabel": "Gem balance trend over the last {{count}} transactions, from {{from}} to {{to}}",
+      "txTypeTopup": "Add Gem",
+      "txTypePurchase": "Package Purchase",
+      "txTypeRefund": "Refund"
     },
     "proofQueue": {
       "pageTitle": "The Judgement Hall",

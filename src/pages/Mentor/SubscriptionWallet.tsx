@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import Chart from "react-apexcharts";
+import type { ApexOptions } from "apexcharts";
 import {
     AlertTriangle,
     ArrowDownLeft,
@@ -28,6 +30,7 @@ import { useAlert } from "../../context/AlertContext";
 import { useWallet } from "../../context/WalletContext";
 import SkyCard from "../../components/ui/card/SkyCard";
 import SkyButton from "../../components/ui/button/SkyButton";
+import { skyChartBase, skyAreaFill, SKY_SEMANTIC } from "../../utils/skyChart";
 import type {
     ActiveSubscriptionDto,
     MentorWalletDto,
@@ -279,101 +282,81 @@ const UsageBar = ({ label, hint, used, max }: { label: string; hint: string; use
     );
 };
 
-// ── BALANCE TREND SPARKLINE ───────────────────────────────────────────────────
-// The stat-tile "trend" slot: a compact line reading balance-after over the most
-// recent transactions, in the same hue as the headline balance it sits under (one
-// series needs no legend — the figure above it already says what's plotted).
-// Index-spaced on X (a sparkline, not an axis-labeled time series) — the shape is
-// "went up / went down / flat", not exact spacing between transactions.
-const SPARK_W = 220;
-const SPARK_H = 48;
-const SPARK_PAD_Y = 6;
+// ── BALANCE TREND ─────────────────────────────────────────────────────────────
+// Balance-after over the most recent transactions, in the reward hue the headline
+// balance above it also wears (one series → no legend; the "Gem Wallet" label
+// names it). Category-spaced on X (a trend, not a precise time axis) with the
+// shared ApexCharts theme (src/utils/skyChart.ts) so it carries the same graph-
+// paper grid + value/date ticks as every other chart in the app.
+const BALANCE_TREND_HEIGHT = 156;
 
-const BalanceSparkline = ({ transactions }: { transactions: GemTransactionDto[] }) => {
+const BalanceTrendChart = ({ transactions }: { transactions: GemTransactionDto[] }) => {
     const { t } = useTranslation();
-    const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-    const points = useMemo(() => {
-        // API returns newest-first (matches the Logbook); a trend line reads left→right
-        // as oldest→newest, so reverse and keep the most recent 12 (the stat-tile spec).
-        const chronological = [...transactions].reverse();
-        return chronological.slice(-12).map((tx) => ({ value: tx.balanceAfter, date: tx.createdAt }));
-    }, [transactions]);
+    // API returns newest-first (matches the Logbook); a trend reads left→right as
+    // oldest→newest, so reverse and keep the most recent 12.
+    const points = useMemo(
+        () => [...transactions].reverse().slice(-12),
+        [transactions],
+    );
 
     if (points.length < 2) return null;
 
-    const values = points.map((p) => p.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const span = max - min || 1; // flat series still draws a centered line, not a div/0
+    const categories = points.map((tx) =>
+        new Date(tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    );
+    const data = points.map((tx) => tx.balanceAfter);
 
-    const xAt = (i: number) => (i / (points.length - 1)) * SPARK_W;
-    const yAt = (v: number) =>
-        SPARK_H - SPARK_PAD_Y - ((v - min) / span) * (SPARK_H - SPARK_PAD_Y * 2);
-
-    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${xAt(i)},${yAt(p.value)}`).join(" ");
-    const areaPath = `${linePath} L${xAt(points.length - 1)},${SPARK_H} L${xAt(0)},${SPARK_H} Z`;
-
-    const hovered = hoverIndex != null ? points[hoverIndex] : null;
-    const hoverPct = hoverIndex != null ? (hoverIndex / (points.length - 1)) * 100 : 0;
-
-    const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const ratio = (e.clientX - rect.left) / rect.width;
-        const idx = Math.round(ratio * (points.length - 1));
-        setHoverIndex(Math.max(0, Math.min(points.length - 1, idx)));
+    const options: ApexOptions = {
+        ...skyChartBase,
+        chart: { ...skyChartBase.chart, type: "area", height: BALANCE_TREND_HEIGHT },
+        colors: [SKY_SEMANTIC.reward],
+        stroke: { curve: "smooth", width: 2 },
+        fill: skyAreaFill,
+        markers: { size: 0, hover: { size: 5 } },
+        // User asked for both gridlines — keep them faint (skyChartBase already
+        // dashes them at 10% ink) so the line still reads as the figure.
+        grid: { ...skyChartBase.grid, xaxis: { lines: { show: true } } },
+        xaxis: {
+            ...skyChartBase.xaxis,
+            categories,
+            tickAmount: Math.min(4, categories.length - 1),
+            labels: { ...skyChartBase.xaxis.labels, rotate: 0, hideOverlappingLabels: true },
+        },
+        yaxis: {
+            ...skyChartBase.yaxis,
+            tickAmount: 4,
+            forceNiceScale: true,
+            labels: {
+                ...skyChartBase.yaxis.labels,
+                formatter: (v: number) => {
+                    const n = Math.round(v);
+                    return Math.abs(n) >= 1000
+                        ? `${(n / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
+                        : `${n}`;
+                },
+            },
+        },
+        tooltip: {
+            ...skyChartBase.tooltip,
+            y: {
+                title: { formatter: () => t("mentor.subscriptionWallet.gemWallet") },
+                formatter: (v: number) => `${Math.round(v).toLocaleString()} 💎`,
+            },
+        },
     };
 
+    const series = [{ name: t("mentor.subscriptionWallet.gemWallet"), data }];
+
     return (
-        <div className="relative">
-            <svg
-                viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-                width="100%"
-                height={SPARK_H}
-                className="block overflow-visible text-sky-peach-deep"
-                role="img"
-                aria-label={t(
-                    "mentor.subscriptionWallet.balanceTrendLabel",
-                    "Gem balance trend over the last {{count}} transactions, from {{from}} to {{to}}",
-                    { count: points.length, from: points[0].value.toLocaleString(), to: points[points.length - 1].value.toLocaleString() }
-                )}
-                tabIndex={0}
-                onFocus={() => setHoverIndex(points.length - 1)}
-                onBlur={() => setHoverIndex(null)}
-            >
-                <defs>
-                    <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
-                    </linearGradient>
-                </defs>
-                <path d={areaPath} fill="url(#sparkFill)" stroke="none" />
-                <path d={linePath} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                {hovered && (
-                    <>
-                        <line
-                            x1={xAt(hoverIndex!)} x2={xAt(hoverIndex!)}
-                            y1={0} y2={SPARK_H}
-                            stroke="currentColor" strokeOpacity={0.25} strokeWidth={1}
-                        />
-                        <circle cx={xAt(hoverIndex!)} cy={yAt(hovered.value)} r={4} fill="currentColor" stroke="white" strokeWidth={2} />
-                    </>
-                )}
-                {/* Hover hit layer — wider than the 2px line so the pointer only has to be close, not exact. */}
-                <rect
-                    x={0} y={0} width={SPARK_W} height={SPARK_H} fill="transparent"
-                    onMouseMove={handleMove}
-                    onMouseLeave={() => setHoverIndex(null)}
-                />
-            </svg>
-            {hovered && (
-                <div
-                    className="pointer-events-none absolute -top-8 z-10 -translate-x-1/2 whitespace-nowrap rounded-sky-chip bg-sky-ink px-2 py-1 text-[10px] font-semibold text-white shadow-sky-chip"
-                    style={{ left: `${hoverPct}%` }}
-                >
-                    {hovered.value.toLocaleString()} 💎 · {new Date(hovered.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                </div>
-            )}
+        <div
+            aria-label={t("mentor.subscriptionWallet.balanceTrendLabel", {
+                count: points.length,
+                from: data[0].toLocaleString(),
+                to: data[data.length - 1].toLocaleString(),
+            })}
+        >
+            <Chart options={options} series={series} type="area" height={BALANCE_TREND_HEIGHT} />
         </div>
     );
 };
@@ -400,6 +383,15 @@ const TX_META: Record<string, { icon: ReactNode; sign: "+" | "-"; color: string;
         color: "text-sky-deep",
         ring: "bg-sky-deep/12 text-sky-deep",
     },
+};
+
+// Row title falls back to a human label when the BE stored no description — the
+// raw enum ("TOPUP") must never reach the screen. Top-ups never carry a
+// description, so this is what a top-up row actually shows.
+const TX_TYPE_LABEL_KEY: Record<string, string> = {
+    TOPUP: "mentor.subscriptionWallet.txTypeTopup",
+    PURCHASE: "mentor.subscriptionWallet.txTypePurchase",
+    REFUND: "mentor.subscriptionWallet.txTypeRefund",
 };
 
 const TX_STATUS_META: Record<string, { cls: string; icon: ReactNode }> = {
@@ -455,6 +447,8 @@ const TransactionLogbook = ({
             {transactions.map((tx, i) => {
                 const meta = TX_META[tx.type] ?? TX_META.TOPUP;
                 const status = TX_STATUS_META[tx.status] ?? TX_STATUS_META.Pending;
+                const typeLabelKey = TX_TYPE_LABEL_KEY[tx.type];
+                const title = tx.description || (typeLabelKey ? t(typeLabelKey) : tx.type);
                 const isLast = i === transactions.length - 1;
                 return (
                     <div
@@ -468,7 +462,7 @@ const TransactionLogbook = ({
                         <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm text-sky-ink truncate">
-                                    {tx.description || tx.type}
+                                    {title}
                                 </p>
                                 <p className="text-xs text-sky-ink-2 font-medium mt-0.5 tabular-nums">
                                     {new Date(tx.createdAt).toLocaleString()}
@@ -1158,7 +1152,11 @@ export default function SubscriptionWallet() {
                         <div className="font-display text-5xl font-semibold text-sky-peach-deep leading-none tabular-nums mt-1.5">
                             {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
                         </div>
-                        {!loadingTx && <div className="mt-2"><BalanceSparkline transactions={transactions} /></div>}
+                        {!loadingTx && transactions.length >= 2 && (
+                            <div className="mt-1">
+                                <BalanceTrendChart transactions={transactions} />
+                            </div>
+                        )}
                         {wallet && (
                             <p className="text-sky-small text-sky-ink-2 font-medium mt-2 tabular-nums">
                                 Rate: 1 <GemIcon className="w-3.5 h-3.5" /> = {wallet.vndPerGem.toLocaleString()} VND

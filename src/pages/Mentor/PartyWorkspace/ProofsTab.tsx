@@ -776,20 +776,9 @@ export default function ProofsTab() {
 
     useEffect(() => { fetchQueues(); }, [fetchQueues]);
 
-    // ── Party scoping — the queue endpoints are global (no partyId anywhere on
-    // ProofDto or the request), so this is reconstructed via a client-side join
-    // against this party's own quest IDs (getMentorQuests already supports a
-    // partyId filter). Not fake scoping — an accurate join, just not a
-    // server-side filter.
-    const [partyQuestIds, setPartyQuestIds] = useState<Set<number> | null>(null);
-
-    useEffect(() => {
-        setPartyQuestIds(null);
-        mentorApi.getMentorQuests(partyId).then((res) => {
-            if (res.success) setPartyQuestIds(new Set((res.data ?? []).map((q) => q.questId)));
-            else setPartyQuestIds(new Set());
-        });
-    }, [partyId]);
+    // ── Party scoping — the queue/history endpoints are mentor-wide; each ProofDto
+    // now carries its own `partyId` (BE enriches it), so filtering to this party is
+    // a plain field match — no extra getMentorQuests() round-trip.
 
     const handleApprove = async (proofId: number) => {
         setActionLoading(proofId);
@@ -829,18 +818,16 @@ export default function ProofsTab() {
         return list;
     }, [filter]);
 
-    const visibleManual = useMemo(() => {
-        if (!partyQuestIds) return [];
-        return applyFilter(manualProofs.filter((p) => partyQuestIds.has(p.questId)));
-    }, [manualProofs, applyFilter, partyQuestIds]);
+    const visibleManual = useMemo(
+        () => applyFilter(manualProofs.filter((p) => p.partyId === partyId)),
+        [manualProofs, applyFilter, partyId],
+    );
 
     // History is already newest-reviewed-first from the BE — no filter bar applies here.
-    const visibleHistory = useMemo(() => {
-        if (!partyQuestIds) return [];
-        return historyProofs.filter((p) => partyQuestIds.has(p.questId));
-    }, [historyProofs, partyQuestIds]);
-
-    const scopingLoading = partyQuestIds === null;
+    const visibleHistory = useMemo(
+        () => historyProofs.filter((p) => p.partyId === partyId),
+        [historyProofs, partyId],
+    );
 
     // ── Batch review — reuses handleApprove for every selected id ────────────
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -968,7 +955,7 @@ export default function ProofsTab() {
                     title={t("Proofs")}
                     count={visibleManual.length}
                     proofs={visibleManual}
-                    loading={loadingManual || scopingLoading}
+                    loading={loadingManual}
                     onApprove={handleApprove}
                     onReject={handleRejectClick}
                     onCompare={setCompareTarget}
@@ -981,7 +968,7 @@ export default function ProofsTab() {
             ) : (
                 <HistorySection
                     proofs={visibleHistory}
-                    loading={loadingHistory || scopingLoading}
+                    loading={loadingHistory}
                     onCompare={setCompareTarget}
                 />
             )}

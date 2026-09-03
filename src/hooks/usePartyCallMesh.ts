@@ -9,28 +9,28 @@ import { connectPartyCall, type PartyCallConnection } from '../services/partyCal
  */
 
 // ── ICE servers ──────────────────────────────────────────────────────────────
-// ĐANG DÙNG: METERED TRẢ PHÍ (Dedicated Account) — TURN riêng, xuyên được 4G CGNAT,
-// đủ băng thông cho video call nên ổn định khi demo/nghiệm thu (ghi được bằng chứng challenge).
+// CHÍNH: METERED TRẢ PHÍ (Dedicated Account) — TURN riêng, xuyên được 4G CGNAT,
+//        đủ băng thông cho video call nên ổn định khi demo/nghiệm thu.
+// BACKUP: STUN Google + TURN công cộng Open Relay Project (free).
+// ⚙️ TỰ ĐỘNG CHUYỂN: cả 2 nằm chung 1 mảng `iceServers` → ICE gom relay candidate
+//    từ MỌI server cùng lúc rồi chọn cặp nào nối được. Nếu Metered hết hạn mức /
+//    trả lỗi allocate thì candidate của Open Relay gánh cuộc gọi — không cần code
+//    switch runtime. KHÔNG bỏ khối free (băng thông free giới hạn, chỉ là phao cứu).
 // Giữ nguyên bản sao y hệt ở HabitEvolve-Mobile/src/hooks/usePartyCallMesh.ts.
 const ICE_SERVERS: RTCIceServer[] = [
+  // primary — Metered paid
   { urls: 'stun:stun.relay.metered.ca:80' },
   { urls: 'turn:global.relay.metered.ca:80', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
   { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
   { urls: 'turn:global.relay.metered.ca:443', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
   { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: '79fdc26423d7502a5fb2c30f', credential: 'NQ2PZ1cYaiyjFvRg' },
+  // backup — Google STUN + free Open Relay Project TURN
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
-
-// ⬇️⬇️ FREE (tiết kiệm chi phí): STUN Google + TURN công cộng Open Relay Project.
-// Muốn quay lại: XOÁ COMMENT khối này và xoá/comment khối Metered ở trên.
-// ⚠️ Relay dùng chung → băng thông giới hạn, hay rớt ở mạng 4G CGNAT; không nối được
-// media nghĩa là KHÔNG ghi được bằng chứng challenge.
-// const ICE_SERVERS: RTCIceServer[] = [
-//   { urls: 'stun:stun.l.google.com:19302' },
-//   { urls: 'stun:stun1.l.google.com:19302' },
-//   { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-//   { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-//   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-// ];
 
 export interface PartyCallGameHandlers {
   onParticipantJoined?: (userId: number) => void;

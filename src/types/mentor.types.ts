@@ -51,9 +51,13 @@ export interface SubscriptionUsageDto {
     maxParties: number;
     largestPartyMemberCount: number;
     maxMembersPerParty: number;
-    questsAssignedToday: number;
+    /** Most quests the mentor has assigned to a SINGLE member today (grouped by recipient, max) —
+     *  mirrors BR-14, which caps questsPerMemberPerDay per recipient, not in total. */
+    busiestMemberQuestsToday: number;
     questsPerMemberPerDay: number;
-    partyQuestsThisWeek: number;
+    /** Most party-quest batches in a SINGLE party this week (max over parties) —
+     *  partyQuestsPerWeek is enforced per party, not summed across all of them. */
+    busiestPartyQuestsThisWeek: number;
     partyQuestsPerWeek: number;
 }
 

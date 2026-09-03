@@ -9,6 +9,7 @@ import {
     Check,
     Clock,
     CreditCard,
+    Info,
     Minus,
     Plus,
     RotateCcw,
@@ -205,35 +206,74 @@ const Notice = ({
 };
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
-const UsageBar = ({ label, used, max }: { label: string; used: number; max: number }) => {
-    const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
-    // Consumption is not a good/bad axis at the low end — teal here only means
-    // "headroom left". Only ≥90% is a genuine warning, and it carries a glyph and
-    // a bolder weight as well as the hue, so the state is never colour-only.
-    const critical = pct >= 90;
-    const near = pct >= 70 && !critical;
-    const fill = critical ? "bg-sky-rose" : near ? "bg-sky-peach" : "bg-sky-teal";
+// One usage meter. `max === 0` means the plan doesn't cap this ("Unlimited").
+// `used > max` is a real state the old bar hid — it clamped the fill AND the
+// caption to 100%, so "5 / 3" read as a tidy "100%". Now the over-limit case
+// gets its own colour, glyph, and a plain-language caption ("2 over plan limit")
+// instead of a misleading percentage. The caption line replaces the old raw "%"
+// with the number a mentor actually wants: how much headroom is left.
+const UsageBar = ({ label, hint, used, max }: { label: string; hint: string; used: number; max: number }) => {
+    const { t } = useTranslation();
+    const unlimited = max === 0;
+    const ratio = unlimited ? 0 : used / max;
+    const over = !unlimited && used > max;
+    const critical = !over && !unlimited && ratio >= 0.9;
+    const near = !over && !unlimited && ratio >= 0.7 && !critical;
+    const barPct = unlimited ? 100 : Math.min(ratio * 100, 100);
+    // Unlimited isn't "maxed out" — a solid full bar would read as 100% used, so it
+    // gets a muted track-fill instead of the live teal.
+    const fill = unlimited
+        ? "bg-sky-teal/30"
+        : over || critical
+            ? "bg-sky-rose"
+            : near
+                ? "bg-sky-peach"
+                : "bg-sky-teal";
+
+    const caption = unlimited
+        ? t("mentor.subscriptionWallet.usageUnlimited")
+        : over
+            ? t("mentor.subscriptionWallet.usageOverBy", { count: used - max })
+            : used >= max
+                ? t("mentor.subscriptionWallet.usageAtLimit")
+                : t("mentor.subscriptionWallet.usageLeft", { count: max - used });
+    const captionCls = over || critical
+        ? "text-sky-rose-deep"
+        : near
+            ? "text-sky-peach-deep"
+            : "text-sky-ink-3";
+
     return (
         <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3.5 py-3">
-            <div className="flex items-baseline justify-between gap-2 mb-2">
-                <span className="text-xs font-semibold text-sky-ink truncate">{label}</span>
+            <div className="flex items-baseline justify-between gap-2">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-ink min-w-0">
+                    <span className="truncate">{label}</span>
+                    <span
+                        title={hint}
+                        aria-label={hint}
+                        className="shrink-0 cursor-help text-sky-ink-3"
+                    >
+                        <Info className="w-3 h-3" />
+                    </span>
+                </span>
                 <span
-                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${critical ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
+                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${over ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
                         }`}
                 >
-                    {critical && <AlertTriangle className="w-3.5 h-3.5" />}
+                    {over && <AlertTriangle className="w-3.5 h-3.5" />}
                     {used}
-                    <span className="text-sky-ink-3">/ {max === 0 ? "∞" : max}</span>
+                    <span className="text-sky-ink-3">/ {unlimited ? "∞" : max}</span>
                 </span>
             </div>
+            <p className="mt-1 mb-2 text-[11px] font-medium leading-snug text-sky-ink-3">{hint}</p>
             <div className="relative h-2.5 rounded-full bg-sky-ink/8 overflow-hidden">
                 <div
                     className={`h-full rounded-full ${fill} transition-[width] duration-500 ${easeExpo}`}
-                    style={{ width: `${pct}%` }}
+                    style={{ width: `${barPct}%` }}
                 />
             </div>
-            <p className="mt-1.5 text-[10px] font-medium text-sky-ink-3 tabular-nums">
-                {Math.round(pct)}%
+            <p className={`mt-1.5 text-[10px] font-semibold tabular-nums ${captionCls}`}>
+                {caption}
             </p>
         </div>
     );
@@ -1019,6 +1059,13 @@ export default function SubscriptionWallet() {
 
     const usage = activeSub?.usage;
     const plan = activeSub?.package;
+    // A capped meter (max > 0) sitting above its cap — drives the explanatory callout.
+    const overLimit = !!usage && (
+        (usage.maxParties > 0 && usage.partiesUsed > usage.maxParties) ||
+        (usage.maxMembersPerParty > 0 && usage.largestPartyMemberCount > usage.maxMembersPerParty) ||
+        (usage.questsPerMemberPerDay > 0 && usage.busiestMemberQuestsToday > usage.questsPerMemberPerDay) ||
+        (usage.partyQuestsPerWeek > 0 && usage.busiestPartyQuestsThisWeek > usage.partyQuestsPerWeek)
+    );
     // Cancelling no longer revokes access immediately (BE keeps IsCurrentlyActive true until the
     // already-paid ExpiresAt) — cancelledAt is what actually records "won't renew", so once it's
     // set the button must disappear even though the subscription still reads as currently active.
@@ -1185,16 +1232,56 @@ export default function SubscriptionWallet() {
 
                     {/* Usage section */}
                     <div className="relative">
-                        <p className={`${eyebrow} mb-3`}>
+                        <p className={`${eyebrow} mb-1`}>
                             {t("mentor.subscriptionWallet.usageThisPeriod")}
                         </p>
+                        <p className="mb-3 text-[11px] font-medium text-sky-ink-3">
+                            {t("mentor.subscriptionWallet.usageThisPeriodHint")}
+                        </p>
                         {usage ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <UsageBar label={t("mentor.subscriptionWallet.usageParties")} used={usage.partiesUsed} max={usage.maxParties} />
-                                <UsageBar label={t("mentor.subscriptionWallet.usageMembers")} used={usage.largestPartyMemberCount} max={usage.maxMembersPerParty} />
-                                <UsageBar label={t("mentor.subscriptionWallet.usageQuestsToday")} used={usage.questsAssignedToday} max={usage.questsPerMemberPerDay} />
-                                <UsageBar label={t("mentor.subscriptionWallet.usagePartyQuestsWeek")} used={usage.partyQuestsThisWeek} max={usage.partyQuestsPerWeek} />
-                            </div>
+                            <>
+                                {/* Any meter over its cap almost always means the plan's limits were
+                                    lowered under an existing mentor (admin edit / snapshot ≠ live plan).
+                                    Without this line the bare ⚠ on "5 / 3" reads as a bug. */}
+                                {overLimit && (
+                                    <div className="relative mb-3 overflow-hidden rounded-sky-chip bg-sky-peach/10 ring-1 ring-white/70 p-3 pl-4">
+                                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" aria-hidden="true" />
+                                        <p className="flex items-center gap-1.5 text-xs font-semibold text-sky-ink">
+                                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-sky-peach-deep" />
+                                            {t("mentor.subscriptionWallet.usageOverTitle")}
+                                        </p>
+                                        <p className="mt-1 text-[11px] font-medium leading-snug text-sky-ink-2">
+                                            {t("mentor.subscriptionWallet.usageOverBody")}
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usageParties")}
+                                        hint={t("mentor.subscriptionWallet.usagePartiesHint")}
+                                        used={usage.partiesUsed}
+                                        max={usage.maxParties}
+                                    />
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usageMembers")}
+                                        hint={t("mentor.subscriptionWallet.usageMembersHint")}
+                                        used={usage.largestPartyMemberCount}
+                                        max={usage.maxMembersPerParty}
+                                    />
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usageQuestsToday")}
+                                        hint={t("mentor.subscriptionWallet.usageQuestsTodayHint")}
+                                        used={usage.busiestMemberQuestsToday}
+                                        max={usage.questsPerMemberPerDay}
+                                    />
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usagePartyQuestsWeek")}
+                                        hint={t("mentor.subscriptionWallet.usagePartyQuestsWeekHint")}
+                                        used={usage.busiestPartyQuestsThisWeek}
+                                        max={usage.partyQuestsPerWeek}
+                                    />
+                                </div>
+                            </>
                         ) : (
                             <p className="text-sky-ink-3 font-medium text-sm">{t("mentor.subscriptionWallet.noUsageData")}</p>
                         )}

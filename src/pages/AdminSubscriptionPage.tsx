@@ -308,6 +308,19 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
     if (!form.bossModes.length) { setError(t('admin.subscriptionPage.form.bossModesRequired')); return; }
     if (!form.proofTypes.length) { setError(t('admin.subscriptionPage.form.proofTypesRequired')); return; }
 
+    // Per-difficulty caps split the overall totals — they can't sum to more than the parent.
+    const capSum = (...vals: string[]) => vals.reduce((s, v) => s + (parseOptionalCap(v) ?? 0), 0);
+    const daySum = capSum(form.maxEasyPerDay, form.maxNormalPerDay, form.maxHardPerDay);
+    if (daySum > Number(form.questsPerMemberPerDay)) {
+      setError(t('admin.subscriptionPage.form.difficultyCapsExceedDay', { sum: daySum, total: Number(form.questsPerMemberPerDay) }));
+      return;
+    }
+    const weekSum = capSum(form.maxEasyPerWeek, form.maxNormalPerWeek, form.maxHardPerWeek);
+    if (weekSum > Number(form.partyQuestsPerWeek)) {
+      setError(t('admin.subscriptionPage.form.difficultyCapsExceedWeek', { sum: weekSum, total: Number(form.partyQuestsPerWeek) }));
+      return;
+    }
+
     setSaving(true);
     try {
       const base = {
@@ -328,8 +341,8 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         // longer drive any behavior (AI Check is now a per-quest opt-in the Mentor controls — see
         // Quest.AiCheckEnabled) — only "empty vs non-empty" matters, so ON writes all three.
         aiVerificationBossModes: form.aiVerificationEnabled ? 'EASY,NORMAL,HARD' : undefined,
-        // Additive on top of questsPerMemberPerDay/partyQuestsPerWeek above — blank means no
-        // separate cap for that difficulty (only the totals apply).
+        // These SPLIT questsPerMemberPerDay/partyQuestsPerWeek above (sum ≤ total, enforced just
+        // above and again on the BE) — blank means no separate cap for that difficulty.
         maxEasyQuestsPerMemberPerDay: parseOptionalCap(form.maxEasyPerDay),
         maxNormalQuestsPerMemberPerDay: parseOptionalCap(form.maxNormalPerDay),
         maxHardQuestsPerMemberPerDay: parseOptionalCap(form.maxHardPerDay),

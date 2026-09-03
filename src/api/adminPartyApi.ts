@@ -10,6 +10,7 @@ import {
 } from '../types/api.types';
 import { UserQuestDto } from '../types/userWorkspace.types';
 import { AdminGetPartiesQueryParams, AdminTransferMentorPayload, PartyRaidDto, PartyWeeklyChestDto } from '../types/adminParty.types';
+import type { LiveChallengeSessionSummaryDto, LiveChallengeDto } from '../types/partyCall.types';
 
 const ADMIN_PARTY_URL = '/admin/parties';
 
@@ -50,6 +51,24 @@ const adminPartyApi = {
     // GET /admin/parties/{partyId}/raids
     getRaids: async (partyId: number): Promise<ApiResponse<PartyRaidDto[]>> => {
         const response = await axiosClient.get<ApiResponse<PartyRaidDto[]>>(`${ADMIN_PARTY_URL}/${partyId}/raids`);
+        return response.data;
+    },
+
+    // GET /admin/parties/{partyId}/live-arena-sessions?pageNumber=&pageSize=
+    // Lịch sử buổi Đấu Trường Trực Tiếp của party (Active + Ended, mới → cũ). BE tự tra mentor thật của party.
+    getLiveArenaSessions: async (
+        partyId: number, pageNumber = 1, pageSize = 10,
+    ): Promise<PaginatedApiResponse<LiveChallengeSessionSummaryDto>> => {
+        const response = await axiosClient.get<PaginatedApiResponse<LiveChallengeSessionSummaryDto>>(
+            `${ADMIN_PARTY_URL}/${partyId}/live-arena-sessions`, { params: { pageNumber, pageSize } },
+        );
+        return response.data;
+    },
+
+    // GET /party-call/sessions/{sessionId}/evidence — audit 1 buổi (mọi challenge + clip/snapshot + verdict AI/mentor).
+    // Không có endpoint admin riêng: query này không kiểm quyền chủ party nên admin gọi thẳng được.
+    getLiveArenaSessionEvidence: async (sessionId: number): Promise<ApiResponse<LiveChallengeDto[]>> => {
+        const response = await axiosClient.get<ApiResponse<LiveChallengeDto[]>>(`/party-call/sessions/${sessionId}/evidence`);
         return response.data;
     },
 

@@ -218,6 +218,11 @@ const ComparisonModal = ({ proof, onClose }: ComparisonModalProps) => {
                         </span>
                         <div className="space-y-3">
                             <SpecRow label={t("mentor.proofQueue.grid.comparisonQuestType")}>{proof.questType ?? "—"}</SpecRow>
+                            {proof.questDescription && (
+                                <SpecRow label={t("mentor.proofQueue.grid.comparisonDescription")}>
+                                    <span className="whitespace-pre-line font-medium text-sky-ink-2">{proof.questDescription}</span>
+                                </SpecRow>
+                            )}
                             {proof.questHowToSubmit && (
                                 <SpecRow label={t("mentor.proofQueue.grid.comparisonInstructions")}>
                                     <span className="whitespace-pre-line">{proof.questHowToSubmit}</span>
@@ -410,9 +415,19 @@ const ProofCard = ({ proof, onApprove, onReject, onCompare, actionLoading, isSel
                     )}
                 </button>
             ) : meta?.gps || meta?.steps ? (
-                <div className="p-3 border-b border-sky-ink/10">
+                <button
+                    type="button"
+                    onClick={() => onCompare(proof)}
+                    className="group relative w-full p-3 border-b border-sky-ink/10 text-left cursor-zoom-in"
+                    title={t("mentor.proofQueue.grid.viewComparison")}
+                >
                     <GpsStepsPanel meta={meta} compact />
-                </div>
+                    <span className="absolute inset-0 flex items-center justify-center bg-sky-ink/0 group-hover:bg-sky-ink/25 transition-colors">
+                        <span className="opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/92 rounded-sky-chip text-xs font-semibold text-sky-ink shadow-sky-chip">
+                            <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.viewComparison")}
+                        </span>
+                    </span>
+                </button>
             ) : (
                 <div className="w-full h-24 bg-sky-ink/5 flex items-center justify-center gap-2 border-b border-sky-ink/10 text-sky-ink-3">
                     <Inbox className="w-4 h-4" aria-hidden="true" />
@@ -539,9 +554,19 @@ const HistoryCard = ({ proof, onCompare }: HistoryCardProps) => {
                     </div>
                 </button>
             ) : meta?.gps || meta?.steps ? (
-                <div className="p-3 border-b border-sky-ink/10">
+                <button
+                    type="button"
+                    onClick={() => onCompare(proof)}
+                    className="group relative w-full p-3 border-b border-sky-ink/10 text-left cursor-zoom-in"
+                    title={t("mentor.proofQueue.grid.viewComparison")}
+                >
                     <GpsStepsPanel meta={meta} compact />
-                </div>
+                    <span className="absolute inset-0 flex items-center justify-center bg-sky-ink/0 group-hover:bg-sky-ink/25 transition-colors">
+                        <span className="opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/92 rounded-sky-chip text-xs font-semibold text-sky-ink shadow-sky-chip">
+                            <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" /> {t("mentor.proofQueue.grid.viewComparison")}
+                        </span>
+                    </span>
+                </button>
             ) : (
                 <div className="w-full h-16 bg-sky-ink/5 flex items-center justify-center gap-2 border-b border-sky-ink/10 text-sky-ink-3">
                     <Inbox className="w-4 h-4" aria-hidden="true" />

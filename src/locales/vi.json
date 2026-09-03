@@ -701,6 +701,7 @@
         "comparisonRequirement": "Yêu Cầu",
         "comparisonSubmitted": "Đã Nộp",
         "comparisonQuestType": "Loại nhiệm vụ",
+        "comparisonDescription": "Mô tả",
         "comparisonInstructions": "Hướng dẫn nộp",
         "comparisonProofType": "Loại bằng chứng yêu cầu",
         "comparisonDeadline": "Hạn chót",

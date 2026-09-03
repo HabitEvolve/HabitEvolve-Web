@@ -701,6 +701,7 @@
         "comparisonRequirement": "The Requirement",
         "comparisonSubmitted": "What Was Submitted",
         "comparisonQuestType": "Quest type",
+        "comparisonDescription": "Description",
         "comparisonInstructions": "How to submit",
         "comparisonProofType": "Proof type required",
         "comparisonDeadline": "Deadline",

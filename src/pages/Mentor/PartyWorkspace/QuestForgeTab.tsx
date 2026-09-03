@@ -347,11 +347,14 @@ export default function QuestForgeTab() {
         ? activeSub.package.proofTypes.split(",").map((s) => s.trim())
         : ["PHOTO", "GPS", "STEP_COUNTER", "TEXT_LOG", "SELF_CHECK"];
 
-    // AI Check eligibility mirrors the BE guard in CreateMentorQuest/CreatePartyQuestCommandHandler:
-    // the mentor's plan must include AI Verification (any Boss mode), and SELF_CHECK is always
-    // auto-approved so opting it into AI Check would never take effect.
+    // AI Check eligibility mirrors the BE guard in CreateMentorQuest/CreatePartyQuestCommandHandler
+    // (plan must include AI Verification), but is further narrowed here: only PHOTO proof is wired
+    // end-to-end for review right now, so AI Check + How To Submit are offered for PHOTO only —
+    // every other proof type (GPS/STEP_COUNTER captured by the app, SELF_CHECK auto-approved,
+    // TEXT_LOG) hides both.
     const packageSupportsAi = Boolean(activeSub?.package?.aiVerificationBossModes);
-    const aiEligible = packageSupportsAi && form.proofType !== "SELF_CHECK";
+    const isPhotoProof = form.proofType === "PHOTO";
+    const aiEligible = packageSupportsAi && isPhotoProof;
 
     // Sync default proof type when subscription loads
     useEffect(() => {
@@ -389,7 +392,16 @@ export default function QuestForgeTab() {
     // Verification tags only apply to PHOTO (FACE face-matches the photo, ITEM/ACTION are visual
     // hints) — backend rejects them on any other proof type, so clear them the moment it changes away.
     const handleProofTypeChange = (proofType: string) => {
-        setForm((prev) => ({ ...prev, proofType, verificationTags: proofType === "PHOTO" ? prev.verificationTags : "" }));
+        const isPhoto = proofType === "PHOTO";
+        // AI Check, How To Submit and Verification Tags are PHOTO-only — drop whatever was
+        // entered so a hidden field can't be submitted after switching proof type.
+        setForm((prev) => ({
+            ...prev,
+            proofType,
+            verificationTags: isPhoto ? prev.verificationTags : "",
+            howToSubmit: isPhoto ? prev.howToSubmit : "",
+            aiCheckEnabled: isPhoto ? prev.aiCheckEnabled : false,
+        }));
         setFormError(null);
     };
 
@@ -770,7 +782,9 @@ export default function QuestForgeTab() {
                                         ? t("mentor.questCommand.forge.aiCheckDisabledPackage")
                                         : form.proofType === "SELF_CHECK"
                                             ? t("mentor.questCommand.forge.aiCheckDisabledSelfCheck")
-                                            : t("mentor.questCommand.forge.aiCheckHint")}
+                                            : !isPhotoProof
+                                                ? t("mentor.questCommand.forge.aiCheckDisabledNonPhoto")
+                                                : t("mentor.questCommand.forge.aiCheckHint")}
                                 </span>
                             </label>
                         </div>
@@ -778,26 +792,46 @@ export default function QuestForgeTab() {
                         <div>
                             <label className={fieldLabel}>
                                 {t("mentor.questCommand.forge.howToSubmitLabel")}
-                                <span className="ml-1.5 font-normal normal-case tracking-normal tabular-nums text-sky-ink-3">
-                                    {form.howToSubmit.length}/{HOW_TO_SUBMIT_MAX}
-                                </span>
+                                {isPhotoProof && (
+                                    <span className="ml-1.5 font-normal normal-case tracking-normal tabular-nums text-sky-ink-3">
+                                        {form.howToSubmit.length}/{HOW_TO_SUBMIT_MAX}
+                                    </span>
+                                )}
                             </label>
-                            <textarea
-                                value={form.howToSubmit}
-                                onChange={(e) => handleField("howToSubmit", e.target.value)}
-                                placeholder={t("mentor.questCommand.forge.howToSubmitPlaceholder")}
-                                rows={3}
-                                maxLength={HOW_TO_SUBMIT_MAX}
-                                className={`${inputCls} resize-none`}
-                            />
-                            {/* This text is the only guidance the player gets before they submit,
-                                and a proof that misses what the mentor expected costs both sides a
-                                reject/resubmit round trip — so the field earns a real callout
-                                rather than the usual quiet hint line. */}
-                            <p className="mt-2 flex items-start gap-2 rounded-sky-chip bg-sky-deep/8 ring-1 ring-sky-deep/18 px-3 py-2 text-[11px] font-medium leading-relaxed text-sky-ink-2">
-                                <Info className="mt-px w-3.5 h-3.5 shrink-0 text-sky-deep" aria-hidden="true" />
-                                <span>{t("mentor.questCommand.forge.howToSubmitNote")}</span>
-                            </p>
+                            {isPhotoProof ? (
+                                <>
+                                    <textarea
+                                        value={form.howToSubmit}
+                                        onChange={(e) => handleField("howToSubmit", e.target.value)}
+                                        placeholder={t("mentor.questCommand.forge.howToSubmitPlaceholder")}
+                                        rows={3}
+                                        maxLength={HOW_TO_SUBMIT_MAX}
+                                        className={`${inputCls} resize-none`}
+                                    />
+                                    {/* This text is the only guidance the player gets before they submit,
+                                        and a proof that misses what the mentor expected costs both sides a
+                                        reject/resubmit round trip — so the field earns a real callout
+                                        rather than the usual quiet hint line. */}
+                                    <p className="mt-2 flex items-start gap-2 rounded-sky-chip bg-sky-deep/8 ring-1 ring-sky-deep/18 px-3 py-2 text-[11px] font-medium leading-relaxed text-sky-ink-2">
+                                        <Info className="mt-px w-3.5 h-3.5 shrink-0 text-sky-deep" aria-hidden="true" />
+                                        <span>{t("mentor.questCommand.forge.howToSubmitNote")}</span>
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <textarea
+                                        value=""
+                                        disabled
+                                        rows={3}
+                                        placeholder={t("mentor.questCommand.forge.howToSubmitPlaceholder")}
+                                        className={`${inputCls} resize-none cursor-not-allowed opacity-60`}
+                                    />
+                                    <p className="mt-2 flex items-start gap-2 rounded-sky-chip bg-sky-ink/6 ring-1 ring-sky-ink/12 px-3 py-2 text-[11px] font-medium leading-relaxed text-sky-ink-3">
+                                        <Info className="mt-px w-3.5 h-3.5 shrink-0 text-sky-ink-3" aria-hidden="true" />
+                                        <span>{t("mentor.questCommand.forge.howToSubmitDisabledNonPhoto", { proofType: form.proofType.replace(/_/g, " ") })}</span>
+                                    </p>
+                                </>
+                            )}
                         </div>
 
                         {form.proofType === "PHOTO" && (

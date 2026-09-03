@@ -560,11 +560,13 @@
         "howToSubmitLabel": "Cách Nộp Bài",
         "howToSubmitPlaceholder": "VD: Chụp nguyên đĩa từ trên xuống, đủ sáng, thấy rõ toàn bộ món ăn…",
         "howToSubmitNote": "Ghi thật rõ bằng chứng phải thể hiện những gì — góc chụp, ánh sáng, những thứ bắt buộc có trong khung hình, và điều gì sẽ bị từ chối. Đây là hướng dẫn DUY NHẤT người chơi thấy trước khi nộp, mà chính bạn là người duyệt: viết mơ hồ ở đây sẽ thành từ chối và nộp lại cho cả hai bên.",
+        "howToSubmitDisabledNonPhoto": "Hướng dẫn nộp bài hiện chỉ áp dụng cho bằng chứng Photo — bằng chứng {{proofType}} được app ghi nhận tự động.",
         "verificationTagsLabel": "Thẻ Xác Minh",
         "verificationTagsHint": "FACE sẽ chặn nộp bài cho đến khi người chơi xác minh ảnh chân dung; ITEM/ACTION chỉ mang tính gợi ý.",
         "aiCheckLabel": "Bật AI Check",
         "aiCheckHint": "Bằng chứng nộp cho nhiệm vụ này sẽ được AI kiểm tra trước. AI chỉ gợi ý độ chính xác — bạn vẫn là người quyết định duyệt/từ chối cuối cùng.",
         "aiCheckDisabledSelfCheck": "Không dùng được với Self-Check — loại này luôn tự động duyệt.",
+        "aiCheckDisabledNonPhoto": "AI Check hiện chỉ hỗ trợ bằng chứng Photo.",
         "aiCheckDisabledPackage": "Gói của bạn chưa có AI Verification — nâng cấp gói để bật tính năng này."
       }
     },

@@ -302,6 +302,27 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
   const set = <K extends keyof PackageFormState>(k: K, v: PackageFormState[K]) =>
     setForm(prev => ({ ...prev, [k]: v }));
 
+  // Per-difficulty cap fields, grouped by the parent total they split.
+  const DIFF_DAY_KEYS = ['maxEasyPerDay', 'maxNormalPerDay', 'maxHardPerDay'] as const;
+  const DIFF_WEEK_KEYS = ['maxEasyPerWeek', 'maxNormalPerWeek', 'maxHardPerWeek'] as const;
+  type DiffCapKey = (typeof DIFF_DAY_KEYS)[number] | (typeof DIFF_WEEK_KEYS)[number];
+
+  // Editing one per-difficulty cap: once the values entered exactly fill the parent
+  // total there's no budget left for the blank ones, so pin them to 0 — the config
+  // then says out loud "that difficulty can't be assigned" instead of leaving it ∞.
+  const setDiffCap = (key: DiffCapKey, raw: string) =>
+    setForm(prev => {
+      const next: PackageFormState = { ...prev, [key]: raw };
+      const isDay = (DIFF_DAY_KEYS as readonly string[]).includes(key);
+      const keys = isDay ? DIFF_DAY_KEYS : DIFF_WEEK_KEYS;
+      const total = Number((isDay ? next.questsPerMemberPerDay : next.partyQuestsPerWeek) || 0);
+      const sum = keys.reduce((s, k) => s + (parseOptionalCap(next[k]) ?? 0), 0);
+      if (total > 0 && sum === total) {
+        for (const k of keys) if (next[k].trim() === '') next[k] = '0';
+      }
+      return next;
+    });
+
   // Per-difficulty caps SPLIT the overall totals — the EASY+NORMAL+HARD caps that are
   // set must sum to at most the matching total. Derived live so the warning appears
   // right under Section D as the admin types, not only on submit.
@@ -589,27 +610,27 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
             <div className="grid grid-cols-3 gap-3">
               <Field label={t('admin.subscriptionPage.form.maxEasyPerDayLabel')}>
                 <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
-                  value={form.maxEasyPerDay} onChange={e => set('maxEasyPerDay', e.target.value)} />
+                  value={form.maxEasyPerDay} onChange={e => setDiffCap('maxEasyPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxNormalPerDayLabel')}>
                 <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
-                  value={form.maxNormalPerDay} onChange={e => set('maxNormalPerDay', e.target.value)} />
+                  value={form.maxNormalPerDay} onChange={e => setDiffCap('maxNormalPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxHardPerDayLabel')}>
                 <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
-                  value={form.maxHardPerDay} onChange={e => set('maxHardPerDay', e.target.value)} />
+                  value={form.maxHardPerDay} onChange={e => setDiffCap('maxHardPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxEasyPerWeekLabel')}>
                 <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
-                  value={form.maxEasyPerWeek} onChange={e => set('maxEasyPerWeek', e.target.value)} />
+                  value={form.maxEasyPerWeek} onChange={e => setDiffCap('maxEasyPerWeek', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxNormalPerWeekLabel')}>
                 <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
-                  value={form.maxNormalPerWeek} onChange={e => set('maxNormalPerWeek', e.target.value)} />
+                  value={form.maxNormalPerWeek} onChange={e => setDiffCap('maxNormalPerWeek', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxHardPerWeekLabel')}>
                 <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
-                  value={form.maxHardPerWeek} onChange={e => set('maxHardPerWeek', e.target.value)} />
+                  value={form.maxHardPerWeek} onChange={e => setDiffCap('maxHardPerWeek', e.target.value)} />
               </Field>
             </div>
 

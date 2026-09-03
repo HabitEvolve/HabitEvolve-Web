@@ -302,24 +302,24 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
   const set = <K extends keyof PackageFormState>(k: K, v: PackageFormState[K]) =>
     setForm(prev => ({ ...prev, [k]: v }));
 
+  // Per-difficulty caps SPLIT the overall totals — the EASY+NORMAL+HARD caps that are
+  // set must sum to at most the matching total. Derived live so the warning appears
+  // right under Section D as the admin types, not only on submit.
+  const capSum = (...vals: string[]) => vals.reduce((s, v) => s + (parseOptionalCap(v) ?? 0), 0);
+  const daySum = capSum(form.maxEasyPerDay, form.maxNormalPerDay, form.maxHardPerDay);
+  const weekSum = capSum(form.maxEasyPerWeek, form.maxNormalPerWeek, form.maxHardPerWeek);
+  const dayCapTotal = Number(form.questsPerMemberPerDay || 0);
+  const weekCapTotal = Number(form.partyQuestsPerWeek || 0);
+  const dayCapExceeded = daySum > dayCapTotal;
+  const weekCapExceeded = weekSum > weekCapTotal;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.bossModes.length) { setError(t('admin.subscriptionPage.form.bossModesRequired')); return; }
     if (!form.proofTypes.length) { setError(t('admin.subscriptionPage.form.proofTypesRequired')); return; }
-
-    // Per-difficulty caps split the overall totals — they can't sum to more than the parent.
-    const capSum = (...vals: string[]) => vals.reduce((s, v) => s + (parseOptionalCap(v) ?? 0), 0);
-    const daySum = capSum(form.maxEasyPerDay, form.maxNormalPerDay, form.maxHardPerDay);
-    if (daySum > Number(form.questsPerMemberPerDay)) {
-      setError(t('admin.subscriptionPage.form.difficultyCapsExceedDay', { sum: daySum, total: Number(form.questsPerMemberPerDay) }));
-      return;
-    }
-    const weekSum = capSum(form.maxEasyPerWeek, form.maxNormalPerWeek, form.maxHardPerWeek);
-    if (weekSum > Number(form.partyQuestsPerWeek)) {
-      setError(t('admin.subscriptionPage.form.difficultyCapsExceedWeek', { sum: weekSum, total: Number(form.partyQuestsPerWeek) }));
-      return;
-    }
+    // The inline warnings under Section D already spell out what's wrong — just block.
+    if (dayCapExceeded || weekCapExceeded) return;
 
     setSaving(true);
     try {
@@ -582,36 +582,54 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
             </div>
           </div>
 
-          {/* Section D: Per-Difficulty Quest Caps — additive on top of Section C's totals above */}
+          {/* Section D: Per-Difficulty Quest Caps — SPLIT Section C's totals above (sum ≤ total) */}
           <div>
             <SectionHeader label={t('admin.subscriptionPage.form.sectionDifficulty')} Icon={SlidersHorizontal} tone="peach" />
             <p className="mb-3 text-[10px] font-medium text-sky-ink-3">{t('admin.subscriptionPage.form.difficultyCapsHint')}</p>
             <div className="grid grid-cols-3 gap-3">
               <Field label={t('admin.subscriptionPage.form.maxEasyPerDayLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
                   value={form.maxEasyPerDay} onChange={e => set('maxEasyPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxNormalPerDayLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
                   value={form.maxNormalPerDay} onChange={e => set('maxNormalPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxHardPerDayLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
                   value={form.maxHardPerDay} onChange={e => set('maxHardPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxEasyPerWeekLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
                   value={form.maxEasyPerWeek} onChange={e => set('maxEasyPerWeek', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxNormalPerWeekLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
                   value={form.maxNormalPerWeek} onChange={e => set('maxNormalPerWeek', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxHardPerWeekLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
                   value={form.maxHardPerWeek} onChange={e => set('maxHardPerWeek', e.target.value)} />
               </Field>
             </div>
+
+            {/* Cap-sum overflow shows here — right under the fields it's about, live as you type. */}
+            {(dayCapExceeded || weekCapExceeded) && (
+              <div className="mt-2.5 space-y-1.5">
+                {dayCapExceeded && (
+                  <p className="flex items-start gap-1.5 text-[11px] font-semibold text-sky-rose-deep">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+                    {t('admin.subscriptionPage.form.difficultyCapsExceedDay', { sum: daySum, total: dayCapTotal })}
+                  </p>
+                )}
+                {weekCapExceeded && (
+                  <p className="flex items-start gap-1.5 text-[11px] font-semibold text-sky-rose-deep">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+                    {t('admin.subscriptionPage.form.difficultyCapsExceedWeek', { sum: weekSum, total: weekCapTotal })}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Edit-only: opt-in override of the snapshot model (a new/renewed subscription always picks
@@ -654,7 +672,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
           <SkyButton type="button" variant="secondary" onClick={onClose}>
             {t('admin.subscriptionPage.form.cancel')}
           </SkyButton>
-          <SkyButton type="submit" form="pkg-form" variant="primary" disabled={saving}>
+          <SkyButton type="submit" form="pkg-form" variant="primary" disabled={saving || dayCapExceeded || weekCapExceeded}>
             {saving
               ? t('admin.subscriptionPage.form.saving')
               : mode === 'create'

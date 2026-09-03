@@ -4,7 +4,7 @@ import type {
     SubscriptionPackageDto, ActiveSubscriptionDto,
     PurchaseSubscriptionRequest, PurchaseSubscriptionResultDto, MentorSubscriptionDto,
     MentorWalletDto, TopUpGemsRequest, TopUpGemsResultDto, GemTransactionDto,
-    QuestDto, QuestDetailDto, MentorQuestRangeDto,
+    QuestDto, QuestDetailDto, MentorQuestRangeDto, MemberQuestQuotaDto,
     CreateMentorQuestRequest, CreatePartyQuestRequest, CreatePartyQuestResultDto,
     ProofDto,
     BossTemplateDto, RegisterWeeklyBossRequest, WeeklyBossRegisterResultDto,
@@ -90,6 +90,14 @@ const mentorApi = {
     getRewardRanges: async (): Promise<ApiResponse<MentorQuestRangeDto[]>> => {
         const r = await axiosClient.get<ApiResponse<MentorQuestRangeDto[]>>(
             '/mentorquest/reward-ranges'
+        );
+        return r.data;
+    },
+
+    // GET /mentorquest/member-quota — đã giao / trần quest cho 1 thành viên trong ngày (BR-14, per người nhận)
+    getMemberQuestQuota: async (targetUserId: number): Promise<ApiResponse<MemberQuestQuotaDto>> => {
+        const r = await axiosClient.get<ApiResponse<MemberQuestQuotaDto>>(
+            '/mentorquest/member-quota', { params: { mentorUserId: mid(), targetUserId } }
         );
         return r.data;
     },

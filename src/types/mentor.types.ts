@@ -16,8 +16,9 @@ export interface SubscriptionPackageDto {
     proofTypes: string;              // CSV: "Photo,Video"
     rewardTier: string;
     aiVerificationBossModes: string; // CSV: "" | "Normal" | "Normal,Hard"
-    // Per-difficulty quest caps — ADDITIVE on top of questsPerMemberPerDay/partyQuestsPerWeek
-    // above, not a replacement. null = no separate cap for that difficulty.
+    // Per-difficulty quest caps — SPLIT questsPerMemberPerDay/partyQuestsPerWeek above:
+    // the EASY+NORMAL+HARD caps that are set must sum to at most the overall cap.
+    // null = no separate cap for that difficulty.
     maxEasyQuestsPerMemberPerDay: number | null;
     maxNormalQuestsPerMemberPerDay: number | null;
     maxHardQuestsPerMemberPerDay: number | null;
@@ -44,6 +45,20 @@ export interface MentorSubscriptionDto {
     cancelledAt?: string;
     createdAt: string;
     isCurrentlyActive: boolean;
+}
+
+export interface DifficultyQuotaDto {
+    assignedToday: number;
+    cap: number;
+}
+
+/** Screen 14 — how many quests assigned to ONE member today vs the cap (BR-14, per recipient). */
+export interface MemberQuestQuotaDto {
+    targetUserId: number;
+    assignedToday: number;
+    cap: number;
+    /** Keyed EASY/NORMAL/HARD — only present for a difficulty the plan caps separately. */
+    perDifficulty: Record<string, DifficultyQuotaDto>;
 }
 
 export interface SubscriptionUsageDto {

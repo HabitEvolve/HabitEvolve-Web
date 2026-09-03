@@ -17,6 +17,7 @@ import type {
     QuestDifficulty,
     MentorQuestRangeDto,
     ActiveSubscriptionDto,
+    MemberQuestQuotaDto,
     CreateMentorQuestRequest,
     CreatePartyQuestRequest,
     VerificationTag,
@@ -80,7 +81,27 @@ interface LimitsPanelProps {
     activeSub: ActiveSubscriptionDto | null;
     ranges: MentorQuestRangeDto[];
     selectedDifficulty: QuestDifficulty;
+    assignMode: AssignMode;
+    targetLabel: string;
+    /** Live "assigned today / cap" for the selected member — null when none picked or still loading. */
+    memberQuota: MemberQuestQuotaDto | null;
 }
+
+const InfoRow = ({ k, v }: { k: string; v: string }) => (
+    <div className="flex justify-between gap-2 text-xs font-medium">
+        <span className="text-sky-ink-2 shrink-0">{k}</span>
+        <span className="font-semibold text-sky-ink text-right wrap-break-word min-w-0 tabular-nums">{v}</span>
+    </div>
+);
+
+// A per-difficulty sub-limit row — the difficulty currently picked for the quest
+// is the one that actually applies, so it's pulled forward in violet.
+const DiffLimitRow = ({ label, value, active }: { label: string; value: string; active: boolean }) => (
+    <div className={`flex justify-between gap-2 pl-2 text-xs font-medium ${active ? "text-sky-violet-deep" : "text-sky-ink-3"}`}>
+        <span className="shrink-0">{active ? "▸ " : ""}{label}</span>
+        <span className={`text-right tabular-nums shrink-0 ${active ? "font-semibold" : ""}`}>{value}</span>
+    </div>
+);
 
 // Chips, not inline text — a long comma list otherwise wraps mid-token
 // (e.g. "STEP_" / "COUNTER" split across lines).
@@ -100,10 +121,21 @@ const ChipListRow = ({ label, csv }: { label: string; csv: string | undefined | 
     </div>
 );
 
-const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps) => {
+const LimitsPanel = ({ activeSub, ranges, selectedDifficulty, assignMode, targetLabel, memberQuota }: LimitsPanelProps) => {
     const range = ranges.find((r) => r.difficulty === selectedDifficulty);
     const pkg = activeSub?.package;
     const usage = activeSub?.usage;
+
+    // Per-difficulty sub-caps split the overall cap (EASY+NORMAL+HARD that are set ≤ overall).
+    // null = that difficulty isn't capped separately (only the overall cap applies).
+    const perMemberDayCapFor = (d: QuestDifficulty) => !pkg ? null
+        : d === "EASY" ? pkg.maxEasyQuestsPerMemberPerDay
+        : d === "NORMAL" ? pkg.maxNormalQuestsPerMemberPerDay
+        : pkg.maxHardQuestsPerMemberPerDay;
+    const perWeekCapFor = (d: QuestDifficulty) => !pkg ? null
+        : d === "EASY" ? pkg.maxEasyPartyQuestsPerWeek
+        : d === "NORMAL" ? pkg.maxNormalPartyQuestsPerWeek
+        : pkg.maxHardPartyQuestsPerWeek;
 
     return (
         <div className="rounded-sky-card bg-sky-violet/8 ring-1 ring-sky-violet/20 shadow-sky-tint p-5">
@@ -127,27 +159,57 @@ const LimitsPanel = ({ activeSub, ranges, selectedDifficulty }: LimitsPanelProps
 
             {pkg && (
                 <div className="space-y-2">
-                    {[
-                        ["Plan", pkg.name],
-                    ].map(([k, v]) => (
-                        <div key={k} className="flex justify-between gap-2 text-xs font-medium">
-                            <span className="text-sky-ink-2 shrink-0">{k}</span>
-                            <span className="font-semibold text-sky-ink text-right wrap-break-word min-w-0">{v}</span>
-                        </div>
-                    ))}
-
+                    <InfoRow k="Plan" v={pkg.name} />
                     <ChipListRow label="Boss Modes" csv={pkg.bossModes} />
                     <ChipListRow label="Proof Types" csv={pkg.proofTypes} />
+                    <InfoRow k="AI Verification" v={pkg.aiVerificationBossModes ? "Included" : "Not included"} />
 
-                    {[
-                        ["AI Verification", pkg.aiVerificationBossModes ? "Included" : "Not included"],
-                        ["Party quest/week", `${usage?.partyQuestsThisWeek ?? 0} / ${pkg.partyQuestsPerWeek}`],
-                    ].map(([k, v]) => (
-                        <div key={k} className="flex justify-between gap-2 text-xs font-medium">
-                            <span className="text-sky-ink-2 shrink-0">{k}</span>
-                            <span className="font-semibold text-sky-ink text-right wrap-break-word min-w-0">{v}</span>
-                        </div>
-                    ))}
+                    {assignMode === "individual" ? (
+                        <>
+                            {/* BR-14: quest/member/day cap tính theo TỪNG người nhận — hiện "đã giao / trần"
+                                cho đúng học viên đang chọn (memberQuota), fallback về mỗi trần khi chưa chọn ai. */}
+                            <InfoRow
+                                k={targetLabel !== "—" ? `Quests today · ${targetLabel}` : "Quests / member / day"}
+                                v={memberQuota
+                                    ? `${memberQuota.assignedToday} / ${memberQuota.cap || pkg.questsPerMemberPerDay}`
+                                    : `${pkg.questsPerMemberPerDay}`}
+                            />
+                            {/* Trần riêng từng độ khó (nếu gói có đặt) — liệt kê cả EASY/NORMAL/HARD;
+                                độ khó đang chọn tô đậm màu violet. */}
+                            {DIFFICULTIES.map((d) => {
+                                const cap = perMemberDayCapFor(d);
+                                if (cap == null) return null;
+                                const q = memberQuota?.perDifficulty?.[d];
+                                return (
+                                    <DiffLimitRow
+                                        key={d}
+                                        label={`${d} today`}
+                                        value={q ? `${q.assignedToday} / ${q.cap}` : `${cap}`}
+                                        active={d === selectedDifficulty}
+                                    />
+                                );
+                            })}
+                        </>
+                    ) : (
+                        <>
+                            <InfoRow
+                                k="Party quest / week"
+                                v={`${usage?.busiestPartyQuestsThisWeek ?? 0} / ${pkg.partyQuestsPerWeek}`}
+                            />
+                            {DIFFICULTIES.map((d) => {
+                                const cap = perWeekCapFor(d);
+                                if (cap == null) return null;
+                                return (
+                                    <DiffLimitRow
+                                        key={d}
+                                        label={`${d} party quest / week`}
+                                        value={`${cap}`}
+                                        active={d === selectedDifficulty}
+                                    />
+                                );
+                            })}
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -251,6 +313,7 @@ export default function QuestForgeTab() {
 
     const [activeSub, setActiveSub] = useState<ActiveSubscriptionDto | null>(null);
     const [ranges, setRanges] = useState<MentorQuestRangeDto[]>([]);
+    const [memberQuota, setMemberQuota] = useState<MemberQuestQuotaDto | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
@@ -267,6 +330,17 @@ export default function QuestForgeTab() {
             if (rangesRes.success) setRanges(rangesRes.data ?? []);
         }).finally(() => setLoadingMembers(false));
     }, [partyId]);
+
+    // Live per-member daily quota (Individual mode) — refetch on member/mode switch,
+    // and after a successful submit so "X / Y" reflects the quest just assigned.
+    useEffect(() => {
+        if (assignMode !== "individual" || !selectedMemberId) { setMemberQuota(null); return; }
+        let cancelled = false;
+        mentorApi.getMemberQuestQuota(selectedMemberId as number)
+            .then((r) => { if (!cancelled && r.success) setMemberQuota(r.data ?? null); })
+            .catch(() => { if (!cancelled) setMemberQuota(null); });
+        return () => { cancelled = true; };
+    }, [assignMode, selectedMemberId, submitting]);
 
     // Derive allowed proof types from subscription
     const allowedProofTypes: string[] = activeSub?.package?.proofTypes
@@ -513,7 +587,7 @@ export default function QuestForgeTab() {
                     )}
                 </SkyCard>
 
-                <LimitsPanel activeSub={activeSub} ranges={ranges} selectedDifficulty={form.difficulty} />
+                <LimitsPanel activeSub={activeSub} ranges={ranges} selectedDifficulty={form.difficulty} assignMode={assignMode} targetLabel={targetLabel} memberQuota={memberQuota} />
             </div>
 
             {/* ── Quest Forge form ──────────────────────────────────── */}

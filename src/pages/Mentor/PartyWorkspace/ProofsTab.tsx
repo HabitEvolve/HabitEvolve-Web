@@ -593,9 +593,11 @@ const HistoryCard = ({ proof, onCompare }: HistoryCardProps) => {
                 </div>
 
                 <p className="text-xs text-sky-ink-2">
-                    {proof.reviewedByUserId
-                        ? t("mentor.proofQueue.history.reviewedBy", { id: proof.reviewedByUserId })
-                        : t("mentor.proofQueue.history.autoApproved")}
+                    {proof.reviewedByUsername
+                        ? t("mentor.proofQueue.history.reviewedByName", { name: proof.reviewedByUsername })
+                        : proof.reviewedByUserId
+                            ? t("mentor.proofQueue.history.reviewedBy", { id: proof.reviewedByUserId })
+                            : t("mentor.proofQueue.history.autoApproved")}
                 </p>
 
                 {!isApproved && (

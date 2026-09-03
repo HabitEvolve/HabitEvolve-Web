@@ -278,6 +278,7 @@ export interface ProofDto {
     submittedAt: string;
     reviewedAt?: string;
     reviewedByUserId?: number;
+    reviewedByUsername?: string;
     rejectReason?: string;
     resubmitOfProofId?: number;
 }

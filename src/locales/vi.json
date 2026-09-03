@@ -733,6 +733,7 @@
         "mascotEmptySubtitle": "Các bằng chứng bạn đã chấp thuận hoặc từ chối sẽ hiện ở đây.",
         "reviewedAt": "Đã duyệt",
         "reviewedBy": "Người duyệt: User #{{id}}",
+        "reviewedByName": "Người duyệt: {{name}}",
         "autoApproved": "Hệ thống tự động chấp thuận",
         "rejectReason": "Lý do từ chối",
         "noReasonGiven": "Không có lý do."

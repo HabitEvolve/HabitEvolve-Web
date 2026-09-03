@@ -733,6 +733,7 @@
         "mascotEmptySubtitle": "Proofs you approve or reject will show up here.",
         "reviewedAt": "Reviewed",
         "reviewedBy": "Reviewed by user #{{id}}",
+        "reviewedByName": "Reviewed by {{name}}",
         "autoApproved": "Auto-approved by the system",
         "rejectReason": "Rejection reason",
         "noReasonGiven": "No reason given."

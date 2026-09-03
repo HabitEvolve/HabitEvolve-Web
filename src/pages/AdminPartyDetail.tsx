@@ -573,11 +573,6 @@ const CHALLENGE_PILL: Record<string, PillCfg> = {
   Started:   { tone: "deep", Icon: Play },
   Pending:   { tone: "neutral", Icon: Minus },
 };
-// AI never decides — this is a suggestion hue only, matching the mentor-side reading.
-const AI_TONE: Record<string, Tone> = {
-  Approved: "teal", Suspicious: "peach", Rejected: "rose", AiChecking: "deep", NotUsed: "neutral",
-};
-
 const ChallengeCard = ({ c }: { c: LiveChallengeDto }) => (
   <div className="rounded-sky-md bg-white/62 ring-1 ring-white/80 p-3.5">
     <div className={`flex flex-col gap-3.5 ${c.evidence ? "sm:flex-row" : ""}`}>
@@ -598,26 +593,18 @@ const ChallengeCard = ({ c }: { c: LiveChallengeDto }) => (
           {c.mode} · {c.points} pts{c.responseSeconds != null && ` · responded in ${c.responseSeconds}s`}
         </p>
         {c.requiresEvidence && (c.evidence ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${TONE[AI_TONE[c.evidence.aiStatus] ?? "neutral"].chip}`}>
-              AI: {c.evidence.aiStatus}{c.evidence.aiConfidence != null && ` (${Math.round(c.evidence.aiConfidence * 100)}%)`}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
-              {c.evidence.subjectCameraOn
-                ? <Camera className="w-3 h-3 shrink-0" aria-hidden="true" />
-                : <CameraOff className="w-3 h-3 shrink-0 text-sky-rose-deep" aria-hidden="true" />}
-              {c.evidence.subjectUsername} · {c.evidence.durationSeconds}s
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
+            {c.evidence.subjectCameraOn
+              ? <Camera className="w-3 h-3 shrink-0" aria-hidden="true" />
+              : <CameraOff className="w-3 h-3 shrink-0 text-sky-rose-deep" aria-hidden="true" />}
+            {c.evidence.subjectUsername} · {c.evidence.durationSeconds}s
+          </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-ink-3">
             <Video className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             {c.evidenceStatus === "NotRequired" ? "No evidence required" : `Evidence: ${c.evidenceStatus}`}
           </span>
         ))}
-        {c.evidence?.aiReasoning && (
-          <p className="text-[11px] font-medium italic text-sky-ink-2">"{c.evidence.aiReasoning}"</p>
-        )}
         {c.judgeOverrideReason && (
           <p className="flex items-start gap-1.5 text-[11px] font-medium text-sky-peach-deep">
             <ShieldAlert className="w-3 h-3 shrink-0 mt-px" aria-hidden="true" />

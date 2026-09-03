@@ -8,7 +8,6 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import partyCallApi from "../../api/partyCallApi";
 import partyMentorApi from "../../api/mentorPartyApi";
-import { AiEvidenceBadge } from "../../components/mentor/AiEvidenceBadge";
 import type { PartyItem } from "../../types/api.types";
 import type { LiveChallengeDto, LiveChallengeSessionSummaryDto } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
@@ -218,15 +217,12 @@ export default function LiveArenaHistory() {
 
                                                             {c.requiresEvidence && (
                                                                 c.evidence ? (
-                                                                    <div className="space-y-1.5">
-                                                                        <AiEvidenceBadge evidence={c.evidence} />
-                                                                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
-                                                                            {c.evidence.subjectCameraOn
-                                                                                ? <Camera className="w-3 h-3 shrink-0" />
-                                                                                : <CameraOff className="w-3 h-3 shrink-0 text-sky-rose-deep" />}
-                                                                            {c.evidence.subjectUsername} · {c.evidence.durationSeconds}s
-                                                                        </span>
-                                                                    </div>
+                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
+                                                                        {c.evidence.subjectCameraOn
+                                                                            ? <Camera className="w-3 h-3 shrink-0" />
+                                                                            : <CameraOff className="w-3 h-3 shrink-0 text-sky-rose-deep" />}
+                                                                        {c.evidence.subjectUsername} · {c.evidence.durationSeconds}s
+                                                                    </span>
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-ink-3">
                                                                         <VideoIcon className="w-3.5 h-3.5 shrink-0" />

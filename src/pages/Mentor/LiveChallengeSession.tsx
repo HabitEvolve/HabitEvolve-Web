@@ -10,7 +10,6 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import partyCallApi from "../../api/partyCallApi";
 import partyMentorApi from "../../api/mentorPartyApi";
 import { useLiveCall } from "../../context/LiveCallContext";
-import { AiEvidenceBadge } from "../../components/mentor/AiEvidenceBadge";
 import type { PartyItem } from "../../types/api.types";
 import type { ChallengeMode } from "../../types/partyCall.types";
 import type { PartyWorkspaceContext } from "./PartyWorkspace/PartyWorkspace";
@@ -501,7 +500,6 @@ export default function LiveChallengeSession() {
                                                                     className="w-56 h-32 rounded-lg bg-sky-ink object-cover shrink-0"
                                                                 />
                                                                 <div className="flex flex-col gap-1.5 min-w-0 max-w-xs">
-                                                                    <AiEvidenceBadge evidence={c.evidence} />
                                                                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
                                                                         {c.evidence.subjectCameraOn
                                                                             ? <Camera className="w-3 h-3 shrink-0" />

@@ -469,6 +469,14 @@
       "boss": "Trùm",
       "bossHpLabel": "HP Trùm",
       "members": "thành viên",
+      "sharedHpDrain": {
+        "title": "Hao Hụt HP Chung",
+        "subtitle": "Ai đã làm nhóm mất HP chung trong tuần này",
+        "lost": "đã mất",
+        "recovered": "đã hoàn",
+        "feedTitle": "Nhật Ký HP Chung",
+        "systemSource": "Hệ thống"
+      },
       "grimoire": {
         "heroKicker": "Trận Chiến Hiện Tại",
         "heroTimeLeft": "Thời Gian Còn Lại",

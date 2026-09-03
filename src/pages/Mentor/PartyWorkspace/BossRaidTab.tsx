@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
     Bot, Circle, Lock, Swords, Coins, Trophy, Calendar, Clock, BookOpen,
-    AlertTriangle, Check, CheckCircle2, ScrollText, Medal, Timer, Users, Skull,
+    AlertTriangle, Check, CheckCircle2, ScrollText, Medal, Timer, Users, Skull, HeartCrack,
 } from "lucide-react";
 import mentorApi from "../../../api/mentorApi";
 import partyMentorApi from "../../../api/mentorPartyApi";
@@ -24,6 +24,7 @@ import type {
     WeeklyChestDto,
     SharedHpDto,
     RaidActivityDto,
+    SharedHpLogDto,
     RaidHistoryDto,
     BossMode,
     MentorTier,
@@ -246,6 +247,9 @@ export default function BossRaidTab() {
     const [partyStatus, setPartyStatus] = useState<WeeklyBossStatusDto | null>(null);
     const [registerResult, setRegisterResult] = useState<WeeklyBossRegisterResultDto | null>(null);
     const [sharedHp, setSharedHp] = useState<SharedHpDto | null>(null);
+    // The raid's Shared HP ledger — every drain (a member's mandatory quest
+    // failed) and every Justice Recovery restore, tagged with who caused it.
+    const [sharedHpLog, setSharedHpLog] = useState<SharedHpLogDto[]>([]);
     // All chests the party has earned, newest first — chests never expire, so a
     // party that has downed the Boss in several weeks holds several.
     const [chests, setChests] = useState<WeeklyChestDto[]>([]);
@@ -285,6 +289,7 @@ export default function BossRaidTab() {
         setStatusLoading(true);
         setPartyStatus(null);
         setSharedHp(null);
+        setSharedHpLog([]);
         setChests([]);
         setActivity([]);
         setRaidHistory([]);
@@ -306,11 +311,13 @@ export default function BossRaidTab() {
             if (res.success && res.data) {
                 const status = res.data;
                 setPartyStatus(status);
-                const [hpRes, actRes] = await Promise.all([
+                const [hpRes, hpLogRes, actRes] = await Promise.all([
                     mentorApi.getSharedHp(status.raidId).catch(() => null),
+                    mentorApi.getSharedHpHistory(status.raidId).catch(() => null),
                     mentorApi.getPartyActivity(partyId, status.raidId).catch(() => null),
                 ]);
                 if (hpRes?.success) setSharedHp(hpRes.data ?? null);
+                if (hpLogRes?.success) setSharedHpLog(hpLogRes.data ?? []);
                 if (actRes?.success) setActivity(actRes.data ?? []);
             }
         } catch {
@@ -414,6 +421,24 @@ export default function BossRaidTab() {
     //
     // The BE keys one raid per (party, weekStart) and RegisterWeeklyBoss takes the
     // week from the schedule, so comparing week starts is the very test it runs.
+    // Shared HP ledger grouped by the member who caused each change — the drain
+    // counterpart to the damage-contribution list in Participants. Members who
+    // only cost the party Shared HP never get a RaidParticipant row, so this is
+    // the only place their name shows up on the encounter.
+    const sharedHpByUser = (() => {
+        const m = new Map<number, { lost: number; restored: number }>();
+        for (const log of sharedHpLog) {
+            if (log.sourceUserId == null) continue;
+            const row = m.get(log.sourceUserId) ?? { lost: 0, restored: 0 };
+            if (log.delta < 0) row.lost += -log.delta;
+            else row.restored += log.delta;
+            m.set(log.sourceUserId, row);
+        }
+        return [...m.entries()]
+            .map(([userId, v]) => ({ userId, ...v }))
+            .sort((a, b) => b.lost - a.lost);
+    })();
+
     const currentWeekStart = boss?.activeWeekStart?.slice(0, 10);
     const registeredThisWeek =
         !!partyStatus && !!currentWeekStart && partyStatus.weekStartDate.slice(0, 10) === currentWeekStart;
@@ -747,6 +772,61 @@ export default function BossRaidTab() {
                                                         <span className="text-sky-ink-2"> · {a.questTitle} · </span>
                                                         <span className="font-semibold text-sky-dmg-deep tabular-nums">-{a.damageDealt} HP</span>
                                                         <span className="text-sky-ink-3 ml-2 tabular-nums">({a.bossHpAfter.toLocaleString()} left)</span>
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {sharedHpByUser.length > 0 && (
+                                    <div className="mb-6">
+                                        <p className={`inline-flex items-center gap-1.5 mb-1 ${eyebrow}`}>
+                                            <HeartCrack className="w-3 h-3" aria-hidden="true" /> {t("mentor.bossRaid.sharedHpDrain.title")}
+                                        </p>
+                                        <p className="text-xs text-sky-ink-2 font-medium mb-2">{t("mentor.bossRaid.sharedHpDrain.subtitle")}</p>
+                                        <div className="space-y-1.5">
+                                            {sharedHpByUser.map((row) => (
+                                                <div key={row.userId} className="flex items-center justify-between gap-3 rounded-sky-chip bg-white/58 ring-1 ring-white/72 px-3 py-2 text-sm">
+                                                    <span className="font-semibold text-sky-ink truncate">{usernameFor(row.userId)}</span>
+                                                    <div className="flex items-center gap-3 shrink-0 tabular-nums">
+                                                        {row.lost > 0 && (
+                                                            <span className="font-display font-semibold text-sky-rose-deep">
+                                                                -{row.lost}
+                                                                <span className={`ml-1 font-sans ${eyebrow}`}>{t("mentor.bossRaid.sharedHpDrain.lost")}</span>
+                                                            </span>
+                                                        )}
+                                                        {row.restored > 0 && (
+                                                            <span className="inline-flex items-center gap-1 font-display font-semibold text-sky-teal">
+                                                                <Check className="w-3.5 h-3.5" aria-hidden="true" />+{row.restored}
+                                                                <span className={`font-sans ${eyebrow}`}>{t("mentor.bossRaid.sharedHpDrain.recovered")}</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {sharedHpLog.length > 0 && (
+                                    <div className="mb-6">
+                                        <p className={`inline-flex items-center gap-1.5 mb-2 ${eyebrow}`}>
+                                            <ScrollText className="w-3 h-3" aria-hidden="true" /> {t("mentor.bossRaid.sharedHpDrain.feedTitle")}
+                                        </p>
+                                        <div className="space-y-1 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
+                                            {sharedHpLog.map((log) => (
+                                                <div key={log.sharedHpLogId} className="flex items-start gap-2 rounded-sky-chip bg-white/50 ring-1 ring-white/66 px-3 py-1.5 text-xs">
+                                                    <span className={`mt-1.5 w-1.5 h-1.5 shrink-0 rounded-full ${log.delta < 0 ? "bg-sky-rose" : "bg-sky-teal"}`} aria-hidden="true" />
+                                                    <p className="min-w-0">
+                                                        <span className="font-semibold text-sky-deep">
+                                                            {log.sourceUserId != null ? usernameFor(log.sourceUserId) : t("mentor.bossRaid.sharedHpDrain.systemSource")}
+                                                        </span>
+                                                        <span className="text-sky-ink-2"> · {log.reason} · </span>
+                                                        <span className={`font-semibold tabular-nums ${log.delta < 0 ? "text-sky-rose-deep" : "text-sky-teal"}`}>
+                                                            {log.delta > 0 ? `+${log.delta}` : log.delta} HP
+                                                        </span>
+                                                        <span className="text-sky-ink-3 ml-2 tabular-nums">({log.balanceAfter} left)</span>
                                                     </p>
                                                 </div>
                                             ))}

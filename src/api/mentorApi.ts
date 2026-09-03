@@ -8,7 +8,7 @@ import type {
     CreateMentorQuestRequest, CreatePartyQuestRequest, CreatePartyQuestResultDto,
     ProofDto,
     BossTemplateDto, RegisterWeeklyBossRequest, WeeklyBossRegisterResultDto,
-    WeeklyBossStatusDto, RaidActivityDto, SharedHpDto, WeeklyChestDto, RaidHistoryDto,
+    WeeklyBossStatusDto, RaidActivityDto, SharedHpDto, SharedHpLogDto, WeeklyChestDto, RaidHistoryDto,
 } from '../types/mentor.types';
 
 const mid = (): number => {
@@ -252,6 +252,19 @@ const mentorApi = {
     getSharedHp: async (raidId: number): Promise<ApiResponse<SharedHpDto>> => {
         const r = await axiosClient.get<ApiResponse<SharedHpDto>>(
             `/raids/${raidId}/shared-hp`
+        );
+        return r.data;
+    },
+
+    /**
+     * The raid's Shared HP ledger, newest first — every penalty (a member's
+     * mandatory quest failed / expired) and every Justice Recovery restore,
+     * each tagged with the member who caused it. Powers the "who drained
+     * Shared HP" breakdown alongside the damage contribution list.
+     */
+    getSharedHpHistory: async (raidId: number): Promise<ApiResponse<SharedHpLogDto[]>> => {
+        const r = await axiosClient.get<ApiResponse<SharedHpLogDto[]>>(
+            `/raids/${raidId}/shared-hp/history`
         );
         return r.data;
     },

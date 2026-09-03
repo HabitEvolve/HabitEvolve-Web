@@ -421,6 +421,23 @@ export interface SharedHpDto {
     riskLevel: string;    // SAFE | LOW | MEDIUM | HIGH | WIPED
 }
 
+/**
+ * One row of a raid's Shared HP ledger (BE SharedHpLogDto), newest first.
+ * `delta` < 0 → HP drained (a member's mandatory quest failed / expired);
+ * `delta` > 0 → Justice Recovery restore. No username on the BE — joined
+ * client-side against the party member list, same as RaidParticipantDto.
+ */
+export interface SharedHpLogDto {
+    sharedHpLogId: number;
+    raidId: number;
+    delta: number;
+    balanceAfter: number;
+    reason: string;
+    sourceUserId: number | null;
+    questId: number | null;
+    createdAt: string;
+}
+
 // ── PARTY REMINDER ────────────────────────────────────────────────────────────
 export interface PartyReminderSettingDto {
     partyId: number;

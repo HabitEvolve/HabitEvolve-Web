@@ -469,6 +469,14 @@
       "boss": "Boss",
       "bossHpLabel": "Boss HP",
       "members": "members",
+      "sharedHpDrain": {
+        "title": "Shared HP Drain",
+        "subtitle": "Who has cost the party Shared HP this week",
+        "lost": "drained",
+        "recovered": "recovered",
+        "feedTitle": "Shared HP Log",
+        "systemSource": "System"
+      },
       "grimoire": {
         "heroKicker": "Current Encounter",
         "heroTimeLeft": "Time Left",

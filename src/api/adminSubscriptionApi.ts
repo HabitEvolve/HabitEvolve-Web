@@ -4,6 +4,7 @@ import {
   SubscriptionPackageDto,
   CreatePackagePayload,
   UpdatePackagePayload,
+  UpdatePackageResultDto,
   TogglePackageStatusPayload,
   GetPackagesQueryParams,
 } from '../types/adminSubscription.types';
@@ -30,8 +31,8 @@ const adminSubscriptionApi = {
   },
 
   // PUT /api/admin/packages/{id} — Code is immutable, not sent
-  updatePackage: async (id: number, payload: UpdatePackagePayload): Promise<ApiResponse<SubscriptionPackageDto>> => {
-    const res = await axiosClient.put<ApiResponse<SubscriptionPackageDto>>(`${PACKAGES_URL}/${id}`, payload);
+  updatePackage: async (id: number, payload: UpdatePackagePayload): Promise<ApiResponse<UpdatePackageResultDto>> => {
+    const res = await axiosClient.put<ApiResponse<UpdatePackageResultDto>>(`${PACKAGES_URL}/${id}`, payload);
     return res.data;
   },
 
@@ -45,6 +46,14 @@ const adminSubscriptionApi = {
   // BE rejects if any MentorSubscription exists for this package — prefer toggleStatus instead.
   deletePackage: async (id: number): Promise<ApiResponse<void>> => {
     const res = await axiosClient.delete<ApiResponse<void>>(`${PACKAGES_URL}/${id}`);
+    return res.data;
+  },
+
+  // POST /api/admin/packages/{id}/apply-to-subscribers
+  // Standalone from updatePackage's applyToExistingSubscribers flag — for when the admin skipped that
+  // checkbox earlier and now wants to push the package's CURRENT values to everyone on it right now.
+  applyToSubscribers: async (id: number): Promise<ApiResponse<number>> => {
+    const res = await axiosClient.post<ApiResponse<number>>(`${PACKAGES_URL}/${id}/apply-to-subscribers`);
     return res.data;
   },
 };

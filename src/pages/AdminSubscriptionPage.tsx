@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus, X, ChevronLeft, ChevronRight, AlertTriangle,
-  Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff,
-  History as HistoryIcon, Loader2, Terminal, SlidersHorizontal,
+  Gem, Package, Info, Users, Swords, Inbox, Power, PowerOff, Pencil,
+  History as HistoryIcon, Loader2, Terminal, SlidersHorizontal, Send,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import adminSubscriptionApi from '../api/adminSubscriptionApi';
@@ -70,6 +70,9 @@ interface PackageFormState {
   maxEasyPerWeek: string;
   maxNormalPerWeek: string;
   maxHardPerWeek: string;
+  // Edit-mode only, one-off action for THIS save (not a package property) — always starts unchecked
+  // regardless of the package being edited, matching the snapshot model's opt-in default.
+  applyToExistingSubscribers: boolean;
 }
 
 const EMPTY_FORM: PackageFormState = {
@@ -94,6 +97,7 @@ const EMPTY_FORM: PackageFormState = {
   maxEasyPerWeek: '',
   maxNormalPerWeek: '',
   maxHardPerWeek: '',
+  applyToExistingSubscribers: false,
 };
 
 const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
@@ -118,6 +122,7 @@ const pkgToForm = (pkg: SubscriptionPackageDto): PackageFormState => ({
   maxEasyPerWeek: pkg.maxEasyPartyQuestsPerWeek?.toString() ?? '',
   maxNormalPerWeek: pkg.maxNormalPartyQuestsPerWeek?.toString() ?? '',
   maxHardPerWeek: pkg.maxHardPartyQuestsPerWeek?.toString() ?? '',
+  applyToExistingSubscribers: false,
 });
 
 // '' → undefined (no cap sent, BE treats missing as null/unbounded); otherwise parse to int.
@@ -280,7 +285,9 @@ interface PackageFormModalProps {
   mode: 'create' | 'edit';
   initial?: SubscriptionPackageDto;
   onClose: () => void;
-  onSuccess: () => void;
+  // subscribersUpdated is only meaningful for an edit that had "Apply immediately" checked — undefined
+  // otherwise, so the caller can tell "nothing to report" apart from "applied to 0 mentors".
+  onSuccess: (subscribersUpdated?: number) => void;
 }
 
 const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModalProps) => {
@@ -295,11 +302,45 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
   const set = <K extends keyof PackageFormState>(k: K, v: PackageFormState[K]) =>
     setForm(prev => ({ ...prev, [k]: v }));
 
+  // Per-difficulty cap fields, grouped by the parent total they split.
+  const DIFF_DAY_KEYS = ['maxEasyPerDay', 'maxNormalPerDay', 'maxHardPerDay'] as const;
+  const DIFF_WEEK_KEYS = ['maxEasyPerWeek', 'maxNormalPerWeek', 'maxHardPerWeek'] as const;
+  type DiffCapKey = (typeof DIFF_DAY_KEYS)[number] | (typeof DIFF_WEEK_KEYS)[number];
+
+  // Editing one per-difficulty cap: once the values entered exactly fill the parent
+  // total there's no budget left for the blank ones, so pin them to 0 — the config
+  // then says out loud "that difficulty can't be assigned" instead of leaving it ∞.
+  const setDiffCap = (key: DiffCapKey, raw: string) =>
+    setForm(prev => {
+      const next: PackageFormState = { ...prev, [key]: raw };
+      const isDay = (DIFF_DAY_KEYS as readonly string[]).includes(key);
+      const keys = isDay ? DIFF_DAY_KEYS : DIFF_WEEK_KEYS;
+      const total = Number((isDay ? next.questsPerMemberPerDay : next.partyQuestsPerWeek) || 0);
+      const sum = keys.reduce((s, k) => s + (parseOptionalCap(next[k]) ?? 0), 0);
+      if (total > 0 && sum === total) {
+        for (const k of keys) if (next[k].trim() === '') next[k] = '0';
+      }
+      return next;
+    });
+
+  // Per-difficulty caps SPLIT the overall totals — the EASY+NORMAL+HARD caps that are
+  // set must sum to at most the matching total. Derived live so the warning appears
+  // right under Section D as the admin types, not only on submit.
+  const capSum = (...vals: string[]) => vals.reduce((s, v) => s + (parseOptionalCap(v) ?? 0), 0);
+  const daySum = capSum(form.maxEasyPerDay, form.maxNormalPerDay, form.maxHardPerDay);
+  const weekSum = capSum(form.maxEasyPerWeek, form.maxNormalPerWeek, form.maxHardPerWeek);
+  const dayCapTotal = Number(form.questsPerMemberPerDay || 0);
+  const weekCapTotal = Number(form.partyQuestsPerWeek || 0);
+  const dayCapExceeded = daySum > dayCapTotal;
+  const weekCapExceeded = weekSum > weekCapTotal;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.bossModes.length) { setError(t('admin.subscriptionPage.form.bossModesRequired')); return; }
     if (!form.proofTypes.length) { setError(t('admin.subscriptionPage.form.proofTypesRequired')); return; }
+    // The inline warnings under Section D already spell out what's wrong — just block.
+    if (dayCapExceeded || weekCapExceeded) return;
 
     setSaving(true);
     try {
@@ -321,8 +362,8 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         // longer drive any behavior (AI Check is now a per-quest opt-in the Mentor controls — see
         // Quest.AiCheckEnabled) — only "empty vs non-empty" matters, so ON writes all three.
         aiVerificationBossModes: form.aiVerificationEnabled ? 'EASY,NORMAL,HARD' : undefined,
-        // Additive on top of questsPerMemberPerDay/partyQuestsPerWeek above — blank means no
-        // separate cap for that difficulty (only the totals apply).
+        // These SPLIT questsPerMemberPerDay/partyQuestsPerWeek above (sum ≤ total, enforced just
+        // above and again on the BE) — blank means no separate cap for that difficulty.
         maxEasyQuestsPerMemberPerDay: parseOptionalCap(form.maxEasyPerDay),
         maxNormalQuestsPerMemberPerDay: parseOptionalCap(form.maxNormalPerDay),
         maxHardQuestsPerMemberPerDay: parseOptionalCap(form.maxHardPerDay),
@@ -331,18 +372,21 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
         maxHardPartyQuestsPerWeek: parseOptionalCap(form.maxHardPerWeek),
       };
 
-      let res;
       if (mode === 'create') {
-        res = await adminSubscriptionApi.createPackage({
+        const res = await adminSubscriptionApi.createPackage({
           ...base,
           code: form.code.trim().toUpperCase(),
         });
+        if (!res.success) throw new Error(res.message);
+        onSuccess();
       } else {
-        res = await adminSubscriptionApi.updatePackage(initial!.packageId, base);
+        const res = await adminSubscriptionApi.updatePackage(initial!.packageId, {
+          ...base,
+          applyToExistingSubscribers: form.applyToExistingSubscribers,
+        });
+        if (!res.success) throw new Error(res.message);
+        onSuccess(form.applyToExistingSubscribers ? res.data?.subscribersUpdated : undefined);
       }
-
-      if (!res.success) throw new Error(res.message);
-      onSuccess();
     } catch (e) {
       alert.error(errMsg(e));
     } finally {
@@ -559,37 +603,81 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
             </div>
           </div>
 
-          {/* Section D: Per-Difficulty Quest Caps — additive on top of Section C's totals above */}
+          {/* Section D: Per-Difficulty Quest Caps — SPLIT Section C's totals above (sum ≤ total) */}
           <div>
             <SectionHeader label={t('admin.subscriptionPage.form.sectionDifficulty')} Icon={SlidersHorizontal} tone="peach" />
             <p className="mb-3 text-[10px] font-medium text-sky-ink-3">{t('admin.subscriptionPage.form.difficultyCapsHint')}</p>
             <div className="grid grid-cols-3 gap-3">
               <Field label={t('admin.subscriptionPage.form.maxEasyPerDayLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
-                  value={form.maxEasyPerDay} onChange={e => set('maxEasyPerDay', e.target.value)} />
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
+                  value={form.maxEasyPerDay} onChange={e => setDiffCap('maxEasyPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxNormalPerDayLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
-                  value={form.maxNormalPerDay} onChange={e => set('maxNormalPerDay', e.target.value)} />
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
+                  value={form.maxNormalPerDay} onChange={e => setDiffCap('maxNormalPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxHardPerDayLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
-                  value={form.maxHardPerDay} onChange={e => set('maxHardPerDay', e.target.value)} />
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${dayCapExceeded ? 'ring-sky-rose/60' : ''}`}
+                  value={form.maxHardPerDay} onChange={e => setDiffCap('maxHardPerDay', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxEasyPerWeekLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
-                  value={form.maxEasyPerWeek} onChange={e => set('maxEasyPerWeek', e.target.value)} />
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
+                  value={form.maxEasyPerWeek} onChange={e => setDiffCap('maxEasyPerWeek', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxNormalPerWeekLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
-                  value={form.maxNormalPerWeek} onChange={e => set('maxNormalPerWeek', e.target.value)} />
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
+                  value={form.maxNormalPerWeek} onChange={e => setDiffCap('maxNormalPerWeek', e.target.value)} />
               </Field>
               <Field label={t('admin.subscriptionPage.form.maxHardPerWeekLabel')}>
-                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums`}
-                  value={form.maxHardPerWeek} onChange={e => set('maxHardPerWeek', e.target.value)} />
+                <input type="number" min={0} placeholder="∞" className={`${inputCls} tabular-nums ${weekCapExceeded ? 'ring-sky-rose/60' : ''}`}
+                  value={form.maxHardPerWeek} onChange={e => setDiffCap('maxHardPerWeek', e.target.value)} />
               </Field>
             </div>
+
+            {/* Cap-sum overflow shows here — right under the fields it's about, live as you type. */}
+            {(dayCapExceeded || weekCapExceeded) && (
+              <div className="mt-2.5 space-y-1.5">
+                {dayCapExceeded && (
+                  <p className="flex items-start gap-1.5 text-[11px] font-semibold text-sky-rose-deep">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+                    {t('admin.subscriptionPage.form.difficultyCapsExceedDay', { sum: daySum, total: dayCapTotal })}
+                  </p>
+                )}
+                {weekCapExceeded && (
+                  <p className="flex items-start gap-1.5 text-[11px] font-semibold text-sky-rose-deep">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+                    {t('admin.subscriptionPage.form.difficultyCapsExceedWeek', { sum: weekSum, total: weekCapTotal })}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Edit-only: opt-in override of the snapshot model (a new/renewed subscription always picks
+              up the latest values; this is the one path that reaches back into an ALREADY-active
+              mentor's entitlements). Peach, not violet like the sections above — this one has a real
+              consequence the admin should notice, not just another field to fill in. */}
+          {mode === 'edit' && (
+            <div className="relative overflow-hidden rounded-sky-chip bg-sky-peach/10 ring-1 ring-sky-peach/25 p-4 pl-5">
+              <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={form.applyToExistingSubscribers}
+                  onChange={e => set('applyToExistingSubscribers', e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded accent-sky-peach-deep"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-sky-ink">
+                    {t('admin.subscriptionPage.form.applyImmediatelyLabel')}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-medium text-sky-ink-2">
+                    {t('admin.subscriptionPage.form.applyImmediatelyHint')}
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
 
           {error && (
             <div className="relative flex items-start gap-2.5 overflow-hidden rounded-sky-chip bg-sky-rose/10 pl-4 pr-4 py-2.5 text-sm font-semibold text-sky-rose-deep">
@@ -605,7 +693,7 @@ const PackageFormModal = ({ mode, initial, onClose, onSuccess }: PackageFormModa
           <SkyButton type="button" variant="secondary" onClick={onClose}>
             {t('admin.subscriptionPage.form.cancel')}
           </SkyButton>
-          <SkyButton type="submit" form="pkg-form" variant="primary" disabled={saving}>
+          <SkyButton type="submit" form="pkg-form" variant="primary" disabled={saving || dayCapExceeded || weekCapExceeded}>
             {saving
               ? t('admin.subscriptionPage.form.saving')
               : mode === 'create'
@@ -684,6 +772,63 @@ const ToggleModal = ({ pkg, loading, onConfirm, onClose }: ToggleModalProps) => 
             {loading
               ? t('admin.subscriptionPage.toggleModal.processing')
               : t('admin.subscriptionPage.toggleModal.confirm')}
+          </SkyButton>
+        </div>
+      </SkyCard>
+    </div>,
+    document.body
+  );
+};
+
+// ─── Apply-to-Subscribers Confirm Modal ──────────────────────────────────────
+// Standalone action for when the admin edited a package earlier without checking
+// "Apply immediately" and now wants to push the CURRENT saved values to everyone
+// on it, without reopening the edit form. Same peach "consequential, not
+// destructive" tone as that checkbox's warning callout.
+
+interface ApplySubscribersModalProps {
+  pkg: SubscriptionPackageDto;
+  loading: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}
+
+const ApplySubscribersModal = ({ pkg, loading, onConfirm, onClose }: ApplySubscribersModalProps) => {
+  const { t } = useTranslation();
+  return createPortal(
+    <div
+      className="modal-content fixed inset-0 z-[99999] bg-sky-abyss/45 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <SkyCard variant="admin" className="sky-in p-0 overflow-hidden w-full max-w-md">
+        <div className={`relative flex items-center gap-3 overflow-hidden border-b border-white/65 px-6 py-4 ${TONE.peach.wash}`}>
+          <span className={`absolute left-0 top-0 h-full w-[3px] ${TONE.peach.rail}`} aria-hidden="true" />
+          <span className={`grid place-items-center w-10 h-10 shrink-0 rounded-sky-chip ring-1 ${TONE.peach.chip}`}>
+            <Send className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className={eyebrow}>{pkg.code}</p>
+            <h2 className="truncate font-display text-base font-semibold leading-tight text-sky-ink">
+              {t('admin.subscriptionPage.applyModal.title')}
+            </h2>
+          </div>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm font-medium leading-relaxed text-sky-ink-2">
+            {t('admin.subscriptionPage.applyModal.areYouSure', { codeName: `${pkg.code} — ${pkg.name}` })}
+          </p>
+          <p className="relative mt-3 flex items-start gap-2 overflow-hidden rounded-sky-chip bg-sky-peach/14 pl-4 pr-3 py-2 text-xs font-semibold text-sky-peach-deep">
+            <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-peach" aria-hidden="true" />
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" strokeWidth={2.5} aria-hidden="true" />
+            <span className="min-w-0">{t('admin.subscriptionPage.applyModal.warning')}</span>
+          </p>
+        </div>
+        <div className="flex justify-end gap-3 border-t border-white/65 bg-white/44 px-6 py-4">
+          <SkyButton type="button" variant="secondary" onClick={onClose}>
+            {t('admin.subscriptionPage.toggleModal.cancel')}
+          </SkyButton>
+          <SkyButton type="button" variant="primary" onClick={onConfirm} disabled={loading}>
+            {loading ? t('admin.subscriptionPage.toggleModal.processing') : t('admin.subscriptionPage.applyModal.confirm')}
           </SkyButton>
         </div>
       </SkyCard>
@@ -902,6 +1047,8 @@ export default function AdminSubscriptionPage() {
   const [toggleTarget, setToggleTarget] = useState<SubscriptionPackageDto | null>(null);
   const [toggling, setToggling] = useState(false);
   const [historyTarget, setHistoryTarget] = useState<SubscriptionPackageDto | null>(null);
+  const [applyTarget, setApplyTarget] = useState<SubscriptionPackageDto | null>(null);
+  const [applying, setApplying] = useState(false);
 
   const fetchPackages = useCallback(async () => {
     setLoading(true);
@@ -946,6 +1093,22 @@ export default function AdminSubscriptionPage() {
       alert.error(errMsg(e));
     } finally {
       setToggling(false);
+    }
+  };
+
+  const handleApplyConfirm = async () => {
+    if (!applyTarget) return;
+    setApplying(true);
+    try {
+      const res = await adminSubscriptionApi.applyToSubscribers(applyTarget.packageId);
+      if (!res.success) throw new Error(res.message);
+      alert.success(t('admin.subscriptionPage.applyModal.success', { count: res.data ?? 0 }));
+      setApplyTarget(null);
+      fetchPackages();
+    } catch (e) {
+      alert.error(errMsg(e));
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -1108,22 +1271,51 @@ export default function AdminSubscriptionPage() {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
-                          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setFormModal({ mode: 'edit', pkg })}>
-                            {t('admin.subscriptionPage.editBtn')}
+                          {/* Icon-only — labels moved to aria-label/title (hover tooltip + screen readers)
+                              now that there's no visible text to carry the meaning. */}
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            onClick={() => setFormModal({ mode: 'edit', pkg })}
+                            aria-label={t('admin.subscriptionPage.editBtn')}
+                            title={t('admin.subscriptionPage.editBtn')}
+                          >
+                            <Pencil className="w-4 h-4" />
                           </SkyButton>
-                          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setHistoryTarget(pkg)}>
-                            <HistoryIcon className="w-3.5 h-3.5" />
-                            {t('admin.subscriptionPage.historyBtn')}
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            onClick={() => setHistoryTarget(pkg)}
+                            aria-label={t('admin.subscriptionPage.historyBtn')}
+                            title={t('admin.subscriptionPage.historyBtn')}
+                          >
+                            <HistoryIcon className="w-4 h-4" />
                           </SkyButton>
                           <SkyButton
                             type="button"
                             variant={pkg.isActive ? 'destructive' : 'success'}
-                            size="sm"
+                            size="icon"
                             onClick={() => setToggleTarget(pkg)}
+                            aria-label={pkg.isActive ? t('admin.subscriptionPage.deactivateBtn') : t('admin.subscriptionPage.activateBtn')}
+                            title={pkg.isActive ? t('admin.subscriptionPage.deactivateBtn') : t('admin.subscriptionPage.activateBtn')}
                           >
                             {pkg.isActive
-                              ? t('admin.subscriptionPage.deactivateBtn')
-                              : t('admin.subscriptionPage.activateBtn')}
+                              ? <PowerOff className="w-4 h-4" />
+                              : <Power className="w-4 h-4" />}
+                          </SkyButton>
+                          {/* Standalone from the Edit form's "Apply immediately" checkbox — for
+                              catching up subscribers after a save the admin didn't check it on. */}
+                          <SkyButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            onClick={() => setApplyTarget(pkg)}
+                            aria-label={t('admin.subscriptionPage.applyBtn')}
+                            title={t('admin.subscriptionPage.applyBtn')}
+                          >
+                            <Send className="w-4 h-4" />
                           </SkyButton>
                         </div>
                       </td>
@@ -1178,10 +1370,12 @@ export default function AdminSubscriptionPage() {
           mode={formModal.mode}
           initial={formModal.pkg}
           onClose={() => setFormModal(null)}
-          onSuccess={() => {
+          onSuccess={(subscribersUpdated) => {
             const msg = formModal.mode === 'create'
               ? t('admin.subscriptionPage.toastCreated')
-              : t('admin.subscriptionPage.toastUpdated');
+              : subscribersUpdated
+                ? t('admin.subscriptionPage.toastUpdatedWithCount', { count: subscribersUpdated })
+                : t('admin.subscriptionPage.toastUpdated');
             setFormModal(null);
             alert.success(msg);
             fetchPackages();
@@ -1202,6 +1396,15 @@ export default function AdminSubscriptionPage() {
         <PackageHistoryModal
           pkg={historyTarget}
           onClose={() => setHistoryTarget(null)}
+        />
+      )}
+
+      {applyTarget && (
+        <ApplySubscribersModal
+          pkg={applyTarget}
+          loading={applying}
+          onConfirm={handleApplyConfirm}
+          onClose={() => setApplyTarget(null)}
         />
       )}
 

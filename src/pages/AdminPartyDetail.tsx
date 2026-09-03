@@ -5,6 +5,8 @@ import {
   Loader2, Trash2, Copy, Check, KeyRound,
   Archive, CircleSlash, Globe, Lock, UserCheck, Play, X, Clock,
   CalendarClock, Skull, Minus, AlertTriangle, Ticket, Gift,
+  Radio, Trophy, ChevronDown, ChevronRight, Clapperboard, ShieldAlert,
+  Video, Camera, CameraOff,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -19,6 +21,7 @@ import SharedStatusBadge, { type StatusTone } from "../components/common/StatusB
 import { PartyItem, PartyMember, JoinRequestItem, JoinPolicy, UserItem } from "../types/api.types";
 import { PartyRaidDto, PartyWeeklyChestDto } from "../types/adminParty.types";
 import { UserQuestDto } from "../types/userWorkspace.types";
+import type { LiveChallengeSessionSummaryDto, LiveChallengeDto } from "../types/partyCall.types";
 
 const errMsg = (e: unknown) =>
   (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? undefined;
@@ -553,8 +556,234 @@ const RaidsTab = ({ raids, chests, loading }: { raids: PartyRaidDto[]; chests: P
   );
 };
 
+// ── TAB: LIVE ARENA ───────────────────────────────────────────────────────────
+// Read-only audit of the party's "Đấu Trường Trực Tiếp" sessions — the mentor runs
+// these; admin only reviews them here (list → expand a session → per-challenge
+// evidence, AI hint, mentor verdict, any "approved without evidence" override).
+const LIVE_ARENA_PAGE_SIZE = 8;
+
+const SESSION_PILL: Record<string, PillCfg> = {
+  Active: { tone: "teal", Icon: Radio },
+  Ended:  { tone: "neutral", Icon: Check },
+};
+const CHALLENGE_PILL: Record<string, PillCfg> = {
+  Approved:  { tone: "teal", Icon: Check },
+  Rejected:  { tone: "rose", Icon: X },
+  Responded: { tone: "peach", Icon: Clock },
+  Started:   { tone: "deep", Icon: Play },
+  Pending:   { tone: "neutral", Icon: Minus },
+};
+// AI never decides — this is a suggestion hue only, matching the mentor-side reading.
+const AI_TONE: Record<string, Tone> = {
+  Approved: "teal", Suspicious: "peach", Rejected: "rose", AiChecking: "deep", NotUsed: "neutral",
+};
+
+const ChallengeCard = ({ c }: { c: LiveChallengeDto }) => (
+  <div className="rounded-sky-md bg-white/62 ring-1 ring-white/80 p-3.5">
+    <div className={`flex flex-col gap-3.5 ${c.evidence ? "sm:flex-row" : ""}`}>
+      {c.evidence && (
+        <video
+          src={c.evidence.mediaUrl}
+          poster={c.evidence.snapshotUrls?.[0]}
+          controls
+          className="w-full sm:w-56 aspect-video shrink-0 rounded-lg bg-sky-ink object-cover"
+        />
+      )}
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 font-display text-sm font-semibold text-sky-ink">{c.promptText}</p>
+          {(c.status === "Approved" || c.status === "Rejected") && <StatePill value={c.status} map={CHALLENGE_PILL} tiny />}
+        </div>
+        <p className="text-xs font-medium text-sky-ink-3">
+          {c.mode} · {c.points} pts{c.responseSeconds != null && ` · responded in ${c.responseSeconds}s`}
+        </p>
+        {c.requiresEvidence && (c.evidence ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-sky-chip ring-1 px-2 py-0.5 text-[10px] font-semibold ${TONE[AI_TONE[c.evidence.aiStatus] ?? "neutral"].chip}`}>
+              AI: {c.evidence.aiStatus}{c.evidence.aiConfidence != null && ` (${Math.round(c.evidence.aiConfidence * 100)}%)`}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-ink-3">
+              {c.evidence.subjectCameraOn
+                ? <Camera className="w-3 h-3 shrink-0" aria-hidden="true" />
+                : <CameraOff className="w-3 h-3 shrink-0 text-sky-rose-deep" aria-hidden="true" />}
+              {c.evidence.subjectUsername} · {c.evidence.durationSeconds}s
+            </span>
+          </div>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-ink-3">
+            <Video className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            {c.evidenceStatus === "NotRequired" ? "No evidence required" : `Evidence: ${c.evidenceStatus}`}
+          </span>
+        ))}
+        {c.evidence?.aiReasoning && (
+          <p className="text-[11px] font-medium italic text-sky-ink-2">"{c.evidence.aiReasoning}"</p>
+        )}
+        {c.judgeOverrideReason && (
+          <p className="flex items-start gap-1.5 text-[11px] font-medium text-sky-peach-deep">
+            <ShieldAlert className="w-3 h-3 shrink-0 mt-px" aria-hidden="true" />
+            Approved without evidence: "{c.judgeOverrideReason}"
+          </p>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const LiveArenaTab = ({ partyId }: { partyId: number }) => {
+  const alert = useAlert();
+  const [sessions, setSessions] = useState<LiveChallengeSessionSummaryDto[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [evidenceBySession, setEvidenceBySession] = useState<Record<number, LiveChallengeDto[]>>({});
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    adminPartyApi.getLiveArenaSessions(partyId, page, LIVE_ARENA_PAGE_SIZE)
+      .then((r) => {
+        if (cancelled) return;
+        if (r.success) { setSessions(r.data ?? []); setTotal(r.totalRecords ?? 0); }
+        else setError(r.message ?? "Failed to load Live Arena history.");
+      })
+      .catch((e) => { if (!cancelled) setError(errMsg(e) ?? "Failed to load Live Arena history."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [partyId, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / LIVE_ARENA_PAGE_SIZE));
+
+  const toggle = async (sessionId: number) => {
+    if (expandedId === sessionId) { setExpandedId(null); return; }
+    setExpandedId(sessionId);
+    if (evidenceBySession[sessionId]) return;
+    setEvidenceLoading(true);
+    try {
+      const r = await adminPartyApi.getLiveArenaSessionEvidence(sessionId);
+      if (r.success) setEvidenceBySession((prev) => ({ ...prev, [sessionId]: r.data ?? [] }));
+      else alert.error(r.message ?? "Failed to load session evidence.");
+    } catch (e) {
+      alert.error(errMsg(e) ?? "Failed to load session evidence.");
+    } finally {
+      setEvidenceLoading(false);
+    }
+  };
+
+  if (loading) return <ListSkeleton />;
+  if (error) {
+    return (
+      <div className="relative flex items-start gap-3 overflow-hidden rounded-sky-card bg-sky-rose/10 pl-5 pr-4 py-4">
+        <span className="absolute left-0 top-0 h-full w-[3px] bg-sky-rose" aria-hidden="true" />
+        <AlertTriangle className="w-5 h-5 shrink-0 mt-px text-sky-rose-deep" strokeWidth={2.2} aria-hidden="true" />
+        <p className="text-sm font-medium text-sky-ink-2">{error}</p>
+      </div>
+    );
+  }
+  if (sessions.length === 0) {
+    return (
+      <EmptyState
+        icon={<Radio className="w-6 h-6" strokeWidth={1.9} aria-hidden="true" />}
+        title="No Live Arena sessions for this party"
+        subtitle="Sessions the mentor runs in the Live Challenge Arena will show up here."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3 sky-stagger">
+      {sessions.map((s) => {
+        const open = expandedId === s.sessionId;
+        const challenges = evidenceBySession[s.sessionId];
+        return (
+          <div key={s.sessionId} className={`overflow-hidden ${rowCls}`}>
+            <button
+              type="button"
+              onClick={() => toggle(s.sessionId)}
+              aria-expanded={open}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                {open
+                  ? <ChevronDown className="w-4 h-4 shrink-0 text-sky-ink-3" aria-hidden="true" />
+                  : <ChevronRight className="w-4 h-4 shrink-0 text-sky-ink-3" aria-hidden="true" />}
+                <span className="grid place-items-center w-8 h-8 shrink-0 rounded-[10px] bg-sky-violet/12 ring-1 ring-sky-violet/22 text-sky-violet-deep">
+                  <Radio className="w-3.5 h-3.5" strokeWidth={2.3} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-sm font-semibold text-sky-ink tabular-nums">{fmtDateTime(s.startedAt)}</p>
+                  <p className="text-xs font-medium text-sky-ink-3 tabular-nums">
+                    {s.participantCount} participant{s.participantCount === 1 ? "" : "s"} · {s.approvedChallengeCount}/{s.challengeCount} approved
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <StatePill value={s.status} map={SESSION_PILL} tiny />
+                <span className={`hidden items-center gap-1 rounded-sky-chip px-2 py-0.5 text-[10px] font-semibold ring-1 sm:inline-flex ${TONE.deep.chip}`}>
+                  <Clapperboard className="w-3 h-3" aria-hidden="true" /> {s.evidenceCapturedCount}
+                </span>
+                {s.overrideCount > 0 && (
+                  <span className={`inline-flex items-center gap-1 rounded-sky-chip px-2 py-0.5 text-[10px] font-semibold ring-1 ${TONE.peach.chip}`}>
+                    <ShieldAlert className="w-3 h-3" aria-hidden="true" /> {s.overrideCount}
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {open && (
+              <div className="space-y-4 border-t border-white/70 px-4 py-4">
+                {s.topParticipants.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-ink-3">
+                      <Trophy className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> Top:
+                    </span>
+                    {s.topParticipants.map((p, i) => (
+                      <span key={p.userId} className={`inline-flex items-center gap-1 rounded-sky-chip px-2 py-0.5 text-[11px] font-semibold ring-1 ${TONE.neutral.chip}`}>
+                        #{i + 1} {p.username} · {p.score} pts
+                        {p.mGoldAwarded > 0 && <span className="text-sky-peach-deep"> +{p.mGoldAwarded} M-Gold</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {evidenceLoading && !challenges ? (
+                  <div className="flex items-center gap-2 py-3 text-sm font-medium text-sky-ink-3">
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading challenges…
+                  </div>
+                ) : (challenges ?? []).length === 0 ? (
+                  <p className="text-xs font-medium text-sky-ink-3">No challenges were sent in this session.</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {(challenges ?? []).map((c) => <ChallengeCard key={c.challengeId} c={c} />)}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+            Previous
+          </SkyButton>
+          <span className="text-xs font-medium text-sky-ink-3 tabular-nums">Page {page} / {totalPages}</span>
+          <SkyButton type="button" variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+            Next
+          </SkyButton>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
-type TabId = "overview" | "members" | "joinRequests" | "quests" | "raids";
+type TabId = "overview" | "members" | "joinRequests" | "quests" | "raids" | "liveArena";
 
 const TABS: { id: TabId; label: string; Icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", Icon: UserRoundCog },
@@ -562,6 +791,7 @@ const TABS: { id: TabId; label: string; Icon: LucideIcon }[] = [
   { id: "joinRequests", label: "Join Requests", Icon: ClipboardList },
   { id: "quests", label: "Quests", Icon: ClipboardList },
   { id: "raids", label: "Boss Raid", Icon: Swords },
+  { id: "liveArena", label: "Live Arena", Icon: Radio },
 ];
 
 export default function AdminPartyDetail() {
@@ -646,7 +876,7 @@ export default function AdminPartyDetail() {
 
   return (
     <>
-      <PageMeta title="Party Detail | HabitEvolve Admin" description="Manage a party's members, join requests, quests, and boss raid history." />
+      <PageMeta title="Party Detail | HabitEvolve Admin" description="Manage a party's members, join requests, quests, boss raid and Live Arena history." />
       <PageBreadcrumb pageTitle="Party Detail" />
 
       <div className="space-y-6">
@@ -728,6 +958,7 @@ export default function AdminPartyDetail() {
               {tab === "joinRequests" && <JoinRequestsTab partyId={party.partyId} requests={joinRequests} loading={joinRequestsLoading} onRefresh={() => { fetchJoinRequests(); fetchMembers(); }} />}
               {tab === "quests" && <QuestsTab quests={quests} loading={questsLoading} />}
               {tab === "raids" && <RaidsTab raids={raids} chests={chests} loading={raidsLoading} />}
+              {tab === "liveArena" && <LiveArenaTab partyId={party.partyId} />}
             </SkyCard>
           </>
         )}

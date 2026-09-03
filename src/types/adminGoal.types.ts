@@ -5,6 +5,29 @@
 // Matches BE QuestionType enum (PascalCase)
 export type QuestionType = "SingleChoice" | "MultipleChoice" | "NumberInput" | "TextInput" | "RatingScale" | "YesNo" | "Time" | "Duration";
 
+// 0. Lifestyle Pillar (Physical/Mental/Performance/Relationships)
+// Matches BE PillarDto — the 4 top-level buckets a Category rolls up into.
+export interface PillarDto {
+    pillarId: number;
+    pillarCode: string;
+    pillarName: string;
+    description: string | null;
+    iconCode: string | null;
+    displayOrder: number;
+    isActive: boolean;
+}
+
+// Payload for POST /admin/pillars & PUT /admin/pillars/{id}.
+// pillarCode is set on create and immutable afterwards (BE UpdatePillarCommand ignores it).
+export interface PillarPayload {
+    pillarCode: string;
+    pillarName: string;
+    description?: string;
+    iconCode?: string;
+    displayOrder: number;
+    isActive: boolean;
+}
+
 // 1. Goal Category
 // Matches BE CategoryDto
 export interface GoalCategoryDto {
@@ -15,6 +38,9 @@ export interface GoalCategoryDto {
     iconCode: string | null;
     displayOrder: number;
     isActive: boolean;
+    // Lifestyle pillar this category rolls up into. 0 = legacy unmapped (predates pillars);
+    // the mobile Goal Wizard drops such categories' goals into its "Other" bucket.
+    pillarId: number;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -26,6 +52,8 @@ export interface GoalCategoryPayload {
     iconCode?: string;
     displayOrder: number;
     isActive: boolean;
+    // Required by BE — every category must map to one of the 4 pillars.
+    pillarId: number;
 }
 
 // 2. Goal

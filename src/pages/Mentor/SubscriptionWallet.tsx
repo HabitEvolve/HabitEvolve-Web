@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import Chart from "react-apexcharts";
+import type { ApexOptions } from "apexcharts";
 import {
     AlertTriangle,
     ArrowDownLeft,
@@ -9,7 +11,7 @@ import {
     Check,
     Clock,
     CreditCard,
-    FlaskConical,
+    Info,
     Minus,
     Plus,
     RotateCcw,
@@ -28,6 +30,7 @@ import { useAlert } from "../../context/AlertContext";
 import { useWallet } from "../../context/WalletContext";
 import SkyCard from "../../components/ui/card/SkyCard";
 import SkyButton from "../../components/ui/button/SkyButton";
+import { skyChartBase, skyAreaFill, SKY_SEMANTIC } from "../../utils/skyChart";
 import type {
     ActiveSubscriptionDto,
     MentorWalletDto,
@@ -139,6 +142,21 @@ const TraitRow = ({
 /** Hairline rule between card sections — lighter than a border, enough to group. */
 const CardRule = () => <div className="relative my-4 h-px bg-sky-ink/8" aria-hidden="true" />;
 
+// Per-difficulty quest caps are additive on top of questsPerMemberPerDay/partyQuestsPerWeek and
+// almost always null (most plans don't bother capping a specific difficulty) — so this renders
+// nothing at all unless at least one is actually set, rather than a permanent row of "∞ ∞ ∞".
+// Reuses TraitRow's chip-per-comma-value rendering instead of a bespoke layout.
+const buildDifficultyCapValue = (pkg: SubscriptionPackageDto): string | null => {
+    const entries: string[] = [];
+    if (pkg.maxEasyQuestsPerMemberPerDay != null) entries.push(`EASY ${pkg.maxEasyQuestsPerMemberPerDay}/day`);
+    if (pkg.maxNormalQuestsPerMemberPerDay != null) entries.push(`NORMAL ${pkg.maxNormalQuestsPerMemberPerDay}/day`);
+    if (pkg.maxHardQuestsPerMemberPerDay != null) entries.push(`HARD ${pkg.maxHardQuestsPerMemberPerDay}/day`);
+    if (pkg.maxEasyPartyQuestsPerWeek != null) entries.push(`EASY ${pkg.maxEasyPartyQuestsPerWeek}/wk`);
+    if (pkg.maxNormalPartyQuestsPerWeek != null) entries.push(`NORMAL ${pkg.maxNormalPartyQuestsPerWeek}/wk`);
+    if (pkg.maxHardPartyQuestsPerWeek != null) entries.push(`HARD ${pkg.maxHardPartyQuestsPerWeek}/wk`);
+    return entries.length > 0 ? entries.join(",") : null;
+};
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const getMentorId = () => {
     const id = localStorage.getItem("user_id");
@@ -191,36 +209,154 @@ const Notice = ({
 };
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
-const UsageBar = ({ label, used, max }: { label: string; used: number; max: number }) => {
-    const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
-    // Consumption is not a good/bad axis at the low end — teal here only means
-    // "headroom left". Only ≥90% is a genuine warning, and it carries a glyph and
-    // a bolder weight as well as the hue, so the state is never colour-only.
-    const critical = pct >= 90;
-    const near = pct >= 70 && !critical;
-    const fill = critical ? "bg-sky-rose" : near ? "bg-sky-peach" : "bg-sky-teal";
+// One usage meter. `max === 0` means the plan doesn't cap this ("Unlimited").
+// `used > max` is a real state the old bar hid — it clamped the fill AND the
+// caption to 100%, so "5 / 3" read as a tidy "100%". Now the over-limit case
+// gets its own colour, glyph, and a plain-language caption ("2 over plan limit")
+// instead of a misleading percentage. The caption line replaces the old raw "%"
+// with the number a mentor actually wants: how much headroom is left.
+const UsageBar = ({ label, hint, used, max }: { label: string; hint: string; used: number; max: number }) => {
+    const { t } = useTranslation();
+    const unlimited = max === 0;
+    const ratio = unlimited ? 0 : used / max;
+    const over = !unlimited && used > max;
+    const critical = !over && !unlimited && ratio >= 0.9;
+    const near = !over && !unlimited && ratio >= 0.7 && !critical;
+    const barPct = unlimited ? 100 : Math.min(ratio * 100, 100);
+    // Unlimited isn't "maxed out" — a solid full bar would read as 100% used, so it
+    // gets a muted track-fill instead of the live teal.
+    const fill = unlimited
+        ? "bg-sky-teal/30"
+        : over || critical
+            ? "bg-sky-rose"
+            : near
+                ? "bg-sky-peach"
+                : "bg-sky-teal";
+
+    const caption = unlimited
+        ? t("mentor.subscriptionWallet.usageUnlimited")
+        : over
+            ? t("mentor.subscriptionWallet.usageOverBy", { count: used - max })
+            : used >= max
+                ? t("mentor.subscriptionWallet.usageAtLimit")
+                : t("mentor.subscriptionWallet.usageLeft", { count: max - used });
+    const captionCls = over || critical
+        ? "text-sky-rose-deep"
+        : near
+            ? "text-sky-peach-deep"
+            : "text-sky-ink-3";
+
     return (
         <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3.5 py-3">
-            <div className="flex items-baseline justify-between gap-2 mb-2">
-                <span className="text-xs font-semibold text-sky-ink truncate">{label}</span>
+            <div className="flex items-baseline justify-between gap-2">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-ink min-w-0">
+                    <span className="truncate">{label}</span>
+                    <span
+                        title={hint}
+                        aria-label={hint}
+                        className="shrink-0 cursor-help text-sky-ink-3"
+                    >
+                        <Info className="w-3 h-3" />
+                    </span>
+                </span>
                 <span
-                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${critical ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
+                    className={`inline-flex items-center gap-1 font-display text-sm tabular-nums ${over ? "font-semibold text-sky-rose-deep" : "font-medium text-sky-ink-2"
                         }`}
                 >
-                    {critical && <AlertTriangle className="w-3.5 h-3.5" />}
+                    {over && <AlertTriangle className="w-3.5 h-3.5" />}
                     {used}
-                    <span className="text-sky-ink-3">/ {max === 0 ? "∞" : max}</span>
+                    <span className="text-sky-ink-3">/ {unlimited ? "∞" : max}</span>
                 </span>
             </div>
+            <p className="mt-1 mb-2 text-[11px] font-medium leading-snug text-sky-ink-3">{hint}</p>
             <div className="relative h-2.5 rounded-full bg-sky-ink/8 overflow-hidden">
                 <div
                     className={`h-full rounded-full ${fill} transition-[width] duration-500 ${easeExpo}`}
-                    style={{ width: `${pct}%` }}
+                    style={{ width: `${barPct}%` }}
                 />
             </div>
-            <p className="mt-1.5 text-[10px] font-medium text-sky-ink-3 tabular-nums">
-                {Math.round(pct)}%
+            <p className={`mt-1.5 text-[10px] font-semibold tabular-nums ${captionCls}`}>
+                {caption}
             </p>
+        </div>
+    );
+};
+
+// ── BALANCE TREND ─────────────────────────────────────────────────────────────
+// Balance-after over the most recent transactions, in the reward hue the headline
+// balance above it also wears (one series → no legend; the "Gem Wallet" label
+// names it). Category-spaced on X (a trend, not a precise time axis) with the
+// shared ApexCharts theme (src/utils/skyChart.ts) so it carries the same graph-
+// paper grid + value/date ticks as every other chart in the app.
+const BALANCE_TREND_HEIGHT = 156;
+
+const BalanceTrendChart = ({ transactions }: { transactions: GemTransactionDto[] }) => {
+    const { t } = useTranslation();
+
+    // API returns newest-first (matches the Logbook); a trend reads left→right as
+    // oldest→newest, so reverse and keep the most recent 12.
+    const points = useMemo(
+        () => [...transactions].reverse().slice(-12),
+        [transactions],
+    );
+
+    if (points.length < 2) return null;
+
+    const categories = points.map((tx) =>
+        new Date(tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    );
+    const data = points.map((tx) => tx.balanceAfter);
+
+    const options: ApexOptions = {
+        ...skyChartBase,
+        chart: { ...skyChartBase.chart, type: "area", height: BALANCE_TREND_HEIGHT },
+        colors: [SKY_SEMANTIC.reward],
+        stroke: { curve: "smooth", width: 2 },
+        fill: skyAreaFill,
+        markers: { size: 0, hover: { size: 5 } },
+        // User asked for both gridlines — keep them faint (skyChartBase already
+        // dashes them at 10% ink) so the line still reads as the figure.
+        grid: { ...skyChartBase.grid, xaxis: { lines: { show: true } } },
+        xaxis: {
+            ...skyChartBase.xaxis,
+            categories,
+            tickAmount: Math.min(4, categories.length - 1),
+            labels: { ...skyChartBase.xaxis.labels, rotate: 0, hideOverlappingLabels: true },
+        },
+        yaxis: {
+            ...skyChartBase.yaxis,
+            tickAmount: 4,
+            forceNiceScale: true,
+            labels: {
+                ...skyChartBase.yaxis.labels,
+                formatter: (v: number) => {
+                    const n = Math.round(v);
+                    return Math.abs(n) >= 1000
+                        ? `${(n / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
+                        : `${n}`;
+                },
+            },
+        },
+        tooltip: {
+            ...skyChartBase.tooltip,
+            y: {
+                title: { formatter: () => t("mentor.subscriptionWallet.gemWallet") },
+                formatter: (v: number) => `${Math.round(v).toLocaleString()} 💎`,
+            },
+        },
+    };
+
+    const series = [{ name: t("mentor.subscriptionWallet.gemWallet"), data }];
+
+    return (
+        <div
+            aria-label={t("mentor.subscriptionWallet.balanceTrendLabel", {
+                count: points.length,
+                from: data[0].toLocaleString(),
+                to: data[data.length - 1].toLocaleString(),
+            })}
+        >
+            <Chart options={options} series={series} type="area" height={BALANCE_TREND_HEIGHT} />
         </div>
     );
 };
@@ -247,6 +383,15 @@ const TX_META: Record<string, { icon: ReactNode; sign: "+" | "-"; color: string;
         color: "text-sky-deep",
         ring: "bg-sky-deep/12 text-sky-deep",
     },
+};
+
+// Row title falls back to a human label when the BE stored no description — the
+// raw enum ("TOPUP") must never reach the screen. Top-ups never carry a
+// description, so this is what a top-up row actually shows.
+const TX_TYPE_LABEL_KEY: Record<string, string> = {
+    TOPUP: "mentor.subscriptionWallet.txTypeTopup",
+    PURCHASE: "mentor.subscriptionWallet.txTypePurchase",
+    REFUND: "mentor.subscriptionWallet.txTypeRefund",
 };
 
 const TX_STATUS_META: Record<string, { cls: string; icon: ReactNode }> = {
@@ -302,6 +447,8 @@ const TransactionLogbook = ({
             {transactions.map((tx, i) => {
                 const meta = TX_META[tx.type] ?? TX_META.TOPUP;
                 const status = TX_STATUS_META[tx.status] ?? TX_STATUS_META.Pending;
+                const typeLabelKey = TX_TYPE_LABEL_KEY[tx.type];
+                const title = tx.description || (typeLabelKey ? t(typeLabelKey) : tx.type);
                 const isLast = i === transactions.length - 1;
                 return (
                     <div
@@ -315,7 +462,7 @@ const TransactionLogbook = ({
                         <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm text-sky-ink truncate">
-                                    {tx.description || tx.type}
+                                    {title}
                                 </p>
                                 <p className="text-xs text-sky-ink-2 font-medium mt-0.5 tabular-nums">
                                     {new Date(tx.createdAt).toLocaleString()}
@@ -408,6 +555,7 @@ const PurchaseModal = ({ pkg, onClose, onSuccess }: PurchaseModalProps) => {
                     {[
                         [t("mentor.subscriptionWallet.bossModes"), pkg.bossModes],
                         ["Proof Types", pkg.proofTypes],
+                        ...(buildDifficultyCapValue(pkg) ? [[t("mentor.subscriptionWallet.questCaps", "Quest Caps"), buildDifficultyCapValue(pkg)!]] : []),
                     ].map(([label, csv]) => (
                         <div key={label} className="flex justify-between gap-3 text-sm font-medium">
                             <span className="text-sky-ink-2 shrink-0">{label}</span>
@@ -482,7 +630,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
     const alert = useAlert();
     const [selected, setSelected] = useState<GemPackage | null>(GEM_PACKAGES[0]);
     const [customAmount, setCustomAmount] = useState('');
-    const [method, setMethod] = useState<WalletPaymentMethod>('SEPAY');
+    const method: WalletPaymentMethod = 'SEPAY';
     const [loading, setLoading] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
 
@@ -591,8 +739,8 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                                 aria-pressed={isSelected}
                                 onClick={() => selectPackage(pkg)}
                                 className={`relative text-left p-4 rounded-sky-chip ${pkg.face} transition-all duration-150 ${easeExpo} motion-safe:hover:-translate-y-px ${isSelected
-                                        ? "ring-2 ring-sky-deep shadow-sky-chip"
-                                        : "ring-1 ring-white/70 hover:ring-sky-deep/35"
+                                    ? "ring-2 ring-sky-deep shadow-sky-chip"
+                                    : "ring-1 ring-white/70 hover:ring-sky-deep/35"
                                     }`}
                             >
                                 {/* Selection is not colour-only: the ring is joined by a tick. */}
@@ -626,8 +774,8 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     </label>
                     <div
                         className={`relative rounded-sky-chip bg-white/60 transition-all duration-150 ${!selected && customAmount
-                                ? "ring-2 ring-sky-deep shadow-sky-chip"
-                                : "ring-1 ring-white/80"
+                            ? "ring-2 ring-sky-deep shadow-sky-chip"
+                            : "ring-1 ring-white/80"
                             }`}
                     >
                         <input
@@ -648,29 +796,6 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                     )}
                 </div>
 
-                {/* Payment method toggle — segmented control, same reasoning as the
-                    package grid above: custom, not SkyButton. */}
-                <div className="relative flex gap-2 mb-5">
-                    {(['SEPAY', 'DEMO'] as WalletPaymentMethod[]).map((m) => {
-                        const isOn = method === m;
-                        return (
-                            <button
-                                type="button"
-                                key={m}
-                                aria-pressed={isOn}
-                                onClick={() => setMethod(m)}
-                                className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-full font-semibold text-xs transition-all duration-150 ${easeExpo} ${isOn
-                                        ? "bg-linear-to-b from-sky-deep-lo to-sky-deep text-white shadow-sky-chip"
-                                        : "sky-glass-chip text-sky-ink-2 hover:text-sky-ink motion-safe:hover:-translate-y-px"
-                                    }`}
-                            >
-                                {m === 'SEPAY' ? <CreditCard className="w-3.5 h-3.5" /> : <FlaskConical className="w-3.5 h-3.5" />}
-                                {m === 'SEPAY' ? 'SePay (Real)' : 'DEMO (Dev)'}
-                            </button>
-                        );
-                    })}
-                </div>
-
                 {/* Buy button */}
                 <div className="relative flex gap-3">
                     <SkyButton type="button" variant="secondary" onClick={onClose} className="flex-1">
@@ -686,7 +811,7 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
                         {loading
                             ? <><Spinner size={14} /> {t("mentor.subscriptionWallet.processing")}</>
                             : effectiveGems > 0
-                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <GemIcon className="w-4 h-4" /> — {vndPrice} VND</>
+                                ? <>{t("mentor.subscriptionWallet.buy")} {effectiveGems.toLocaleString()} <GemIcon className="w-4 h-4" /></>
                                 : t("mentor.subscriptionWallet.enterValidAmount", "Enter a valid gem amount.")
                         }
                     </SkyButton>
@@ -701,11 +826,15 @@ const GemStoreModal = ({ vndPerGem, onClose, onDemoSuccess }: GemStoreModalProps
 interface CancelSubModalProps {
     subscriptionId: number;
     planName: string;
+    expiresAt?: string;
     onClose: () => void;
-    onSuccess: () => void;
+    // Passes back the date benefits actually run until, IF the cancellation was deferred (still
+    // "Active"); undefined means it took effect immediately (PendingPayment / permanent package —
+    // see MentorSubscription.Cancel on the BE) so the caller can show the right success message.
+    onSuccess: (deferredUntilIso?: string) => void;
 }
 
-const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: CancelSubModalProps) => {
+const CancelSubModal = ({ subscriptionId, planName, expiresAt, onClose, onSuccess }: CancelSubModalProps) => {
     const { t } = useTranslation();
     const alert = useAlert();
     const [loading, setLoading] = useState(false);
@@ -715,7 +844,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
         try {
             const res = await mentorApi.cancelSubscription(subscriptionId);
             if (res.success) {
-                onSuccess();
+                onSuccess(res.data?.status === "Active" ? res.data.expiresAt : undefined);
             } else {
                 alert.error(res.message || t("mentor.subscriptionWallet.cancellationFailed"));
             }
@@ -749,12 +878,20 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                     </div>
                 </div>
 
-                {/* Downgrade warning */}
-                <div className="relative overflow-hidden rounded-sky-chip bg-sky-rose/8 ring-1 ring-white/70 p-4 pl-5 mb-5 space-y-3">
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-rose" aria-hidden="true" />
+                {/* Cancelling stops renewal, it doesn't confiscate what's already paid for — so this
+                    reads as a heads-up about what happens LATER, not an immediate-loss warning
+                    (peach/attention, not the rose "you're about to lose this now" tone). */}
+                <div className="relative overflow-hidden rounded-sky-chip bg-sky-peach/10 ring-1 ring-white/70 p-4 pl-5 mb-5 space-y-3">
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" aria-hidden="true" />
                     <p className="text-sm font-semibold text-sky-ink">
-                        {t("mentor.subscriptionWallet.cancelWarning", { freeTier: t("mentor.subscriptionWallet.freeTier") })}
+                        {expiresAt
+                            ? t("mentor.subscriptionWallet.cancelWarningWithDate", {
+                                date: new Date(expiresAt).toLocaleDateString(),
+                                freeTier: t("mentor.subscriptionWallet.freeTier"),
+                            })
+                            : t("mentor.subscriptionWallet.cancelWarning", { freeTier: t("mentor.subscriptionWallet.freeTier") })}
                     </p>
+                    <p className="text-xs font-semibold text-sky-ink-3">{t("mentor.subscriptionWallet.cancelWhenItEnds")}</p>
                     <ul className="space-y-1.5">
                         {[
                             t("mentor.subscriptionWallet.cancelLimit1"),
@@ -762,7 +899,7 @@ const CancelSubModal = ({ subscriptionId, planName, onClose, onSuccess }: Cancel
                             t("mentor.subscriptionWallet.cancelLimit3"),
                         ].map((item) => (
                             <li key={item} className="flex items-center gap-2 text-xs font-medium text-sky-ink-2">
-                                <span className="inline-grid place-items-center w-4 h-4 shrink-0 rounded-full bg-sky-rose/18 text-sky-rose-deep">
+                                <span className="inline-grid place-items-center w-4 h-4 shrink-0 rounded-full bg-sky-peach/20 text-sky-peach-deep">
                                     <TrendingDown className="w-2.5 h-2.5" />
                                 </span>
                                 {item}
@@ -800,6 +937,9 @@ export default function SubscriptionWallet() {
     const [showCancel, setShowCancel] = useState(false);
     const [purchaseResult, setPurchaseResult] = useState<PurchaseSubscriptionResultDto | null>(null);
     const [cancelSuccess, setCancelSuccess] = useState(false);
+    // Set only when the cancellation was deferred (benefits kept until this date) — undefined means
+    // it took effect immediately, so the success banner knows which message to show.
+    const [cancelDeferredUntil, setCancelDeferredUntil] = useState<string | undefined>(undefined);
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
@@ -863,6 +1003,19 @@ export default function SubscriptionWallet() {
 
     useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
+    // Lifetime totals for the Gems card — derived from the logbook already fetched above rather
+    // than a new endpoint. Fills what used to be a large empty gap between the Top Up button and
+    // the balance with something a mentor actually cares about (where the balance came from).
+    const walletStats = useMemo(() => {
+        const totalToppedUp = transactions
+            .filter((tx) => tx.type === "TOPUP" && tx.status === "Completed")
+            .reduce((sum, tx) => sum + tx.gemAmount, 0);
+        const totalSpent = transactions
+            .filter((tx) => tx.type === "PURCHASE")
+            .reduce((sum, tx) => sum + tx.gemAmount, 0);
+        return { totalToppedUp, totalSpent };
+    }, [transactions]);
+
     // Client-side pagination — GET /mentor/wallet/transactions doesn't accept
     // pageNumber/pageSize on the BE (unlike the Admin list endpoints), so there's no
     // server-side page to request. Paginating the already-fetched list locally still
@@ -883,10 +1036,11 @@ export default function SubscriptionWallet() {
         refetchWallet(); // purchase spends gems — keep the header chip in sync
     };
 
-    const handleCancelSuccess = () => {
+    const handleCancelSuccess = (deferredUntilIso?: string) => {
         setShowCancel(false);
         setCancelSuccess(true);
-        fetchAll(); // re-fetch everything so usage bars + plan card reset to FREE tier
+        setCancelDeferredUntil(deferredUntilIso);
+        fetchAll(); // re-fetch everything so usage bars + plan card reset to FREE tier (once it actually ends)
     };
 
     if (loading) {
@@ -899,8 +1053,18 @@ export default function SubscriptionWallet() {
 
     const usage = activeSub?.usage;
     const plan = activeSub?.package;
-    // Only show Cancel when the mentor has a real paid subscription that is currently active
-    const canCancel = !activeSub?.isDefaultFree && (activeSub?.subscription?.isCurrentlyActive ?? false);
+    // A capped meter (max > 0) sitting above its cap — drives the explanatory callout.
+    const overLimit = !!usage && (
+        (usage.maxParties > 0 && usage.partiesUsed > usage.maxParties) ||
+        (usage.maxMembersPerParty > 0 && usage.largestPartyMemberCount > usage.maxMembersPerParty) ||
+        (usage.questsPerMemberPerDay > 0 && usage.busiestMemberQuestsToday > usage.questsPerMemberPerDay) ||
+        (usage.partyQuestsPerWeek > 0 && usage.busiestPartyQuestsThisWeek > usage.partyQuestsPerWeek)
+    );
+    // Cancelling no longer revokes access immediately (BE keeps IsCurrentlyActive true until the
+    // already-paid ExpiresAt) — cancelledAt is what actually records "won't renew", so once it's
+    // set the button must disappear even though the subscription still reads as currently active.
+    const isPendingCancellation = !!activeSub?.subscription?.cancelledAt;
+    const canCancel = !activeSub?.isDefaultFree && (activeSub?.subscription?.isCurrentlyActive ?? false) && !isPendingCancellation;
 
     return (
         <>
@@ -937,7 +1101,9 @@ export default function SubscriptionWallet() {
                     icon={<TrendingDown className="w-5 h-5" />}
                     onDismiss={() => setCancelSuccess(false)}
                 >
-                    {t("mentor.subscriptionWallet.cancelledDowngrade")}
+                    {cancelDeferredUntil
+                        ? t("mentor.subscriptionWallet.cancelledDeferred", { date: new Date(cancelDeferredUntil).toLocaleDateString() })
+                        : t("mentor.subscriptionWallet.cancelledDowngrade")}
                 </Notice>
             )}
 
@@ -958,6 +1124,27 @@ export default function SubscriptionWallet() {
                             <Plus className="w-3.5 h-3.5" /> {t("mentor.subscriptionWallet.topUp")}
                         </SkyButton>
                     </div>
+
+                    {/* Lifetime totals — quiet, secondary numbers so the balance below stays the
+                        loudest thing on the card. Only shown once the logbook has something to
+                        summarize, so an empty history doesn't render two "0" tiles. */}
+                    {!loadingTx && (walletStats.totalToppedUp > 0 || walletStats.totalSpent > 0) && (
+                        <div className="relative grid grid-cols-2 gap-2.5">
+                            <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3 py-2.5">
+                                <p className={eyebrow}>{t("mentor.subscriptionWallet.totalToppedUp", "Total Topped Up")}</p>
+                                <p className="mt-1 flex items-center gap-1 font-display text-base font-semibold tabular-nums text-sky-teal">
+                                    +{walletStats.totalToppedUp.toLocaleString()} <GemIcon className="w-3.5 h-3.5" />
+                                </p>
+                            </div>
+                            <div className="rounded-sky-chip bg-white/45 ring-1 ring-white/70 px-3 py-2.5">
+                                <p className={eyebrow}>{t("mentor.subscriptionWallet.totalSpent", "Total Spent")}</p>
+                                <p className="mt-1 flex items-center gap-1 font-display text-base font-semibold tabular-nums text-sky-rose-deep">
+                                    -{walletStats.totalSpent.toLocaleString()} <GemIcon className="w-3.5 h-3.5" />
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* The balance is the loudest number on the page — everything
                         around it stays quiet so it can be. */}
                     <div className="relative mt-auto">
@@ -965,6 +1152,11 @@ export default function SubscriptionWallet() {
                         <div className="font-display text-5xl font-semibold text-sky-peach-deep leading-none tabular-nums mt-1.5">
                             {wallet ? wallet.gemsBalance.toLocaleString() : "—"}
                         </div>
+                        {!loadingTx && transactions.length >= 2 && (
+                            <div className="mt-1">
+                                <BalanceTrendChart transactions={transactions} />
+                            </div>
+                        )}
                         {wallet && (
                             <p className="text-sky-small text-sky-ink-2 font-medium mt-2 tabular-nums">
                                 Rate: 1 <GemIcon className="w-3.5 h-3.5" /> = {wallet.vndPerGem.toLocaleString()} VND
@@ -988,17 +1180,28 @@ export default function SubscriptionWallet() {
                                                 FREE
                                             </span>
                                         )}
-                                        {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && (
+                                        {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && !isPendingCancellation && (
                                             <span className="sky-badge sky-badge-success">
                                                 <Check className="w-3 h-3" />
                                                 ACTIVE
+                                            </span>
+                                        )}
+                                        {/* Cancelled but the paid period hasn't run out yet — teal ACTIVE would lie
+                                            about what happens next, so this gets its own (peach, never green/red —
+                                            it's neither a win nor a failure) badge instead. */}
+                                        {activeSub?.subscription?.isCurrentlyActive && !activeSub.isDefaultFree && isPendingCancellation && (
+                                            <span className="sky-badge sky-badge-pending">
+                                                <Clock className="w-3 h-3" />
+                                                {t("mentor.subscriptionWallet.cancelledPendingBadge")}
                                             </span>
                                         )}
                                     </div>
                                     {activeSub?.subscription?.expiresAt && (
                                         <p className="inline-flex items-center gap-1.5 text-xs text-sky-ink-2 font-medium tabular-nums">
                                             <Clock className="w-3.5 h-3.5 text-sky-ink-3" />
-                                            {t("mentor.subscriptionWallet.expires")}: {new Date(activeSub.subscription.expiresAt).toLocaleDateString()}
+                                            {isPendingCancellation
+                                                ? t("mentor.subscriptionWallet.accessUntil", { date: new Date(activeSub.subscription.expiresAt).toLocaleDateString() })
+                                                : <>{t("mentor.subscriptionWallet.expires")}: {new Date(activeSub.subscription.expiresAt).toLocaleDateString()}</>}
                                         </p>
                                     )}
                                     {plan.description && (
@@ -1027,16 +1230,56 @@ export default function SubscriptionWallet() {
 
                     {/* Usage section */}
                     <div className="relative">
-                        <p className={`${eyebrow} mb-3`}>
+                        <p className={`${eyebrow} mb-1`}>
                             {t("mentor.subscriptionWallet.usageThisPeriod")}
                         </p>
+                        <p className="mb-3 text-[11px] font-medium text-sky-ink-3">
+                            {t("mentor.subscriptionWallet.usageThisPeriodHint")}
+                        </p>
                         {usage ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <UsageBar label={t("mentor.subscriptionWallet.usageParties")} used={usage.partiesUsed} max={usage.maxParties} />
-                                <UsageBar label={t("mentor.subscriptionWallet.usageMembers")} used={usage.largestPartyMemberCount} max={usage.maxMembersPerParty} />
-                                <UsageBar label={t("mentor.subscriptionWallet.usageQuestsToday")} used={usage.questsAssignedToday} max={usage.questsPerMemberPerDay} />
-                                <UsageBar label={t("mentor.subscriptionWallet.usagePartyQuestsWeek")} used={usage.partyQuestsThisWeek} max={usage.partyQuestsPerWeek} />
-                            </div>
+                            <>
+                                {/* Any meter over its cap almost always means the plan's limits were
+                                    lowered under an existing mentor (admin edit / snapshot ≠ live plan).
+                                    Without this line the bare ⚠ on "5 / 3" reads as a bug. */}
+                                {overLimit && (
+                                    <div className="relative mb-3 overflow-hidden rounded-sky-chip bg-sky-peach/10 ring-1 ring-white/70 p-3 pl-4">
+                                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-peach" aria-hidden="true" />
+                                        <p className="flex items-center gap-1.5 text-xs font-semibold text-sky-ink">
+                                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-sky-peach-deep" />
+                                            {t("mentor.subscriptionWallet.usageOverTitle")}
+                                        </p>
+                                        <p className="mt-1 text-[11px] font-medium leading-snug text-sky-ink-2">
+                                            {t("mentor.subscriptionWallet.usageOverBody")}
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usageParties")}
+                                        hint={t("mentor.subscriptionWallet.usagePartiesHint")}
+                                        used={usage.partiesUsed}
+                                        max={usage.maxParties}
+                                    />
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usageMembers")}
+                                        hint={t("mentor.subscriptionWallet.usageMembersHint")}
+                                        used={usage.largestPartyMemberCount}
+                                        max={usage.maxMembersPerParty}
+                                    />
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usageQuestsToday")}
+                                        hint={t("mentor.subscriptionWallet.usageQuestsTodayHint")}
+                                        used={usage.busiestMemberQuestsToday}
+                                        max={usage.questsPerMemberPerDay}
+                                    />
+                                    <UsageBar
+                                        label={t("mentor.subscriptionWallet.usagePartyQuestsWeek")}
+                                        hint={t("mentor.subscriptionWallet.usagePartyQuestsWeekHint")}
+                                        used={usage.busiestPartyQuestsThisWeek}
+                                        max={usage.partyQuestsPerWeek}
+                                    />
+                                </div>
+                            </>
                         ) : (
                             <p className="text-sky-ink-3 font-medium text-sm">{t("mentor.subscriptionWallet.noUsageData")}</p>
                         )}
@@ -1087,15 +1330,15 @@ export default function SubscriptionWallet() {
                                 key={pkg.packageId}
                                 variant="mentor"
                                 className={`relative flex h-full flex-col overflow-hidden transition-all duration-200 ${easeExpo} motion-safe:hover:-translate-y-0.5 ${isFeatured
-                                        ? // The featured tier physically outweighs its neighbours:
-                                        // taller box, violet ring, deeper shadow — a lift that
-                                        // survives at rest rather than only on hover.
-                                        "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
-                                        : isCurrent
-                                            ? "ring-1 ring-sky-teal/35"
-                                            : // Unfeatured tiers recede so the featured one has
-                                            // something to be louder than.
-                                            "ring-1 ring-white/60 opacity-[0.94]"
+                                    ? // The featured tier physically outweighs its neighbours:
+                                    // taller box, violet ring, deeper shadow — a lift that
+                                    // survives at rest rather than only on hover.
+                                    "z-10 ring-2 ring-sky-violet/45 shadow-[0_24px_48px_-20px_rgba(36,52,77,0.34)] sm:-my-3"
+                                    : isCurrent
+                                        ? "ring-1 ring-sky-teal/35"
+                                        : // Unfeatured tiers recede so the featured one has
+                                        // something to be louder than.
+                                        "ring-1 ring-white/60 opacity-[0.94]"
                                     }`}
                             >
                                 {/* Current plan gets three cues: a teal rail, a teal wash
@@ -1185,6 +1428,12 @@ export default function SubscriptionWallet() {
                                     <TraitRow label={t("mentor.subscriptionWallet.bossModes")} value={pkg.bossModes} />
                                     <TraitRow label={t("mentor.subscriptionWallet.rewardTier")} value={pkg.rewardTier} />
                                     {pkg.proofTypes && <TraitRow label="Proof" value={pkg.proofTypes} />}
+                                    {buildDifficultyCapValue(pkg) && (
+                                        <TraitRow
+                                            label={t("mentor.subscriptionWallet.questCaps", "Quest Caps")}
+                                            value={buildDifficultyCapValue(pkg)!}
+                                        />
+                                    )}
                                     {pkg.aiVerificationBossModes ? (
                                         <TraitRow
                                             label="AI"
@@ -1258,6 +1507,7 @@ export default function SubscriptionWallet() {
                 <CancelSubModal
                     subscriptionId={activeSub.subscription.mentorSubscriptionId}
                     planName={activeSub.package.name}
+                    expiresAt={activeSub.subscription.expiresAt}
                     onClose={() => setShowCancel(false)}
                     onSuccess={handleCancelSuccess}
                 />

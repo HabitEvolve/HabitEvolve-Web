@@ -49,6 +49,20 @@ const partyReminderApi = {
         );
         return r.data;
     },
+
+    // Guild Rally "Custom" — Mentor's own title + content, sent immediately to the whole party
+    // (Notification + Party Chat, same delivery pipeline as the 4 preset templates).
+    sendCustomRally: async (
+        partyId: number,
+        title: string,
+        content: string
+    ): Promise<ApiResponse<ReminderDispatchResultDto>> => {
+        const r = await axiosClient.post<ApiResponse<ReminderDispatchResultDto>>(
+            `/parties/${partyId}/reminders/custom`,
+            { mentorUserId: mid(), title, content }
+        );
+        return r.data;
+    },
 };
 
 export default partyReminderApi;

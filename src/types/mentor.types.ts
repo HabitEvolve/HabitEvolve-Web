@@ -16,6 +16,15 @@ export interface SubscriptionPackageDto {
     proofTypes: string;              // CSV: "Photo,Video"
     rewardTier: string;
     aiVerificationBossModes: string; // CSV: "" | "Normal" | "Normal,Hard"
+    // Per-difficulty quest caps — SPLIT questsPerMemberPerDay/partyQuestsPerWeek above:
+    // the EASY+NORMAL+HARD caps that are set must sum to at most the overall cap.
+    // null = no separate cap for that difficulty.
+    maxEasyQuestsPerMemberPerDay: number | null;
+    maxNormalQuestsPerMemberPerDay: number | null;
+    maxHardQuestsPerMemberPerDay: number | null;
+    maxEasyPartyQuestsPerWeek: number | null;
+    maxNormalPartyQuestsPerWeek: number | null;
+    maxHardPartyQuestsPerWeek: number | null;
     isActive: boolean;
     createdAt: string;
     updatedAt?: string;
@@ -38,14 +47,32 @@ export interface MentorSubscriptionDto {
     isCurrentlyActive: boolean;
 }
 
+export interface DifficultyQuotaDto {
+    assignedToday: number;
+    cap: number;
+}
+
+/** Screen 14 — how many quests assigned to ONE member today vs the cap (BR-14, per recipient). */
+export interface MemberQuestQuotaDto {
+    targetUserId: number;
+    assignedToday: number;
+    cap: number;
+    /** Keyed EASY/NORMAL/HARD — only present for a difficulty the plan caps separately. */
+    perDifficulty: Record<string, DifficultyQuotaDto>;
+}
+
 export interface SubscriptionUsageDto {
     partiesUsed: number;
     maxParties: number;
     largestPartyMemberCount: number;
     maxMembersPerParty: number;
-    questsAssignedToday: number;
+    /** Most quests the mentor has assigned to a SINGLE member today (grouped by recipient, max) —
+     *  mirrors BR-14, which caps questsPerMemberPerDay per recipient, not in total. */
+    busiestMemberQuestsToday: number;
     questsPerMemberPerDay: number;
-    partyQuestsThisWeek: number;
+    /** Most party-quest batches in a SINGLE party this week (max over parties) —
+     *  partyQuestsPerWeek is enforced per party, not summed across all of them. */
+    busiestPartyQuestsThisWeek: number;
     partyQuestsPerWeek: number;
 }
 
@@ -233,6 +260,8 @@ export interface ProofDto {
     questHowToSubmit?: string;
     userId: number;
     username?: string;
+    partyId?: number | null;
+    partyName?: string | null;
     proofType: string;
     mediaUrls: string[];
     textNote?: string;

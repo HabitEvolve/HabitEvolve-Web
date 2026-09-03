@@ -1310,6 +1310,7 @@
       "historyBtn": "History",
       "deactivateBtn": "Deactivate",
       "activateBtn": "✅ Activate",
+      "applyBtn": "Apply to Subscribers",
       "statusActive": "ACTIVE",
       "statusInactive": "INACTIVE",
       "unlimited": "∞ Unlimited",
@@ -1394,6 +1395,13 @@
         "noChanges": "No field changes recorded",
         "prevPage": "← Prev",
         "nextPage": "Next →"
+      },
+      "applyModal": {
+        "title": "Apply to Existing Subscribers",
+        "areYouSure": "Apply the current settings of {{codeName}} immediately to every mentor already subscribed to it?",
+        "warning": "This updates what they're entitled to right now, even though they paid under the old terms — normally changes only take effect on their next renewal.",
+        "confirm": "Apply Now",
+        "success": "Applied immediately to {{count}} existing subscriber(s)."
       }
     },
     "courtManagement": {

@@ -48,6 +48,14 @@ const adminSubscriptionApi = {
     const res = await axiosClient.delete<ApiResponse<void>>(`${PACKAGES_URL}/${id}`);
     return res.data;
   },
+
+  // POST /api/admin/packages/{id}/apply-to-subscribers
+  // Standalone from updatePackage's applyToExistingSubscribers flag — for when the admin skipped that
+  // checkbox earlier and now wants to push the package's CURRENT values to everyone on it right now.
+  applyToSubscribers: async (id: number): Promise<ApiResponse<number>> => {
+    const res = await axiosClient.post<ApiResponse<number>>(`${PACKAGES_URL}/${id}/apply-to-subscribers`);
+    return res.data;
+  },
 };
 
 export default adminSubscriptionApi;

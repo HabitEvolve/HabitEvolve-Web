@@ -1310,6 +1310,7 @@
       "historyBtn": "Lịch Sử",
       "deactivateBtn": "⛔ Vô Hiệu",
       "activateBtn": "✅ Kích Hoạt",
+      "applyBtn": "Áp Dụng Cho Người Đăng Ký",
       "statusActive": "ĐANG HOẠT ĐỘNG",
       "statusInactive": "KHÔNG HOẠT ĐỘNG",
       "unlimited": "∞ Không Giới Hạn",
@@ -1394,6 +1395,13 @@
         "noChanges": "Không có thay đổi nào được ghi nhận",
         "prevPage": "← Trước",
         "nextPage": "Tiếp →"
+      },
+      "applyModal": {
+        "title": "Áp Dụng Cho Mentor Đang Giữ Gói",
+        "areYouSure": "Áp dụng ngay các thiết lập hiện tại của {{codeName}} cho mọi mentor đang đăng ký gói này?",
+        "warning": "Thao tác này cập nhật quyền lợi của họ NGAY BÂY GIỜ, kể cả khi họ đã trả tiền theo điều khoản cũ — bình thường thay đổi chỉ có hiệu lực ở lần gia hạn tiếp theo.",
+        "confirm": "Áp Dụng Ngay",
+        "success": "Đã áp dụng ngay cho {{count}} mentor đang giữ gói."
       }
     },
     "courtManagement": {

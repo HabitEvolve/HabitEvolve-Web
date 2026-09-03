@@ -395,6 +395,7 @@
         "modalLoadFailed": "Tải danh sách thất bại. Vui lòng thử lại.",
         "modalProofsTitle": "Bằng Chứng Chờ Duyệt",
         "modalEmptyProofs": "Không có bằng chứng nào chờ duyệt.",
+        "modalProofsNoParty": "Không thuộc nhóm nào",
         "modalJoinRequestsTitle": "Yêu Cầu Gia Nhập Đang Chờ",
         "modalEmptyJoinRequests": "Không có yêu cầu gia nhập nào đang chờ.",
         "modalUrgentAlertsTitle": "Cảnh Báo Khẩn",

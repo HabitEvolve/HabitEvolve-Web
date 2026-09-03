@@ -281,32 +281,41 @@ const fmtRelative = (iso: string) =>
     new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 // ── Review Proofs modal ──
-type ProofModalRow = { proofId: number; username: string; questTitle: string; submittedAt: string; partyId: number | null };
+// One row per party = party name + how many proofs are still unreviewed there.
+// Tapping a row deep-links to that party's proof-review page; the modal itself
+// stays a summary, not a per-proof list.
+type ProofPartyGroup = { partyId: number | null; label: string; count: number };
 
 const ProofsModal = ({ onClose, onNavigate }: { onClose: () => void; onNavigate: (path: string) => void }) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [rows, setRows] = useState<ProofModalRow[]>([]);
+    const [groups, setGroups] = useState<ProofPartyGroup[]>([]);
 
     const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const [proofsRes, questsRes] = await Promise.all([
-                mentorApi.getProofQueue(),
-                mentorApi.getMentorQuests(),
-            ]);
-            const questPartyMap = new Map<number, number>();
-            (questsRes.data ?? []).forEach((q) => { if (q.partyId) questPartyMap.set(q.questId, q.partyId); });
-            const proofs = proofsRes.data ?? [];
-            setRows(proofs.map((p) => ({
-                proofId: p.proofId,
-                username: p.username || "—",
-                questTitle: p.questTitle || "—",
-                submittedAt: p.submittedAt,
-                partyId: questPartyMap.get(p.questId) ?? null,
-            })));
+            // partyId/partyName come straight off the proof DTO — no second
+            // getMentorQuests() fetch to build a questId→party map.
+            const res = await mentorApi.getProofQueue();
+            const byParty = new Map<string, ProofPartyGroup>();
+            for (const p of res.data ?? []) {
+                const pid = p.partyId ?? null;
+                const key = pid != null ? `p${pid}` : "none";
+                const existing = byParty.get(key);
+                if (existing) {
+                    existing.count += 1;
+                } else {
+                    byParty.set(key, {
+                        partyId: pid,
+                        label: p.partyName
+                            ?? (pid != null ? `Party #${pid}` : t("mentor.dashboard.summary.modalProofsNoParty")),
+                        count: 1,
+                    });
+                }
+            }
+            setGroups([...byParty.values()].sort((a, b) => b.count - a.count));
         } catch {
             setError(t("mentor.dashboard.summary.modalLoadFailed"));
         } finally {
@@ -318,21 +327,33 @@ const ProofsModal = ({ onClose, onNavigate }: { onClose: () => void; onNavigate:
 
     return (
         <SkyModal title={t("mentor.dashboard.summary.modalProofsTitle")} onClose={onClose}>
-            {loading ? <ModalLoading /> : error ? <ModalError message={error} onRetry={load} /> : rows.length === 0 ? (
+            {loading ? <ModalLoading /> : error ? <ModalError message={error} onRetry={load} /> : groups.length === 0 ? (
                 <PanelEmpty icon={<Camera className="w-5 h-5" />} label={t("mentor.dashboard.summary.modalEmptyProofs")} />
             ) : (
                 <div className="divide-y divide-sky-ink/8 max-h-[60vh] overflow-y-auto">
-                    {rows.map((r) => (
-                        <ModalRow
-                            key={r.proofId}
-                            icon={<Camera className="w-4 h-4" />}
-                            iconCls="bg-sky-deep/12 text-sky-deep"
-                            primary={r.username}
-                            secondary={r.questTitle}
-                            meta={fmtRelative(r.submittedAt)}
-                            onClick={() => r.partyId && onNavigate(`/mentor/parties/${r.partyId}/proofs`)}
-                        />
-                    ))}
+                    {groups.map((g) => {
+                        const clickable = g.partyId != null;
+                        return (
+                            <button
+                                key={g.partyId ?? "none"}
+                                type="button"
+                                disabled={!clickable}
+                                onClick={() => clickable && onNavigate(`/mentor/parties/${g.partyId}/proofs`)}
+                                className="group w-full flex items-center gap-3 py-3 px-2 -mx-2 rounded-sky-chip text-left transition-colors duration-150 enabled:hover:bg-sky-3/20 disabled:opacity-70"
+                            >
+                                <span className="grid place-items-center w-9 h-9 rounded-full shrink-0 bg-sky-deep/12 text-sky-deep">
+                                    <Swords className="w-4 h-4" />
+                                </span>
+                                <p className="flex-1 min-w-0 text-sm font-semibold text-sky-ink truncate">{g.label}</p>
+                                <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-sky-peach/22 text-sky-peach-deep text-xs font-semibold tabular-nums shrink-0">
+                                    {g.count}
+                                </span>
+                                {clickable && (
+                                    <ChevronRight className="w-4 h-4 text-sky-ink-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </SkyModal>

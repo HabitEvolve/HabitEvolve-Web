@@ -245,6 +245,8 @@ export interface ProofDto {
     questHowToSubmit?: string;
     userId: number;
     username?: string;
+    partyId?: number | null;
+    partyName?: string | null;
     proofType: string;
     mediaUrls: string[];
     textNote?: string;

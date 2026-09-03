@@ -395,6 +395,7 @@
         "modalLoadFailed": "Failed to load the list. Please try again.",
         "modalProofsTitle": "Proofs Awaiting Review",
         "modalEmptyProofs": "No proofs waiting for review.",
+        "modalProofsNoParty": "Not linked to a party",
         "modalJoinRequestsTitle": "Pending Join Requests",
         "modalEmptyJoinRequests": "No pending join requests.",
         "modalUrgentAlertsTitle": "Urgent Alerts",
